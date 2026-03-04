@@ -504,50 +504,265 @@
     });
   }
 
-  function findMountNode(doc) {
-    if (!doc || typeof doc.querySelector !== "function") {
+  function getClassName(node) {
+    if (!node) {
+      return "";
+    }
+    if (typeof node.className === "string") {
+      return node.className;
+    }
+    if (typeof node.getAttribute === "function") {
+      return node.getAttribute("class") || "";
+    }
+    return "";
+  }
+
+  function findFirstBySelectors(root, selectors) {
+    if (!root || typeof root.querySelector !== "function" || !Array.isArray(selectors)) {
       return null;
     }
-
-    var selectors = [
-      '[data-testid="listing-price"]',
-      '[data-testid*="price"]',
-      '[class*="listing-price"]',
-      '[class*="ListingPrice"]',
-      '[class*="price"][class*="listing"]',
-      'main h1'
-    ];
 
     var i;
     var node;
     for (i = 0; i < selectors.length; i += 1) {
-      node = doc.querySelector(selectors[i]);
+      node = root.querySelector(selectors[i]);
       if (node) {
         return node;
       }
     }
 
-    if (typeof doc.querySelectorAll === "function") {
-      var ctaCandidates = doc.querySelectorAll("button, a");
-      var cta;
-      for (i = 0; i < ctaCandidates.length; i += 1) {
-        cta = ctaCandidates[i];
-        if (!cta || typeof cta.textContent !== "string") {
-          continue;
-        }
-        if (/buy now|make offer|send offer/i.test(cta.textContent)) {
-          if (typeof cta.closest === "function") {
-            node = cta.closest("section, article, div");
-            if (node) {
-              return node;
-            }
-          }
-          return cta;
-        }
+    return null;
+  }
+
+  function collectCtaCandidates(root) {
+    if (!root || typeof root.querySelectorAll !== "function") {
+      return [];
+    }
+
+    var allCandidates = root.querySelectorAll("button, a");
+    var matches = [];
+    var i;
+    var candidate;
+    var text;
+    for (i = 0; i < allCandidates.length; i += 1) {
+      candidate = allCandidates[i];
+      if (!candidate || typeof candidate.textContent !== "string") {
+        continue;
+      }
+
+      text = candidate.textContent.replace(/\s+/g, " ").trim();
+      if (/Purchase|Offer/i.test(text)) {
+        matches.push(candidate);
       }
     }
 
-    return doc.querySelector("main") || doc.body || null;
+    return matches;
+  }
+
+  function appendUniqueNodes(target, source) {
+    if (!Array.isArray(target) || !Array.isArray(source)) {
+      return;
+    }
+
+    var i;
+    var j;
+    var candidate;
+    var exists;
+    for (i = 0; i < source.length; i += 1) {
+      candidate = source[i];
+      exists = false;
+
+      for (j = 0; j < target.length; j += 1) {
+        if (target[j] === candidate) {
+          exists = true;
+          break;
+        }
+      }
+
+      if (!exists) {
+        target.push(candidate);
+      }
+    }
+  }
+
+  function findSidebarScope(priceNode) {
+    if (!priceNode) {
+      return null;
+    }
+
+    if (typeof priceNode.closest === "function") {
+      var scoped = priceNode.closest('[class*="sidebar"], aside');
+      if (scoped) {
+        return scoped;
+      }
+    }
+
+    var current = priceNode;
+    var className;
+    while (current) {
+      className = getClassName(current);
+      if (typeof className === "string" && /sidebar/i.test(className)) {
+        return current;
+      }
+      current = current.parentNode;
+    }
+
+    return priceNode.parentNode || null;
+  }
+
+  function getRootNode(node) {
+    var current = node;
+    while (current && current.parentNode) {
+      current = current.parentNode;
+    }
+    return current;
+  }
+
+  function getChildIndex(node) {
+    if (!node || !node.parentNode || !node.parentNode.children) {
+      return -1;
+    }
+
+    var siblings = node.parentNode.children;
+    var i;
+    for (i = 0; i < siblings.length; i += 1) {
+      if (siblings[i] === node) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  function buildNodePath(node) {
+    if (!node) {
+      return null;
+    }
+
+    var path = [];
+    var current = node;
+    var index;
+    while (current && current.parentNode) {
+      index = getChildIndex(current);
+      if (index < 0) {
+        return null;
+      }
+      path.unshift(index);
+      current = current.parentNode;
+    }
+
+    return path;
+  }
+
+  function compareNodeOrder(left, right) {
+    if (!left || !right || left === right) {
+      return 0;
+    }
+
+    if (typeof left.compareDocumentPosition === "function") {
+      var relation = left.compareDocumentPosition(right);
+      if (relation & 4) {
+        return -1;
+      }
+      if (relation & 2) {
+        return 1;
+      }
+    }
+
+    if (getRootNode(left) !== getRootNode(right)) {
+      return 0;
+    }
+
+    var leftPath = buildNodePath(left);
+    var rightPath = buildNodePath(right);
+    if (!leftPath || !rightPath) {
+      return 0;
+    }
+
+    var minLength = Math.min(leftPath.length, rightPath.length);
+    var i;
+    for (i = 0; i < minLength; i += 1) {
+      if (leftPath[i] < rightPath[i]) {
+        return -1;
+      }
+      if (leftPath[i] > rightPath[i]) {
+        return 1;
+      }
+    }
+
+    if (leftPath.length < rightPath.length) {
+      return -1;
+    }
+    if (leftPath.length > rightPath.length) {
+      return 1;
+    }
+
+    return 0;
+  }
+
+  function findCtaNode(doc, priceNode) {
+    var candidates = [];
+
+    if (priceNode) {
+      appendUniqueNodes(candidates, collectCtaCandidates(findSidebarScope(priceNode)));
+      appendUniqueNodes(candidates, collectCtaCandidates(priceNode.parentNode));
+    }
+    appendUniqueNodes(candidates, collectCtaCandidates(doc));
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (!priceNode) {
+      return candidates[0];
+    }
+
+    var i;
+    var candidate;
+    for (i = 0; i < candidates.length; i += 1) {
+      candidate = candidates[i];
+      if (compareNodeOrder(priceNode, candidate) === -1) {
+        return candidate;
+      }
+    }
+
+    return candidates[0];
+  }
+
+  function findMountTarget(doc) {
+    if (!doc || typeof doc.querySelector !== "function") {
+      return null;
+    }
+
+    var priceNode = findFirstBySelectors(doc, [
+      'div[class*="Sidebar_price"]',
+      'div[class*="sidebar__price_"]'
+    ]);
+    var fallbackNode;
+
+    if (priceNode) {
+      return {
+        mountNode: priceNode,
+        mountPosition: "afterend",
+        strategy: "sidebar_price"
+      };
+    }
+
+    fallbackNode = doc.querySelector("main") || doc.body || null;
+    if (!fallbackNode) {
+      return null;
+    }
+
+    return {
+      mountNode: fallbackNode,
+      mountPosition: "afterend",
+      strategy: fallbackNode === doc.body ? "fallback_body" : "fallback_main"
+    };
+  }
+
+  function findMountNode(doc) {
+    var mountTarget = findMountTarget(doc);
+    return mountTarget && mountTarget.mountNode ? mountTarget.mountNode : null;
   }
 
   function openMetadataInNewTab(rawListing, listing) {
@@ -595,6 +810,8 @@
     var listing = options && options.listing ? options.listing : {};
     var metrics = options && options.metrics ? options.metrics : {};
     var mountNode = options && options.mountNode ? options.mountNode : null;
+    var mountPosition =
+      options && options.mountPosition === "beforebegin" ? "beforebegin" : "afterend";
     var rawListing = options && options.rawListing ? options.rawListing : null;
     var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
     var doc = (mountNode && mountNode.ownerDocument) || document;
@@ -669,7 +886,13 @@
     panel.appendChild(actions);
 
     if (mountNode.parentNode) {
-      if (typeof mountNode.insertAdjacentElement === "function") {
+      if (mountPosition === "beforebegin") {
+        if (typeof mountNode.insertAdjacentElement === "function") {
+          mountNode.insertAdjacentElement("beforebegin", panel);
+        } else {
+          mountNode.parentNode.insertBefore(panel, mountNode);
+        }
+      } else if (typeof mountNode.insertAdjacentElement === "function") {
         mountNode.insertAdjacentElement("afterend", panel);
       } else if (mountNode.nextSibling) {
         mountNode.parentNode.insertBefore(panel, mountNode.nextSibling);
@@ -686,6 +909,7 @@
   return {
     PANEL_ATTR: PANEL_ATTR,
     PANEL_ATTR_VALUE: PANEL_ATTR_VALUE,
+    findMountTarget: findMountTarget,
     findMountNode: findMountNode,
     removeExistingPanels: removeExistingPanels,
     renderPanel: renderPanel,
@@ -812,13 +1036,37 @@
     state.mutationObserver = null;
   }
 
+  function resolveMountTarget(doc) {
+    if (!Render) {
+      return null;
+    }
+
+    if (typeof Render.findMountTarget === "function") {
+      return Render.findMountTarget(doc);
+    }
+
+    if (typeof Render.findMountNode === "function") {
+      var legacyMountNode = Render.findMountNode(doc);
+      if (!legacyMountNode) {
+        return null;
+      }
+      return {
+        mountNode: legacyMountNode,
+        mountPosition: "afterend",
+        strategy: "legacy_mount_node"
+      };
+    }
+
+    return null;
+  }
+
   function renderUnavailable(statusMessage) {
     if (!Url.isListingPath(location.pathname)) {
       return;
     }
 
-    var mountNode = Render.findMountNode(document);
-    if (!mountNode) {
+    var mountTarget = resolveMountTarget(document);
+    if (!mountTarget || !mountTarget.mountNode) {
       return;
     }
 
@@ -840,7 +1088,8 @@
         expectedDropDays: null,
         expectedDropState: "insufficient_data"
       },
-      mountNode: mountNode,
+      mountNode: mountTarget.mountNode,
+      mountPosition: mountTarget.mountPosition,
       rawListing: null,
       statusMessage: statusMessage
     });
@@ -890,8 +1139,8 @@
       return;
     }
 
-    var mountNode = Render.findMountNode(document);
-    if (!mountNode) {
+    var mountTarget = resolveMountTarget(document);
+    if (!mountTarget || !mountTarget.mountNode) {
       scheduleRetry("missing_mount", attempt);
       return;
     }
@@ -900,7 +1149,8 @@
     Render.renderPanel({
       listing: listing,
       metrics: metrics,
-      mountNode: mountNode,
+      mountNode: mountTarget.mountNode,
+      mountPosition: mountTarget.mountPosition,
       rawListing: listing.rawListing
     });
 

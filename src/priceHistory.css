@@ -1,6 +1,6 @@
 .grailed-plus-panel {
-  margin: 12px 0 20px;
-  padding: 14px;
+  margin: 10px 0 16px;
+  padding: 12px;
   border: 1px solid #d9d9d9;
   background: #fff;
   color: #111;
@@ -10,7 +10,7 @@
 }
 
 .grailed-plus-panel__title {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
@@ -21,8 +21,8 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
-  padding: 6px 0;
+  gap: 14px;
+  padding: 5px 0;
   border-top: 1px solid #f1f1f1;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .grailed-plus__label {
-  min-width: 150px;
+  min-width: 138px;
   font-weight: 600;
 }
 
@@ -51,7 +51,7 @@
 }
 
 .grailed-plus__actions {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   justify-content: flex-end;
 }
@@ -61,7 +61,7 @@
   border: 1px solid rgb(225, 225, 225);
   background: #fff;
   color: #111;
-  padding: 8px 12px;
+  padding: 7px 11px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -73,4 +73,35 @@
 .grailed-plus__button:hover {
   background: #fafafa;
   border-color: black;
+}
+
+@media (max-width: 768px) {
+  .grailed-plus-panel {
+    margin: 8px 0 12px;
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .grailed-plus-panel__title {
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .grailed-plus__row {
+    gap: 10px;
+    padding: 4px 0;
+  }
+
+  .grailed-plus__label {
+    min-width: 118px;
+  }
+
+  .grailed-plus__actions {
+    margin-top: 8px;
+  }
+
+  .grailed-plus__button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
 }

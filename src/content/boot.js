@@ -117,13 +117,37 @@
     state.mutationObserver = null;
   }
 
+  function resolveMountTarget(doc) {
+    if (!Render) {
+      return null;
+    }
+
+    if (typeof Render.findMountTarget === "function") {
+      return Render.findMountTarget(doc);
+    }
+
+    if (typeof Render.findMountNode === "function") {
+      var legacyMountNode = Render.findMountNode(doc);
+      if (!legacyMountNode) {
+        return null;
+      }
+      return {
+        mountNode: legacyMountNode,
+        mountPosition: "afterend",
+        strategy: "legacy_mount_node"
+      };
+    }
+
+    return null;
+  }
+
   function renderUnavailable(statusMessage) {
     if (!Url.isListingPath(location.pathname)) {
       return;
     }
 
-    var mountNode = Render.findMountNode(document);
-    if (!mountNode) {
+    var mountTarget = resolveMountTarget(document);
+    if (!mountTarget || !mountTarget.mountNode) {
       return;
     }
 
@@ -145,7 +169,8 @@
         expectedDropDays: null,
         expectedDropState: "insufficient_data"
       },
-      mountNode: mountNode,
+      mountNode: mountTarget.mountNode,
+      mountPosition: mountTarget.mountPosition,
       rawListing: null,
       statusMessage: statusMessage
     });
@@ -195,8 +220,8 @@
       return;
     }
 
-    var mountNode = Render.findMountNode(document);
-    if (!mountNode) {
+    var mountTarget = resolveMountTarget(document);
+    if (!mountTarget || !mountTarget.mountNode) {
       scheduleRetry("missing_mount", attempt);
       return;
     }
@@ -205,7 +230,8 @@
     Render.renderPanel({
       listing: listing,
       metrics: metrics,
-      mountNode: mountNode,
+      mountNode: mountTarget.mountNode,
+      mountPosition: mountTarget.mountPosition,
       rawListing: listing.rawListing
     });
 

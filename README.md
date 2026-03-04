@@ -16,6 +16,7 @@ Grailed Plus restores price-history insights on modern grailed.com listing pages
 - Depop autocomparison with like / matching listings
 - Dark mode integration
 - Improved UI integration
+- Price History graph view
 
 ## Project Layout
 - `src/manifest.json`: Chrome MV3 manifest (primary beta target)
