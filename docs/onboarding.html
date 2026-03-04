@@ -1,10 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>ONBOARDING</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grailed Plus Onboarding</title>
+  <link rel="stylesheet" href="./mainStyle.css">
 </head>
 <body>
+  <main class="container">
+    <header class="header">
+      <h1 class="title">Grailed Plus Onboarding</h1>
+      <p class="subtitle">Get the MV3 beta running locally in Chrome.</p>
+    </header>
 
+    <section class="grid">
+      <article class="card">
+        <h2>Install Steps</h2>
+        <ol>
+          <li>Open <code>chrome://extensions</code>.</li>
+          <li>Enable <strong>Developer mode</strong>.</li>
+          <li>Click <strong>Load unpacked</strong>.</li>
+          <li>Select the repository <code>src/</code> folder.</li>
+          <li>Open any <code>https://www.grailed.com/listings/...</code> page.</li>
+        </ol>
+      </article>
+
+      <article class="card">
+        <h2>Smoke Test Checklist</h2>
+        <ul>
+          <li>Grailed Plus panel appears near listing price/info area</li>
+          <li>Price history + avg drop metrics render</li>
+          <li>Expected drop text renders (or graceful fallback)</li>
+          <li>Metadata button opens listing JSON in a new tab</li>
+          <li>No duplicate panel when navigating between listings</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Debug Toggle</h2>
+        <p>Enable debug logs from DevTools Console:</p>
+        <pre><code>localStorage.setItem("grailed-plus:debug", "1");
+location.reload();</code></pre>
+      </article>
+    </section>
+
+    <div class="links">
+      <a class="button" href="./index.html">Back to Docs Index</a>
+      <a class="button" href="./offboarding.html">Offboarding</a>
+    </div>
+  </main>
 </body>
 </html>

@@ -1,0 +1,12 @@
+{
+  "name": "grailed-plus",
+  "version": "2.0.0-beta.1",
+  "private": true,
+  "description": "Chrome-first MV3 beta for Grailed Plus",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.js",
+    "lint": "node scripts/lint.mjs",
+    "zip:chrome": "npm run build && node scripts/zip-chrome.mjs"
+  }
+}

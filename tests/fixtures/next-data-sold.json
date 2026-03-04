@@ -1,0 +1,21 @@
+{
+  "props": {
+    "pageProps": {
+      "listing": {
+        "id": "444",
+        "title": "Sold Listing",
+        "priceDrops": [350, 300, 275],
+        "createdAt": "2025-11-01T10:00:00.000Z",
+        "priceUpdatedAt": "2025-11-20T10:00:00.000Z",
+        "sold": true,
+        "prettyPath": "/listings/444-sold-listing",
+        "seller": {
+          "createdAt": "2019-06-15T00:00:00.000Z"
+        },
+        "unexpectedNested": {
+          "futureField": "kept in raw payload"
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,11 @@
     "48": "icons/grailed-48.png",
     "96": "icons/grailed-96.png"
   },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{f68ae042-4fad-4e1e-8973-49c8348058ed}"
+    }
+  },
   "host_permissions": [
     "*://*.grailed.com/listings/*"
   ],

@@ -1,10 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>OFFBOARDING</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grailed Plus Offboarding</title>
+  <link rel="stylesheet" href="./mainStyle.css">
 </head>
 <body>
+  <main class="container">
+    <header class="header">
+      <h1 class="title">Grailed Plus Offboarding</h1>
+      <p class="subtitle">Disable or remove the local beta cleanly.</p>
+    </header>
 
+    <section class="grid">
+      <article class="card">
+        <h2>Disable / Remove</h2>
+        <ol>
+          <li>Open <code>chrome://extensions</code>.</li>
+          <li>Find <strong>Grailed Plus</strong>.</li>
+          <li>Toggle it off to disable, or click <strong>Remove</strong> to uninstall.</li>
+        </ol>
+      </article>
+
+      <article class="card">
+        <h2>Cleanup Debug State</h2>
+        <p>If debug mode was enabled, clear it from DevTools Console:</p>
+        <pre><code>localStorage.removeItem("grailed-plus:debug");</code></pre>
+      </article>
+
+      <article class="card">
+        <h2>Known Beta Notes</h2>
+        <div class="notice danger">
+          If panel rendering stops after a major Grailed UI update, reload the page first. If still broken, capture console logs and listing URL for triage.
+        </div>
+      </article>
+    </section>
+
+    <div class="links">
+      <a class="button" href="./index.html">Back to Docs Index</a>
+      <a class="button" href="./onboarding.html">Onboarding</a>
+    </div>
+  </main>
 </body>
 </html>

@@ -1,0 +1,154 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --text: #121212;
+  --muted: #576171;
+  --line: #d9dee8;
+  --accent: #0a5fff;
+  --accent-soft: #e9f0ff;
+  --danger-soft: #ffeef0;
+  --danger-text: #b00020;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top right, #e9f0ff, transparent 35%), var(--bg);
+  color: var(--text);
+  font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.container {
+  width: min(960px, 92vw);
+  margin: 40px auto;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 38px);
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(18, 18, 18, 0.06);
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.card ul,
+.card ol {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.card li + li {
+  margin-top: 6px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--text);
+  background: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.button.primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.notice {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.notice.danger {
+  border-color: #f3c7cc;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+code,
+pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+code {
+  background: #eff3f8;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+pre {
+  margin: 10px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #f9fbff;
+}
+
+.footer {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
