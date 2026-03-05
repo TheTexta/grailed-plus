@@ -2,7 +2,9 @@
 
 Credit: Forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
 
-Grailed Plus restores price-history insights on modern grailed.com listing pages.
+Grailed Plus delivers listing insights on modern grailed.com listing pages.
+
+Latest release notes: `docs/release-notes-2.1.0-beta.0.md`
 
 ## Extension Store Description
 ### Project Overview
@@ -12,7 +14,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 
 ### Current Features
 
-- Price history
+- Listing insights panel
 - Average price drop
 - Next expected drop estimate
 - Seller account creation date
@@ -24,7 +26,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - Depop autocomparison with like / matching listings (Possible ML image checking for like listings)
 - ~Dark mode integration~ *Completed*
 - ~Improved UI integration~ *Completed*
-- Price History graph view
+- Price trend graph view
 - Updated logo and screenshots
 - ~Automatic currency conversion~ *Completed*
 - Better inspect (hover inspect without clicking)
@@ -33,19 +35,19 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - `src/manifest.json`: Chrome MV3 manifest
 - `src/manifest.firefox.json`: Firefox MV3 manifest template for Phase 2
 - `src/content/boot.js`: lifecycle + route transition handling
-- `src/data/extractListing.js`: `__NEXT_DATA__` extraction + listing normalization
-- `src/domain/metrics.js`: pricing and expected-drop calculations
+- `src/data/listingExtractor.js`: `__NEXT_DATA__` extraction + listing normalization
+- `src/domain/pricingInsights.js`: pricing trend and expected-drop calculations
 - `src/domain/settings.js`: selected currency persistence helpers
 - `src/domain/currency.js`: exchange-rate cache + conversion helpers
 - `src/domain/url.js`: listing URL parsing helpers
-- `src/ui/renderPanel.js`: panel rendering + mount heuristics
+- `src/ui/renderInsightsPanel.js`: listing insights panel rendering + mount heuristics
 - `src/ui/theme.js`: site-wide dark-mode attribute + CSS variable application
 - `src/options.html`: extension settings page
 - `src/options.js`: currency settings UI logic
-- `src/priceHistory.js`: generated content-script bundle
+- `src/contentScript.js`: generated content-script bundle
 
 ## Scripts
-- `npm run build`: rebuilds `src/priceHistory.js` from modules
+- `npm run build`: rebuilds `src/contentScript.js` from modules
 - `npm run test`: runs unit tests
 - `npm run lint`: syntax checks for source and tests
 - `npm run zip:chrome`: build + package a Chrome sideload zip into `artifacts/`

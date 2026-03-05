@@ -7,14 +7,17 @@
   globalThis.__grailedPlusBooted = true;
 
   var Url = globalThis.GrailedPlusUrl;
-  var Extract = globalThis.GrailedPlusExtractListing;
-  var Metrics = globalThis.GrailedPlusMetrics;
+  var ListingExtractor =
+    globalThis.GrailedPlusListingExtractor || globalThis.GrailedPlusExtractListing;
+  var PricingInsights =
+    globalThis.GrailedPlusPricingInsights || globalThis.GrailedPlusMetrics;
   var Settings = globalThis.GrailedPlusSettings;
   var Currency = globalThis.GrailedPlusCurrency;
-  var Render = globalThis.GrailedPlusRender;
+  var InsightsPanel =
+    globalThis.GrailedPlusInsightsPanel || globalThis.GrailedPlusRender;
   var Theme = globalThis.GrailedPlusTheme;
 
-  if (!Url || !Extract || !Metrics || !Render) {
+  if (!Url || !ListingExtractor || !PricingInsights || !InsightsPanel) {
     console.error("[Grailed+] Failed to initialize: missing modules");
     return;
   }
@@ -161,16 +164,16 @@
   }
 
   function resolveMountTarget(doc) {
-    if (!Render) {
+    if (!InsightsPanel) {
       return null;
     }
 
-    if (typeof Render.findMountTarget === "function") {
-      return Render.findMountTarget(doc);
+    if (typeof InsightsPanel.findMountTarget === "function") {
+      return InsightsPanel.findMountTarget(doc);
     }
 
-    if (typeof Render.findMountNode === "function") {
-      var legacyMountNode = Render.findMountNode(doc);
+    if (typeof InsightsPanel.findMountNode === "function") {
+      var legacyMountNode = InsightsPanel.findMountNode(doc);
       if (!legacyMountNode) {
         return null;
       }
@@ -179,6 +182,139 @@
         mountPosition: "afterend",
         strategy: "legacy_mount_node"
       };
+    }
+
+    return null;
+  }
+
+  function normalizeListingModel(listing) {
+    if (!listing || typeof listing !== "object") {
+      return {
+        id: null,
+        title: "",
+        createdAt: null,
+        pricing: {
+          history: [],
+          updatedAt: null
+        },
+        seller: {
+          createdAt: null
+        },
+        prettyPath: null,
+        sold: false,
+        rawListing: null,
+        sourceStatus: "missing_listing"
+      };
+    }
+
+    var existingPricing = listing.pricing && typeof listing.pricing === "object" ? listing.pricing : {};
+    var history = Array.isArray(existingPricing.history)
+      ? existingPricing.history
+      : Array.isArray(listing.priceDrops)
+      ? listing.priceDrops
+      : [];
+    var updatedAt =
+      typeof existingPricing.updatedAt === "string" || existingPricing.updatedAt === null
+        ? existingPricing.updatedAt
+        : listing.priceUpdatedAt || null;
+
+    return {
+      id: listing.id || null,
+      title: typeof listing.title === "string" ? listing.title : "",
+      createdAt: listing.createdAt || null,
+      pricing: {
+        history: history,
+        updatedAt: updatedAt
+      },
+      seller:
+        listing.seller && typeof listing.seller === "object"
+          ? {
+              createdAt: listing.seller.createdAt || null
+            }
+          : {
+              createdAt: null
+            },
+      prettyPath: listing.prettyPath || null,
+      sold: Boolean(listing.sold),
+      rawListing: listing.rawListing || null,
+      sourceStatus: listing.sourceStatus || "ok"
+    };
+  }
+
+  function computeListingInsights(listing) {
+    if (PricingInsights && typeof PricingInsights.computePricingInsights === "function") {
+      return PricingInsights.computePricingInsights(listing);
+    }
+
+    if (PricingInsights && typeof PricingInsights.computeMetrics === "function") {
+      var legacy = PricingInsights.computeMetrics({
+        priceDrops: listing && listing.pricing ? listing.pricing.history : [],
+        createdAt: listing ? listing.createdAt : null,
+        priceUpdatedAt: listing && listing.pricing ? listing.pricing.updatedAt : null
+      });
+      return {
+        averageDropAmountUsd: legacy && Number.isFinite(legacy.avgDropAmount) ? legacy.avgDropAmount : null,
+        averageDropPercent: legacy && Number.isFinite(legacy.avgDropPercent) ? legacy.avgDropPercent : null,
+        expectedNextDropDays:
+          legacy && Number.isFinite(legacy.expectedDropDays) ? legacy.expectedDropDays : null,
+        expectedDropState:
+          legacy && typeof legacy.expectedDropState === "string"
+            ? legacy.expectedDropState
+            : "insufficient_data",
+        totalDrops: legacy && Number.isFinite(legacy.totalDrops) ? legacy.totalDrops : 0
+      };
+    }
+
+    return {
+      averageDropAmountUsd: null,
+      averageDropPercent: null,
+      expectedNextDropDays: null,
+      expectedDropState: "insufficient_data",
+      totalDrops: 0
+    };
+  }
+
+  function renderListingInsightsPanel(options) {
+    if (InsightsPanel && typeof InsightsPanel.renderInsightsPanel === "function") {
+      return InsightsPanel.renderInsightsPanel(options);
+    }
+
+    if (InsightsPanel && typeof InsightsPanel.renderPanel === "function") {
+      var listing = normalizeListingModel(options && options.listing ? options.listing : null);
+      var metrics = options && options.metrics ? options.metrics : {};
+      var legacyMetrics = {
+        avgDropAmount:
+          Number.isFinite(metrics.averageDropAmountUsd) ? metrics.averageDropAmountUsd : null,
+        avgDropPercent:
+          Number.isFinite(metrics.averageDropPercent) ? metrics.averageDropPercent : null,
+        expectedDropDays:
+          Number.isFinite(metrics.expectedNextDropDays) ? metrics.expectedNextDropDays : null,
+        expectedDropState:
+          typeof metrics.expectedDropState === "string"
+            ? metrics.expectedDropState
+            : "insufficient_data",
+        totalDrops: Number.isFinite(metrics.totalDrops) ? metrics.totalDrops : 0
+      };
+
+      return InsightsPanel.renderPanel({
+        listing: {
+          id: listing.id,
+          title: listing.title,
+          priceDrops: listing.pricing.history,
+          createdAt: listing.createdAt,
+          priceUpdatedAt: listing.pricing.updatedAt,
+          seller: listing.seller,
+          prettyPath: listing.prettyPath,
+          sold: listing.sold,
+          rawListing: listing.rawListing
+        },
+        metrics: legacyMetrics,
+        mountNode: options && options.mountNode ? options.mountNode : null,
+        mountPosition: options && options.mountPosition ? options.mountPosition : "afterend",
+        rawListing: options && options.rawListing ? options.rawListing : null,
+        statusMessage: options && options.statusMessage ? options.statusMessage : "",
+        currencyContext: options && options.currencyContext ? options.currencyContext : null
+      });
     }
 
     return null;
@@ -379,17 +515,17 @@
       });
   }
 
-  function resolvePriceHistoryEnabled() {
+  function resolveListingInsightsEnabled() {
     var defaultEnabled =
-      Settings && typeof Settings.DEFAULT_PRICE_HISTORY_ENABLED === "boolean"
-        ? Settings.DEFAULT_PRICE_HISTORY_ENABLED
+      Settings && typeof Settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
+        ? Settings.DEFAULT_LISTING_INSIGHTS_ENABLED
         : true;
 
-    if (!Settings || typeof Settings.getPriceHistoryEnabled !== "function") {
+    if (!Settings || typeof Settings.getListingInsightsEnabled !== "function") {
       return Promise.resolve(defaultEnabled);
     }
 
-    return Settings.getPriceHistoryEnabled()
+    return Settings.getListingInsightsEnabled()
       .then(function (enabled) {
         return typeof enabled === "boolean" ? enabled : defaultEnabled;
       })
@@ -399,12 +535,12 @@
   }
 
   function applySidebarCurrency(currencyContext) {
-    if (!Render || typeof Render.applySidebarCurrency !== "function") {
+    if (!InsightsPanel || typeof InsightsPanel.applySidebarCurrency !== "function") {
       return false;
     }
 
     try {
-      return Render.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
+      return InsightsPanel.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
     } catch (_) {
       // Sidebar rewrite should never block panel rendering.
       return false;
@@ -412,12 +548,12 @@
   }
 
   function applyCardCurrency(currencyContext) {
-    if (!Render || typeof Render.applyCardCurrency !== "function") {
+    if (!InsightsPanel || typeof InsightsPanel.applyCardCurrency !== "function") {
       return false;
     }
 
     try {
-      return Render.applyCardCurrency(document, currencyContext || createUsdCurrencyContext());
+      return InsightsPanel.applyCardCurrency(document, currencyContext || createUsdCurrencyContext());
     } catch (_) {
       // Card rewrite should never block the rest of the extension.
       return false;
@@ -934,22 +1070,24 @@
         return;
       }
 
-      Render.renderPanel({
+      renderListingInsightsPanel({
         listing: {
           id: "unknown",
           title: "",
-          priceDrops: [],
           createdAt: null,
-          priceUpdatedAt: null,
+          pricing: {
+            history: [],
+            updatedAt: null
+          },
           seller: {
             createdAt: null
           },
           rawListing: null
         },
         metrics: {
-          avgDropAmount: null,
-          avgDropPercent: null,
-          expectedDropDays: null,
+          averageDropAmountUsd: null,
+          averageDropPercent: null,
+          expectedNextDropDays: null,
           expectedDropState: "insufficient_data"
         },
         mountNode: mountTarget.mountNode,
@@ -994,7 +1132,7 @@
       state.renderToken = nonListingToken;
       clearRetryTimer(true);
       disconnectHydrationObserver();
-      Render.removeExistingPanels(document);
+      InsightsPanel.removeExistingPanels(document);
       resolveCurrencyContext()
         .then(function (currencyContext) {
           if (nonListingToken !== state.renderToken || Url.isListingPath(location.pathname)) {
@@ -1018,17 +1156,17 @@
 
     syncCardCurrencyObserver(null);
 
-    resolvePriceHistoryEnabled().then(function (priceHistoryEnabled) {
+    resolveListingInsightsEnabled().then(function (listingInsightsEnabled) {
       if (!Url.isListingPath(location.pathname)) {
         return;
       }
 
-      if (!priceHistoryEnabled) {
+      if (!listingInsightsEnabled) {
         var disabledToken = state.renderToken + 1;
         state.renderToken = disabledToken;
         clearRetryTimer(true);
         disconnectHydrationObserver();
-        Render.removeExistingPanels(document);
+        InsightsPanel.removeExistingPanels(document);
 
         resolveCurrencyContext()
           .then(function (currencyContext) {
@@ -1040,7 +1178,7 @@
             applyCardCurrency(currencyContext);
             syncCardCurrencyObserver(null);
 
-            log("skipped_price_history_panel", {
+            log("skipped_listing_insights_panel", {
               reason: reason,
               attempt: attempt,
               currency: currencyContext.selectedCurrency
@@ -1059,13 +1197,13 @@
         return;
       }
 
-      var nextData = Extract.readNextDataFromDocument(document);
+      var nextData = ListingExtractor.readNextDataFromDocument(document);
       if (!nextData) {
         scheduleRetry("missing_next_data", attempt);
         return;
       }
 
-      var listing = Extract.extractListing(nextData);
+      var listing = normalizeListingModel(ListingExtractor.extractListing(nextData));
       if (!listing || !listing.id) {
         scheduleRetry("missing_listing", attempt);
         return;
@@ -1077,7 +1215,7 @@
         return;
       }
 
-      var metrics = Metrics.computeMetrics(listing);
+      var metrics = computeListingInsights(listing);
       var renderToken = state.renderToken + 1;
       state.renderToken = renderToken;
 
@@ -1087,7 +1225,7 @@
             return;
           }
 
-          Render.renderPanel({
+          renderListingInsightsPanel({
             listing: listing,
             metrics: metrics,
             mountNode: mountTarget.mountNode,
@@ -1115,7 +1253,7 @@
           }
 
           var fallbackCurrency = createUsdCurrencyContext();
-          Render.renderPanel({
+          renderListingInsightsPanel({
             listing: listing,
             metrics: metrics,
             mountNode: mountTarget.mountNode,

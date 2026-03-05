@@ -10,7 +10,7 @@ Apply the dark-mode inversion/filter treatment to the top navbar while preservin
 - Header/nav/merch menu subtree is explicitly excluded from filtered ancestors.
 - Result: native overscroll physics and sticky behavior are restored.
 
-Relevant selector pattern in [`src/priceHistory.css`](/Users/dexteryoung/Git Repos/grailed-plus/src/priceHistory.css):
+Relevant selector pattern in [`src/contentScript.css`](/Users/dexteryoung/Git Repos/grailed-plus/src/contentScript.css):
 - `#__next > :not(header[class*="SiteHeader_"])... { filter: ... }`
 
 ## Findings

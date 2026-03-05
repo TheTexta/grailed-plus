@@ -6,13 +6,13 @@ const assert = require("node:assert/strict");
 const {
   DEFAULT_CURRENCY,
   DEFAULT_CONVERSION_ENABLED,
-  DEFAULT_PRICE_HISTORY_ENABLED,
+  DEFAULT_LISTING_INSIGHTS_ENABLED,
   DEFAULT_DARK_MODE_ENABLED,
   DEFAULT_DARK_MODE_BEHAVIOR,
   DEFAULT_DARK_MODE_PRIMARY_COLOR,
   CURRENCY_STORAGE_KEY,
   CONVERSION_ENABLED_STORAGE_KEY,
-  PRICE_HISTORY_ENABLED_STORAGE_KEY,
+  LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
   DARK_MODE_ENABLED_STORAGE_KEY,
   DARK_MODE_BEHAVIOR_STORAGE_KEY,
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -23,8 +23,8 @@ const {
   setSelectedCurrency,
   getCurrencyConversionEnabled,
   setCurrencyConversionEnabled,
-  getPriceHistoryEnabled,
-  setPriceHistoryEnabled,
+  getListingInsightsEnabled,
+  setListingInsightsEnabled,
   getDarkModeEnabled,
   setDarkModeEnabled,
   getDarkModeBehavior,
@@ -181,7 +181,7 @@ test("setCurrencyConversionEnabled persists boolean values", async () => {
   }
 });
 
-test("getPriceHistoryEnabled defaults to enabled", async () => {
+test("getListingInsightsEnabled defaults to enabled", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
 
@@ -190,8 +190,8 @@ test("getPriceHistoryEnabled defaults to enabled", async () => {
   global.browser = undefined;
 
   try {
-    const enabled = await getPriceHistoryEnabled();
-    assert.equal(enabled, DEFAULT_PRICE_HISTORY_ENABLED);
+    const enabled = await getListingInsightsEnabled();
+    assert.equal(enabled, DEFAULT_LISTING_INSIGHTS_ENABLED);
     assert.equal(enabled, true);
   } finally {
     global.chrome = previousChrome;
@@ -199,7 +199,27 @@ test("getPriceHistoryEnabled defaults to enabled", async () => {
   }
 });
 
-test("setPriceHistoryEnabled persists boolean values", async () => {
+test("getListingInsightsEnabled ignores legacy key during hard cutover", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({
+    grailed_plus_price_history_enabled_v1: false
+  });
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getListingInsightsEnabled();
+    assert.equal(enabled, DEFAULT_LISTING_INSIGHTS_ENABLED);
+    assert.equal(enabled, true);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setListingInsightsEnabled persists boolean values", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
 
@@ -208,15 +228,15 @@ test("setPriceHistoryEnabled persists boolean values", async () => {
   global.browser = undefined;
 
   try {
-    const offResult = await setPriceHistoryEnabled(false);
+    const offResult = await setListingInsightsEnabled(false);
     assert.deepEqual(offResult, { ok: true });
-    assert.equal(chromeMock.__state[PRICE_HISTORY_ENABLED_STORAGE_KEY], false);
-    assert.equal(await getPriceHistoryEnabled(), false);
+    assert.equal(chromeMock.__state[LISTING_INSIGHTS_ENABLED_STORAGE_KEY], false);
+    assert.equal(await getListingInsightsEnabled(), false);
 
-    const onResult = await setPriceHistoryEnabled(true);
+    const onResult = await setListingInsightsEnabled(true);
     assert.deepEqual(onResult, { ok: true });
-    assert.equal(chromeMock.__state[PRICE_HISTORY_ENABLED_STORAGE_KEY], true);
-    assert.equal(await getPriceHistoryEnabled(), true);
+    assert.equal(chromeMock.__state[LISTING_INSIGHTS_ENABLED_STORAGE_KEY], true);
+    assert.equal(await getListingInsightsEnabled(), true);
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Grailed Plus",
-  "version": "2.0.0.1",
-  "description": "Price history and listing insights for grailed.com.",
+  "version": "2.1.0.0",
+  "description": "Listing insights, currency conversion, and dark mode for grailed.com.",
   "icons": {
     "48": "icons/grailed-48.png",
     "96": "icons/grailed-96.png"
@@ -28,10 +28,10 @@
         "*://*.grailed.com/*"
       ],
       "js": [
-        "priceHistory.js"
+        "contentScript.js"
       ],
       "css": [
-        "priceHistory.css"
+        "contentScript.css"
       ],
       "run_at": "document_idle"
     }

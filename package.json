@@ -1,6 +1,6 @@
 {
   "name": "grailed-plus",
-  "version": "2.0.0-beta.1",
+  "version": "2.1.0-beta.0",
   "private": true,
   "description": "Chrome-first MV3 beta for Grailed Plus",
   "scripts": {

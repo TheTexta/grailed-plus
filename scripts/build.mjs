@@ -8,17 +8,17 @@ const rootDir = path.resolve(__dirname, "..");
 
 const inputFiles = [
   "src/domain/url.js",
-  "src/data/listingAdapter.js",
-  "src/data/extractListing.js",
-  "src/domain/metrics.js",
+  "src/data/listingModel.js",
+  "src/data/listingExtractor.js",
+  "src/domain/pricingInsights.js",
   "src/domain/settings.js",
   "src/domain/currency.js",
-  "src/ui/renderPanel.js",
+  "src/ui/renderInsightsPanel.js",
   "src/ui/theme.js",
   "src/content/boot.js"
 ];
 
-const outputFile = path.join(rootDir, "src/priceHistory.js");
+const outputFile = path.join(rootDir, "src/contentScript.js");
 
 function readFile(relativePath) {
   const fullPath = path.join(rootDir, relativePath);

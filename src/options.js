@@ -145,30 +145,30 @@
     return Settings.setCurrencyConversionEnabled(Boolean(enabled));
   }
 
-  function loadPriceHistoryEnabled() {
+  function loadListingInsightsEnabled() {
     var fallbackEnabled =
-      Settings && typeof Settings.DEFAULT_PRICE_HISTORY_ENABLED === "boolean"
-        ? Settings.DEFAULT_PRICE_HISTORY_ENABLED
+      Settings && typeof Settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
+        ? Settings.DEFAULT_LISTING_INSIGHTS_ENABLED
         : true;
 
-    if (!Settings || typeof Settings.getPriceHistoryEnabled !== "function") {
+    if (!Settings || typeof Settings.getListingInsightsEnabled !== "function") {
       return Promise.resolve(fallbackEnabled);
     }
 
-    return Settings.getPriceHistoryEnabled().then(function (value) {
+    return Settings.getListingInsightsEnabled().then(function (value) {
       return typeof value === "boolean" ? value : fallbackEnabled;
     });
   }
 
-  function savePriceHistoryEnabled(enabled) {
-    if (!Settings || typeof Settings.setPriceHistoryEnabled !== "function") {
+  function saveListingInsightsEnabled(enabled) {
+    if (!Settings || typeof Settings.setListingInsightsEnabled !== "function") {
       return Promise.resolve({
         ok: false,
         error: "Settings module unavailable."
       });
     }
 
-    return Settings.setPriceHistoryEnabled(Boolean(enabled));
+    return Settings.setListingInsightsEnabled(Boolean(enabled));
   }
 
   function loadDarkModeEnabled() {
@@ -347,7 +347,7 @@
   function init() {
     var form = document.getElementById("currency-form");
     var enabledNode = document.getElementById("conversion-enabled");
-    var priceHistoryEnabledNode = document.getElementById("price-history-enabled");
+    var listingInsightsEnabledNode = document.getElementById("listing-insights-enabled");
     var selectNode = document.getElementById("currency-select");
     var customInputNode = document.getElementById("currency-custom");
     var darkModeEnabledNode = document.getElementById("dark-mode-enabled");
@@ -360,7 +360,7 @@
     if (
       !form ||
       !enabledNode ||
-      !priceHistoryEnabledNode ||
+      !listingInsightsEnabledNode ||
       !selectNode ||
       !customInputNode ||
       !darkModeEnabledNode ||
@@ -388,14 +388,14 @@
     Promise.all([
       loadSelectedCurrency(),
       loadConversionEnabled(),
-      loadPriceHistoryEnabled(),
+      loadListingInsightsEnabled(),
       loadDarkModeEnabled(),
       loadDarkModeBehavior(),
       loadDarkModePrimaryColor()
     ]).then(function (values) {
       var selectedCurrency = values[0];
       var enabled = values[1];
-      var priceHistoryEnabled = values[2];
+      var listingInsightsEnabled = values[2];
       var darkModeEnabled = values[3];
       var darkModeBehavior = values[4];
       var darkModePrimaryColor = values[5];
@@ -403,7 +403,7 @@
       applySelection(selectNode, customInputNode, selectedCurrency, curatedSet);
       enabledNode.checked = enabled;
       syncCurrencyInputs(selectNode, customInputNode, enabled);
-      priceHistoryEnabledNode.checked = priceHistoryEnabled;
+      listingInsightsEnabledNode.checked = listingInsightsEnabled;
       darkModeEnabledNode.checked = darkModeEnabled;
       darkModeBehaviorNode.value = darkModeBehavior;
       applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryColor);
@@ -424,8 +424,8 @@
       });
     }
 
-    if (typeof priceHistoryEnabledNode.addEventListener === "function") {
-      priceHistoryEnabledNode.addEventListener("change", function () {
+    if (typeof listingInsightsEnabledNode.addEventListener === "function") {
+      listingInsightsEnabledNode.addEventListener("change", function () {
         setStatus(statusNode, null, "");
       });
     }
@@ -474,7 +474,7 @@
         setStatus(statusNode, null, "");
 
         var conversionEnabled = Boolean(enabledNode.checked);
-        var priceHistoryEnabled = Boolean(priceHistoryEnabledNode.checked);
+        var listingInsightsEnabled = Boolean(listingInsightsEnabledNode.checked);
         var usingCustom = selectNode.value === "CUSTOM";
         var darkModeEnabled = Boolean(darkModeEnabledNode.checked);
         var darkModeBehavior = normalizeDarkModeBehavior(darkModeBehaviorNode.value);
@@ -522,7 +522,7 @@
             return Promise.all([
               saveSelectedCurrency(targetCode),
               saveConversionEnabled(conversionEnabled),
-              savePriceHistoryEnabled(priceHistoryEnabled),
+              saveListingInsightsEnabled(listingInsightsEnabled),
               saveDarkModeEnabled(darkModeEnabled),
               saveDarkModeBehavior(darkModeBehavior),
               saveDarkModePrimaryColor(darkModePrimaryColor)
@@ -552,9 +552,9 @@
           Settings && typeof Settings.DEFAULT_CONVERSION_ENABLED === "boolean"
             ? Settings.DEFAULT_CONVERSION_ENABLED
             : false;
-        var defaultPriceHistoryEnabled =
-          Settings && typeof Settings.DEFAULT_PRICE_HISTORY_ENABLED === "boolean"
-            ? Settings.DEFAULT_PRICE_HISTORY_ENABLED
+        var defaultListingInsightsEnabled =
+          Settings && typeof Settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
+            ? Settings.DEFAULT_LISTING_INSIGHTS_ENABLED
             : true;
         var defaultDarkModeEnabled =
           Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
@@ -570,7 +570,7 @@
         Promise.all([
           saveSelectedCurrency(defaultCurrency),
           saveConversionEnabled(defaultConversionEnabled),
-          savePriceHistoryEnabled(defaultPriceHistoryEnabled),
+          saveListingInsightsEnabled(defaultListingInsightsEnabled),
           saveDarkModeEnabled(defaultDarkModeEnabled),
           saveDarkModeBehavior(defaultDarkModeBehavior),
           saveDarkModePrimaryColor(defaultDarkModePrimaryColor)
@@ -586,7 +586,7 @@
           enabledNode.checked = defaultConversionEnabled;
           applySelection(selectNode, customInputNode, defaultCurrency, curatedSet);
           syncCurrencyInputs(selectNode, customInputNode, defaultConversionEnabled);
-          priceHistoryEnabledNode.checked = defaultPriceHistoryEnabled;
+          listingInsightsEnabledNode.checked = defaultListingInsightsEnabled;
 
           darkModeEnabledNode.checked = defaultDarkModeEnabled;
           darkModeBehaviorNode.value = defaultDarkModeBehavior;
