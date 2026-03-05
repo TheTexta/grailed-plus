@@ -10,29 +10,60 @@
     <main class="gp-options">
       <h1>Grailed Plus Settings</h1>
       <p class="gp-options__copy">
-        Choose a target currency for listing sidebar and Grailed Plus panel amounts.
+        Configure currency conversion and dark mode for Grailed pages.
       </p>
 
       <form id="currency-form" class="gp-options__form">
-        <label class="gp-options__toggle">
-          <input id="conversion-enabled" type="checkbox" />
-          <span>Enable currency conversion</span>
-        </label>
+        <section class="gp-options__section">
+          <h2 class="gp-options__section-title">Currency</h2>
+          <label class="gp-options__toggle">
+            <input id="conversion-enabled" type="checkbox" />
+            <span>Enable currency conversion</span>
+          </label>
 
-        <label for="currency-select" class="gp-options__label">Currency</label>
-        <select id="currency-select" class="gp-options__control"></select>
+          <label for="currency-select" class="gp-options__label">Currency</label>
+          <select id="currency-select" class="gp-options__control"></select>
 
-        <label for="currency-custom" class="gp-options__label">Custom 3-letter code</label>
-        <input
-          id="currency-custom"
-          class="gp-options__control"
-          type="text"
-          maxlength="3"
-          placeholder="e.g. SEK"
-          autocomplete="off"
-          spellcheck="false"
-          disabled
-        />
+          <label for="currency-custom" class="gp-options__label">Custom 3-letter code</label>
+          <input
+            id="currency-custom"
+            class="gp-options__control"
+            type="text"
+            maxlength="3"
+            placeholder="e.g. SEK"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+          />
+        </section>
+
+        <section class="gp-options__section">
+          <h2 class="gp-options__section-title">Dark Mode</h2>
+          <label class="gp-options__toggle">
+            <input id="dark-mode-enabled" type="checkbox" />
+            <span>Enable site-wide dark mode</span>
+          </label>
+
+          <label for="dark-mode-behavior" class="gp-options__label">Behavior</label>
+          <select id="dark-mode-behavior" class="gp-options__control">
+            <option value="system">Match device theme</option>
+            <option value="permanent">Permanent dark mode</option>
+          </select>
+
+          <label for="dark-mode-primary" class="gp-options__label">Primary color</label>
+          <div class="gp-options__color-row">
+            <input id="dark-mode-primary" class="gp-options__color" type="color" value="#000000" />
+            <input
+              id="dark-mode-primary-hex"
+              class="gp-options__control gp-options__control--hex"
+              type="text"
+              maxlength="7"
+              placeholder="#000000"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </section>
 
         <div class="gp-options__actions">
           <button type="submit" class="gp-options__button gp-options__button--primary">Save</button>
@@ -40,7 +71,7 @@
         </div>
       </form>
 
-      <p class="gp-options__hint">Changes apply after refreshing open listing tabs.</p>
+      <p class="gp-options__hint">Changes apply after refreshing open Grailed tabs.</p>
       <p id="status" class="gp-options__status" aria-live="polite"></p>
     </main>
 

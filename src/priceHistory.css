@@ -1,8 +1,464 @@
+:root {
+  --gp-dm-primary: #ffffff;
+  --gp-dm-primary-user: #000000;
+  --gp-dm-primary-safe: #ffffff;
+  --gp-dm-primary-safe-rgb: 255, 255, 255;
+  --gp-dm-invert-filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-grailed-plus-dark-mode="1"] {
+  background: #000 !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] body {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] #app {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-next-root="1"] #__next {
+  /* Keep transparent header rows from revealing a flat white strip. */
+  background-color: #171722 !important;
+  background-image: linear-gradient(
+    125deg,
+    rgba(22, 22, 25, 0.992) 0%,
+    rgba(32, 32, 36, 0.97) 46%,
+    rgba(25, 25, 29, 0.988) 100%
+  ) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/*
+ * Filtering an ancestor of fixed/sticky nav breaks native overscroll physics.
+ * Filter targets are assigned in boot.js via data-grailed-plus-filter-target.
+ */
+html[data-grailed-plus-dark-mode="1"] [data-grailed-plus-filter-target="1"] {
+  filter: var(--gp-dm-invert-filter);
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-custom-color="1"] [data-grailed-plus-filter-target="1"] {
+  background-color: var(--gp-dm-primary) !important;
+  background-image:
+    radial-gradient(130vmax 95vmax at 10% -10%, rgba(var(--gp-dm-primary-safe-rgb), 0.24) 0%, rgba(var(--gp-dm-primary-safe-rgb), 0.09) 43%, transparent 73%),
+    radial-gradient(110vmax 85vmax at 108% 2%, rgba(var(--gp-dm-primary-safe-rgb), 0.17) 0%, rgba(var(--gp-dm-primary-safe-rgb), 0.065) 37%, transparent 69%),
+    radial-gradient(120vmax 92vmax at 50% 112%, rgba(var(--gp-dm-primary-safe-rgb), 0.12) 0%, transparent 72%),
+    /* Use pre-inverted neutrals so final rendered gradient stays dark post inversion filter. */
+    linear-gradient(125deg, rgba(246, 246, 246, 0.992) 0%, rgba(236, 236, 236, 0.97) 46%, rgba(243, 243, 243, 0.988) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed, fixed, fixed, fixed !important;
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-custom-color="1"][data-grailed-plus-next-root="1"] #__next {
+  background-color: #171722 !important;
+  background-image:
+    radial-gradient(130vmax 95vmax at 10% -10%, rgba(var(--gp-dm-primary-safe-rgb), 0.23) 0%, rgba(var(--gp-dm-primary-safe-rgb), 0.08) 43%, transparent 73%),
+    radial-gradient(110vmax 85vmax at 108% 2%, rgba(var(--gp-dm-primary-safe-rgb), 0.165) 0%, rgba(var(--gp-dm-primary-safe-rgb), 0.06) 37%, transparent 69%),
+    radial-gradient(120vmax 92vmax at 50% 112%, rgba(var(--gp-dm-primary-safe-rgb), 0.115) 0%, transparent 72%),
+    linear-gradient(125deg, rgba(22, 22, 25, 0.992) 0%, rgba(32, 32, 36, 0.97) 46%, rgba(25, 25, 29, 0.988) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed, fixed, fixed, fixed !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [data-grailed-plus-filter-target="1"] img,
+html[data-grailed-plus-dark-mode="1"] [data-grailed-plus-filter-target="1"] video,
+html[data-grailed-plus-dark-mode="1"] [data-grailed-plus-filter-target="1"] canvas,
+html[data-grailed-plus-dark-mode="1"] [data-grailed-plus-filter-target="1"] iframe {
+  filter: var(--gp-dm-invert-filter) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="AuthenticationBadge_badge__"] {
+  /* Pre-inverted values so the global body invert yields white badge + black text. */
+  background: #000 !important;
+  color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="AuthenticationBadge_badge__"] [class*="AuthenticationBadge_text__"] {
+  color: #fff !important;
+}
+
+/* Unified header helper for both legacy (`Foo_bar__`) and module (`Foo-module__bar___`) classnames. */
+html[data-grailed-plus-dark-mode="1"] :is(
+  header[class*="SiteHeader"],
+  nav[class*="SiteHeader"]:is([class*="_nav__"], [class*="__nav__"]),
+  [class*="SiteHeader"]:is([class*="_siteHeader__"], [class*="__siteHeader__"]),
+  [class*="SiteHeader"]:is([class*="_container__"], [class*="__container__"]),
+  [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]),
+  [class*="SiteHeader"]:is([class*="_menu__"], [class*="__menu__"]),
+  [class*="SiteHeader"]:is([class*="_actions__"], [class*="__actions__"]),
+  [class*="SiteHeader"]:is([class*="_search__"], [class*="__search__"]),
+  [class*="SiteHeader"]:is([class*="_merchandisingMenu__"], [class*="__merchandisingMenu__"]),
+  [class*="Search"]:is([class*="_desktopSearch__"], [class*="__desktopSearch__"]),
+  [class*="Search"]:is([class*="_mobileSearch__"], [class*="__mobileSearch__"]),
+  [class*="Search"]:is([class*="_wrapper__"], [class*="__wrapper__"])
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+}
+
+/*
+ * Legacy/messages header is outside the filtered tree.
+ * Give it the same dark gradient family used on normal pages.
+ */
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-next-root="1"]) :is(
+  header[class*="SiteHeader"],
+  nav[class*="SiteHeader"]:is([class*="_nav__"], [class*="__nav__"]),
+  #globalHeader
+) {
+  background-color: #171722 !important;
+  background-image: linear-gradient(
+    125deg,
+    rgba(22, 22, 25, 0.992) 0%,
+    rgba(32, 32, 36, 0.97) 46%,
+    rgba(25, 25, 29, 0.988) 100%
+  ) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-custom-color="1"]:not([data-grailed-plus-next-root="1"]) :is(
+  header[class*="SiteHeader"],
+  nav[class*="SiteHeader"]:is([class*="_nav__"], [class*="__nav__"]),
+  #globalHeader
+) {
+  background-color: #171722 !important;
+  background-image:
+    radial-gradient(130vmax 95vmax at 10% -10%, rgba(var(--gp-dm-primary-safe-rgb), 0.23) 0%, rgba(var(--gp-dm-primary-safe-rgb), 0.08) 43%, transparent 73%),
+    radial-gradient(110vmax 85vmax at 108% 2%, rgba(var(--gp-dm-primary-safe-rgb), 0.165) 0%, rgba(var(--gp-dm-primary-safe-rgb), 0.06) 37%, transparent 69%),
+    radial-gradient(120vmax 92vmax at 50% 112%, rgba(var(--gp-dm-primary-safe-rgb), 0.115) 0%, transparent 72%),
+    linear-gradient(125deg, rgba(22, 22, 25, 0.992) 0%, rgba(32, 32, 36, 0.97) 46%, rgba(25, 25, 29, 0.988) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed, fixed, fixed, fixed !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] :is(
+  header[class*="SiteHeader"],
+  nav[class*="SiteHeader"]:is([class*="_nav__"], [class*="__nav__"]),
+  [class*="SiteHeader"]:is([class*="_siteHeader__"], [class*="__siteHeader__"]),
+  [class*="SiteHeader"]:is([class*="_container__"], [class*="__container__"]),
+  [class*="SiteHeader"]:is([class*="_menu__"], [class*="__menu__"]),
+  [class*="SiteHeader"]:is([class*="_actions__"], [class*="__actions__"]),
+  [class*="SiteHeader"]:is([class*="_search__"], [class*="__search__"]),
+  [class*="SiteHeader"]:is([class*="_merchandisingMenu__"], [class*="__merchandisingMenu__"]),
+  [class*="Search"]:is([class*="_desktopSearch__"], [class*="__desktopSearch__"]),
+  [class*="Search"]:is([class*="_wrapper__"], [class*="__wrapper__"])
+)::before,
+html[data-grailed-plus-dark-mode="1"] :is(
+  header[class*="SiteHeader"],
+  nav[class*="SiteHeader"]:is([class*="_nav__"], [class*="__nav__"]),
+  [class*="SiteHeader"]:is([class*="_siteHeader__"], [class*="__siteHeader__"]),
+  [class*="SiteHeader"]:is([class*="_container__"], [class*="__container__"]),
+  [class*="SiteHeader"]:is([class*="_menu__"], [class*="__menu__"]),
+  [class*="SiteHeader"]:is([class*="_actions__"], [class*="__actions__"]),
+  [class*="SiteHeader"]:is([class*="_search__"], [class*="__search__"]),
+  [class*="SiteHeader"]:is([class*="_merchandisingMenu__"], [class*="__merchandisingMenu__"]),
+  [class*="Search"]:is([class*="_desktopSearch__"], [class*="__desktopSearch__"]),
+  [class*="Search"]:is([class*="_wrapper__"], [class*="__wrapper__"])
+)::after {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"],
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] a,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] button,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]),
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"]) {
+  color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] a:hover,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] a:focus-visible,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] button:hover,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] button:focus-visible,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]):hover,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]):focus-visible,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"]):hover,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"]):focus-visible {
+  color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] svg [fill="black"] {
+  fill: currentColor !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]) {
+  color: #fff !important;
+  caret-color: #fff !important;
+  border-color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_input__"], [class*="__input__"])::placeholder {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):focus,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):active,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):focus-visible {
+  border-color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_searchButton__"], [class*="__searchButton__"]),
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_searchButton__"], [class*="__searchButton__"]):hover,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_searchButton__"], [class*="__searchButton__"]):focus-visible,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Search"]:is([class*="_searchButton__"], [class*="__searchButton__"]):active {
+  color: #000 !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Actions"]:is([class*="_border__"], [class*="__border__"]),
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Actions"]:is([class*="_border__"], [class*="__border__"]):hover,
+html[data-grailed-plus-dark-mode="1"] header[class*="SiteHeader"] [class*="Actions"]:is([class*="_border__"], [class*="__border__"]):focus-visible {
+  border-color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] :is(
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]),
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"]),
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]):hover,
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"]):hover,
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]):focus-visible,
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"]):focus-visible,
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"])[data-state],
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"])[data-state]
+) {
+  background: transparent !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] :is(
+  [class*="MerchandisingMenu"]:is([class*="_root__"], [class*="__root__"]),
+  [class*="MerchandisingMenu"]:is([class*="_list__"], [class*="__list__"]),
+  [class*="MerchandisingMenu"]:is([class*="_viewportContainer__"], [class*="__viewportContainer__"]),
+  [class*="MerchandisingMenu"]:is([class*="_content__"], [class*="__content__"]),
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]),
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"])
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="MerchandisingMenu"]:is([class*="_root__"], [class*="__root__"]) > div {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] :is(
+  [class*="MerchandisingMenu"]:is([class*="_root__"], [class*="__root__"]),
+  [class*="MerchandisingMenu"]:is([class*="_list__"], [class*="__list__"]),
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]),
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"])
+)::before,
+html[data-grailed-plus-dark-mode="1"] :is(
+  [class*="MerchandisingMenu"]:is([class*="_root__"], [class*="__root__"]),
+  [class*="MerchandisingMenu"]:is([class*="_list__"], [class*="__list__"]),
+  [class*="MerchandisingMenu"]:is([class*="_item__"], [class*="__item__"]),
+  [class*="MerchandisingMenu"]:is([class*="_trigger__"], [class*="__trigger__"])
+)::after {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-custom-color="1"]) [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]) {
+  /* Pre-inverted black yields a white final background after body inversion. */
+  background: #000 !important;
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-custom-color="1"] [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]) {
+  background: transparent !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]) video,
+html[data-grailed-plus-dark-mode="1"] [class*="Logo"]:is([class*="_logo__"], [class*="__logo__"]) {
+  filter: var(--gp-dm-invert-filter) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_wrapper__"], [class*="__wrapper__"]),
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_desktopSearch__"], [class*="__desktopSearch__"]),
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_mobileSearch__"], [class*="__mobileSearch__"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]),
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):focus,
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):active {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):-webkit-autofill,
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):-webkit-autofill:hover,
+html[data-grailed-plus-dark-mode="1"] [class*="Search"]:is([class*="_input__"], [class*="__input__"]):-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="RelatedSearches_singleRow__"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="RelatedSearch_search__"],
+html[data-grailed-plus-dark-mode="1"] [class*="RelatedSearch_search__"]:hover,
+html[data-grailed-plus-dark-mode="1"] [class*="RelatedSearch_search__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"] [class*="RelatedSearch_search__"]:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="RelatedSearch_search__"] [class*="RelatedSearch_title__"] {
+  color: #000 !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="AdditionalDetails_button__"],
+html[data-grailed-plus-dark-mode="1"] [class*="AdditionalDetails_button__"]:hover,
+html[data-grailed-plus-dark-mode="1"] [class*="AdditionalDetails_button__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"] [class*="AdditionalDetails_button__"]:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] button[class*="Button_button__"][class*="Button_secondary__"],
+html[data-grailed-plus-dark-mode="1"] button[class*="Button_button__"][class*="Button_secondary__"]:hover,
+html[data-grailed-plus-dark-mode="1"] button[class*="Button_button__"][class*="Button_secondary__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"] button[class*="Button_button__"][class*="Button_secondary__"]:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="TabButton-module__tabButton__"],
+html[data-grailed-plus-dark-mode="1"] [class*="TabButton-module__tabButton__"]:hover,
+html[data-grailed-plus-dark-mode="1"] [class*="TabButton-module__tabButton__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"] [class*="TabButton-module__tabButton__"]:active,
+html[data-grailed-plus-dark-mode="1"] [class*="TabButton-module__active__"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] .avatar-message-container,
+html[data-grailed-plus-dark-mode="1"] .activity-log-item-content,
+html[data-grailed-plus-dark-mode="1"] .activity-log-item-content.them,
+html[data-grailed-plus-dark-mode="1"] .activity-log-item-content.bot,
+html[data-grailed-plus-dark-mode="1"] .activity-log-item-content .messages,
+html[data-grailed-plus-dark-mode="1"] .activity-log-item-content .-disclaimer {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="Header_header__"],
+html[data-grailed-plus-dark-mode="1"] [class*="Header_statsAndAppliedFilters__"],
+html[data-grailed-plus-dark-mode="1"] [class*="Header_actions__"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="Header_filter__"],
+html[data-grailed-plus-dark-mode="1"] [class*="Header_filter__"]:hover,
+html[data-grailed-plus-dark-mode="1"] [class*="Header_filter__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"] [class*="Header_filter__"]:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="FeedAndFilters_feed__"],
+html[data-grailed-plus-dark-mode="1"] [class*="UserItemForFeed_feedItem__"],
+html[data-grailed-plus-dark-mode="1"] [class*="UserItem_root__"],
+html[data-grailed-plus-dark-mode="1"] [class*="UserItem_link__"],
+html[data-grailed-plus-dark-mode="1"] [class*="UserItem_details__"],
+html[data-grailed-plus-dark-mode="1"] [class*="UserItem_priceAndHeart__"],
+html[data-grailed-plus-dark-mode="1"] .listing-item-location {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/*
+ * Messages feed container uses `max-width + margin:auto`, which leaves unpainted side gutters.
+ * Convert outer spacing to padding so the filtered background fills the full viewport width.
+ */
+html[data-grailed-plus-dark-mode="1"] [class*="Container-module__container___"],
+html[data-grailed-plus-dark-mode="1"] [class*="Container_container__"] {
+  max-width: none !important;
+  margin: 0 !important;
+  padding-left: max(0px, calc((100vw - 1200px) / 2)) !important;
+  padding-right: max(0px, calc((100vw - 1200px) / 2)) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"],
+html[data-grailed-plus-dark-mode="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"]:hover,
+html[data-grailed-plus-dark-mode="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"]:active {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-next-root="1"] [data-grailed-plus-filter-target="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"],
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-next-root="1"] [data-grailed-plus-filter-target="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"]:hover,
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-next-root="1"] [data-grailed-plus-filter-target="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"]:focus-visible,
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-next-root="1"] [data-grailed-plus-filter-target="1"] [class*="ListingItemStack_slide__"] a[class*="ListingItemStack_listing__"]:active {
+  /* Inside the inverted filter target, pre-invert to render as rgba(0,0,0,0.2). */
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] [class*="CollapsibleFilterWrapper_collapsible__"],
+html[data-grailed-plus-dark-mode="1"] [class*="CollapsibleFilterWrapper_header__"],
+html[data-grailed-plus-dark-mode="1"] [class*="CollapsibleFilterWrapper_contentContainer__"],
+html[data-grailed-plus-dark-mode="1"] [class*="CollapsibleFilterWrapper_content__"],
+html[data-grailed-plus-dark-mode="1"] [class*="Collapsible_collapsibleContent__"],
+html[data-grailed-plus-dark-mode="1"] [class*="GroupHeader_header__"],
+html[data-grailed-plus-dark-mode="1"] [class*="GroupHeader_titleWrapper__"],
+html[data-grailed-plus-dark-mode="1"] [class*="RefinementList_container__"],
+html[data-grailed-plus-dark-mode="1"] [class*="RefinementList_customRefinements__"],
+html[data-grailed-plus-dark-mode="1"] [class*="RefinementItem_refinementItem__"],
+html[data-grailed-plus-dark-mode="1"] [class*="ColorRefinementList_container__"],
+html[data-grailed-plus-dark-mode="1"] [class*="ColorRefinementList_customRefinements__"],
+html[data-grailed-plus-dark-mode="1"] [class*="PriceFilter_container__"],
+html[data-grailed-plus-dark-mode="1"] [class*="PriceInput_priceInputWrapper__"],
+html[data-grailed-plus-dark-mode="1"] [class*="KeywordFilter_form__"],
+html[data-grailed-plus-dark-mode="1"] [class*="KeywordFilter_input__"],
+html[data-grailed-plus-dark-mode="1"] [class*="KeywordFilter_submitButton__"],
+html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortWidget__"],
+html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_list__"],
+html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 .grailed-plus-panel {
   margin: 10px 0 16px;
   padding: 12px;
   border: 1px solid #d9d9d9;
-  background: #fff;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
   color: #111;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 13px;
@@ -59,8 +515,8 @@
 .grailed-plus__button {
   appearance: none;
   border: 1px solid rgb(225, 225, 225);
-  background: #fff;
-  color: #111;
+  background: transparent !important;
+  color: #fff !important;
   padding: 7px 11px;
   font-size: 12px;
   font-weight: 600;
@@ -71,8 +527,26 @@
 }
 
 .grailed-plus__button:hover {
-  background: #fafafa;
-  border-color: black;
+  background: transparent !important;
+  border-color: #fff;
+}
+
+.grailed-plus__button:focus-visible,
+.grailed-plus__button:active {
+  background: transparent !important;
+  color: #fff !important;
+}
+
+html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel {
+  border-color: var(--gp-dm-primary);
+}
+
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__button {
+  border-color: var(--gp-dm-primary);
+}
+
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:hover {
+  border-color: var(--gp-dm-primary);
 }
 
 @media (max-width: 768px) {

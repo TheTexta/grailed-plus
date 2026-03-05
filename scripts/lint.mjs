@@ -14,6 +14,7 @@ const filesToCheck = [
   "src/domain/settings.js",
   "src/domain/currency.js",
   "src/ui/renderPanel.js",
+  "src/ui/theme.js",
   "src/content/boot.js",
   "src/options.js",
   "src/popup.js",
@@ -23,6 +24,7 @@ const filesToCheck = [
   "tests/listingAdapter.test.js",
   "tests/metrics.test.js",
   "tests/ui.test.js",
+  "tests/theme.test.js",
   "tests/settings.test.js",
   "tests/currency.test.js"
 ];

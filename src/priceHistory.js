@@ -453,9 +453,15 @@
 
   var DEFAULT_CURRENCY = "USD";
   var DEFAULT_CONVERSION_ENABLED = false;
+  var DEFAULT_DARK_MODE_ENABLED = true;
+  var DEFAULT_DARK_MODE_BEHAVIOR = "system";
+  var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
   var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
   var CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
   var CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
+  var DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
+  var DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
+  var DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -464,6 +470,51 @@
 
     var trimmed = input.trim().toUpperCase();
     if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function normalizeHexColor(input) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch && shortMatch[1]) {
+      var shortHex = shortMatch[1].toUpperCase();
+      return (
+        "#" +
+        shortHex.charAt(0) +
+        shortHex.charAt(0) +
+        shortHex.charAt(1) +
+        shortHex.charAt(1) +
+        shortHex.charAt(2) +
+        shortHex.charAt(2)
+      );
+    }
+
+    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (longMatch && longMatch[1]) {
+      return "#" + longMatch[1].toUpperCase();
+    }
+
+    return null;
+  }
+
+  function normalizeDarkModeBehavior(input) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toLowerCase();
+    if (trimmed !== "system" && trimmed !== "permanent") {
       return null;
     }
 
@@ -657,18 +708,192 @@
       });
   }
 
+  function getDarkModeEnabled() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_DARK_MODE_ENABLED);
+    }
+
+    return storageGet(storage, DARK_MODE_ENABLED_STORAGE_KEY)
+      .then(function (data) {
+        var storedValue = data && data[DARK_MODE_ENABLED_STORAGE_KEY];
+        return typeof storedValue === "boolean" ? storedValue : DEFAULT_DARK_MODE_ENABLED;
+      })
+      .catch(function () {
+        return DEFAULT_DARK_MODE_ENABLED;
+      });
+  }
+
+  function setDarkModeEnabled(enabled) {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[DARK_MODE_ENABLED_STORAGE_KEY] = Boolean(enabled);
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist dark mode status."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist dark mode status."
+        };
+      });
+  }
+
+  function getDarkModePrimaryColor() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_DARK_MODE_PRIMARY_COLOR);
+    }
+
+    return storageGet(storage, DARK_MODE_PRIMARY_COLOR_STORAGE_KEY)
+      .then(function (data) {
+        var normalized = normalizeHexColor(data && data[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY]);
+        return normalized || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+      })
+      .catch(function () {
+        return DEFAULT_DARK_MODE_PRIMARY_COLOR;
+      });
+  }
+
+  function getDarkModeBehavior() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_DARK_MODE_BEHAVIOR);
+    }
+
+    return storageGet(storage, DARK_MODE_BEHAVIOR_STORAGE_KEY)
+      .then(function (data) {
+        var normalized = normalizeDarkModeBehavior(data && data[DARK_MODE_BEHAVIOR_STORAGE_KEY]);
+        return normalized || DEFAULT_DARK_MODE_BEHAVIOR;
+      })
+      .catch(function () {
+        return DEFAULT_DARK_MODE_BEHAVIOR;
+      });
+  }
+
+  function setDarkModeBehavior(behavior) {
+    var normalized = normalizeDarkModeBehavior(behavior);
+    if (!normalized) {
+      return Promise.resolve({
+        ok: false,
+        error: "Dark mode behavior must be either 'system' or 'permanent'."
+      });
+    }
+
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[DARK_MODE_BEHAVIOR_STORAGE_KEY] = normalized;
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist dark mode behavior."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist dark mode behavior."
+        };
+      });
+  }
+
+  function setDarkModePrimaryColor(color) {
+    var normalized = normalizeHexColor(color);
+    if (!normalized) {
+      return Promise.resolve({
+        ok: false,
+        error: "Primary color must be a valid hex value."
+      });
+    }
+
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY] = normalized;
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist dark mode primary color."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist dark mode primary color."
+        };
+      });
+  }
+
   return {
     DEFAULT_CURRENCY: DEFAULT_CURRENCY,
     DEFAULT_CONVERSION_ENABLED: DEFAULT_CONVERSION_ENABLED,
+    DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
+    DEFAULT_DARK_MODE_BEHAVIOR: DEFAULT_DARK_MODE_BEHAVIOR,
+    DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
     CURATED_CURRENCIES: CURATED_CURRENCIES,
     CURRENCY_STORAGE_KEY: CURRENCY_STORAGE_KEY,
     CONVERSION_ENABLED_STORAGE_KEY: CONVERSION_ENABLED_STORAGE_KEY,
+    DARK_MODE_ENABLED_STORAGE_KEY: DARK_MODE_ENABLED_STORAGE_KEY,
+    DARK_MODE_BEHAVIOR_STORAGE_KEY: DARK_MODE_BEHAVIOR_STORAGE_KEY,
+    DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
     STORAGE_KEY: CURRENCY_STORAGE_KEY,
     normalizeCurrencyCode: normalizeCurrencyCode,
+    normalizeHexColor: normalizeHexColor,
+    normalizeDarkModeBehavior: normalizeDarkModeBehavior,
     getSelectedCurrency: getSelectedCurrency,
     setSelectedCurrency: setSelectedCurrency,
     getCurrencyConversionEnabled: getCurrencyConversionEnabled,
-    setCurrencyConversionEnabled: setCurrencyConversionEnabled
+    setCurrencyConversionEnabled: setCurrencyConversionEnabled,
+    getDarkModeEnabled: getDarkModeEnabled,
+    setDarkModeEnabled: setDarkModeEnabled,
+    getDarkModeBehavior: getDarkModeBehavior,
+    setDarkModeBehavior: setDarkModeBehavior,
+    getDarkModePrimaryColor: getDarkModePrimaryColor,
+    setDarkModePrimaryColor: setDarkModePrimaryColor
   };
 });
 
@@ -1887,6 +2112,339 @@
   };
 });
 
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusTheme = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  var DEFAULT_DARK_MODE_ENABLED = true;
+  var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
+  var DEFAULT_DARK_MODE_BASE_TONE = "#FFFFFF";
+  var ROOT_ATTR = "data-grailed-plus-dark-mode";
+  var ROOT_ATTR_VALUE = "1";
+  var CUSTOM_COLOR_ATTR = "data-grailed-plus-custom-color";
+  var CUSTOM_COLOR_ATTR_VALUE = "1";
+  var NEXT_ROOT_ATTR = "data-grailed-plus-next-root";
+  var NEXT_ROOT_ATTR_VALUE = "1";
+  var PRIMARY_COLOR_VAR = "--gp-dm-primary";
+  var PRIMARY_COLOR_USER_VAR = "--gp-dm-primary-user";
+  var PRIMARY_COLOR_SAFE_VAR = "--gp-dm-primary-safe";
+  var PRIMARY_COLOR_SAFE_RGB_VAR = "--gp-dm-primary-safe-rgb";
+  var DARK_MODE_TINT_SATURATION = 1;
+  var DARK_MODE_TINT_LIGHTNESS = 0.35;
+
+  function normalizeHexColor(input) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch && shortMatch[1]) {
+      var shortHex = shortMatch[1].toUpperCase();
+      return (
+        "#" +
+        shortHex.charAt(0) +
+        shortHex.charAt(0) +
+        shortHex.charAt(1) +
+        shortHex.charAt(1) +
+        shortHex.charAt(2) +
+        shortHex.charAt(2)
+      );
+    }
+
+    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (longMatch && longMatch[1]) {
+      return "#" + longMatch[1].toUpperCase();
+    }
+
+    return null;
+  }
+
+  function toHexChannel(value) {
+    var hex = value.toString(16).toUpperCase();
+    return hex.length === 1 ? "0" + hex : hex;
+  }
+
+  function clampUnit(value) {
+    if (value < 0) {
+      return 0;
+    }
+    if (value > 1) {
+      return 1;
+    }
+    return value;
+  }
+
+  function rgbToHsl(red, green, blue) {
+    var r = red / 255;
+    var g = green / 255;
+    var b = blue / 255;
+    var max = Math.max(r, g, b);
+    var min = Math.min(r, g, b);
+    var hue = 0;
+    var saturation = 0;
+    var lightness = (max + min) / 2;
+
+    if (max !== min) {
+      var diff = max - min;
+      saturation = lightness > 0.5 ? diff / (2 - max - min) : diff / (max + min);
+
+      if (max === r) {
+        hue = (g - b) / diff + (g < b ? 6 : 0);
+      } else if (max === g) {
+        hue = (b - r) / diff + 2;
+      } else {
+        hue = (r - g) / diff + 4;
+      }
+
+      hue = hue / 6;
+    }
+
+    return {
+      h: hue,
+      s: saturation,
+      l: lightness
+    };
+  }
+
+  function hueToRgb(p, q, t) {
+    var temp = t;
+    if (temp < 0) {
+      temp += 1;
+    }
+    if (temp > 1) {
+      temp -= 1;
+    }
+    if (temp < 1 / 6) {
+      return p + (q - p) * 6 * temp;
+    }
+    if (temp < 1 / 2) {
+      return q;
+    }
+    if (temp < 2 / 3) {
+      return p + (q - p) * (2 / 3 - temp) * 6;
+    }
+    return p;
+  }
+
+  function hslToRgb(hue, saturation, lightness) {
+    var h = hue;
+    var s = clampUnit(saturation);
+    var l = clampUnit(lightness);
+    var red;
+    var green;
+    var blue;
+
+    if (s === 0) {
+      red = l;
+      green = l;
+      blue = l;
+    } else {
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      red = hueToRgb(p, q, h + 1 / 3);
+      green = hueToRgb(p, q, h);
+      blue = hueToRgb(p, q, h - 1 / 3);
+    }
+
+    return {
+      r: Math.round(red * 255),
+      g: Math.round(green * 255),
+      b: Math.round(blue * 255)
+    };
+  }
+
+  function rotateHexHue(normalizedHex, degrees) {
+    var normalized = normalizeHexColor(normalizedHex);
+    if (!normalized) {
+      return null;
+    }
+
+    var red = parseInt(normalized.slice(1, 3), 16);
+    var green = parseInt(normalized.slice(3, 5), 16);
+    var blue = parseInt(normalized.slice(5, 7), 16);
+    var hsl = rgbToHsl(red, green, blue);
+    var normalizedDegrees = ((degrees % 360) + 360) % 360;
+    var hue = (hsl.h + normalizedDegrees / 360) % 1;
+    var rotated = hslToRgb(hue, hsl.s, hsl.l);
+
+    return "#" + toHexChannel(rotated.r) + toHexChannel(rotated.g) + toHexChannel(rotated.b);
+  }
+
+  function lockHexToHueOnly(normalizedHex) {
+    var normalized = normalizeHexColor(normalizedHex);
+    if (!normalized) {
+      return null;
+    }
+
+    var red = parseInt(normalized.slice(1, 3), 16);
+    var green = parseInt(normalized.slice(3, 5), 16);
+    var blue = parseInt(normalized.slice(5, 7), 16);
+    var hsl = rgbToHsl(red, green, blue);
+    var locked = hslToRgb(hsl.h, DARK_MODE_TINT_SATURATION, DARK_MODE_TINT_LIGHTNESS);
+
+    return "#" + toHexChannel(locked.r) + toHexChannel(locked.g) + toHexChannel(locked.b);
+  }
+
+  function invertHexColor(normalizedHex) {
+    var normalized = normalizeHexColor(normalizedHex);
+    if (!normalized) {
+      return null;
+    }
+
+    var red = 255 - parseInt(normalized.slice(1, 3), 16);
+    var green = 255 - parseInt(normalized.slice(3, 5), 16);
+    var blue = 255 - parseInt(normalized.slice(5, 7), 16);
+    return "#" + toHexChannel(red) + toHexChannel(green) + toHexChannel(blue);
+  }
+
+  function hexToRgbChannels(normalizedHex) {
+    var normalized = normalizeHexColor(normalizedHex);
+    if (!normalized) {
+      return null;
+    }
+
+    var red = parseInt(normalized.slice(1, 3), 16);
+    var green = parseInt(normalized.slice(3, 5), 16);
+    var blue = parseInt(normalized.slice(5, 7), 16);
+    return red + ", " + green + ", " + blue;
+  }
+
+  function normalizeDarkModeContext(context) {
+    var normalizedPrimary = normalizeHexColor(context && context.primaryColor);
+    var primaryColor = normalizedPrimary || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+    return {
+      enabled: Boolean(context && context.enabled),
+      primaryColor: primaryColor,
+      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR
+    };
+  }
+
+  function setAttribute(node, name, value) {
+    if (!node || typeof node.setAttribute !== "function") {
+      return;
+    }
+    node.setAttribute(name, value);
+  }
+
+  function removeAttribute(node, name) {
+    if (!node) {
+      return;
+    }
+    if (typeof node.removeAttribute === "function") {
+      node.removeAttribute(name);
+      return;
+    }
+    if (typeof node.setAttribute === "function") {
+      node.setAttribute(name, "");
+    }
+  }
+
+  function setCssVar(node, key, value) {
+    if (!node || !node.style || typeof node.style.setProperty !== "function") {
+      return;
+    }
+    node.style.setProperty(key, value);
+  }
+
+  function removeCssVar(node, key) {
+    if (!node || !node.style) {
+      return;
+    }
+    if (typeof node.style.removeProperty === "function") {
+      node.style.removeProperty(key);
+      return;
+    }
+    if (typeof node.style.setProperty === "function") {
+      node.style.setProperty(key, "");
+    }
+  }
+
+  function resolveRootNode(doc) {
+    if (!doc) {
+      return null;
+    }
+    return doc.documentElement || doc.body || null;
+  }
+
+  function hasNextRoot(doc) {
+    if (!doc || typeof doc.getElementById !== "function") {
+      return false;
+    }
+
+    return Boolean(doc.getElementById("__next"));
+  }
+
+  function applyDarkModeToDocument(doc, context) {
+    var rootNode = resolveRootNode(doc);
+    if (!rootNode) {
+      return false;
+    }
+
+    var normalizedContext = normalizeDarkModeContext(context);
+    if (!normalizedContext.enabled) {
+      removeAttribute(rootNode, ROOT_ATTR);
+      removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+      removeAttribute(rootNode, NEXT_ROOT_ATTR);
+      removeCssVar(rootNode, PRIMARY_COLOR_VAR);
+      removeCssVar(rootNode, PRIMARY_COLOR_USER_VAR);
+      removeCssVar(rootNode, PRIMARY_COLOR_SAFE_VAR);
+      removeCssVar(rootNode, PRIMARY_COLOR_SAFE_RGB_VAR);
+      return false;
+    }
+
+    setAttribute(rootNode, ROOT_ATTR, ROOT_ATTR_VALUE);
+    if (normalizedContext.customColorEnabled) {
+      setAttribute(rootNode, CUSTOM_COLOR_ATTR, CUSTOM_COLOR_ATTR_VALUE);
+    } else {
+      removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+    }
+    if (hasNextRoot(doc)) {
+      setAttribute(rootNode, NEXT_ROOT_ATTR, NEXT_ROOT_ATTR_VALUE);
+    } else {
+      removeAttribute(rootNode, NEXT_ROOT_ATTR);
+    }
+    setCssVar(rootNode, PRIMARY_COLOR_USER_VAR, normalizedContext.primaryColor);
+    var hueOnlyColor = lockHexToHueOnly(normalizedContext.primaryColor) || normalizedContext.primaryColor;
+    // Body uses "invert(1) hue-rotate(180deg)", so pre-transform custom color accordingly.
+    var hueRotatedColor = rotateHexHue(hueOnlyColor, 180) || hueOnlyColor;
+    var safeColor = invertHexColor(hueRotatedColor) || DEFAULT_DARK_MODE_BASE_TONE;
+    var safeColorRgb = hexToRgbChannels(safeColor) || "255, 255, 255";
+    setCssVar(rootNode, PRIMARY_COLOR_SAFE_VAR, safeColor);
+    setCssVar(rootNode, PRIMARY_COLOR_SAFE_RGB_VAR, safeColorRgb);
+    // Keep base tone stable; custom color is applied through targeted gradient accents.
+    setCssVar(rootNode, PRIMARY_COLOR_VAR, DEFAULT_DARK_MODE_BASE_TONE);
+    return true;
+  }
+
+  return {
+    DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
+    DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
+    ROOT_ATTR: ROOT_ATTR,
+    ROOT_ATTR_VALUE: ROOT_ATTR_VALUE,
+    CUSTOM_COLOR_ATTR: CUSTOM_COLOR_ATTR,
+    CUSTOM_COLOR_ATTR_VALUE: CUSTOM_COLOR_ATTR_VALUE,
+    NEXT_ROOT_ATTR: NEXT_ROOT_ATTR,
+    NEXT_ROOT_ATTR_VALUE: NEXT_ROOT_ATTR_VALUE,
+    PRIMARY_COLOR_VAR: PRIMARY_COLOR_VAR,
+    PRIMARY_COLOR_USER_VAR: PRIMARY_COLOR_USER_VAR,
+    PRIMARY_COLOR_SAFE_VAR: PRIMARY_COLOR_SAFE_VAR,
+    PRIMARY_COLOR_SAFE_RGB_VAR: PRIMARY_COLOR_SAFE_RGB_VAR,
+    normalizeHexColor: normalizeHexColor,
+    normalizeDarkModeContext: normalizeDarkModeContext,
+    applyDarkModeToDocument: applyDarkModeToDocument
+  };
+});
+
 (function () {
   "use strict";
 
@@ -1901,6 +2459,7 @@
   var Settings = globalThis.GrailedPlusSettings;
   var Currency = globalThis.GrailedPlusCurrency;
   var Render = globalThis.GrailedPlusRender;
+  var Theme = globalThis.GrailedPlusTheme;
 
   if (!Url || !Extract || !Metrics || !Render) {
     console.error("[Grailed+] Failed to initialize: missing modules");
@@ -1911,14 +2470,46 @@
   var RETRY_DELAY_MS = 500;
   var MAX_RETRY_WINDOW_MS = 15000;
   var URL_POLL_INTERVAL_MS = 1000;
+  var FILTER_TARGET_ATTR = "data-grailed-plus-filter-target";
+  var FILTER_TARGET_ATTR_VALUE = "1";
+  var FILTER_SCOPE_SKIP_ATTR = "data-grailed-plus-filter-skip";
+  var FILTER_SCOPE_SKIP_ATTR_VALUE = "1";
+  var HEADER_ROOT_SELECTOR = [
+    "header[class*='SiteHeader']",
+    "[class*='SiteHeader']:is([class*='_nav__'], [class*='__nav__'])",
+    "#globalHeader",
+    ".Page-Header",
+    "#siteBanner",
+    "#flash",
+    "#nav-overlay",
+    "#global-modal-container",
+    "header[id='globalHeader']",
+    /* Messages pages can pin this container near the global header on mobile. */
+    "[class*='FlashContainer']:is([class*='_flashContainer__'], [class*='__flashContainer__'])",
+    "[class*='FlashContainer']:is([class*='_mobileConversation__'], [class*='__mobileConversation__'])",
+    "[class*='FlashContainer_flashContainer__']",
+    "[class*='FlashContainer_mobileConversation__']"
+  ].join(", ");
+  var MENU_ROOT_SELECTOR =
+    "[class*='MerchandisingMenu']:is([class*='_root__'], [class*='__root__']), " +
+    "[class*='MerchandisingMenu']:is([class*='_list__'], [class*='__list__']), " +
+    "[class*='MerchandisingMenu']:is([class*='_viewportContainer__'], [class*='__viewportContainer__'])";
+  var FILTER_TARGET_REFRESH_DELAYS_MS = [120, 400, 1200, 2500, 5000];
 
   var state = {
-    lastUrl: String(location.href),
+    // Start empty so first navigation pass always applies theme state on initial load.
+    lastUrl: "",
     retryTimer: null,
     urlPollTimer: null,
     retryStartedAtMs: null,
     mutationObserver: null,
-    renderToken: 0
+    renderToken: 0,
+    darkModeToken: 0,
+    darkModeMediaQuery: null,
+    darkModeMediaListener: null,
+    filterScopeTick: null,
+    filterScopeDelayTimers: [],
+    filterScopeObserver: null
   };
 
   function isDebugEnabled() {
@@ -2057,6 +2648,120 @@
     return trimmed;
   }
 
+  function normalizeHexColor(input) {
+    if (Settings && typeof Settings.normalizeHexColor === "function") {
+      return Settings.normalizeHexColor(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch && shortMatch[1]) {
+      var shortHex = shortMatch[1].toUpperCase();
+      return (
+        "#" +
+        shortHex.charAt(0) +
+        shortHex.charAt(0) +
+        shortHex.charAt(1) +
+        shortHex.charAt(1) +
+        shortHex.charAt(2) +
+        shortHex.charAt(2)
+      );
+    }
+
+    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (longMatch && longMatch[1]) {
+      return "#" + longMatch[1].toUpperCase();
+    }
+
+    return null;
+  }
+
+  function normalizeDarkModeBehavior(input) {
+    if (Settings && typeof Settings.normalizeDarkModeBehavior === "function") {
+      return Settings.normalizeDarkModeBehavior(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toLowerCase();
+    if (trimmed !== "system" && trimmed !== "permanent") {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function getSystemDarkModeQuery() {
+    if (typeof globalThis.matchMedia !== "function") {
+      return null;
+    }
+
+    try {
+      return globalThis.matchMedia("(prefers-color-scheme: dark)");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function getSystemPrefersDark() {
+    var query = getSystemDarkModeQuery();
+    return Boolean(query && query.matches);
+  }
+
+  function createDefaultDarkModeContext() {
+    return {
+      enabled: getSystemPrefersDark(),
+      behavior: "system",
+      primaryColor: "#000000"
+    };
+  }
+
+  function resolveDarkModeContext() {
+    var defaultContext = createDefaultDarkModeContext();
+    if (!Settings) {
+      return Promise.resolve(defaultContext);
+    }
+
+    var enabledPromise =
+      typeof Settings.getDarkModeEnabled === "function"
+        ? Settings.getDarkModeEnabled()
+        : Promise.resolve(defaultContext.enabled);
+    var behaviorPromise =
+      typeof Settings.getDarkModeBehavior === "function"
+        ? Settings.getDarkModeBehavior()
+        : Promise.resolve(defaultContext.behavior);
+    var colorPromise =
+      typeof Settings.getDarkModePrimaryColor === "function"
+        ? Settings.getDarkModePrimaryColor()
+        : Promise.resolve(defaultContext.primaryColor);
+
+    return Promise.all([enabledPromise, behaviorPromise, colorPromise])
+      .then(function (values) {
+        var configuredEnabled = Boolean(values[0]);
+        var behavior = normalizeDarkModeBehavior(values[1]) || defaultContext.behavior;
+        var primaryColor = normalizeHexColor(values[2]) || defaultContext.primaryColor;
+        var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
+        return {
+          enabled: enabled,
+          behavior: behavior,
+          primaryColor: primaryColor
+        };
+      })
+      .catch(function () {
+        return defaultContext;
+      });
+  }
+
   function resolveCurrencyContext() {
     var defaultContext = createUsdCurrencyContext();
 
@@ -2124,6 +2829,345 @@
     } catch (_) {
       // Sidebar rewrite should never block panel rendering.
     }
+  }
+
+  function applyDarkMode(darkModeContext) {
+    if (Theme && typeof Theme.applyDarkModeToDocument === "function") {
+      try {
+        Theme.applyDarkModeToDocument(document, darkModeContext || createDefaultDarkModeContext());
+      } catch (_) {
+        // Theme application should not block the rest of the extension.
+      }
+    }
+
+    syncFilterScopeObserver(Boolean(darkModeContext && darkModeContext.enabled));
+    refreshFilterTargets();
+    scheduleFilterTargetsRefreshBurst();
+  }
+
+  function refreshDarkMode() {
+    var darkModeToken = state.darkModeToken + 1;
+    state.darkModeToken = darkModeToken;
+
+    resolveDarkModeContext().then(function (darkModeContext) {
+      if (darkModeToken !== state.darkModeToken) {
+        return;
+      }
+      applyDarkMode(darkModeContext);
+    });
+  }
+
+  function setupDarkModeMediaListener() {
+    if (state.darkModeMediaQuery) {
+      return;
+    }
+
+    var query = getSystemDarkModeQuery();
+    if (!query) {
+      return;
+    }
+
+    var onChange = function () {
+      refreshDarkMode();
+    };
+
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", onChange);
+    } else if (typeof query.addListener === "function") {
+      query.addListener(onChange);
+    } else {
+      return;
+    }
+
+    state.darkModeMediaQuery = query;
+    state.darkModeMediaListener = onChange;
+  }
+
+  function getThemeAttrOrFallback(key, fallback) {
+    if (!Theme || typeof Theme !== "object") {
+      return fallback;
+    }
+    return Theme[key] || fallback;
+  }
+
+  function clearFilterTargets() {
+    if (typeof document.querySelectorAll !== "function") {
+      return;
+    }
+
+    var nodes = document.querySelectorAll(
+      "[" + FILTER_TARGET_ATTR + "],[" + FILTER_SCOPE_SKIP_ATTR + "]"
+    );
+    var i;
+    var node;
+
+    for (i = 0; i < nodes.length; i += 1) {
+      node = nodes[i];
+      if (typeof node.removeAttribute === "function") {
+        node.removeAttribute(FILTER_TARGET_ATTR);
+        node.removeAttribute(FILTER_SCOPE_SKIP_ATTR);
+      }
+    }
+  }
+
+  function getDarkModeRootState() {
+    var rootNode = document.documentElement || null;
+    var bodyNode = document.body || null;
+    var nextRoot =
+      typeof document.getElementById === "function"
+        ? document.getElementById("__next")
+        : null;
+    var rootAttr = getThemeAttrOrFallback("ROOT_ATTR", "data-grailed-plus-dark-mode");
+    var nextRootAttr = getThemeAttrOrFallback("NEXT_ROOT_ATTR", "data-grailed-plus-next-root");
+    var rootEnabled = Boolean(rootNode && rootNode.getAttribute(rootAttr) === "1");
+    var nextRootEnabled = Boolean(rootNode && rootNode.getAttribute(nextRootAttr) === "1");
+    var filterRoot = null;
+    var mode = "none";
+
+    if (rootEnabled && nextRootEnabled && nextRoot) {
+      filterRoot = nextRoot;
+      mode = "next";
+    } else if (rootEnabled && bodyNode) {
+      filterRoot = bodyNode;
+      mode = "legacy";
+    }
+
+    return {
+      rootNode: rootNode,
+      bodyNode: bodyNode,
+      nextRoot: nextRoot,
+      enabled: Boolean(filterRoot),
+      mode: mode,
+      filterRoot: filterRoot
+    };
+  }
+
+  function containsHeaderBoundary(node, headerRoot) {
+    if (!node) {
+      return false;
+    }
+
+    if (headerRoot && node === headerRoot) {
+      return true;
+    }
+
+    if (typeof node.matches === "function") {
+      if (node.matches(HEADER_ROOT_SELECTOR) || node.matches(MENU_ROOT_SELECTOR)) {
+        return true;
+      }
+    }
+
+    if (typeof node.querySelector === "function") {
+      return Boolean(node.querySelector(HEADER_ROOT_SELECTOR + ", " + MENU_ROOT_SELECTOR));
+    }
+
+    return false;
+  }
+
+  function isDirectHeaderBoundary(node, headerRoot) {
+    if (!node) {
+      return false;
+    }
+
+    if (headerRoot && node === headerRoot) {
+      return true;
+    }
+
+    if (typeof node.matches !== "function") {
+      return false;
+    }
+
+    return Boolean(node.matches(HEADER_ROOT_SELECTOR) || node.matches(MENU_ROOT_SELECTOR));
+  }
+
+  function markFilterTargetsWithin(boundaryNode, headerRoot, depth) {
+    if (!boundaryNode || !boundaryNode.children || depth > 6) {
+      return;
+    }
+
+    var children = boundaryNode.children;
+    var i;
+    var child;
+    var hasBoundary;
+    var isDirectBoundary;
+
+    for (i = 0; i < children.length; i += 1) {
+      child = children[i];
+      isDirectBoundary = isDirectHeaderBoundary(child, headerRoot);
+
+      if (isDirectBoundary) {
+        if (typeof child.setAttribute === "function") {
+          child.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
+        }
+        continue;
+      }
+
+      hasBoundary = containsHeaderBoundary(child, headerRoot);
+
+      if (hasBoundary) {
+        if (typeof child.setAttribute === "function") {
+          child.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
+        }
+        markFilterTargetsWithin(child, headerRoot, depth + 1);
+        continue;
+      }
+
+      if (typeof child.setAttribute === "function") {
+        child.setAttribute(FILTER_TARGET_ATTR, FILTER_TARGET_ATTR_VALUE);
+      }
+    }
+  }
+
+  function refreshFilterTargets() {
+    clearFilterTargets();
+
+    var modeState = getDarkModeRootState();
+    if (!modeState.enabled) {
+      return;
+    }
+
+    var filterRoot = modeState.filterRoot;
+    if (!filterRoot || !filterRoot.children) {
+      return;
+    }
+
+    var headerRoot =
+      typeof filterRoot.querySelector === "function"
+        ? filterRoot.querySelector(HEADER_ROOT_SELECTOR)
+        : null;
+    var topChildren = filterRoot.children;
+    var i;
+    var topChild;
+    var hasBoundary;
+
+    for (i = 0; i < topChildren.length; i += 1) {
+      topChild = topChildren[i];
+      hasBoundary = containsHeaderBoundary(topChild, headerRoot);
+
+      if (hasBoundary) {
+        if (typeof topChild.setAttribute === "function") {
+          topChild.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
+        }
+        markFilterTargetsWithin(topChild, headerRoot, 0);
+        continue;
+      }
+
+      if (typeof topChild.setAttribute === "function") {
+        topChild.setAttribute(FILTER_TARGET_ATTR, FILTER_TARGET_ATTR_VALUE);
+      }
+    }
+  }
+
+  function scheduleFilterTargetsRefresh() {
+    if (state.filterScopeTick != null) {
+      return;
+    }
+
+    var run = function () {
+      state.filterScopeTick = null;
+      refreshFilterTargets();
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      state.filterScopeTick = globalThis.requestAnimationFrame(run);
+      return;
+    }
+
+    state.filterScopeTick = globalThis.setTimeout(run, 16);
+  }
+
+  function clearFilterTargetsRefreshDelayTimers() {
+    var timers = state.filterScopeDelayTimers || [];
+    var i;
+    for (i = 0; i < timers.length; i += 1) {
+      clearTimeout(timers[i]);
+    }
+    state.filterScopeDelayTimers = [];
+  }
+
+  function scheduleFilterTargetsRefreshBurst() {
+    var timers = [];
+    var i;
+    var delayMs;
+
+    clearFilterTargetsRefreshDelayTimers();
+    scheduleFilterTargetsRefresh();
+
+    for (i = 0; i < FILTER_TARGET_REFRESH_DELAYS_MS.length; i += 1) {
+      delayMs = FILTER_TARGET_REFRESH_DELAYS_MS[i];
+      timers.push(globalThis.setTimeout(scheduleFilterTargetsRefresh, delayMs));
+    }
+
+    state.filterScopeDelayTimers = timers;
+  }
+
+  function setupFilterScopeObserver() {
+    if (state.filterScopeObserver || typeof MutationObserver !== "function") {
+      return;
+    }
+
+    var root = document.body || document.documentElement;
+    if (!root) {
+      return;
+    }
+
+    var observer = new MutationObserver(function (mutations) {
+      var i;
+      var mutation;
+      var shouldRefresh = false;
+
+      for (i = 0; i < mutations.length; i += 1) {
+        mutation = mutations[i];
+        if (!mutation) {
+          continue;
+        }
+
+        if (mutation.type === "childList") {
+          if (
+            (mutation.addedNodes && mutation.addedNodes.length > 0) ||
+            (mutation.removedNodes && mutation.removedNodes.length > 0)
+          ) {
+            shouldRefresh = true;
+            break;
+          }
+          continue;
+        }
+
+        if (mutation.type === "attributes") {
+          shouldRefresh = true;
+          break;
+        }
+      }
+
+      if (shouldRefresh) {
+        scheduleFilterTargetsRefresh();
+      }
+    });
+
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "id"]
+    });
+
+    state.filterScopeObserver = observer;
+  }
+
+  function disconnectFilterScopeObserver() {
+    if (state.filterScopeObserver && typeof state.filterScopeObserver.disconnect === "function") {
+      state.filterScopeObserver.disconnect();
+    }
+    state.filterScopeObserver = null;
+  }
+
+  function syncFilterScopeObserver(enabled) {
+    if (!enabled) {
+      disconnectFilterScopeObserver();
+      return;
+    }
+
+    setupFilterScopeObserver();
   }
 
   function renderUnavailable(statusMessage) {
@@ -2282,6 +3326,7 @@
 
   function refresh(reason) {
     clearRetryTimer(true);
+    refreshDarkMode();
     run(reason, 0);
   }
 
@@ -2327,6 +3372,7 @@
   }
 
   setupNavigationListeners();
+  setupDarkModeMediaListener();
 
   if (document.readyState === "loading") {
     document.addEventListener(

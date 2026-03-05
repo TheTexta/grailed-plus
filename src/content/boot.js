@@ -12,6 +12,7 @@
   var Settings = globalThis.GrailedPlusSettings;
   var Currency = globalThis.GrailedPlusCurrency;
   var Render = globalThis.GrailedPlusRender;
+  var Theme = globalThis.GrailedPlusTheme;
 
   if (!Url || !Extract || !Metrics || !Render) {
     console.error("[Grailed+] Failed to initialize: missing modules");
@@ -22,14 +23,46 @@
   var RETRY_DELAY_MS = 500;
   var MAX_RETRY_WINDOW_MS = 15000;
   var URL_POLL_INTERVAL_MS = 1000;
+  var FILTER_TARGET_ATTR = "data-grailed-plus-filter-target";
+  var FILTER_TARGET_ATTR_VALUE = "1";
+  var FILTER_SCOPE_SKIP_ATTR = "data-grailed-plus-filter-skip";
+  var FILTER_SCOPE_SKIP_ATTR_VALUE = "1";
+  var HEADER_ROOT_SELECTOR = [
+    "header[class*='SiteHeader']",
+    "[class*='SiteHeader']:is([class*='_nav__'], [class*='__nav__'])",
+    "#globalHeader",
+    ".Page-Header",
+    "#siteBanner",
+    "#flash",
+    "#nav-overlay",
+    "#global-modal-container",
+    "header[id='globalHeader']",
+    /* Messages pages can pin this container near the global header on mobile. */
+    "[class*='FlashContainer']:is([class*='_flashContainer__'], [class*='__flashContainer__'])",
+    "[class*='FlashContainer']:is([class*='_mobileConversation__'], [class*='__mobileConversation__'])",
+    "[class*='FlashContainer_flashContainer__']",
+    "[class*='FlashContainer_mobileConversation__']"
+  ].join(", ");
+  var MENU_ROOT_SELECTOR =
+    "[class*='MerchandisingMenu']:is([class*='_root__'], [class*='__root__']), " +
+    "[class*='MerchandisingMenu']:is([class*='_list__'], [class*='__list__']), " +
+    "[class*='MerchandisingMenu']:is([class*='_viewportContainer__'], [class*='__viewportContainer__'])";
+  var FILTER_TARGET_REFRESH_DELAYS_MS = [120, 400, 1200, 2500, 5000];
 
   var state = {
-    lastUrl: String(location.href),
+    // Start empty so first navigation pass always applies theme state on initial load.
+    lastUrl: "",
     retryTimer: null,
     urlPollTimer: null,
     retryStartedAtMs: null,
     mutationObserver: null,
-    renderToken: 0
+    renderToken: 0,
+    darkModeToken: 0,
+    darkModeMediaQuery: null,
+    darkModeMediaListener: null,
+    filterScopeTick: null,
+    filterScopeDelayTimers: [],
+    filterScopeObserver: null
   };
 
   function isDebugEnabled() {
@@ -168,6 +201,120 @@
     return trimmed;
   }
 
+  function normalizeHexColor(input) {
+    if (Settings && typeof Settings.normalizeHexColor === "function") {
+      return Settings.normalizeHexColor(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch && shortMatch[1]) {
+      var shortHex = shortMatch[1].toUpperCase();
+      return (
+        "#" +
+        shortHex.charAt(0) +
+        shortHex.charAt(0) +
+        shortHex.charAt(1) +
+        shortHex.charAt(1) +
+        shortHex.charAt(2) +
+        shortHex.charAt(2)
+      );
+    }
+
+    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (longMatch && longMatch[1]) {
+      return "#" + longMatch[1].toUpperCase();
+    }
+
+    return null;
+  }
+
+  function normalizeDarkModeBehavior(input) {
+    if (Settings && typeof Settings.normalizeDarkModeBehavior === "function") {
+      return Settings.normalizeDarkModeBehavior(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toLowerCase();
+    if (trimmed !== "system" && trimmed !== "permanent") {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function getSystemDarkModeQuery() {
+    if (typeof globalThis.matchMedia !== "function") {
+      return null;
+    }
+
+    try {
+      return globalThis.matchMedia("(prefers-color-scheme: dark)");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function getSystemPrefersDark() {
+    var query = getSystemDarkModeQuery();
+    return Boolean(query && query.matches);
+  }
+
+  function createDefaultDarkModeContext() {
+    return {
+      enabled: getSystemPrefersDark(),
+      behavior: "system",
+      primaryColor: "#000000"
+    };
+  }
+
+  function resolveDarkModeContext() {
+    var defaultContext = createDefaultDarkModeContext();
+    if (!Settings) {
+      return Promise.resolve(defaultContext);
+    }
+
+    var enabledPromise =
+      typeof Settings.getDarkModeEnabled === "function"
+        ? Settings.getDarkModeEnabled()
+        : Promise.resolve(defaultContext.enabled);
+    var behaviorPromise =
+      typeof Settings.getDarkModeBehavior === "function"
+        ? Settings.getDarkModeBehavior()
+        : Promise.resolve(defaultContext.behavior);
+    var colorPromise =
+      typeof Settings.getDarkModePrimaryColor === "function"
+        ? Settings.getDarkModePrimaryColor()
+        : Promise.resolve(defaultContext.primaryColor);
+
+    return Promise.all([enabledPromise, behaviorPromise, colorPromise])
+      .then(function (values) {
+        var configuredEnabled = Boolean(values[0]);
+        var behavior = normalizeDarkModeBehavior(values[1]) || defaultContext.behavior;
+        var primaryColor = normalizeHexColor(values[2]) || defaultContext.primaryColor;
+        var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
+        return {
+          enabled: enabled,
+          behavior: behavior,
+          primaryColor: primaryColor
+        };
+      })
+      .catch(function () {
+        return defaultContext;
+      });
+  }
+
   function resolveCurrencyContext() {
     var defaultContext = createUsdCurrencyContext();
 
@@ -235,6 +382,345 @@
     } catch (_) {
       // Sidebar rewrite should never block panel rendering.
     }
+  }
+
+  function applyDarkMode(darkModeContext) {
+    if (Theme && typeof Theme.applyDarkModeToDocument === "function") {
+      try {
+        Theme.applyDarkModeToDocument(document, darkModeContext || createDefaultDarkModeContext());
+      } catch (_) {
+        // Theme application should not block the rest of the extension.
+      }
+    }
+
+    syncFilterScopeObserver(Boolean(darkModeContext && darkModeContext.enabled));
+    refreshFilterTargets();
+    scheduleFilterTargetsRefreshBurst();
+  }
+
+  function refreshDarkMode() {
+    var darkModeToken = state.darkModeToken + 1;
+    state.darkModeToken = darkModeToken;
+
+    resolveDarkModeContext().then(function (darkModeContext) {
+      if (darkModeToken !== state.darkModeToken) {
+        return;
+      }
+      applyDarkMode(darkModeContext);
+    });
+  }
+
+  function setupDarkModeMediaListener() {
+    if (state.darkModeMediaQuery) {
+      return;
+    }
+
+    var query = getSystemDarkModeQuery();
+    if (!query) {
+      return;
+    }
+
+    var onChange = function () {
+      refreshDarkMode();
+    };
+
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", onChange);
+    } else if (typeof query.addListener === "function") {
+      query.addListener(onChange);
+    } else {
+      return;
+    }
+
+    state.darkModeMediaQuery = query;
+    state.darkModeMediaListener = onChange;
+  }
+
+  function getThemeAttrOrFallback(key, fallback) {
+    if (!Theme || typeof Theme !== "object") {
+      return fallback;
+    }
+    return Theme[key] || fallback;
+  }
+
+  function clearFilterTargets() {
+    if (typeof document.querySelectorAll !== "function") {
+      return;
+    }
+
+    var nodes = document.querySelectorAll(
+      "[" + FILTER_TARGET_ATTR + "],[" + FILTER_SCOPE_SKIP_ATTR + "]"
+    );
+    var i;
+    var node;
+
+    for (i = 0; i < nodes.length; i += 1) {
+      node = nodes[i];
+      if (typeof node.removeAttribute === "function") {
+        node.removeAttribute(FILTER_TARGET_ATTR);
+        node.removeAttribute(FILTER_SCOPE_SKIP_ATTR);
+      }
+    }
+  }
+
+  function getDarkModeRootState() {
+    var rootNode = document.documentElement || null;
+    var bodyNode = document.body || null;
+    var nextRoot =
+      typeof document.getElementById === "function"
+        ? document.getElementById("__next")
+        : null;
+    var rootAttr = getThemeAttrOrFallback("ROOT_ATTR", "data-grailed-plus-dark-mode");
+    var nextRootAttr = getThemeAttrOrFallback("NEXT_ROOT_ATTR", "data-grailed-plus-next-root");
+    var rootEnabled = Boolean(rootNode && rootNode.getAttribute(rootAttr) === "1");
+    var nextRootEnabled = Boolean(rootNode && rootNode.getAttribute(nextRootAttr) === "1");
+    var filterRoot = null;
+    var mode = "none";
+
+    if (rootEnabled && nextRootEnabled && nextRoot) {
+      filterRoot = nextRoot;
+      mode = "next";
+    } else if (rootEnabled && bodyNode) {
+      filterRoot = bodyNode;
+      mode = "legacy";
+    }
+
+    return {
+      rootNode: rootNode,
+      bodyNode: bodyNode,
+      nextRoot: nextRoot,
+      enabled: Boolean(filterRoot),
+      mode: mode,
+      filterRoot: filterRoot
+    };
+  }
+
+  function containsHeaderBoundary(node, headerRoot) {
+    if (!node) {
+      return false;
+    }
+
+    if (headerRoot && node === headerRoot) {
+      return true;
+    }
+
+    if (typeof node.matches === "function") {
+      if (node.matches(HEADER_ROOT_SELECTOR) || node.matches(MENU_ROOT_SELECTOR)) {
+        return true;
+      }
+    }
+
+    if (typeof node.querySelector === "function") {
+      return Boolean(node.querySelector(HEADER_ROOT_SELECTOR + ", " + MENU_ROOT_SELECTOR));
+    }
+
+    return false;
+  }
+
+  function isDirectHeaderBoundary(node, headerRoot) {
+    if (!node) {
+      return false;
+    }
+
+    if (headerRoot && node === headerRoot) {
+      return true;
+    }
+
+    if (typeof node.matches !== "function") {
+      return false;
+    }
+
+    return Boolean(node.matches(HEADER_ROOT_SELECTOR) || node.matches(MENU_ROOT_SELECTOR));
+  }
+
+  function markFilterTargetsWithin(boundaryNode, headerRoot, depth) {
+    if (!boundaryNode || !boundaryNode.children || depth > 6) {
+      return;
+    }
+
+    var children = boundaryNode.children;
+    var i;
+    var child;
+    var hasBoundary;
+    var isDirectBoundary;
+
+    for (i = 0; i < children.length; i += 1) {
+      child = children[i];
+      isDirectBoundary = isDirectHeaderBoundary(child, headerRoot);
+
+      if (isDirectBoundary) {
+        if (typeof child.setAttribute === "function") {
+          child.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
+        }
+        continue;
+      }
+
+      hasBoundary = containsHeaderBoundary(child, headerRoot);
+
+      if (hasBoundary) {
+        if (typeof child.setAttribute === "function") {
+          child.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
+        }
+        markFilterTargetsWithin(child, headerRoot, depth + 1);
+        continue;
+      }
+
+      if (typeof child.setAttribute === "function") {
+        child.setAttribute(FILTER_TARGET_ATTR, FILTER_TARGET_ATTR_VALUE);
+      }
+    }
+  }
+
+  function refreshFilterTargets() {
+    clearFilterTargets();
+
+    var modeState = getDarkModeRootState();
+    if (!modeState.enabled) {
+      return;
+    }
+
+    var filterRoot = modeState.filterRoot;
+    if (!filterRoot || !filterRoot.children) {
+      return;
+    }
+
+    var headerRoot =
+      typeof filterRoot.querySelector === "function"
+        ? filterRoot.querySelector(HEADER_ROOT_SELECTOR)
+        : null;
+    var topChildren = filterRoot.children;
+    var i;
+    var topChild;
+    var hasBoundary;
+
+    for (i = 0; i < topChildren.length; i += 1) {
+      topChild = topChildren[i];
+      hasBoundary = containsHeaderBoundary(topChild, headerRoot);
+
+      if (hasBoundary) {
+        if (typeof topChild.setAttribute === "function") {
+          topChild.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
+        }
+        markFilterTargetsWithin(topChild, headerRoot, 0);
+        continue;
+      }
+
+      if (typeof topChild.setAttribute === "function") {
+        topChild.setAttribute(FILTER_TARGET_ATTR, FILTER_TARGET_ATTR_VALUE);
+      }
+    }
+  }
+
+  function scheduleFilterTargetsRefresh() {
+    if (state.filterScopeTick != null) {
+      return;
+    }
+
+    var run = function () {
+      state.filterScopeTick = null;
+      refreshFilterTargets();
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      state.filterScopeTick = globalThis.requestAnimationFrame(run);
+      return;
+    }
+
+    state.filterScopeTick = globalThis.setTimeout(run, 16);
+  }
+
+  function clearFilterTargetsRefreshDelayTimers() {
+    var timers = state.filterScopeDelayTimers || [];
+    var i;
+    for (i = 0; i < timers.length; i += 1) {
+      clearTimeout(timers[i]);
+    }
+    state.filterScopeDelayTimers = [];
+  }
+
+  function scheduleFilterTargetsRefreshBurst() {
+    var timers = [];
+    var i;
+    var delayMs;
+
+    clearFilterTargetsRefreshDelayTimers();
+    scheduleFilterTargetsRefresh();
+
+    for (i = 0; i < FILTER_TARGET_REFRESH_DELAYS_MS.length; i += 1) {
+      delayMs = FILTER_TARGET_REFRESH_DELAYS_MS[i];
+      timers.push(globalThis.setTimeout(scheduleFilterTargetsRefresh, delayMs));
+    }
+
+    state.filterScopeDelayTimers = timers;
+  }
+
+  function setupFilterScopeObserver() {
+    if (state.filterScopeObserver || typeof MutationObserver !== "function") {
+      return;
+    }
+
+    var root = document.body || document.documentElement;
+    if (!root) {
+      return;
+    }
+
+    var observer = new MutationObserver(function (mutations) {
+      var i;
+      var mutation;
+      var shouldRefresh = false;
+
+      for (i = 0; i < mutations.length; i += 1) {
+        mutation = mutations[i];
+        if (!mutation) {
+          continue;
+        }
+
+        if (mutation.type === "childList") {
+          if (
+            (mutation.addedNodes && mutation.addedNodes.length > 0) ||
+            (mutation.removedNodes && mutation.removedNodes.length > 0)
+          ) {
+            shouldRefresh = true;
+            break;
+          }
+          continue;
+        }
+
+        if (mutation.type === "attributes") {
+          shouldRefresh = true;
+          break;
+        }
+      }
+
+      if (shouldRefresh) {
+        scheduleFilterTargetsRefresh();
+      }
+    });
+
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "id"]
+    });
+
+    state.filterScopeObserver = observer;
+  }
+
+  function disconnectFilterScopeObserver() {
+    if (state.filterScopeObserver && typeof state.filterScopeObserver.disconnect === "function") {
+      state.filterScopeObserver.disconnect();
+    }
+    state.filterScopeObserver = null;
+  }
+
+  function syncFilterScopeObserver(enabled) {
+    if (!enabled) {
+      disconnectFilterScopeObserver();
+      return;
+    }
+
+    setupFilterScopeObserver();
   }
 
   function renderUnavailable(statusMessage) {
@@ -393,6 +879,7 @@
 
   function refresh(reason) {
     clearRetryTimer(true);
+    refreshDarkMode();
     run(reason, 0);
   }
 
@@ -438,6 +925,7 @@
   }
 
   setupNavigationListeners();
+  setupDarkModeMediaListener();
 
   if (document.readyState === "loading") {
     document.addEventListener(

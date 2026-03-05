@@ -3,6 +3,8 @@
 
   var Settings = globalThis.GrailedPlusSettings;
   var Currency = globalThis.GrailedPlusCurrency;
+  var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
+  var DEFAULT_DARK_MODE_BEHAVIOR = "system";
 
   var CURRENCY_LABELS = {
     USD: "USD - US Dollar",
@@ -24,6 +26,59 @@
 
     var trimmed = input.trim().toUpperCase();
     if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function normalizeHexColor(input) {
+    if (Settings && typeof Settings.normalizeHexColor === "function") {
+      return Settings.normalizeHexColor(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch && shortMatch[1]) {
+      var shortHex = shortMatch[1].toUpperCase();
+      return (
+        "#" +
+        shortHex.charAt(0) +
+        shortHex.charAt(0) +
+        shortHex.charAt(1) +
+        shortHex.charAt(1) +
+        shortHex.charAt(2) +
+        shortHex.charAt(2)
+      );
+    }
+
+    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (longMatch && longMatch[1]) {
+      return "#" + longMatch[1].toUpperCase();
+    }
+
+    return null;
+  }
+
+  function normalizeDarkModeBehavior(input) {
+    if (Settings && typeof Settings.normalizeDarkModeBehavior === "function") {
+      return Settings.normalizeDarkModeBehavior(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toLowerCase();
+    if (trimmed !== "system" && trimmed !== "permanent") {
       return null;
     }
 
@@ -88,6 +143,82 @@
     }
 
     return Settings.setCurrencyConversionEnabled(Boolean(enabled));
+  }
+
+  function loadDarkModeEnabled() {
+    var fallbackEnabled =
+      Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
+        ? Settings.DEFAULT_DARK_MODE_ENABLED
+        : true;
+
+    if (!Settings || typeof Settings.getDarkModeEnabled !== "function") {
+      return Promise.resolve(fallbackEnabled);
+    }
+
+    return Settings.getDarkModeEnabled().then(function (value) {
+      return typeof value === "boolean" ? value : fallbackEnabled;
+    });
+  }
+
+  function loadDarkModePrimaryColor() {
+    var fallbackColor = normalizeHexColor(
+      Settings && Settings.DEFAULT_DARK_MODE_PRIMARY_COLOR
+    ) || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+
+    if (!Settings || typeof Settings.getDarkModePrimaryColor !== "function") {
+      return Promise.resolve(fallbackColor);
+    }
+
+    return Settings.getDarkModePrimaryColor().then(function (value) {
+      return normalizeHexColor(value) || fallbackColor;
+    });
+  }
+
+  function loadDarkModeBehavior() {
+    var fallbackBehavior = normalizeDarkModeBehavior(
+      Settings && Settings.DEFAULT_DARK_MODE_BEHAVIOR
+    ) || DEFAULT_DARK_MODE_BEHAVIOR;
+
+    if (!Settings || typeof Settings.getDarkModeBehavior !== "function") {
+      return Promise.resolve(fallbackBehavior);
+    }
+
+    return Settings.getDarkModeBehavior().then(function (value) {
+      return normalizeDarkModeBehavior(value) || fallbackBehavior;
+    });
+  }
+
+  function saveDarkModeEnabled(enabled) {
+    if (!Settings || typeof Settings.setDarkModeEnabled !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setDarkModeEnabled(Boolean(enabled));
+  }
+
+  function saveDarkModePrimaryColor(color) {
+    if (!Settings || typeof Settings.setDarkModePrimaryColor !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setDarkModePrimaryColor(color);
+  }
+
+  function saveDarkModeBehavior(behavior) {
+    if (!Settings || typeof Settings.setDarkModeBehavior !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setDarkModeBehavior(behavior);
   }
 
   function validateCustomCurrency(code) {
@@ -166,15 +297,51 @@
     customInputNode.value = selectedCurrency;
   }
 
+  function syncDarkModeInputs(enabledNode, behaviorNode, colorPickerNode, colorHexNode) {
+    if (!enabledNode || !behaviorNode || !colorPickerNode || !colorHexNode) {
+      return;
+    }
+
+    var enabled = Boolean(enabledNode.checked);
+    behaviorNode.disabled = !enabled;
+    colorPickerNode.disabled = !enabled;
+    colorHexNode.disabled = !enabled;
+  }
+
+  function applyDarkModeColor(colorPickerNode, colorHexNode, color) {
+    if (!colorPickerNode || !colorHexNode) {
+      return;
+    }
+
+    var normalized = normalizeHexColor(color) || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+    colorPickerNode.value = normalized;
+    colorHexNode.value = normalized;
+  }
+
   function init() {
     var form = document.getElementById("currency-form");
     var enabledNode = document.getElementById("conversion-enabled");
     var selectNode = document.getElementById("currency-select");
     var customInputNode = document.getElementById("currency-custom");
+    var darkModeEnabledNode = document.getElementById("dark-mode-enabled");
+    var darkModeBehaviorNode = document.getElementById("dark-mode-behavior");
+    var darkModePrimaryNode = document.getElementById("dark-mode-primary");
+    var darkModePrimaryHexNode = document.getElementById("dark-mode-primary-hex");
     var resetButton = document.getElementById("reset-button");
     var statusNode = document.getElementById("status");
 
-    if (!form || !enabledNode || !selectNode || !customInputNode || !resetButton || !statusNode) {
+    if (
+      !form ||
+      !enabledNode ||
+      !selectNode ||
+      !customInputNode ||
+      !darkModeEnabledNode ||
+      !darkModeBehaviorNode ||
+      !darkModePrimaryNode ||
+      !darkModePrimaryHexNode ||
+      !resetButton ||
+      !statusNode
+    ) {
       return;
     }
 
@@ -190,13 +357,26 @@
 
     buildCuratedOptions(selectNode, curatedCurrencies);
 
-    Promise.all([loadSelectedCurrency(), loadConversionEnabled()]).then(function (values) {
+    Promise.all([
+      loadSelectedCurrency(),
+      loadConversionEnabled(),
+      loadDarkModeEnabled(),
+      loadDarkModeBehavior(),
+      loadDarkModePrimaryColor()
+    ]).then(function (values) {
       var selectedCurrency = values[0];
       var enabled = values[1];
+      var darkModeEnabled = values[2];
+      var darkModeBehavior = values[3];
+      var darkModePrimaryColor = values[4];
 
       applySelection(selectNode, customInputNode, selectedCurrency, curatedSet);
       enabledNode.checked = enabled;
       syncCurrencyInputs(selectNode, customInputNode, enabled);
+      darkModeEnabledNode.checked = darkModeEnabled;
+      darkModeBehaviorNode.value = darkModeBehavior;
+      applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryColor);
+      syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModePrimaryNode, darkModePrimaryHexNode);
     });
 
     if (typeof selectNode.addEventListener === "function") {
@@ -213,6 +393,41 @@
       });
     }
 
+    if (typeof darkModeEnabledNode.addEventListener === "function") {
+      darkModeEnabledNode.addEventListener("change", function () {
+        syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModePrimaryNode, darkModePrimaryHexNode);
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof darkModeBehaviorNode.addEventListener === "function") {
+      darkModeBehaviorNode.addEventListener("change", function () {
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof darkModePrimaryNode.addEventListener === "function") {
+      darkModePrimaryNode.addEventListener("input", function () {
+        applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryNode.value);
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof darkModePrimaryHexNode.addEventListener === "function") {
+      darkModePrimaryHexNode.addEventListener("input", function () {
+        darkModePrimaryHexNode.value = String(darkModePrimaryHexNode.value || "").toUpperCase();
+        var normalized = normalizeHexColor(darkModePrimaryHexNode.value);
+        if (normalized) {
+          darkModePrimaryNode.value = normalized;
+        }
+        setStatus(statusNode, null, "");
+      });
+
+      darkModePrimaryHexNode.addEventListener("blur", function () {
+        applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryHexNode.value);
+      });
+    }
+
     if (typeof form.addEventListener === "function") {
       form.addEventListener("submit", function (event) {
         if (event && typeof event.preventDefault === "function") {
@@ -223,7 +438,10 @@
 
         var conversionEnabled = Boolean(enabledNode.checked);
         var usingCustom = selectNode.value === "CUSTOM";
+        var darkModeEnabled = Boolean(darkModeEnabledNode.checked);
+        var darkModeBehavior = normalizeDarkModeBehavior(darkModeBehaviorNode.value);
         var targetCode = null;
+        var darkModePrimaryColor = normalizeHexColor(darkModePrimaryHexNode.value || darkModePrimaryNode.value);
 
         if (usingCustom) {
           targetCode = normalizeCurrencyCode(customInputNode.value);
@@ -239,6 +457,18 @@
           }
         }
 
+        if (!darkModePrimaryColor) {
+          setStatus(statusNode, "error", "Primary color must be a valid hex value.");
+          return;
+        }
+
+        if (!darkModeBehavior) {
+          setStatus(statusNode, "error", "Dark mode behavior must be either system or permanent.");
+          return;
+        }
+
+        applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryColor);
+
         var validationPromise = Promise.resolve({ ok: true });
         if (usingCustom && conversionEnabled) {
           validationPromise = validateCustomCurrency(targetCode);
@@ -251,25 +481,22 @@
               return Promise.reject(new Error("validation_failed"));
             }
 
-            return saveSelectedCurrency(targetCode).then(function (savedCurrency) {
-              if (!savedCurrency.ok) {
-                setStatus(statusNode, "error", savedCurrency.error || "Unable to save settings.");
-                return Promise.reject(new Error("save_currency_failed"));
+            return Promise.all([
+              saveSelectedCurrency(targetCode),
+              saveConversionEnabled(conversionEnabled),
+              saveDarkModeEnabled(darkModeEnabled),
+              saveDarkModeBehavior(darkModeBehavior),
+              saveDarkModePrimaryColor(darkModePrimaryColor)
+            ]).then(function (results) {
+              var i;
+              for (i = 0; i < results.length; i += 1) {
+                if (!results[i] || !results[i].ok) {
+                  setStatus(statusNode, "error", (results[i] && results[i].error) || "Unable to save settings.");
+                  return Promise.reject(new Error("save_failed"));
+                }
               }
 
-              return saveConversionEnabled(conversionEnabled).then(function (savedEnabled) {
-                if (!savedEnabled.ok) {
-                  setStatus(statusNode, "error", savedEnabled.error || "Unable to save settings.");
-                  return Promise.reject(new Error("save_enabled_failed"));
-                }
-
-                if (!conversionEnabled) {
-                  setStatus(statusNode, "success", "Saved. Currency conversion is currently disabled.");
-                  return;
-                }
-
-                setStatus(statusNode, "success", "Saved. Refresh open listing tabs to apply.");
-              });
+              setStatus(statusNode, "success", "Saved. Refresh open Grailed tabs to apply.");
             });
           })
           .catch(function () {
@@ -280,19 +507,48 @@
 
     if (typeof resetButton.addEventListener === "function") {
       resetButton.addEventListener("click", function () {
-        Promise.all([saveSelectedCurrency("USD"), saveConversionEnabled(false)]).then(function (results) {
-          var savedCurrency = results[0];
-          var savedEnabled = results[1];
+        var defaultCurrency =
+          Settings && typeof Settings.DEFAULT_CURRENCY === "string" ? Settings.DEFAULT_CURRENCY : "USD";
+        var defaultConversionEnabled =
+          Settings && typeof Settings.DEFAULT_CONVERSION_ENABLED === "boolean"
+            ? Settings.DEFAULT_CONVERSION_ENABLED
+            : false;
+        var defaultDarkModeEnabled =
+          Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
+            ? Settings.DEFAULT_DARK_MODE_ENABLED
+            : true;
+        var defaultDarkModeBehavior =
+          normalizeDarkModeBehavior(Settings && Settings.DEFAULT_DARK_MODE_BEHAVIOR) ||
+          DEFAULT_DARK_MODE_BEHAVIOR;
+        var defaultDarkModePrimaryColor =
+          normalizeHexColor(Settings && Settings.DEFAULT_DARK_MODE_PRIMARY_COLOR) ||
+          DEFAULT_DARK_MODE_PRIMARY_COLOR;
 
-          if (!savedCurrency.ok || !savedEnabled.ok) {
-            setStatus(statusNode, "error", "Unable to reset settings.");
-            return;
+        Promise.all([
+          saveSelectedCurrency(defaultCurrency),
+          saveConversionEnabled(defaultConversionEnabled),
+          saveDarkModeEnabled(defaultDarkModeEnabled),
+          saveDarkModeBehavior(defaultDarkModeBehavior),
+          saveDarkModePrimaryColor(defaultDarkModePrimaryColor)
+        ]).then(function (results) {
+          var i;
+          for (i = 0; i < results.length; i += 1) {
+            if (!results[i] || !results[i].ok) {
+              setStatus(statusNode, "error", "Unable to reset settings.");
+              return;
+            }
           }
 
-          enabledNode.checked = false;
-          applySelection(selectNode, customInputNode, "USD", curatedSet);
-          syncCurrencyInputs(selectNode, customInputNode, false);
-          setStatus(statusNode, "success", "Reset to defaults (conversion disabled, currency USD).");
+          enabledNode.checked = defaultConversionEnabled;
+          applySelection(selectNode, customInputNode, defaultCurrency, curatedSet);
+          syncCurrencyInputs(selectNode, customInputNode, defaultConversionEnabled);
+
+          darkModeEnabledNode.checked = defaultDarkModeEnabled;
+          darkModeBehaviorNode.value = defaultDarkModeBehavior;
+          applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, defaultDarkModePrimaryColor);
+          syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModePrimaryNode, darkModePrimaryHexNode);
+
+          setStatus(statusNode, "success", "Reset to defaults.");
         });
       });
     }

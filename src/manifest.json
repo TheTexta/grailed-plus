@@ -11,7 +11,7 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.grailed.com/listings/*",
+    "*://*.grailed.com/*",
     "https://api.frankfurter.app/*"
   ],
   "action": {
@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.grailed.com/listings/*"
+        "*://*.grailed.com/*"
       ],
       "js": [
         "priceHistory.js"

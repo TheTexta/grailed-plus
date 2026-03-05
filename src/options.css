@@ -39,7 +39,28 @@ body {
 
 .gp-options__form {
   display: grid;
+  gap: 14px;
+}
+
+.gp-options__section {
+  display: grid;
   gap: 10px;
+}
+
+.gp-options__section-title {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--gp-border);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--gp-muted);
+}
+
+.gp-options__section:first-child .gp-options__section-title {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .gp-options__label {
@@ -69,6 +90,29 @@ body {
   font-size: 14px;
   background: #fff;
   color: var(--gp-text);
+}
+
+.gp-options__control:disabled {
+  opacity: 0.6;
+}
+
+.gp-options__color-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gp-options__color {
+  width: 56px;
+  height: 42px;
+  border: 1px solid var(--gp-border);
+  background: #fff;
+  padding: 0;
+  cursor: pointer;
+}
+
+.gp-options__control--hex {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .gp-options__actions {

@@ -314,9 +314,9 @@ test("renderPanel shows converted + USD values when currency context has a rate"
   const avgValueNode = findValueNodeByLabel(panel, "Avg. Price Drop");
   assert.ok(historyValueNode);
   assert.ok(avgValueNode);
-  assert.match(historyValueNode.getAttribute("title"), /Original USD:/);
+  assert.match(historyValueNode.getAttribute("title"), /USD:/);
   assert.match(historyValueNode.getAttribute("title"), /\$1,000/);
-  assert.equal(avgValueNode.getAttribute("title"), "Original USD: $95");
+  assert.equal(avgValueNode.getAttribute("title"), "USD: $95");
 });
 
 test("renderPanel falls back to USD-only values when no conversion rate is available", () => {
@@ -359,7 +359,7 @@ test("applySidebarCurrency converts and restores the sidebar price", () => {
   assert.match(price.textContent, /€450/);
   assert.match(price.textContent, /€/);
   assert.doesNotMatch(price.textContent, /\(\$500\)/);
-  assert.equal(price.getAttribute("title"), "Original USD: $500");
+  assert.equal(price.getAttribute("title"), "USD: $500");
 
   const restored = applySidebarCurrency(doc, {
     selectedCurrency: "USD",
@@ -392,7 +392,7 @@ test("applySidebarCurrency preserves nested price markup and classes", () => {
   assert.match(priceValue.textContent, /€450/);
   assert.match(priceValue.textContent, /€/);
   assert.doesNotMatch(priceValue.textContent, /\(\$500\)/);
-  assert.equal(priceValue.getAttribute("title"), "Original USD: $500");
+  assert.equal(priceValue.getAttribute("title"), "USD: $500");
 
   const restored = applySidebarCurrency(doc, {
     selectedCurrency: "USD",
@@ -426,8 +426,8 @@ test("applySidebarCurrency converts strike and current listing prices without US
   assert.match(pricePrevious.textContent, /585/);
   assert.doesNotMatch(pricePrevious.textContent, /€/);
   assert.match(priceValue.textContent, /€450/);
-  assert.equal(pricePrevious.getAttribute("title"), "Original USD: $650");
-  assert.equal(priceValue.getAttribute("title"), "Original USD: $500");
+  assert.equal(pricePrevious.getAttribute("title"), "USD: $650");
+  assert.equal(priceValue.getAttribute("title"), "USD: $500");
   assert.doesNotMatch(pricePrevious.textContent, /\(\$/);
   assert.doesNotMatch(priceValue.textContent, /\(\$/);
 

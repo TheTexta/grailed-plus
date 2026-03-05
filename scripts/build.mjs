@@ -14,6 +14,7 @@ const inputFiles = [
   "src/domain/settings.js",
   "src/domain/currency.js",
   "src/ui/renderPanel.js",
+  "src/ui/theme.js",
   "src/content/boot.js"
 ];
 

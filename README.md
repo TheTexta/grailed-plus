@@ -18,14 +18,16 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - Seller account creation date
 - Listing metadata button (opens listing JSON in a new tab)
 - Automatic currency conversion (USD -> selected currency with tooltip original pricing shown on hover)
+- Site-wide dark mode with customizable primary color
 
 ## Planned Features
 - Depop autocomparison with like / matching listings (Possible ML image checking for like listings)
-- Dark mode integration
+- ~Dark mode integration~ *Completed*
 - ~Improved UI integration~ *Completed*
 - Price History graph view
 - Updated logo and screenshots
 - ~Automatic currency conversion~ *Completed*
+- Better inspect (hover inspect without clicking)
 
 ## Project Layout
 - `src/manifest.json`: Chrome MV3 manifest
@@ -37,6 +39,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - `src/domain/currency.js`: exchange-rate cache + conversion helpers
 - `src/domain/url.js`: listing URL parsing helpers
 - `src/ui/renderPanel.js`: panel rendering + mount heuristics
+- `src/ui/theme.js`: site-wide dark-mode attribute + CSS variable application
 - `src/options.html`: extension settings page
 - `src/options.js`: currency settings UI logic
 - `src/priceHistory.js`: generated content-script bundle
@@ -66,3 +69,23 @@ Notes:
 - Exchange rates are fetched from Frankfurter (`https://api.frankfurter.app/latest?base=USD`).
 - Rates are cached in `chrome.storage.local` for 1 hour.
 - If network fetch fails, stale cache is used when available; otherwise values remain in USD.
+
+## Dark Mode Settings
+1. Open **Grailed Plus Settings**.
+2. Turn on **Enable site-wide dark mode**.
+3. Choose behavior:
+   - `Match device theme` (default)
+   - `Permanent dark mode`
+4. Choose a primary color (picker or hex value, default `#000000`).
+5. Save and refresh open Grailed tabs.
+
+Notes:
+- Dark mode applies across `grailed.com` pages.
+- Implementation is CSS-first and inverts most page colors.
+- A smooth, fixed-position gradient depth tint is applied site-wide when a non-default custom color is selected.
+- Custom color selection controls hue only; tint brightness is fixed for consistent dark contrast.
+- Overscroll/backdrop remains pure black in dark mode.
+- Default custom color `#000000` keeps the extra tint disabled.
+- Images and media are counter-filtered to stay visually intact.
+- Defaults: dark mode enabled + behavior set to `Match device theme`.
+- Refresh open tabs after changing dark-mode settings.
