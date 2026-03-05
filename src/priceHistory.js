@@ -453,12 +453,14 @@
 
   var DEFAULT_CURRENCY = "USD";
   var DEFAULT_CONVERSION_ENABLED = false;
+  var DEFAULT_PRICE_HISTORY_ENABLED = true;
   var DEFAULT_DARK_MODE_ENABLED = true;
   var DEFAULT_DARK_MODE_BEHAVIOR = "system";
   var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
   var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
   var CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
   var CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
+  var PRICE_HISTORY_ENABLED_STORAGE_KEY = "grailed_plus_price_history_enabled_v1";
   var DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
   var DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
   var DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
@@ -708,6 +710,54 @@
       });
   }
 
+  function getPriceHistoryEnabled() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_PRICE_HISTORY_ENABLED);
+    }
+
+    return storageGet(storage, PRICE_HISTORY_ENABLED_STORAGE_KEY)
+      .then(function (data) {
+        var storedValue = data && data[PRICE_HISTORY_ENABLED_STORAGE_KEY];
+        return typeof storedValue === "boolean" ? storedValue : DEFAULT_PRICE_HISTORY_ENABLED;
+      })
+      .catch(function () {
+        return DEFAULT_PRICE_HISTORY_ENABLED;
+      });
+  }
+
+  function setPriceHistoryEnabled(enabled) {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[PRICE_HISTORY_ENABLED_STORAGE_KEY] = Boolean(enabled);
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist price history status."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist price history status."
+        };
+      });
+  }
+
   function getDarkModeEnabled() {
     var storage = getStorageLocal();
     if (!storage) {
@@ -871,12 +921,14 @@
   return {
     DEFAULT_CURRENCY: DEFAULT_CURRENCY,
     DEFAULT_CONVERSION_ENABLED: DEFAULT_CONVERSION_ENABLED,
+    DEFAULT_PRICE_HISTORY_ENABLED: DEFAULT_PRICE_HISTORY_ENABLED,
     DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
     DEFAULT_DARK_MODE_BEHAVIOR: DEFAULT_DARK_MODE_BEHAVIOR,
     DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
     CURATED_CURRENCIES: CURATED_CURRENCIES,
     CURRENCY_STORAGE_KEY: CURRENCY_STORAGE_KEY,
     CONVERSION_ENABLED_STORAGE_KEY: CONVERSION_ENABLED_STORAGE_KEY,
+    PRICE_HISTORY_ENABLED_STORAGE_KEY: PRICE_HISTORY_ENABLED_STORAGE_KEY,
     DARK_MODE_ENABLED_STORAGE_KEY: DARK_MODE_ENABLED_STORAGE_KEY,
     DARK_MODE_BEHAVIOR_STORAGE_KEY: DARK_MODE_BEHAVIOR_STORAGE_KEY,
     DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -888,6 +940,8 @@
     setSelectedCurrency: setSelectedCurrency,
     getCurrencyConversionEnabled: getCurrencyConversionEnabled,
     setCurrencyConversionEnabled: setCurrencyConversionEnabled,
+    getPriceHistoryEnabled: getPriceHistoryEnabled,
+    setPriceHistoryEnabled: setPriceHistoryEnabled,
     getDarkModeEnabled: getDarkModeEnabled,
     setDarkModeEnabled: setDarkModeEnabled,
     getDarkModeBehavior: getDarkModeBehavior,
@@ -2236,6 +2290,8 @@
   var ROOT_ATTR_VALUE = "1";
   var CUSTOM_COLOR_ATTR = "data-grailed-plus-custom-color";
   var CUSTOM_COLOR_ATTR_VALUE = "1";
+  var BLACK_BASE_ATTR = "data-grailed-plus-black-base";
+  var BLACK_BASE_ATTR_VALUE = "1";
   var NEXT_ROOT_ATTR = "data-grailed-plus-next-root";
   var NEXT_ROOT_ATTR_VALUE = "1";
   var PRIMARY_COLOR_VAR = "--gp-dm-primary";
@@ -2433,7 +2489,8 @@
     return {
       enabled: Boolean(context && context.enabled),
       primaryColor: primaryColor,
-      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR
+      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR,
+      blackBaseEnabled: primaryColor === DEFAULT_DARK_MODE_PRIMARY_COLOR
     };
   }
 
@@ -2502,6 +2559,7 @@
     if (!normalizedContext.enabled) {
       removeAttribute(rootNode, ROOT_ATTR);
       removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+      removeAttribute(rootNode, BLACK_BASE_ATTR);
       removeAttribute(rootNode, NEXT_ROOT_ATTR);
       removeCssVar(rootNode, PRIMARY_COLOR_VAR);
       removeCssVar(rootNode, PRIMARY_COLOR_USER_VAR);
@@ -2515,6 +2573,11 @@
       setAttribute(rootNode, CUSTOM_COLOR_ATTR, CUSTOM_COLOR_ATTR_VALUE);
     } else {
       removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+    }
+    if (normalizedContext.blackBaseEnabled) {
+      setAttribute(rootNode, BLACK_BASE_ATTR, BLACK_BASE_ATTR_VALUE);
+    } else {
+      removeAttribute(rootNode, BLACK_BASE_ATTR);
     }
     if (hasNextRoot(doc)) {
       setAttribute(rootNode, NEXT_ROOT_ATTR, NEXT_ROOT_ATTR_VALUE);
@@ -2541,6 +2604,8 @@
     ROOT_ATTR_VALUE: ROOT_ATTR_VALUE,
     CUSTOM_COLOR_ATTR: CUSTOM_COLOR_ATTR,
     CUSTOM_COLOR_ATTR_VALUE: CUSTOM_COLOR_ATTR_VALUE,
+    BLACK_BASE_ATTR: BLACK_BASE_ATTR,
+    BLACK_BASE_ATTR_VALUE: BLACK_BASE_ATTR_VALUE,
     NEXT_ROOT_ATTR: NEXT_ROOT_ATTR,
     NEXT_ROOT_ATTR_VALUE: NEXT_ROOT_ATTR_VALUE,
     PRIMARY_COLOR_VAR: PRIMARY_COLOR_VAR,
@@ -2931,6 +2996,25 @@
       })
       .catch(function () {
         return defaultContext;
+      });
+  }
+
+  function resolvePriceHistoryEnabled() {
+    var defaultEnabled =
+      Settings && typeof Settings.DEFAULT_PRICE_HISTORY_ENABLED === "boolean"
+        ? Settings.DEFAULT_PRICE_HISTORY_ENABLED
+        : true;
+
+    if (!Settings || typeof Settings.getPriceHistoryEnabled !== "function") {
+      return Promise.resolve(defaultEnabled);
+    }
+
+    return Settings.getPriceHistoryEnabled()
+      .then(function (enabled) {
+        return typeof enabled === "boolean" ? enabled : defaultEnabled;
+      })
+      .catch(function () {
+        return defaultEnabled;
       });
   }
 
@@ -3554,83 +3638,125 @@
 
     syncCardCurrencyObserver(null);
 
-    var nextData = Extract.readNextDataFromDocument(document);
-    if (!nextData) {
-      scheduleRetry("missing_next_data", attempt);
-      return;
-    }
+    resolvePriceHistoryEnabled().then(function (priceHistoryEnabled) {
+      if (!Url.isListingPath(location.pathname)) {
+        return;
+      }
 
-    var listing = Extract.extractListing(nextData);
-    if (!listing || !listing.id) {
-      scheduleRetry("missing_listing", attempt);
-      return;
-    }
-
-    var mountTarget = resolveMountTarget(document);
-    if (!mountTarget || !mountTarget.mountNode) {
-      scheduleRetry("missing_mount", attempt);
-      return;
-    }
-
-    var metrics = Metrics.computeMetrics(listing);
-    var renderToken = state.renderToken + 1;
-    state.renderToken = renderToken;
-
-    resolveCurrencyContext()
-      .then(function (currencyContext) {
-        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-          return;
-        }
-
-        Render.renderPanel({
-          listing: listing,
-          metrics: metrics,
-          mountNode: mountTarget.mountNode,
-          mountPosition: mountTarget.mountPosition,
-          rawListing: listing.rawListing,
-          currencyContext: currencyContext
-        });
-        applySidebarCurrency(currencyContext);
-        applyCardCurrency(currencyContext);
-        syncCardCurrencyObserver(null);
-
+      if (!priceHistoryEnabled) {
+        var disabledToken = state.renderToken + 1;
+        state.renderToken = disabledToken;
+        clearRetryTimer(true);
         disconnectHydrationObserver();
-        state.retryStartedAtMs = null;
+        Render.removeExistingPanels(document);
 
-        log("rendered", {
-          reason: reason,
-          attempt: attempt,
-          listingId: listing.id,
-          currency: currencyContext.selectedCurrency
+        resolveCurrencyContext()
+          .then(function (currencyContext) {
+            if (disabledToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+              return;
+            }
+
+            applySidebarCurrency(currencyContext);
+            applyCardCurrency(currencyContext);
+            syncCardCurrencyObserver(null);
+
+            log("skipped_price_history_panel", {
+              reason: reason,
+              attempt: attempt,
+              currency: currencyContext.selectedCurrency
+            });
+          })
+          .catch(function () {
+            if (disabledToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+              return;
+            }
+
+            var fallbackCurrency = createUsdCurrencyContext();
+            applySidebarCurrency(fallbackCurrency);
+            applyCardCurrency(fallbackCurrency);
+            syncCardCurrencyObserver(null);
+          });
+        return;
+      }
+
+      var nextData = Extract.readNextDataFromDocument(document);
+      if (!nextData) {
+        scheduleRetry("missing_next_data", attempt);
+        return;
+      }
+
+      var listing = Extract.extractListing(nextData);
+      if (!listing || !listing.id) {
+        scheduleRetry("missing_listing", attempt);
+        return;
+      }
+
+      var mountTarget = resolveMountTarget(document);
+      if (!mountTarget || !mountTarget.mountNode) {
+        scheduleRetry("missing_mount", attempt);
+        return;
+      }
+
+      var metrics = Metrics.computeMetrics(listing);
+      var renderToken = state.renderToken + 1;
+      state.renderToken = renderToken;
+
+      resolveCurrencyContext()
+        .then(function (currencyContext) {
+          if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+            return;
+          }
+
+          Render.renderPanel({
+            listing: listing,
+            metrics: metrics,
+            mountNode: mountTarget.mountNode,
+            mountPosition: mountTarget.mountPosition,
+            rawListing: listing.rawListing,
+            currencyContext: currencyContext
+          });
+          applySidebarCurrency(currencyContext);
+          applyCardCurrency(currencyContext);
+          syncCardCurrencyObserver(null);
+
+          disconnectHydrationObserver();
+          state.retryStartedAtMs = null;
+
+          log("rendered", {
+            reason: reason,
+            attempt: attempt,
+            listingId: listing.id,
+            currency: currencyContext.selectedCurrency
+          });
+        })
+        .catch(function () {
+          if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+            return;
+          }
+
+          var fallbackCurrency = createUsdCurrencyContext();
+          Render.renderPanel({
+            listing: listing,
+            metrics: metrics,
+            mountNode: mountTarget.mountNode,
+            mountPosition: mountTarget.mountPosition,
+            rawListing: listing.rawListing,
+            currencyContext: fallbackCurrency
+          });
+          applySidebarCurrency(fallbackCurrency);
+          applyCardCurrency(fallbackCurrency);
+          syncCardCurrencyObserver(null);
+
+          disconnectHydrationObserver();
+          state.retryStartedAtMs = null;
+
+          log("rendered_with_currency_fallback", {
+            reason: reason,
+            attempt: attempt,
+            listingId: listing.id
+          });
         });
-      })
-      .catch(function () {
-        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-          return;
-        }
-
-        var fallbackCurrency = createUsdCurrencyContext();
-        Render.renderPanel({
-          listing: listing,
-          metrics: metrics,
-          mountNode: mountTarget.mountNode,
-          mountPosition: mountTarget.mountPosition,
-          rawListing: listing.rawListing,
-          currencyContext: fallbackCurrency
-        });
-        applySidebarCurrency(fallbackCurrency);
-        applyCardCurrency(fallbackCurrency);
-        syncCardCurrencyObserver(null);
-
-        disconnectHydrationObserver();
-        state.retryStartedAtMs = null;
-
-        log("rendered_with_currency_fallback", {
-          reason: reason,
-          attempt: attempt,
-          listingId: listing.id
-        });
-      });
+    });
   }
 
   function refresh(reason) {

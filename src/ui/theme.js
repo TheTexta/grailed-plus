@@ -14,6 +14,8 @@
   var ROOT_ATTR_VALUE = "1";
   var CUSTOM_COLOR_ATTR = "data-grailed-plus-custom-color";
   var CUSTOM_COLOR_ATTR_VALUE = "1";
+  var BLACK_BASE_ATTR = "data-grailed-plus-black-base";
+  var BLACK_BASE_ATTR_VALUE = "1";
   var NEXT_ROOT_ATTR = "data-grailed-plus-next-root";
   var NEXT_ROOT_ATTR_VALUE = "1";
   var PRIMARY_COLOR_VAR = "--gp-dm-primary";
@@ -211,7 +213,8 @@
     return {
       enabled: Boolean(context && context.enabled),
       primaryColor: primaryColor,
-      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR
+      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR,
+      blackBaseEnabled: primaryColor === DEFAULT_DARK_MODE_PRIMARY_COLOR
     };
   }
 
@@ -280,6 +283,7 @@
     if (!normalizedContext.enabled) {
       removeAttribute(rootNode, ROOT_ATTR);
       removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+      removeAttribute(rootNode, BLACK_BASE_ATTR);
       removeAttribute(rootNode, NEXT_ROOT_ATTR);
       removeCssVar(rootNode, PRIMARY_COLOR_VAR);
       removeCssVar(rootNode, PRIMARY_COLOR_USER_VAR);
@@ -293,6 +297,11 @@
       setAttribute(rootNode, CUSTOM_COLOR_ATTR, CUSTOM_COLOR_ATTR_VALUE);
     } else {
       removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+    }
+    if (normalizedContext.blackBaseEnabled) {
+      setAttribute(rootNode, BLACK_BASE_ATTR, BLACK_BASE_ATTR_VALUE);
+    } else {
+      removeAttribute(rootNode, BLACK_BASE_ATTR);
     }
     if (hasNextRoot(doc)) {
       setAttribute(rootNode, NEXT_ROOT_ATTR, NEXT_ROOT_ATTR_VALUE);
@@ -319,6 +328,8 @@
     ROOT_ATTR_VALUE: ROOT_ATTR_VALUE,
     CUSTOM_COLOR_ATTR: CUSTOM_COLOR_ATTR,
     CUSTOM_COLOR_ATTR_VALUE: CUSTOM_COLOR_ATTR_VALUE,
+    BLACK_BASE_ATTR: BLACK_BASE_ATTR,
+    BLACK_BASE_ATTR_VALUE: BLACK_BASE_ATTR_VALUE,
     NEXT_ROOT_ATTR: NEXT_ROOT_ATTR,
     NEXT_ROOT_ATTR_VALUE: NEXT_ROOT_ATTR_VALUE,
     PRIMARY_COLOR_VAR: PRIMARY_COLOR_VAR,

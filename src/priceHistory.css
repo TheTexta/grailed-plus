@@ -45,6 +45,16 @@ html[data-grailed-plus-dark-mode="1"][data-grailed-plus-next-root="1"] #__next {
   background-attachment: fixed !important;
 }
 
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-black-base="1"][data-grailed-plus-next-root="1"] #__next {
+  background-color: #0f1014 !important;
+  background-image:
+    radial-gradient(150vmax 110vmax at 8% -18%, rgba(52, 52, 61, 0.36) 0%, rgba(26, 26, 31, 0.22) 34%, transparent 70%),
+    radial-gradient(130vmax 96vmax at 105% 4%, rgba(14, 14, 18, 0.62) 0%, rgba(9, 9, 12, 0.18) 42%, transparent 74%),
+    linear-gradient(128deg, rgba(9, 9, 11, 0.998) 0%, rgba(25, 25, 30, 0.982) 47%, rgba(6, 6, 8, 0.997) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed, fixed, fixed !important;
+}
+
 /*
  * Filtering an ancestor of fixed/sticky nav breaks native overscroll physics.
  * Filter targets are assigned in boot.js via data-grailed-plus-filter-target.
@@ -132,6 +142,19 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-next-root="1"]) :is
   ) !important;
   background-repeat: no-repeat !important;
   background-attachment: fixed !important;
+}
+
+html[data-grailed-plus-dark-mode="1"][data-grailed-plus-black-base="1"]:not([data-grailed-plus-next-root="1"]) :is(
+  header[class*="SiteHeader"],
+  nav[class*="SiteHeader"]:is([class*="_nav__"], [class*="__nav__"]),
+  #globalHeader
+) {
+  background-color: #0f1014 !important;
+  background-image:
+    radial-gradient(120vmax 80vmax at 12% -20%, rgba(46, 46, 54, 0.34) 0%, rgba(24, 24, 30, 0.18) 40%, transparent 76%),
+    linear-gradient(128deg, rgba(9, 9, 11, 0.998) 0%, rgba(25, 25, 30, 0.982) 47%, rgba(6, 6, 8, 0.997) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed, fixed !important;
 }
 
 html[data-grailed-plus-dark-mode="1"][data-grailed-plus-custom-color="1"]:not([data-grailed-plus-next-root="1"]) :is(
@@ -279,15 +302,6 @@ html[data-grailed-plus-dark-mode="1"] :is(
 )::after {
   border: 0 !important;
   box-shadow: none !important;
-}
-
-html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-custom-color="1"]) [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]) {
-  /* Pre-inverted black yields a white final background after body inversion. */
-  background: #000 !important;
-}
-
-html[data-grailed-plus-dark-mode="1"][data-grailed-plus-custom-color="1"] [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]) {
-  background: transparent !important;
 }
 
 html[data-grailed-plus-dark-mode="1"] [class*="SiteHeader"]:is([class*="_logo__"], [class*="__logo__"]) video,

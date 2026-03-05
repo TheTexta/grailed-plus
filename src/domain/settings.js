@@ -9,12 +9,14 @@
 
   var DEFAULT_CURRENCY = "USD";
   var DEFAULT_CONVERSION_ENABLED = false;
+  var DEFAULT_PRICE_HISTORY_ENABLED = true;
   var DEFAULT_DARK_MODE_ENABLED = true;
   var DEFAULT_DARK_MODE_BEHAVIOR = "system";
   var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
   var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
   var CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
   var CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
+  var PRICE_HISTORY_ENABLED_STORAGE_KEY = "grailed_plus_price_history_enabled_v1";
   var DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
   var DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
   var DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
@@ -264,6 +266,54 @@
       });
   }
 
+  function getPriceHistoryEnabled() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_PRICE_HISTORY_ENABLED);
+    }
+
+    return storageGet(storage, PRICE_HISTORY_ENABLED_STORAGE_KEY)
+      .then(function (data) {
+        var storedValue = data && data[PRICE_HISTORY_ENABLED_STORAGE_KEY];
+        return typeof storedValue === "boolean" ? storedValue : DEFAULT_PRICE_HISTORY_ENABLED;
+      })
+      .catch(function () {
+        return DEFAULT_PRICE_HISTORY_ENABLED;
+      });
+  }
+
+  function setPriceHistoryEnabled(enabled) {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[PRICE_HISTORY_ENABLED_STORAGE_KEY] = Boolean(enabled);
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist price history status."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist price history status."
+        };
+      });
+  }
+
   function getDarkModeEnabled() {
     var storage = getStorageLocal();
     if (!storage) {
@@ -427,12 +477,14 @@
   return {
     DEFAULT_CURRENCY: DEFAULT_CURRENCY,
     DEFAULT_CONVERSION_ENABLED: DEFAULT_CONVERSION_ENABLED,
+    DEFAULT_PRICE_HISTORY_ENABLED: DEFAULT_PRICE_HISTORY_ENABLED,
     DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
     DEFAULT_DARK_MODE_BEHAVIOR: DEFAULT_DARK_MODE_BEHAVIOR,
     DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
     CURATED_CURRENCIES: CURATED_CURRENCIES,
     CURRENCY_STORAGE_KEY: CURRENCY_STORAGE_KEY,
     CONVERSION_ENABLED_STORAGE_KEY: CONVERSION_ENABLED_STORAGE_KEY,
+    PRICE_HISTORY_ENABLED_STORAGE_KEY: PRICE_HISTORY_ENABLED_STORAGE_KEY,
     DARK_MODE_ENABLED_STORAGE_KEY: DARK_MODE_ENABLED_STORAGE_KEY,
     DARK_MODE_BEHAVIOR_STORAGE_KEY: DARK_MODE_BEHAVIOR_STORAGE_KEY,
     DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -444,6 +496,8 @@
     setSelectedCurrency: setSelectedCurrency,
     getCurrencyConversionEnabled: getCurrencyConversionEnabled,
     setCurrencyConversionEnabled: setCurrencyConversionEnabled,
+    getPriceHistoryEnabled: getPriceHistoryEnabled,
+    setPriceHistoryEnabled: setPriceHistoryEnabled,
     getDarkModeEnabled: getDarkModeEnabled,
     setDarkModeEnabled: setDarkModeEnabled,
     getDarkModeBehavior: getDarkModeBehavior,

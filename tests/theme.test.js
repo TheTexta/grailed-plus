@@ -8,6 +8,8 @@ const {
   ROOT_ATTR_VALUE,
   CUSTOM_COLOR_ATTR,
   CUSTOM_COLOR_ATTR_VALUE,
+  BLACK_BASE_ATTR,
+  BLACK_BASE_ATTR_VALUE,
   NEXT_ROOT_ATTR,
   NEXT_ROOT_ATTR_VALUE,
   PRIMARY_COLOR_VAR,
@@ -50,13 +52,15 @@ test("normalizeDarkModeContext normalizes enabled flag and hex color", () => {
   assert.deepEqual(normalizeDarkModeContext({ enabled: true, primaryColor: "#0f0" }), {
     enabled: true,
     primaryColor: "#00FF00",
-    customColorEnabled: true
+    customColorEnabled: true,
+    blackBaseEnabled: false
   });
 
   assert.deepEqual(normalizeDarkModeContext({ enabled: 1, primaryColor: "invalid" }), {
     enabled: true,
     primaryColor: "#000000",
-    customColorEnabled: false
+    customColorEnabled: false,
+    blackBaseEnabled: true
   });
 });
 
@@ -78,6 +82,7 @@ test("applyDarkModeToDocument applies root attribute and primary color variables
   assert.equal(applied, true);
   assert.equal(root.getAttribute(ROOT_ATTR), ROOT_ATTR_VALUE);
   assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), CUSTOM_COLOR_ATTR_VALUE);
+  assert.equal(root.getAttribute(BLACK_BASE_ATTR), undefined);
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), NEXT_ROOT_ATTR_VALUE);
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_USER_VAR), "#123456");
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_VAR), "#FFFFFF");
@@ -99,6 +104,7 @@ test("applyDarkModeToDocument does not mark custom color for default color", () 
   assert.equal(applied, true);
   assert.equal(root.getAttribute(ROOT_ATTR), ROOT_ATTR_VALUE);
   assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), undefined);
+  assert.equal(root.getAttribute(BLACK_BASE_ATTR), BLACK_BASE_ATTR_VALUE);
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), undefined);
 });
 
@@ -121,6 +127,7 @@ test("applyDarkModeToDocument clears root state when disabled", () => {
   assert.equal(applied, false);
   assert.equal(root.getAttribute(ROOT_ATTR), undefined);
   assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), undefined);
+  assert.equal(root.getAttribute(BLACK_BASE_ATTR), undefined);
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), undefined);
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_USER_VAR), "");
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_VAR), "");

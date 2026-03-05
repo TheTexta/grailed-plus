@@ -379,6 +379,25 @@
       });
   }
 
+  function resolvePriceHistoryEnabled() {
+    var defaultEnabled =
+      Settings && typeof Settings.DEFAULT_PRICE_HISTORY_ENABLED === "boolean"
+        ? Settings.DEFAULT_PRICE_HISTORY_ENABLED
+        : true;
+
+    if (!Settings || typeof Settings.getPriceHistoryEnabled !== "function") {
+      return Promise.resolve(defaultEnabled);
+    }
+
+    return Settings.getPriceHistoryEnabled()
+      .then(function (enabled) {
+        return typeof enabled === "boolean" ? enabled : defaultEnabled;
+      })
+      .catch(function () {
+        return defaultEnabled;
+      });
+  }
+
   function applySidebarCurrency(currencyContext) {
     if (!Render || typeof Render.applySidebarCurrency !== "function") {
       return false;
@@ -999,83 +1018,125 @@
 
     syncCardCurrencyObserver(null);
 
-    var nextData = Extract.readNextDataFromDocument(document);
-    if (!nextData) {
-      scheduleRetry("missing_next_data", attempt);
-      return;
-    }
+    resolvePriceHistoryEnabled().then(function (priceHistoryEnabled) {
+      if (!Url.isListingPath(location.pathname)) {
+        return;
+      }
 
-    var listing = Extract.extractListing(nextData);
-    if (!listing || !listing.id) {
-      scheduleRetry("missing_listing", attempt);
-      return;
-    }
-
-    var mountTarget = resolveMountTarget(document);
-    if (!mountTarget || !mountTarget.mountNode) {
-      scheduleRetry("missing_mount", attempt);
-      return;
-    }
-
-    var metrics = Metrics.computeMetrics(listing);
-    var renderToken = state.renderToken + 1;
-    state.renderToken = renderToken;
-
-    resolveCurrencyContext()
-      .then(function (currencyContext) {
-        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-          return;
-        }
-
-        Render.renderPanel({
-          listing: listing,
-          metrics: metrics,
-          mountNode: mountTarget.mountNode,
-          mountPosition: mountTarget.mountPosition,
-          rawListing: listing.rawListing,
-          currencyContext: currencyContext
-        });
-        applySidebarCurrency(currencyContext);
-        applyCardCurrency(currencyContext);
-        syncCardCurrencyObserver(null);
-
+      if (!priceHistoryEnabled) {
+        var disabledToken = state.renderToken + 1;
+        state.renderToken = disabledToken;
+        clearRetryTimer(true);
         disconnectHydrationObserver();
-        state.retryStartedAtMs = null;
+        Render.removeExistingPanels(document);
 
-        log("rendered", {
-          reason: reason,
-          attempt: attempt,
-          listingId: listing.id,
-          currency: currencyContext.selectedCurrency
+        resolveCurrencyContext()
+          .then(function (currencyContext) {
+            if (disabledToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+              return;
+            }
+
+            applySidebarCurrency(currencyContext);
+            applyCardCurrency(currencyContext);
+            syncCardCurrencyObserver(null);
+
+            log("skipped_price_history_panel", {
+              reason: reason,
+              attempt: attempt,
+              currency: currencyContext.selectedCurrency
+            });
+          })
+          .catch(function () {
+            if (disabledToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+              return;
+            }
+
+            var fallbackCurrency = createUsdCurrencyContext();
+            applySidebarCurrency(fallbackCurrency);
+            applyCardCurrency(fallbackCurrency);
+            syncCardCurrencyObserver(null);
+          });
+        return;
+      }
+
+      var nextData = Extract.readNextDataFromDocument(document);
+      if (!nextData) {
+        scheduleRetry("missing_next_data", attempt);
+        return;
+      }
+
+      var listing = Extract.extractListing(nextData);
+      if (!listing || !listing.id) {
+        scheduleRetry("missing_listing", attempt);
+        return;
+      }
+
+      var mountTarget = resolveMountTarget(document);
+      if (!mountTarget || !mountTarget.mountNode) {
+        scheduleRetry("missing_mount", attempt);
+        return;
+      }
+
+      var metrics = Metrics.computeMetrics(listing);
+      var renderToken = state.renderToken + 1;
+      state.renderToken = renderToken;
+
+      resolveCurrencyContext()
+        .then(function (currencyContext) {
+          if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+            return;
+          }
+
+          Render.renderPanel({
+            listing: listing,
+            metrics: metrics,
+            mountNode: mountTarget.mountNode,
+            mountPosition: mountTarget.mountPosition,
+            rawListing: listing.rawListing,
+            currencyContext: currencyContext
+          });
+          applySidebarCurrency(currencyContext);
+          applyCardCurrency(currencyContext);
+          syncCardCurrencyObserver(null);
+
+          disconnectHydrationObserver();
+          state.retryStartedAtMs = null;
+
+          log("rendered", {
+            reason: reason,
+            attempt: attempt,
+            listingId: listing.id,
+            currency: currencyContext.selectedCurrency
+          });
+        })
+        .catch(function () {
+          if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+            return;
+          }
+
+          var fallbackCurrency = createUsdCurrencyContext();
+          Render.renderPanel({
+            listing: listing,
+            metrics: metrics,
+            mountNode: mountTarget.mountNode,
+            mountPosition: mountTarget.mountPosition,
+            rawListing: listing.rawListing,
+            currencyContext: fallbackCurrency
+          });
+          applySidebarCurrency(fallbackCurrency);
+          applyCardCurrency(fallbackCurrency);
+          syncCardCurrencyObserver(null);
+
+          disconnectHydrationObserver();
+          state.retryStartedAtMs = null;
+
+          log("rendered_with_currency_fallback", {
+            reason: reason,
+            attempt: attempt,
+            listingId: listing.id
+          });
         });
-      })
-      .catch(function () {
-        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-          return;
-        }
-
-        var fallbackCurrency = createUsdCurrencyContext();
-        Render.renderPanel({
-          listing: listing,
-          metrics: metrics,
-          mountNode: mountTarget.mountNode,
-          mountPosition: mountTarget.mountPosition,
-          rawListing: listing.rawListing,
-          currencyContext: fallbackCurrency
-        });
-        applySidebarCurrency(fallbackCurrency);
-        applyCardCurrency(fallbackCurrency);
-        syncCardCurrencyObserver(null);
-
-        disconnectHydrationObserver();
-        state.retryStartedAtMs = null;
-
-        log("rendered_with_currency_fallback", {
-          reason: reason,
-          attempt: attempt,
-          listingId: listing.id
-        });
-      });
+    });
   }
 
   function refresh(reason) {
