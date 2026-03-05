@@ -16,6 +16,7 @@ const filesToCheck = [
   "src/ui/renderPanel.js",
   "src/content/boot.js",
   "src/options.js",
+  "src/popup.js",
   "tests/url.test.js",
   "tests/extractListing.test.js",
   "tests/extractListing.snapshot.test.js",

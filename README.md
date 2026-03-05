@@ -17,7 +17,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - Next expected drop estimate
 - Seller account creation date
 - Listing metadata button (opens listing JSON in a new tab)
-- Automatic currency conversion (USD -> selected currency with USD fallback shown)
+- Automatic currency conversion (USD -> selected currency)
 ```
 
 ## Current Beta Features
@@ -26,7 +26,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - Next expected drop estimate
 - Seller account creation date
 - Listing metadata button (opens JSON in a new tab)
-- Automatic currency conversion (USD -> selected currency with USD fallback shown)
+- Automatic currency conversion (USD -> selected currency with tooltip original pricing shown on hover)
 
 ## Planned Features
 - Depop autocomparison with like / matching listings (Possible ML image checking for like listings)
@@ -34,6 +34,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - ~Improved UI integration~ *Completed*
 - Price History graph view
 - Updated logo and screenshots
+- ~Automatic currency conversion~ *Completed*
 
 ## Project Layout
 - `src/manifest.json`: Chrome MV3 manifest (primary beta target)
@@ -64,10 +65,11 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 5. Open a Grailed listing URL (`https://www.grailed.com/listings/...`) and verify panel rendering.
 
 ## Currency Settings
-1. Open the extension details page in `chrome://extensions`.
-2. Click **Extension options** for Grailed Plus.
+1. Click the Grailed Plus extension icon.
+2. Click **Open Settings** from the popup (or use **Extension options** in `chrome://extensions`).
 3. Select a curated currency or enter a custom 3-letter code and save.
-4. Refresh open listing tabs to apply the new currency.
+4. Turn on **Enable currency conversion** (it is disabled by default).
+5. Refresh open listing tabs to apply the new currency.
 
 Notes:
 - Exchange rates are fetched from Frankfurter (`https://api.frankfurter.app/latest?base=USD`).

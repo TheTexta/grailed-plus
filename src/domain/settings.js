@@ -8,8 +8,10 @@
   "use strict";
 
   var DEFAULT_CURRENCY = "USD";
+  var DEFAULT_CONVERSION_ENABLED = false;
   var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
-  var STORAGE_KEY = "grailed_plus_selected_currency_v1";
+  var CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
+  var CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -114,9 +116,9 @@
       return Promise.resolve(DEFAULT_CURRENCY);
     }
 
-    return storageGet(storage, STORAGE_KEY)
+    return storageGet(storage, CURRENCY_STORAGE_KEY)
       .then(function (data) {
-        var normalized = normalizeCurrencyCode(data && data[STORAGE_KEY]);
+        var normalized = normalizeCurrencyCode(data && data[CURRENCY_STORAGE_KEY]);
         return normalized || DEFAULT_CURRENCY;
       })
       .catch(function () {
@@ -142,7 +144,7 @@
     }
 
     var payload = {};
-    payload[STORAGE_KEY] = normalized;
+    payload[CURRENCY_STORAGE_KEY] = normalized;
 
     return storageSet(storage, payload)
       .then(function (ok) {
@@ -164,12 +166,64 @@
       });
   }
 
+  function getCurrencyConversionEnabled() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_CONVERSION_ENABLED);
+    }
+
+    return storageGet(storage, CONVERSION_ENABLED_STORAGE_KEY)
+      .then(function (data) {
+        return Boolean(data && data[CONVERSION_ENABLED_STORAGE_KEY]);
+      })
+      .catch(function () {
+        return DEFAULT_CONVERSION_ENABLED;
+      });
+  }
+
+  function setCurrencyConversionEnabled(enabled) {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[CONVERSION_ENABLED_STORAGE_KEY] = Boolean(enabled);
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist conversion status."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist conversion status."
+        };
+      });
+  }
+
   return {
     DEFAULT_CURRENCY: DEFAULT_CURRENCY,
+    DEFAULT_CONVERSION_ENABLED: DEFAULT_CONVERSION_ENABLED,
     CURATED_CURRENCIES: CURATED_CURRENCIES,
-    STORAGE_KEY: STORAGE_KEY,
+    CURRENCY_STORAGE_KEY: CURRENCY_STORAGE_KEY,
+    CONVERSION_ENABLED_STORAGE_KEY: CONVERSION_ENABLED_STORAGE_KEY,
+    STORAGE_KEY: CURRENCY_STORAGE_KEY,
     normalizeCurrencyCode: normalizeCurrencyCode,
     getSelectedCurrency: getSelectedCurrency,
-    setSelectedCurrency: setSelectedCurrency
+    setSelectedCurrency: setSelectedCurrency,
+    getCurrencyConversionEnabled: getCurrencyConversionEnabled,
+    setCurrencyConversionEnabled: setCurrencyConversionEnabled
   };
 });

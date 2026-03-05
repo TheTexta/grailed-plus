@@ -14,6 +14,11 @@
       </p>
 
       <form id="currency-form" class="gp-options__form">
+        <label class="gp-options__toggle">
+          <input id="conversion-enabled" type="checkbox" />
+          <span>Enable currency conversion</span>
+        </label>
+
         <label for="currency-select" class="gp-options__label">Currency</label>
         <select id="currency-select" class="gp-options__control"></select>
 
@@ -31,7 +36,7 @@
 
         <div class="gp-options__actions">
           <button type="submit" class="gp-options__button gp-options__button--primary">Save</button>
-          <button type="button" id="reset-button" class="gp-options__button">Reset to USD</button>
+          <button type="button" id="reset-button" class="gp-options__button">Reset Defaults</button>
         </div>
       </form>
 

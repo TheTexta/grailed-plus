@@ -23,7 +23,12 @@ function createListingSidebar(options) {
     {
       includePrice: true,
       includeCta: true,
-      ctaBeforePrice: false
+      ctaBeforePrice: false,
+      nestedPriceValue: false,
+      withStrikePrice: false,
+      withPercentOff: false,
+      reversePriceOrder: false,
+      dropPriceClasses: false
     },
     options || {}
   );
@@ -37,9 +42,45 @@ function createListingSidebar(options) {
   main.appendChild(sidebar);
 
   const price = settings.includePrice ? doc.createElement("div") : null;
+  const hasNestedPriceNodes = settings.nestedPriceValue || settings.withStrikePrice;
+  const priceValue = settings.includePrice && hasNestedPriceNodes ? doc.createElement("span") : null;
+  const pricePrevious = settings.includePrice && settings.withStrikePrice ? doc.createElement("span") : null;
+  const pricePercent = settings.includePrice && settings.withPercentOff ? doc.createElement("span") : null;
   if (price) {
     price.setAttribute("class", "Sidebar_price__456");
-    price.textContent = "$500";
+    if (priceValue) {
+      if (!settings.dropPriceClasses) {
+        priceValue.setAttribute("class", "Sidebar_priceValue__999");
+      }
+      priceValue.textContent = "$500";
+    }
+
+    if (pricePrevious) {
+      if (!settings.dropPriceClasses) {
+        pricePrevious.setAttribute("class", "Sidebar_pricePrevious__888");
+      }
+      pricePrevious.textContent = "$650";
+    }
+
+    if (priceValue && pricePrevious) {
+      if (settings.reversePriceOrder) {
+        price.appendChild(priceValue);
+        price.appendChild(pricePrevious);
+      } else {
+        price.appendChild(pricePrevious);
+        price.appendChild(priceValue);
+      }
+    } else if (priceValue) {
+      price.appendChild(priceValue);
+    } else {
+      price.textContent = "$500";
+    }
+
+    if (pricePercent) {
+      pricePercent.setAttribute("class", "Sidebar_pricePercent__777");
+      pricePercent.textContent = "23% off";
+      price.appendChild(pricePercent);
+    }
   }
 
   const ctaWrap = settings.includeCta ? doc.createElement("div") : null;
@@ -71,6 +112,9 @@ function createListingSidebar(options) {
     main,
     sidebar,
     price,
+    pricePrevious,
+    priceValue,
+    pricePercent,
     ctaWrap,
     ctaButton
   };
@@ -102,6 +146,22 @@ function sampleMetrics(overrides) {
     },
     overrides || {}
   );
+}
+
+function findValueNodeByLabel(panel, label) {
+  const rows = panel.querySelectorAll(".grailed-plus__row");
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    if (!row || !row.children || row.children.length < 2) {
+      continue;
+    }
+
+    if (row.children[0].textContent === label) {
+      return row.children[1];
+    }
+  }
+
+  return null;
 }
 
 test("findMountTarget chooses afterend of Sidebar price when CTA follows price", () => {
@@ -246,9 +306,17 @@ test("renderPanel shows converted + USD values when currency context has a rate"
   const text = flattenText(panel);
   assert.match(text, /Price History/);
   assert.match(text, /€/);
-  assert.match(text, /\(\$1,000\)/);
+  assert.doesNotMatch(text, /\(\$1,000\)/);
   assert.match(text, /Avg\. Price Drop/);
-  assert.match(text, /\(\$95\)/);
+  assert.doesNotMatch(text, /\(\$95\)/);
+
+  const historyValueNode = findValueNodeByLabel(panel, "Price History");
+  const avgValueNode = findValueNodeByLabel(panel, "Avg. Price Drop");
+  assert.ok(historyValueNode);
+  assert.ok(avgValueNode);
+  assert.match(historyValueNode.getAttribute("title"), /Original USD:/);
+  assert.match(historyValueNode.getAttribute("title"), /\$1,000/);
+  assert.equal(avgValueNode.getAttribute("title"), "Original USD: $95");
 });
 
 test("renderPanel falls back to USD-only values when no conversion rate is available", () => {
@@ -269,6 +337,13 @@ test("renderPanel falls back to USD-only values when no conversion rate is avail
   const text = flattenText(panel);
   assert.match(text, /\$1,000/);
   assert.doesNotMatch(text, /€/);
+
+  const historyValueNode = findValueNodeByLabel(panel, "Price History");
+  const avgValueNode = findValueNodeByLabel(panel, "Avg. Price Drop");
+  assert.ok(historyValueNode);
+  assert.ok(avgValueNode);
+  assert.ok(!historyValueNode.getAttribute("title"));
+  assert.ok(!avgValueNode.getAttribute("title"));
 });
 
 test("applySidebarCurrency converts and restores the sidebar price", () => {
@@ -281,8 +356,10 @@ test("applySidebarCurrency converts and restores the sidebar price", () => {
     mode: "dual"
   });
   assert.equal(converted, true);
+  assert.match(price.textContent, /€450/);
   assert.match(price.textContent, /€/);
-  assert.match(price.textContent, /\(\$500\)/);
+  assert.doesNotMatch(price.textContent, /\(\$500\)/);
+  assert.equal(price.getAttribute("title"), "Original USD: $500");
 
   const restored = applySidebarCurrency(doc, {
     selectedCurrency: "USD",
@@ -291,4 +368,134 @@ test("applySidebarCurrency converts and restores the sidebar price", () => {
   });
   assert.equal(restored, true);
   assert.equal(price.textContent, "$500");
+  assert.ok(!price.getAttribute("title"));
+});
+
+test("applySidebarCurrency preserves nested price markup and classes", () => {
+  const { doc, price, priceValue } = createListingSidebar({ nestedPriceValue: true });
+
+  assert.ok(priceValue);
+  assert.equal(price.children.length, 1);
+  assert.equal(price.children[0], priceValue);
+  assert.equal(priceValue.getAttribute("class"), "Sidebar_priceValue__999");
+  assert.equal(priceValue.textContent, "$500");
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.equal(price.children.length, 1);
+  assert.equal(price.children[0], priceValue);
+  assert.equal(priceValue.getAttribute("class"), "Sidebar_priceValue__999");
+  assert.match(priceValue.textContent, /€450/);
+  assert.match(priceValue.textContent, /€/);
+  assert.doesNotMatch(priceValue.textContent, /\(\$500\)/);
+  assert.equal(priceValue.getAttribute("title"), "Original USD: $500");
+
+  const restored = applySidebarCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(price.children.length, 1);
+  assert.equal(price.children[0], priceValue);
+  assert.equal(priceValue.getAttribute("class"), "Sidebar_priceValue__999");
+  assert.equal(priceValue.textContent, "$500");
+  assert.ok(!priceValue.getAttribute("title"));
+});
+
+test("applySidebarCurrency converts strike and current listing prices without USD brackets", () => {
+  const { doc, price, pricePrevious, priceValue } = createListingSidebar({ withStrikePrice: true });
+
+  assert.ok(pricePrevious);
+  assert.ok(priceValue);
+  assert.equal(pricePrevious.textContent, "$650");
+  assert.equal(priceValue.textContent, "$500");
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.equal(price.children[0], pricePrevious);
+  assert.equal(price.children[1], priceValue);
+  assert.match(pricePrevious.textContent, /585/);
+  assert.doesNotMatch(pricePrevious.textContent, /€/);
+  assert.match(priceValue.textContent, /€450/);
+  assert.equal(pricePrevious.getAttribute("title"), "Original USD: $650");
+  assert.equal(priceValue.getAttribute("title"), "Original USD: $500");
+  assert.doesNotMatch(pricePrevious.textContent, /\(\$/);
+  assert.doesNotMatch(priceValue.textContent, /\(\$/);
+
+  const restored = applySidebarCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(pricePrevious.textContent, "$650");
+  assert.equal(priceValue.textContent, "$500");
+  assert.ok(!pricePrevious.getAttribute("title"));
+  assert.ok(!priceValue.getAttribute("title"));
+});
+
+test("applySidebarCurrency keeps symbol on current price even when DOM order is reversed", () => {
+  const { doc, pricePrevious, priceValue } = createListingSidebar({
+    withStrikePrice: true,
+    reversePriceOrder: true
+  });
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(pricePrevious.textContent, /585/);
+  assert.doesNotMatch(pricePrevious.textContent, /€/);
+  assert.match(priceValue.textContent, /€450/);
+});
+
+test("applySidebarCurrency keeps symbol on lower current price even without class hints", () => {
+  const { doc, pricePrevious, priceValue } = createListingSidebar({
+    withStrikePrice: true,
+    reversePriceOrder: true,
+    dropPriceClasses: true
+  });
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(pricePrevious.textContent, /585/);
+  assert.doesNotMatch(pricePrevious.textContent, /€/);
+  assert.match(priceValue.textContent, /€450/);
+});
+
+test("applySidebarCurrency leaves percent-off text unchanged", () => {
+  const { doc, pricePercent } = createListingSidebar({ withStrikePrice: true, withPercentOff: true });
+  assert.ok(pricePercent);
+  assert.equal(pricePercent.textContent, "23% off");
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.equal(pricePercent.textContent, "23% off");
+
+  const restored = applySidebarCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(pricePercent.textContent, "23% off");
 });

@@ -49,6 +49,19 @@ body {
   font-weight: 700;
 }
 
+.gp-options__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gp-options__toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
 .gp-options__control {
   width: 100%;
   border: 1px solid var(--gp-border);

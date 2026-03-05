@@ -452,8 +452,10 @@
   "use strict";
 
   var DEFAULT_CURRENCY = "USD";
+  var DEFAULT_CONVERSION_ENABLED = false;
   var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
-  var STORAGE_KEY = "grailed_plus_selected_currency_v1";
+  var CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
+  var CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -558,9 +560,9 @@
       return Promise.resolve(DEFAULT_CURRENCY);
     }
 
-    return storageGet(storage, STORAGE_KEY)
+    return storageGet(storage, CURRENCY_STORAGE_KEY)
       .then(function (data) {
-        var normalized = normalizeCurrencyCode(data && data[STORAGE_KEY]);
+        var normalized = normalizeCurrencyCode(data && data[CURRENCY_STORAGE_KEY]);
         return normalized || DEFAULT_CURRENCY;
       })
       .catch(function () {
@@ -586,7 +588,7 @@
     }
 
     var payload = {};
-    payload[STORAGE_KEY] = normalized;
+    payload[CURRENCY_STORAGE_KEY] = normalized;
 
     return storageSet(storage, payload)
       .then(function (ok) {
@@ -608,13 +610,65 @@
       });
   }
 
+  function getCurrencyConversionEnabled() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_CONVERSION_ENABLED);
+    }
+
+    return storageGet(storage, CONVERSION_ENABLED_STORAGE_KEY)
+      .then(function (data) {
+        return Boolean(data && data[CONVERSION_ENABLED_STORAGE_KEY]);
+      })
+      .catch(function () {
+        return DEFAULT_CONVERSION_ENABLED;
+      });
+  }
+
+  function setCurrencyConversionEnabled(enabled) {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[CONVERSION_ENABLED_STORAGE_KEY] = Boolean(enabled);
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist conversion status."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist conversion status."
+        };
+      });
+  }
+
   return {
     DEFAULT_CURRENCY: DEFAULT_CURRENCY,
+    DEFAULT_CONVERSION_ENABLED: DEFAULT_CONVERSION_ENABLED,
     CURATED_CURRENCIES: CURATED_CURRENCIES,
-    STORAGE_KEY: STORAGE_KEY,
+    CURRENCY_STORAGE_KEY: CURRENCY_STORAGE_KEY,
+    CONVERSION_ENABLED_STORAGE_KEY: CONVERSION_ENABLED_STORAGE_KEY,
+    STORAGE_KEY: CURRENCY_STORAGE_KEY,
     normalizeCurrencyCode: normalizeCurrencyCode,
     getSelectedCurrency: getSelectedCurrency,
-    setSelectedCurrency: setSelectedCurrency
+    setSelectedCurrency: setSelectedCurrency,
+    getCurrencyConversionEnabled: getCurrencyConversionEnabled,
+    setCurrencyConversionEnabled: setCurrencyConversionEnabled
   };
 });
 
@@ -889,8 +943,8 @@
   var PANEL_ATTR = "data-grailed-plus-panel";
   var PANEL_ATTR_VALUE = "1";
   var PRICE_SELECTORS = ['div[class*="Sidebar_price"]', 'div[class*="sidebar__price_"]'];
-  var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-usd-text";
-  var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-usd-value";
+  var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-original-price-text";
+  var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-original-price-value";
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -962,11 +1016,62 @@
       return usdText;
     }
 
-    if (normalizedContext.mode === "dual") {
-      return convertedText + " (" + usdText + ")";
+    return convertedText;
+  }
+
+  function buildMoneyDisplay(valueUsd, currencyContext) {
+    if (!Number.isFinite(valueUsd)) {
+      return {
+        text: "N/A",
+        isConverted: false,
+        originalUsdText: ""
+      };
     }
 
-    return convertedText;
+    var usdText = formatCurrency(valueUsd);
+    var normalizedContext = normalizeCurrencyContext(currencyContext);
+    if (
+      normalizedContext.selectedCurrency === "USD" ||
+      !Number.isFinite(normalizedContext.rate) ||
+      normalizedContext.rate <= 0
+    ) {
+      return {
+        text: usdText,
+        isConverted: false,
+        originalUsdText: usdText
+      };
+    }
+
+    var converted = valueUsd * normalizedContext.rate;
+    var convertedText = formatCurrencyByCode(converted, normalizedContext.selectedCurrency);
+    if (convertedText === "N/A") {
+      return {
+        text: usdText,
+        isConverted: false,
+        originalUsdText: usdText
+      };
+    }
+
+    return {
+      text: convertedText,
+      isConverted: true,
+      originalUsdText: usdText
+    };
+  }
+
+  function formatAmountWithoutCurrency(value) {
+    if (!Number.isFinite(value)) {
+      return "N/A";
+    }
+
+    try {
+      return new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value);
+    } catch (_) {
+      return Number(value).toFixed(2);
+    }
   }
 
   function formatDate(isoValue) {
@@ -980,7 +1085,7 @@
     return date.toDateString();
   }
 
-  function createRow(doc, label, value, extraClass) {
+  function createRow(doc, label, value, extraClass, valueTitle) {
     var row = doc.createElement("div");
     row.className = "grailed-plus__row" + (extraClass ? " " + extraClass : "");
 
@@ -991,10 +1096,33 @@
     var valueNode = doc.createElement("span");
     valueNode.className = "grailed-plus__value";
     valueNode.textContent = value;
+    if (valueTitle && typeof valueNode.setAttribute === "function") {
+      valueNode.setAttribute("title", valueTitle);
+    }
 
     row.appendChild(labelNode);
     row.appendChild(valueNode);
     return row;
+  }
+
+  function setNodeTitle(node, title) {
+    if (!node) {
+      return;
+    }
+
+    if (title && typeof node.setAttribute === "function") {
+      node.setAttribute("title", title);
+      return;
+    }
+
+    if (typeof node.removeAttribute === "function") {
+      node.removeAttribute("title");
+      return;
+    }
+
+    if (typeof node.setAttribute === "function") {
+      node.setAttribute("title", "");
+    }
   }
 
   function removeExistingPanels(doc) {
@@ -1285,6 +1413,191 @@
     return Number.isFinite(amount) ? amount : null;
   }
 
+  function parseStoredAmount(value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (typeof value === "string" && value.trim() === "") {
+      return null;
+    }
+
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function hasElementChildren(node) {
+    return Boolean(node && node.children && node.children.length > 0);
+  }
+
+  function getNodeText(node) {
+    if (!node || typeof node.textContent !== "string") {
+      return "";
+    }
+    return node.textContent.trim();
+  }
+
+  function isUsdPriceText(text) {
+    if (typeof text !== "string") {
+      return false;
+    }
+
+    // Convert only plain USD-like price text (e.g. "$500", "US $500", "CA$500").
+    // This intentionally excludes percentage/label strings like "23% off".
+    return /^\s*(?:[A-Z]{0,3}\s*)?\$\s*-?\d[\d,]*(?:\.\d+)?\s*$/i.test(text);
+  }
+
+  function hasStoredOriginalPrice(node) {
+    if (!node || typeof node.getAttribute !== "function") {
+      return false;
+    }
+
+    return Boolean(node.getAttribute(SIDEBAR_USD_TEXT_ATTR));
+  }
+
+  function isStrikethroughNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    var tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
+    if (tagName === "DEL" || tagName === "S") {
+      return true;
+    }
+
+    var className = getClassName(node).toLowerCase();
+    if (/(line[-_ ]?through|strik|cross|previous|old|original|was|before|compare)/i.test(className)) {
+      return true;
+    }
+
+    var styleText = "";
+    if (typeof node.getAttribute === "function") {
+      styleText = String(node.getAttribute("style") || "").toLowerCase();
+    }
+
+    if (!styleText && node.style) {
+      styleText = String(
+        node.style.textDecorationLine || node.style.textDecoration || ""
+      ).toLowerCase();
+    }
+
+    return styleText.indexOf("line-through") !== -1;
+  }
+
+  function collectPriceTextCandidates(priceNode) {
+    if (!priceNode) {
+      return [];
+    }
+
+    var candidates = [priceNode];
+    if (typeof priceNode.querySelectorAll === "function") {
+      var descendants = priceNode.querySelectorAll("*");
+      Array.prototype.forEach.call(descendants, function (node) {
+        candidates.push(node);
+      });
+    }
+
+    return candidates.filter(function (node) {
+      var text = getNodeText(node);
+      if (!text && !hasStoredOriginalPrice(node)) {
+        return false;
+      }
+
+      if (hasStoredOriginalPrice(node)) {
+        return true;
+      }
+
+      if (!isUsdPriceText(text)) {
+        return false;
+      }
+      return Number.isFinite(parseUsdAmount(text));
+    });
+  }
+
+  function getPriceTextTargets(priceNode) {
+    var candidates = collectPriceTextCandidates(priceNode);
+    if (candidates.length === 0) {
+      return priceNode ? [priceNode] : [];
+    }
+
+    var leafCandidates = candidates.filter(function (node) {
+      return !hasElementChildren(node);
+    });
+
+    if (leafCandidates.length > 0) {
+      return leafCandidates;
+    }
+
+    return [candidates[0]];
+  }
+
+  function choosePrimaryPriceIndex(entries) {
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return -1;
+    }
+
+    var nonStrikeIndices = [];
+    var allConvertibleIndices = [];
+    var i;
+    for (i = 0; i < entries.length; i += 1) {
+      if (!entries[i] || !Number.isFinite(entries[i].usdValue)) {
+        continue;
+      }
+
+      allConvertibleIndices.push(i);
+      if (!entries[i].isStrikethrough) {
+        nonStrikeIndices.push(i);
+      }
+    }
+
+    var candidateIndices = nonStrikeIndices.length > 0 ? nonStrikeIndices : allConvertibleIndices;
+    if (candidateIndices.length === 0) {
+      return -1;
+    }
+
+    // In the common old-vs-current pair, the current price is usually the lower value.
+    if (candidateIndices.length === 2) {
+      var left = entries[candidateIndices[0]];
+      var right = entries[candidateIndices[1]];
+      if (Number.isFinite(left.usdValue) && Number.isFinite(right.usdValue)) {
+        return left.usdValue <= right.usdValue ? candidateIndices[0] : candidateIndices[1];
+      }
+    }
+
+    var bestIndex = -1;
+    var bestScore = Infinity;
+    var entry;
+    var className;
+    var score;
+
+    for (i = 0; i < candidateIndices.length; i += 1) {
+      entry = entries[candidateIndices[i]];
+
+      className = getClassName(entry.node).toLowerCase();
+      score = 0;
+
+      // Prefer nodes that usually represent current/live values.
+      if (/(value|current|now|final|amount|active)/i.test(className)) {
+        score -= 50;
+      }
+
+      // De-prioritize non-primary monetary labels (e.g. financing/monthly breakdowns).
+      if (/(month|monthly|installment|payment|finance|per)/i.test(className)) {
+        score += 20;
+      }
+
+      // Current price is usually the lower one.
+      score += entry.usdValue * 0.0001;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestIndex = candidateIndices[i];
+      }
+    }
+
+    return bestIndex;
+  }
+
   function applySidebarCurrency(doc, currencyContext) {
     if (!doc || typeof doc.querySelector !== "function") {
       return false;
@@ -1295,54 +1608,108 @@
       return false;
     }
 
-    var existingText = typeof priceNode.textContent === "string" ? priceNode.textContent.trim() : "";
-    var storedUsdText =
-      typeof priceNode.getAttribute === "function"
-        ? priceNode.getAttribute(SIDEBAR_USD_TEXT_ATTR) || ""
-        : "";
-
-    if (!storedUsdText && existingText && typeof priceNode.setAttribute === "function") {
-      storedUsdText = existingText;
-      priceNode.setAttribute(SIDEBAR_USD_TEXT_ATTR, existingText);
-    }
-
-    var storedUsdValueRaw =
-      typeof priceNode.getAttribute === "function"
-        ? priceNode.getAttribute(SIDEBAR_USD_VALUE_ATTR)
-        : null;
-    var usdValue = Number(storedUsdValueRaw);
-
-    if (!Number.isFinite(usdValue)) {
-      usdValue = parseUsdAmount(storedUsdText || existingText);
-      if (Number.isFinite(usdValue) && typeof priceNode.setAttribute === "function") {
-        priceNode.setAttribute(SIDEBAR_USD_VALUE_ATTR, String(usdValue));
-      }
+    var priceTextTargets = getPriceTextTargets(priceNode);
+    if (!Array.isArray(priceTextTargets) || priceTextTargets.length === 0) {
+      return false;
     }
 
     var normalizedContext = normalizeCurrencyContext(currencyContext);
+    var handled = false;
+    var convertedAny = false;
+    var conversionEnabled =
+      normalizedContext.selectedCurrency !== "USD" &&
+      Number.isFinite(normalizedContext.rate) &&
+      normalizedContext.rate > 0;
+    var targetEntries = [];
+    var i;
+    var priceTextTarget;
+    var existingText;
+    var storedUsdText;
+    var storedUsdValueRaw;
+    var usdValue;
+    var primaryIndex = -1;
+    var convertedText;
 
-    if (
-      normalizedContext.selectedCurrency === "USD" ||
-      !Number.isFinite(normalizedContext.rate) ||
-      normalizedContext.rate <= 0
-    ) {
-      if (storedUsdText) {
-        priceNode.textContent = storedUsdText;
+    for (i = 0; i < priceTextTargets.length; i += 1) {
+      priceTextTarget = priceTextTargets[i];
+      if (!priceTextTarget || typeof priceTextTarget.textContent !== "string") {
+        continue;
       }
-      return true;
+
+      existingText = getNodeText(priceTextTarget);
+      storedUsdText =
+        typeof priceTextTarget.getAttribute === "function"
+          ? priceTextTarget.getAttribute(SIDEBAR_USD_TEXT_ATTR) || ""
+          : "";
+
+      if (!storedUsdText && existingText && typeof priceTextTarget.setAttribute === "function") {
+        storedUsdText = existingText;
+        priceTextTarget.setAttribute(SIDEBAR_USD_TEXT_ATTR, existingText);
+      }
+
+      storedUsdValueRaw =
+        typeof priceTextTarget.getAttribute === "function"
+          ? priceTextTarget.getAttribute(SIDEBAR_USD_VALUE_ATTR)
+          : null;
+      usdValue = parseStoredAmount(storedUsdValueRaw);
+
+      if (usdValue == null) {
+        usdValue = parseUsdAmount(storedUsdText || existingText);
+        if (Number.isFinite(usdValue) && typeof priceTextTarget.setAttribute === "function") {
+          priceTextTarget.setAttribute(SIDEBAR_USD_VALUE_ATTR, String(usdValue));
+        }
+      }
+
+      handled = true;
+
+      targetEntries.push({
+        node: priceTextTarget,
+        storedUsdText: storedUsdText,
+        usdValue: usdValue,
+        isStrikethrough: isStrikethroughNode(priceTextTarget)
+      });
     }
 
-    if (!Number.isFinite(usdValue)) {
-      return false;
+      if (!conversionEnabled) {
+        for (i = 0; i < targetEntries.length; i += 1) {
+          if (targetEntries[i].storedUsdText) {
+            targetEntries[i].node.textContent = targetEntries[i].storedUsdText;
+          }
+          setNodeTitle(targetEntries[i].node, "");
+        }
+        return handled;
+      }
+
+    primaryIndex = choosePrimaryPriceIndex(targetEntries);
+
+    for (i = 0; i < targetEntries.length; i += 1) {
+      if (!Number.isFinite(targetEntries[i].usdValue)) {
+        continue;
+      }
+
+      if (i === primaryIndex) {
+        convertedText = formatCurrencyByCode(
+          targetEntries[i].usdValue * normalizedContext.rate,
+          normalizedContext.selectedCurrency
+        );
+      } else {
+        convertedText = formatAmountWithoutCurrency(targetEntries[i].usdValue * normalizedContext.rate);
+      }
+
+      if (convertedText === "N/A") {
+        setNodeTitle(targetEntries[i].node, "");
+        continue;
+      }
+
+      targetEntries[i].node.textContent = convertedText;
+      setNodeTitle(
+        targetEntries[i].node,
+        "Original USD: " + (targetEntries[i].storedUsdText || formatCurrency(targetEntries[i].usdValue))
+      );
+      convertedAny = true;
     }
 
-    var convertedText = formatCurrencyByCode(usdValue * normalizedContext.rate, normalizedContext.selectedCurrency);
-    if (convertedText === "N/A") {
-      return false;
-    }
-
-    priceNode.textContent = convertedText + " (" + (storedUsdText || formatCurrency(usdValue)) + ")";
-    return true;
+    return convertedAny;
   }
 
   function openMetadataInNewTab(rawListing, listing) {
@@ -1417,22 +1784,42 @@
     }
 
     var historyText;
+    var historyTitle = "";
     if (Array.isArray(listing.priceDrops) && listing.priceDrops.length > 0) {
-      historyText = listing.priceDrops
-        .map(function (value) {
-          return formatMoney(Number(value), currencyContext);
+      var historyDisplays = listing.priceDrops.map(function (value) {
+        return buildMoneyDisplay(Number(value), currencyContext);
+      });
+      historyText = historyDisplays
+        .map(function (display) {
+          return display.text;
         })
         .join(", ");
       historyText += " (total drops: " + listing.priceDrops.length + ")";
+
+      var convertedOriginals = historyDisplays
+        .filter(function (display) {
+          return display.isConverted;
+        })
+        .map(function (display) {
+          return display.originalUsdText;
+        });
+      if (convertedOriginals.length > 0) {
+        historyTitle = "Original USD: " + convertedOriginals.join(", ");
+      }
     } else {
       historyText = "No price drops on record";
     }
 
-    panel.appendChild(createRow(doc, "Price History", historyText));
+    panel.appendChild(createRow(doc, "Price History", historyText, "", historyTitle));
 
     var avgText = "N/A";
+    var avgTitle = "";
     if (Number.isFinite(metrics.avgDropPercent) && Number.isFinite(metrics.avgDropAmount)) {
-      avgText = String(metrics.avgDropPercent) + "% (" + formatMoney(metrics.avgDropAmount, currencyContext) + ")";
+      var avgDisplay = buildMoneyDisplay(metrics.avgDropAmount, currencyContext);
+      avgText = String(metrics.avgDropPercent) + "% (" + avgDisplay.text + ")";
+      if (avgDisplay.isConverted) {
+        avgTitle = "Original USD: " + avgDisplay.originalUsdText;
+      }
     }
 
     var avgClass = "";
@@ -1440,7 +1827,7 @@
       avgClass = "grailed-plus__row--alert";
     }
 
-    panel.appendChild(createRow(doc, "Avg. Price Drop", avgText, avgClass));
+    panel.appendChild(createRow(doc, "Avg. Price Drop", avgText, avgClass, avgTitle));
     panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics)));
     panel.appendChild(
       createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt))
@@ -1677,8 +2064,23 @@
       return Promise.resolve(defaultContext);
     }
 
-    return Settings.getSelectedCurrency()
+    var enabledPromise =
+      typeof Settings.getCurrencyConversionEnabled === "function"
+        ? Settings.getCurrencyConversionEnabled()
+        : Promise.resolve(false);
+
+    return enabledPromise
+      .then(function (enabled) {
+        if (!enabled) {
+          return defaultContext;
+        }
+        return Settings.getSelectedCurrency();
+      })
       .then(function (savedCurrency) {
+        if (typeof savedCurrency !== "string") {
+          return defaultContext;
+        }
+
         var selectedCurrency = normalizeCurrencyCode(savedCurrency) || defaultContext.selectedCurrency;
         var context = {
           selectedCurrency: selectedCurrency,

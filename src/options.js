@@ -58,6 +58,16 @@
     });
   }
 
+  function loadConversionEnabled() {
+    if (!Settings || typeof Settings.getCurrencyConversionEnabled !== "function") {
+      return Promise.resolve(false);
+    }
+
+    return Settings.getCurrencyConversionEnabled().then(function (value) {
+      return Boolean(value);
+    });
+  }
+
   function saveSelectedCurrency(code) {
     if (!Settings || typeof Settings.setSelectedCurrency !== "function") {
       return Promise.resolve({
@@ -67,6 +77,17 @@
     }
 
     return Settings.setSelectedCurrency(code);
+  }
+
+  function saveConversionEnabled(enabled) {
+    if (!Settings || typeof Settings.setCurrencyConversionEnabled !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setCurrencyConversionEnabled(Boolean(enabled));
   }
 
   function validateCustomCurrency(code) {
@@ -117,13 +138,14 @@
     selectNode.appendChild(customOption);
   }
 
-  function syncCustomInput(selectNode, customInputNode) {
+  function syncCurrencyInputs(selectNode, customInputNode, isEnabled) {
     if (!selectNode || !customInputNode) {
       return;
     }
 
+    selectNode.disabled = !isEnabled;
     var isCustom = selectNode.value === "CUSTOM";
-    customInputNode.disabled = !isCustom;
+    customInputNode.disabled = !isEnabled || !isCustom;
     if (!isCustom) {
       customInputNode.value = "";
     }
@@ -137,23 +159,22 @@
     if (curatedSet[selectedCurrency]) {
       selectNode.value = selectedCurrency;
       customInputNode.value = "";
-      customInputNode.disabled = true;
       return;
     }
 
     selectNode.value = "CUSTOM";
     customInputNode.value = selectedCurrency;
-    customInputNode.disabled = false;
   }
 
   function init() {
     var form = document.getElementById("currency-form");
+    var enabledNode = document.getElementById("conversion-enabled");
     var selectNode = document.getElementById("currency-select");
     var customInputNode = document.getElementById("currency-custom");
     var resetButton = document.getElementById("reset-button");
     var statusNode = document.getElementById("status");
 
-    if (!form || !selectNode || !customInputNode || !resetButton || !statusNode) {
+    if (!form || !enabledNode || !selectNode || !customInputNode || !resetButton || !statusNode) {
       return;
     }
 
@@ -169,13 +190,25 @@
 
     buildCuratedOptions(selectNode, curatedCurrencies);
 
-    loadSelectedCurrency().then(function (selectedCurrency) {
+    Promise.all([loadSelectedCurrency(), loadConversionEnabled()]).then(function (values) {
+      var selectedCurrency = values[0];
+      var enabled = values[1];
+
       applySelection(selectNode, customInputNode, selectedCurrency, curatedSet);
+      enabledNode.checked = enabled;
+      syncCurrencyInputs(selectNode, customInputNode, enabled);
     });
 
     if (typeof selectNode.addEventListener === "function") {
       selectNode.addEventListener("change", function () {
-        syncCustomInput(selectNode, customInputNode);
+        syncCurrencyInputs(selectNode, customInputNode, enabledNode.checked);
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof enabledNode.addEventListener === "function") {
+      enabledNode.addEventListener("change", function () {
+        syncCurrencyInputs(selectNode, customInputNode, enabledNode.checked);
         setStatus(statusNode, null, "");
       });
     }
@@ -188,58 +221,78 @@
 
         setStatus(statusNode, null, "");
 
+        var conversionEnabled = Boolean(enabledNode.checked);
+        var usingCustom = selectNode.value === "CUSTOM";
         var targetCode = null;
-        if (selectNode.value === "CUSTOM") {
+
+        if (usingCustom) {
           targetCode = normalizeCurrencyCode(customInputNode.value);
           if (!targetCode) {
             setStatus(statusNode, "error", "Custom code must be a valid 3-letter value.");
             return;
           }
-
-          validateCustomCurrency(targetCode).then(function (validation) {
-            if (!validation.ok) {
-              setStatus(statusNode, "error", validation.error || "Invalid currency code.");
-              return;
-            }
-
-            saveSelectedCurrency(targetCode).then(function (saved) {
-              if (!saved.ok) {
-                setStatus(statusNode, "error", saved.error || "Unable to save settings.");
-                return;
-              }
-              setStatus(statusNode, "success", "Saved. Refresh open listing tabs to apply.");
-            });
-          });
-
-          return;
-        }
-
-        targetCode = normalizeCurrencyCode(selectNode.value);
-        if (!targetCode) {
-          setStatus(statusNode, "error", "Please choose a valid currency.");
-          return;
-        }
-
-        saveSelectedCurrency(targetCode).then(function (saved) {
-          if (!saved.ok) {
-            setStatus(statusNode, "error", saved.error || "Unable to save settings.");
+        } else {
+          targetCode = normalizeCurrencyCode(selectNode.value);
+          if (!targetCode) {
+            setStatus(statusNode, "error", "Please choose a valid currency.");
             return;
           }
-          setStatus(statusNode, "success", "Saved. Refresh open listing tabs to apply.");
-        });
+        }
+
+        var validationPromise = Promise.resolve({ ok: true });
+        if (usingCustom && conversionEnabled) {
+          validationPromise = validateCustomCurrency(targetCode);
+        }
+
+        validationPromise
+          .then(function (validation) {
+            if (!validation.ok) {
+              setStatus(statusNode, "error", validation.error || "Invalid currency code.");
+              return Promise.reject(new Error("validation_failed"));
+            }
+
+            return saveSelectedCurrency(targetCode).then(function (savedCurrency) {
+              if (!savedCurrency.ok) {
+                setStatus(statusNode, "error", savedCurrency.error || "Unable to save settings.");
+                return Promise.reject(new Error("save_currency_failed"));
+              }
+
+              return saveConversionEnabled(conversionEnabled).then(function (savedEnabled) {
+                if (!savedEnabled.ok) {
+                  setStatus(statusNode, "error", savedEnabled.error || "Unable to save settings.");
+                  return Promise.reject(new Error("save_enabled_failed"));
+                }
+
+                if (!conversionEnabled) {
+                  setStatus(statusNode, "success", "Saved. Currency conversion is currently disabled.");
+                  return;
+                }
+
+                setStatus(statusNode, "success", "Saved. Refresh open listing tabs to apply.");
+              });
+            });
+          })
+          .catch(function () {
+            // Errors are handled with status updates above.
+          });
       });
     }
 
     if (typeof resetButton.addEventListener === "function") {
       resetButton.addEventListener("click", function () {
-        saveSelectedCurrency("USD").then(function (saved) {
-          if (!saved.ok) {
-            setStatus(statusNode, "error", saved.error || "Unable to reset settings.");
+        Promise.all([saveSelectedCurrency("USD"), saveConversionEnabled(false)]).then(function (results) {
+          var savedCurrency = results[0];
+          var savedEnabled = results[1];
+
+          if (!savedCurrency.ok || !savedEnabled.ok) {
+            setStatus(statusNode, "error", "Unable to reset settings.");
             return;
           }
 
+          enabledNode.checked = false;
           applySelection(selectNode, customInputNode, "USD", curatedSet);
-          setStatus(statusNode, "success", "Reset to USD. Refresh open listing tabs to apply.");
+          syncCurrencyInputs(selectNode, customInputNode, false);
+          setStatus(statusNode, "success", "Reset to defaults (conversion disabled, currency USD).");
         });
       });
     }

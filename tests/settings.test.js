@@ -5,10 +5,14 @@ const assert = require("node:assert/strict");
 
 const {
   DEFAULT_CURRENCY,
-  STORAGE_KEY,
+  DEFAULT_CONVERSION_ENABLED,
+  CURRENCY_STORAGE_KEY,
+  CONVERSION_ENABLED_STORAGE_KEY,
   normalizeCurrencyCode,
   getSelectedCurrency,
-  setSelectedCurrency
+  setSelectedCurrency,
+  getCurrencyConversionEnabled,
+  setCurrencyConversionEnabled
 } = require("../src/domain/settings.js");
 
 function createChromeStorage(initialState) {
@@ -54,7 +58,7 @@ test("getSelectedCurrency falls back to USD when unset or invalid", async () => 
     const unsetValue = await getSelectedCurrency();
     assert.equal(unsetValue, DEFAULT_CURRENCY);
 
-    chromeMock.__state[STORAGE_KEY] = "not-valid";
+    chromeMock.__state[CURRENCY_STORAGE_KEY] = "not-valid";
     const invalidValue = await getSelectedCurrency();
     assert.equal(invalidValue, DEFAULT_CURRENCY);
   } finally {
@@ -74,7 +78,7 @@ test("setSelectedCurrency stores normalized uppercase code", async () => {
   try {
     const result = await setSelectedCurrency("eur");
     assert.deepEqual(result, { ok: true });
-    assert.equal(chromeMock.__state[STORAGE_KEY], "EUR");
+    assert.equal(chromeMock.__state[CURRENCY_STORAGE_KEY], "EUR");
 
     const selected = await getSelectedCurrency();
     assert.equal(selected, "EUR");
@@ -96,7 +100,49 @@ test("setSelectedCurrency rejects invalid currency values", async () => {
     const result = await setSelectedCurrency("xx");
     assert.equal(result.ok, false);
     assert.match(result.error, /3-letter/);
-    assert.equal(chromeMock.__state[STORAGE_KEY], undefined);
+    assert.equal(chromeMock.__state[CURRENCY_STORAGE_KEY], undefined);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getCurrencyConversionEnabled defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getCurrencyConversionEnabled();
+    assert.equal(enabled, DEFAULT_CONVERSION_ENABLED);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setCurrencyConversionEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setCurrencyConversionEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[CONVERSION_ENABLED_STORAGE_KEY], true);
+    assert.equal(await getCurrencyConversionEnabled(), true);
+
+    const offResult = await setCurrencyConversionEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[CONVERSION_ENABLED_STORAGE_KEY], false);
+    assert.equal(await getCurrencyConversionEnabled(), false);
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;

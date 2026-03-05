@@ -175,8 +175,23 @@
       return Promise.resolve(defaultContext);
     }
 
-    return Settings.getSelectedCurrency()
+    var enabledPromise =
+      typeof Settings.getCurrencyConversionEnabled === "function"
+        ? Settings.getCurrencyConversionEnabled()
+        : Promise.resolve(false);
+
+    return enabledPromise
+      .then(function (enabled) {
+        if (!enabled) {
+          return defaultContext;
+        }
+        return Settings.getSelectedCurrency();
+      })
       .then(function (savedCurrency) {
+        if (typeof savedCurrency !== "string") {
+          return defaultContext;
+        }
+
         var selectedCurrency = normalizeCurrencyCode(savedCurrency) || defaultContext.selectedCurrency;
         var context = {
           selectedCurrency: selectedCurrency,
