@@ -536,6 +536,18 @@ test("applySidebarCurrency converts strike and current listing prices without US
   assert.ok(!priceValue.getAttribute("title"));
 });
 
+test("applySidebarCurrency keeps fractional strike-through values on listing pages", () => {
+  const { doc, pricePrevious } = createListingSidebar({ withStrikePrice: true });
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.845,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.equal(pricePrevious.textContent, "549.25");
+});
+
 test("applySidebarCurrency keeps symbol on current price even when DOM order is reversed", () => {
   const { doc, pricePrevious, priceValue } = createListingSidebar({
     withStrikePrice: true,
@@ -621,6 +633,21 @@ test("applyCardCurrency converts and restores card prices while preserving perce
   assert.equal(percentNodes[0].textContent, "38% off");
   assert.ok(!currentPrices[0].getAttribute("title"));
   assert.ok(!originalPrices[0].getAttribute("title"));
+});
+
+test("applyCardCurrency rounds strike-through converted values to whole numbers", () => {
+  const { doc, originalPrices } = createCardPriceFeed({
+    items: [{ current: "$80", original: "$130" }]
+  });
+
+  const converted = applyCardCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.845,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.equal(originalPrices[0].textContent, "110");
+  assert.doesNotMatch(originalPrices[0].textContent, /\./);
 });
 
 test("applyCardCurrency converts multiple card price containers", () => {

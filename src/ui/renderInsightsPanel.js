@@ -131,18 +131,33 @@
     };
   }
 
-  function formatAmountWithoutCurrency(value) {
+  function normalizeMaxFractionDigits(value, fallback) {
+    if (!Number.isFinite(value)) {
+      return fallback;
+    }
+
+    var rounded = Math.floor(value);
+    if (rounded < 0) {
+      return fallback;
+    }
+
+    return rounded;
+  }
+
+  function formatAmountWithoutCurrency(value, maxFractionDigits) {
     if (!Number.isFinite(value)) {
       return "N/A";
     }
 
+    var digits = normalizeMaxFractionDigits(maxFractionDigits, 2);
+
     try {
       return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+        maximumFractionDigits: digits
       }).format(value);
     } catch (_) {
-      return Number(value).toFixed(2);
+      return Number(value).toFixed(digits);
     }
   }
 
@@ -730,7 +745,7 @@
     return bestIndex;
   }
 
-  function applyCurrencyToPriceContainer(priceNode, currencyContext) {
+  function applyCurrencyToPriceContainer(priceNode, currencyContext, options) {
     if (!priceNode) {
       return {
         handled: false,
@@ -755,6 +770,11 @@
       normalizedContext.selectedCurrency !== "USD" &&
       Number.isFinite(normalizedContext.rate) &&
       normalizedContext.rate > 0;
+    var normalizedOptions = options || {};
+    var strikeMaxFractionDigits = normalizeMaxFractionDigits(
+      normalizedOptions.strikeMaxFractionDigits,
+      null
+    );
     var targetEntries = [];
     var i;
     var priceTextTarget;
@@ -832,7 +852,12 @@
           normalizedContext.selectedCurrency
         );
       } else {
-        convertedText = formatAmountWithoutCurrency(targetEntries[i].usdValue * normalizedContext.rate);
+        convertedText = formatAmountWithoutCurrency(
+          targetEntries[i].usdValue * normalizedContext.rate,
+          targetEntries[i].isStrikethrough && strikeMaxFractionDigits != null
+            ? strikeMaxFractionDigits
+            : 2
+        );
       }
 
       if (convertedText === "N/A") {
@@ -882,7 +907,9 @@
     var i;
     var outcome;
     for (i = 0; i < containers.length; i += 1) {
-      outcome = applyCurrencyToPriceContainer(containers[i], currencyContext);
+      outcome = applyCurrencyToPriceContainer(containers[i], currencyContext, {
+        strikeMaxFractionDigits: 0
+      });
       if (outcome && outcome.handled) {
         handledAny = true;
       }
