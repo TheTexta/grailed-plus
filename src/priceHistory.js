@@ -446,6 +446,441 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory();
   } else {
+    root.GrailedPlusSettings = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  var DEFAULT_CURRENCY = "USD";
+  var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
+  var STORAGE_KEY = "grailed_plus_selected_currency_v1";
+
+  function normalizeCurrencyCode(input) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function getStorageLocal() {
+    if (
+      typeof chrome !== "undefined" &&
+      chrome.storage &&
+      chrome.storage.local &&
+      typeof chrome.storage.local.get === "function" &&
+      typeof chrome.storage.local.set === "function"
+    ) {
+      return chrome.storage.local;
+    }
+
+    if (
+      typeof browser !== "undefined" &&
+      browser.storage &&
+      browser.storage.local &&
+      typeof browser.storage.local.get === "function" &&
+      typeof browser.storage.local.set === "function"
+    ) {
+      return browser.storage.local;
+    }
+
+    return null;
+  }
+
+  function storageGet(storage, key) {
+    if (!storage) {
+      return Promise.resolve({});
+    }
+
+    try {
+      var result = storage.get(key);
+      if (result && typeof result.then === "function") {
+        return result;
+      }
+    } catch (_) {
+      // Try callback style below.
+    }
+
+    return new Promise(function (resolve) {
+      try {
+        storage.get(key, function (data) {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve({});
+            return;
+          }
+          resolve(data || {});
+        });
+      } catch (_) {
+        resolve({});
+      }
+    });
+  }
+
+  function storageSet(storage, payload) {
+    if (!storage) {
+      return Promise.resolve(false);
+    }
+
+    try {
+      var result = storage.set(payload);
+      if (result && typeof result.then === "function") {
+        return result.then(function () {
+          return true;
+        });
+      }
+    } catch (_) {
+      // Try callback style below.
+    }
+
+    return new Promise(function (resolve) {
+      try {
+        storage.set(payload, function () {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        });
+      } catch (_) {
+        resolve(false);
+      }
+    });
+  }
+
+  function getSelectedCurrency() {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve(DEFAULT_CURRENCY);
+    }
+
+    return storageGet(storage, STORAGE_KEY)
+      .then(function (data) {
+        var normalized = normalizeCurrencyCode(data && data[STORAGE_KEY]);
+        return normalized || DEFAULT_CURRENCY;
+      })
+      .catch(function () {
+        return DEFAULT_CURRENCY;
+      });
+  }
+
+  function setSelectedCurrency(code) {
+    var normalized = normalizeCurrencyCode(code);
+    if (!normalized) {
+      return Promise.resolve({
+        ok: false,
+        error: "Currency must be a 3-letter code."
+      });
+    }
+
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[STORAGE_KEY] = normalized;
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist currency."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist currency."
+        };
+      });
+  }
+
+  return {
+    DEFAULT_CURRENCY: DEFAULT_CURRENCY,
+    CURATED_CURRENCIES: CURATED_CURRENCIES,
+    STORAGE_KEY: STORAGE_KEY,
+    normalizeCurrencyCode: normalizeCurrencyCode,
+    getSelectedCurrency: getSelectedCurrency,
+    setSelectedCurrency: setSelectedCurrency
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusCurrency = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  var CACHE_KEY = "grailed_plus_exchange_rates_v1";
+  var CACHE_TTL_MS = 60 * 60 * 1000;
+
+  function normalizeCurrencyCode(input) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function getStorageLocal() {
+    if (
+      typeof chrome !== "undefined" &&
+      chrome.storage &&
+      chrome.storage.local &&
+      typeof chrome.storage.local.get === "function" &&
+      typeof chrome.storage.local.set === "function"
+    ) {
+      return chrome.storage.local;
+    }
+
+    if (
+      typeof browser !== "undefined" &&
+      browser.storage &&
+      browser.storage.local &&
+      typeof browser.storage.local.get === "function" &&
+      typeof browser.storage.local.set === "function"
+    ) {
+      return browser.storage.local;
+    }
+
+    return null;
+  }
+
+  function storageGet(storage, key) {
+    if (!storage) {
+      return Promise.resolve({});
+    }
+
+    try {
+      var result = storage.get(key);
+      if (result && typeof result.then === "function") {
+        return result;
+      }
+    } catch (_) {
+      // Try callback style below.
+    }
+
+    return new Promise(function (resolve) {
+      try {
+        storage.get(key, function (data) {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve({});
+            return;
+          }
+          resolve(data || {});
+        });
+      } catch (_) {
+        resolve({});
+      }
+    });
+  }
+
+  function storageSet(storage, payload) {
+    if (!storage) {
+      return Promise.resolve(false);
+    }
+
+    try {
+      var result = storage.set(payload);
+      if (result && typeof result.then === "function") {
+        return result.then(function () {
+          return true;
+        });
+      }
+    } catch (_) {
+      // Try callback style below.
+    }
+
+    return new Promise(function (resolve) {
+      try {
+        storage.set(payload, function () {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        });
+      } catch (_) {
+        resolve(false);
+      }
+    });
+  }
+
+  function isCacheUsable(cache, baseCurrency, nowMs) {
+    if (!cache || typeof cache !== "object") {
+      return false;
+    }
+
+    if (cache.base !== baseCurrency) {
+      return false;
+    }
+
+    if (!cache.rates || typeof cache.rates !== "object") {
+      return false;
+    }
+
+    if (!Number.isFinite(cache.timestamp) || cache.timestamp <= 0) {
+      return false;
+    }
+
+    return nowMs - cache.timestamp < CACHE_TTL_MS;
+  }
+
+  function isCacheStaleButCompatible(cache, baseCurrency) {
+    if (!cache || typeof cache !== "object") {
+      return false;
+    }
+    if (cache.base !== baseCurrency) {
+      return false;
+    }
+    if (!cache.rates || typeof cache.rates !== "object") {
+      return false;
+    }
+    return true;
+  }
+
+  function buildPayload(baseCurrency, timestamp, rates) {
+    return {
+      base: baseCurrency,
+      timestamp: timestamp,
+      rates: rates
+    };
+  }
+
+  function buildResponse(payload, source) {
+    var safePayload = payload || {};
+    return {
+      rates: safePayload.rates && typeof safePayload.rates === "object" ? safePayload.rates : {},
+      base: safePayload.base || "USD",
+      timestamp: Number.isFinite(safePayload.timestamp) ? safePayload.timestamp : Date.now(),
+      source: source || "unknown"
+    };
+  }
+
+  function fetchLatestRates(baseCurrency) {
+    if (typeof fetch !== "function") {
+      return Promise.reject(new Error("fetch unavailable"));
+    }
+
+    var endpoint = "https://api.frankfurter.app/latest?base=" + encodeURIComponent(baseCurrency);
+    return fetch(endpoint)
+      .then(function (res) {
+        if (!res || !res.ok) {
+          throw new Error("failed to fetch currency rates");
+        }
+        return res.json();
+      })
+      .then(function (json) {
+        var rates = json && json.rates && typeof json.rates === "object" ? json.rates : {};
+        return buildPayload(baseCurrency, Date.now(), rates);
+      });
+  }
+
+  function getRates(baseCurrency) {
+    var normalizedBase = normalizeCurrencyCode(baseCurrency) || "USD";
+    var nowMs = Date.now();
+    var storage = getStorageLocal();
+
+    return storageGet(storage, CACHE_KEY)
+      .then(function (data) {
+        var cache = data && data[CACHE_KEY];
+        if (isCacheUsable(cache, normalizedBase, nowMs)) {
+          return buildResponse(cache, "cache_fresh");
+        }
+
+        return fetchLatestRates(normalizedBase)
+          .then(function (payload) {
+            var wrapper = {};
+            wrapper[CACHE_KEY] = payload;
+            return storageSet(storage, wrapper).then(function () {
+              return buildResponse(payload, "network");
+            });
+          })
+          .catch(function () {
+            if (isCacheStaleButCompatible(cache, normalizedBase)) {
+              return buildResponse(cache, "cache_stale");
+            }
+            return buildResponse(buildPayload(normalizedBase, nowMs, {}), "fallback_empty");
+          });
+      })
+      .catch(function () {
+        return fetchLatestRates(normalizedBase)
+          .then(function (payload) {
+            return buildResponse(payload, "network");
+          })
+          .catch(function () {
+            return buildResponse(buildPayload(normalizedBase, nowMs, {}), "fallback_empty");
+          });
+      });
+  }
+
+  function hasCurrencyCode(code, rates) {
+    var normalized = normalizeCurrencyCode(code);
+    if (!normalized || !rates || typeof rates !== "object") {
+      return false;
+    }
+
+    return Number.isFinite(Number(rates[normalized])) && Number(rates[normalized]) > 0;
+  }
+
+  function convert(amount, from, to) {
+    var amountNumber = Number(amount);
+    var fromCurrency = normalizeCurrencyCode(from);
+    var toCurrency = normalizeCurrencyCode(to);
+
+    if (!Number.isFinite(amountNumber) || !fromCurrency || !toCurrency) {
+      return Promise.resolve(null);
+    }
+
+    if (fromCurrency === toCurrency) {
+      return Promise.resolve(amountNumber);
+    }
+
+    return getRates(fromCurrency).then(function (result) {
+      var rates = result && result.rates ? result.rates : {};
+      if (!hasCurrencyCode(toCurrency, rates)) {
+        return null;
+      }
+
+      return amountNumber * Number(rates[toCurrency]);
+    });
+  }
+
+  return {
+    CACHE_KEY: CACHE_KEY,
+    CACHE_TTL_MS: CACHE_TTL_MS,
+    normalizeCurrencyCode: normalizeCurrencyCode,
+    getRates: getRates,
+    convert: convert,
+    hasCurrencyCode: hasCurrencyCode
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
     root.GrailedPlusRender = factory();
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
@@ -453,12 +888,85 @@
 
   var PANEL_ATTR = "data-grailed-plus-panel";
   var PANEL_ATTR_VALUE = "1";
+  var PRICE_SELECTORS = ['div[class*="Sidebar_price"]', 'div[class*="sidebar__price_"]'];
+  var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-usd-text";
+  var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-usd-value";
 
-  function formatCurrency(value) {
+  function normalizeCurrencyCode(input) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function formatCurrencyByCode(value, currencyCode) {
     if (!Number.isFinite(value)) {
       return "N/A";
     }
-    return "$" + Math.round(value).toLocaleString("en-US");
+
+    var normalizedCode = normalizeCurrencyCode(currencyCode) || "USD";
+
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: normalizedCode,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value);
+    } catch (_) {
+      return normalizedCode + " " + Number(value).toFixed(2);
+    }
+  }
+
+  function normalizeCurrencyContext(currencyContext) {
+    var selectedCurrency = normalizeCurrencyCode(
+      currencyContext && currencyContext.selectedCurrency
+    );
+    var rate = Number(currencyContext && currencyContext.rate);
+
+    return {
+      selectedCurrency: selectedCurrency || "USD",
+      rate: Number.isFinite(rate) ? rate : null,
+      mode: currencyContext && currencyContext.mode === "dual" ? "dual" : "dual"
+    };
+  }
+
+  function formatCurrency(value) {
+    return formatCurrencyByCode(value, "USD");
+  }
+
+  function formatMoney(valueUsd, currencyContext) {
+    if (!Number.isFinite(valueUsd)) {
+      return "N/A";
+    }
+
+    var usdText = formatCurrency(valueUsd);
+    var normalizedContext = normalizeCurrencyContext(currencyContext);
+    if (
+      normalizedContext.selectedCurrency === "USD" ||
+      !Number.isFinite(normalizedContext.rate) ||
+      normalizedContext.rate <= 0
+    ) {
+      return usdText;
+    }
+
+    var converted = valueUsd * normalizedContext.rate;
+    var convertedText = formatCurrencyByCode(converted, normalizedContext.selectedCurrency);
+    if (convertedText === "N/A") {
+      return usdText;
+    }
+
+    if (normalizedContext.mode === "dual") {
+      return convertedText + " (" + usdText + ")";
+    }
+
+    return convertedText;
   }
 
   function formatDate(isoValue) {
@@ -734,10 +1242,7 @@
       return null;
     }
 
-    var priceNode = findFirstBySelectors(doc, [
-      'div[class*="Sidebar_price"]',
-      'div[class*="sidebar__price_"]'
-    ]);
+    var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
     var fallbackNode;
 
     if (priceNode) {
@@ -763,6 +1268,81 @@
   function findMountNode(doc) {
     var mountTarget = findMountTarget(doc);
     return mountTarget && mountTarget.mountNode ? mountTarget.mountNode : null;
+  }
+
+  function parseUsdAmount(text) {
+    if (typeof text !== "string") {
+      return null;
+    }
+
+    var normalized = text.replace(/,/g, "");
+    var match = normalized.match(/-?\d+(?:\.\d+)?/);
+    if (!match) {
+      return null;
+    }
+
+    var amount = Number(match[0]);
+    return Number.isFinite(amount) ? amount : null;
+  }
+
+  function applySidebarCurrency(doc, currencyContext) {
+    if (!doc || typeof doc.querySelector !== "function") {
+      return false;
+    }
+
+    var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
+    if (!priceNode) {
+      return false;
+    }
+
+    var existingText = typeof priceNode.textContent === "string" ? priceNode.textContent.trim() : "";
+    var storedUsdText =
+      typeof priceNode.getAttribute === "function"
+        ? priceNode.getAttribute(SIDEBAR_USD_TEXT_ATTR) || ""
+        : "";
+
+    if (!storedUsdText && existingText && typeof priceNode.setAttribute === "function") {
+      storedUsdText = existingText;
+      priceNode.setAttribute(SIDEBAR_USD_TEXT_ATTR, existingText);
+    }
+
+    var storedUsdValueRaw =
+      typeof priceNode.getAttribute === "function"
+        ? priceNode.getAttribute(SIDEBAR_USD_VALUE_ATTR)
+        : null;
+    var usdValue = Number(storedUsdValueRaw);
+
+    if (!Number.isFinite(usdValue)) {
+      usdValue = parseUsdAmount(storedUsdText || existingText);
+      if (Number.isFinite(usdValue) && typeof priceNode.setAttribute === "function") {
+        priceNode.setAttribute(SIDEBAR_USD_VALUE_ATTR, String(usdValue));
+      }
+    }
+
+    var normalizedContext = normalizeCurrencyContext(currencyContext);
+
+    if (
+      normalizedContext.selectedCurrency === "USD" ||
+      !Number.isFinite(normalizedContext.rate) ||
+      normalizedContext.rate <= 0
+    ) {
+      if (storedUsdText) {
+        priceNode.textContent = storedUsdText;
+      }
+      return true;
+    }
+
+    if (!Number.isFinite(usdValue)) {
+      return false;
+    }
+
+    var convertedText = formatCurrencyByCode(usdValue * normalizedContext.rate, normalizedContext.selectedCurrency);
+    if (convertedText === "N/A") {
+      return false;
+    }
+
+    priceNode.textContent = convertedText + " (" + (storedUsdText || formatCurrency(usdValue)) + ")";
+    return true;
   }
 
   function openMetadataInNewTab(rawListing, listing) {
@@ -814,6 +1394,7 @@
       options && options.mountPosition === "beforebegin" ? "beforebegin" : "afterend";
     var rawListing = options && options.rawListing ? options.rawListing : null;
     var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
+    var currencyContext = options && options.currencyContext ? options.currencyContext : null;
     var doc = (mountNode && mountNode.ownerDocument) || document;
 
     if (!mountNode || !doc || typeof doc.createElement !== "function") {
@@ -839,7 +1420,7 @@
     if (Array.isArray(listing.priceDrops) && listing.priceDrops.length > 0) {
       historyText = listing.priceDrops
         .map(function (value) {
-          return formatCurrency(Number(value));
+          return formatMoney(Number(value), currencyContext);
         })
         .join(", ");
       historyText += " (total drops: " + listing.priceDrops.length + ")";
@@ -851,7 +1432,7 @@
 
     var avgText = "N/A";
     if (Number.isFinite(metrics.avgDropPercent) && Number.isFinite(metrics.avgDropAmount)) {
-      avgText = String(metrics.avgDropPercent) + "% (" + formatCurrency(metrics.avgDropAmount) + ")";
+      avgText = String(metrics.avgDropPercent) + "% (" + formatMoney(metrics.avgDropAmount, currencyContext) + ")";
     }
 
     var avgClass = "";
@@ -911,9 +1492,11 @@
     PANEL_ATTR_VALUE: PANEL_ATTR_VALUE,
     findMountTarget: findMountTarget,
     findMountNode: findMountNode,
+    applySidebarCurrency: applySidebarCurrency,
     removeExistingPanels: removeExistingPanels,
     renderPanel: renderPanel,
-    formatCurrency: formatCurrency
+    formatCurrency: formatCurrency,
+    formatMoney: formatMoney
   };
 });
 
@@ -928,6 +1511,8 @@
   var Url = globalThis.GrailedPlusUrl;
   var Extract = globalThis.GrailedPlusExtractListing;
   var Metrics = globalThis.GrailedPlusMetrics;
+  var Settings = globalThis.GrailedPlusSettings;
+  var Currency = globalThis.GrailedPlusCurrency;
   var Render = globalThis.GrailedPlusRender;
 
   if (!Url || !Extract || !Metrics || !Render) {
@@ -945,7 +1530,8 @@
     retryTimer: null,
     urlPollTimer: null,
     retryStartedAtMs: null,
-    mutationObserver: null
+    mutationObserver: null,
+    renderToken: 0
   };
 
   function isDebugEnabled() {
@@ -1060,38 +1646,127 @@
     return null;
   }
 
+  function createUsdCurrencyContext() {
+    return {
+      selectedCurrency: "USD",
+      rate: null,
+      mode: "dual"
+    };
+  }
+
+  function normalizeCurrencyCode(input) {
+    if (Settings && typeof Settings.normalizeCurrencyCode === "function") {
+      return Settings.normalizeCurrencyCode(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  function resolveCurrencyContext() {
+    var defaultContext = createUsdCurrencyContext();
+
+    if (!Settings || typeof Settings.getSelectedCurrency !== "function") {
+      return Promise.resolve(defaultContext);
+    }
+
+    return Settings.getSelectedCurrency()
+      .then(function (savedCurrency) {
+        var selectedCurrency = normalizeCurrencyCode(savedCurrency) || defaultContext.selectedCurrency;
+        var context = {
+          selectedCurrency: selectedCurrency,
+          rate: null,
+          mode: "dual"
+        };
+
+        if (selectedCurrency === "USD") {
+          return context;
+        }
+
+        if (!Currency || typeof Currency.getRates !== "function") {
+          return context;
+        }
+
+        return Currency.getRates("USD")
+          .then(function (result) {
+            var rates = result && result.rates && typeof result.rates === "object" ? result.rates : {};
+            var rate = Number(rates[selectedCurrency]);
+            if (Number.isFinite(rate) && rate > 0) {
+              context.rate = rate;
+            }
+            return context;
+          })
+          .catch(function () {
+            return context;
+          });
+      })
+      .catch(function () {
+        return defaultContext;
+      });
+  }
+
+  function applySidebarCurrency(currencyContext) {
+    if (!Render || typeof Render.applySidebarCurrency !== "function") {
+      return;
+    }
+
+    try {
+      Render.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
+    } catch (_) {
+      // Sidebar rewrite should never block panel rendering.
+    }
+  }
+
   function renderUnavailable(statusMessage) {
     if (!Url.isListingPath(location.pathname)) {
       return;
     }
+
+    var renderToken = state.renderToken + 1;
+    state.renderToken = renderToken;
 
     var mountTarget = resolveMountTarget(document);
     if (!mountTarget || !mountTarget.mountNode) {
       return;
     }
 
-    Render.renderPanel({
-      listing: {
-        id: "unknown",
-        title: "",
-        priceDrops: [],
-        createdAt: null,
-        priceUpdatedAt: null,
-        seller: {
-          createdAt: null
+    resolveCurrencyContext().then(function (currencyContext) {
+      if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+        return;
+      }
+
+      Render.renderPanel({
+        listing: {
+          id: "unknown",
+          title: "",
+          priceDrops: [],
+          createdAt: null,
+          priceUpdatedAt: null,
+          seller: {
+            createdAt: null
+          },
+          rawListing: null
         },
-        rawListing: null
-      },
-      metrics: {
-        avgDropAmount: null,
-        avgDropPercent: null,
-        expectedDropDays: null,
-        expectedDropState: "insufficient_data"
-      },
-      mountNode: mountTarget.mountNode,
-      mountPosition: mountTarget.mountPosition,
-      rawListing: null,
-      statusMessage: statusMessage
+        metrics: {
+          avgDropAmount: null,
+          avgDropPercent: null,
+          expectedDropDays: null,
+          expectedDropState: "insufficient_data"
+        },
+        mountNode: mountTarget.mountNode,
+        mountPosition: mountTarget.mountPosition,
+        rawListing: null,
+        statusMessage: statusMessage,
+        currencyContext: currencyContext
+      });
+      applySidebarCurrency(currencyContext);
     });
   }
 
@@ -1121,6 +1796,7 @@
 
   function run(reason, attempt) {
     if (!Url.isListingPath(location.pathname)) {
+      state.renderToken += 1;
       clearRetryTimer(true);
       disconnectHydrationObserver();
       Render.removeExistingPanels(document);
@@ -1146,22 +1822,60 @@
     }
 
     var metrics = Metrics.computeMetrics(listing);
-    Render.renderPanel({
-      listing: listing,
-      metrics: metrics,
-      mountNode: mountTarget.mountNode,
-      mountPosition: mountTarget.mountPosition,
-      rawListing: listing.rawListing
-    });
+    var renderToken = state.renderToken + 1;
+    state.renderToken = renderToken;
 
-    disconnectHydrationObserver();
-    state.retryStartedAtMs = null;
+    resolveCurrencyContext()
+      .then(function (currencyContext) {
+        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+          return;
+        }
 
-    log("rendered", {
-      reason: reason,
-      attempt: attempt,
-      listingId: listing.id
-    });
+        Render.renderPanel({
+          listing: listing,
+          metrics: metrics,
+          mountNode: mountTarget.mountNode,
+          mountPosition: mountTarget.mountPosition,
+          rawListing: listing.rawListing,
+          currencyContext: currencyContext
+        });
+        applySidebarCurrency(currencyContext);
+
+        disconnectHydrationObserver();
+        state.retryStartedAtMs = null;
+
+        log("rendered", {
+          reason: reason,
+          attempt: attempt,
+          listingId: listing.id,
+          currency: currencyContext.selectedCurrency
+        });
+      })
+      .catch(function () {
+        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+          return;
+        }
+
+        var fallbackCurrency = createUsdCurrencyContext();
+        Render.renderPanel({
+          listing: listing,
+          metrics: metrics,
+          mountNode: mountTarget.mountNode,
+          mountPosition: mountTarget.mountPosition,
+          rawListing: listing.rawListing,
+          currencyContext: fallbackCurrency
+        });
+        applySidebarCurrency(fallbackCurrency);
+
+        disconnectHydrationObserver();
+        state.retryStartedAtMs = null;
+
+        log("rendered_with_currency_fallback", {
+          reason: reason,
+          attempt: attempt,
+          listingId: listing.id
+        });
+      });
   }
 
   function refresh(reason) {

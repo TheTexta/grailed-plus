@@ -12,9 +12,17 @@
       "id": "{f68ae042-4fad-4e1e-8973-49c8348058ed}"
     }
   },
-  "host_permissions": [
-    "*://*.grailed.com/listings/*"
+  "permissions": [
+    "storage"
   ],
+  "host_permissions": [
+    "*://*.grailed.com/listings/*",
+    "https://api.frankfurter.app/*"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": [

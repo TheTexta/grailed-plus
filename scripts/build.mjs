@@ -11,6 +11,8 @@ const inputFiles = [
   "src/data/listingAdapter.js",
   "src/data/extractListing.js",
   "src/domain/metrics.js",
+  "src/domain/settings.js",
+  "src/domain/currency.js",
   "src/ui/renderPanel.js",
   "src/content/boot.js"
 ];

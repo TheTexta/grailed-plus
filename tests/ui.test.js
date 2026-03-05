@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { findMountTarget, renderPanel } = require("../src/ui/renderPanel.js");
+const { findMountTarget, renderPanel, applySidebarCurrency } = require("../src/ui/renderPanel.js");
 const { MockDocument, flattenText } = require("./helpers/mockDocument.js");
 
 function createPanelHarness() {
@@ -226,4 +226,69 @@ test("renderPanel re-renders without duplicates", () => {
   });
 
   assert.equal(doc.querySelectorAll('[data-grailed-plus-panel="1"]').length, 1);
+});
+
+test("renderPanel shows converted + USD values when currency context has a rate", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    currencyContext: {
+      selectedCurrency: "EUR",
+      rate: 0.9,
+      mode: "dual"
+    }
+  });
+
+  const text = flattenText(panel);
+  assert.match(text, /Price History/);
+  assert.match(text, /€/);
+  assert.match(text, /\(\$1,000\)/);
+  assert.match(text, /Avg\. Price Drop/);
+  assert.match(text, /\(\$95\)/);
+});
+
+test("renderPanel falls back to USD-only values when no conversion rate is available", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    currencyContext: {
+      selectedCurrency: "EUR",
+      rate: null,
+      mode: "dual"
+    }
+  });
+
+  const text = flattenText(panel);
+  assert.match(text, /\$1,000/);
+  assert.doesNotMatch(text, /€/);
+});
+
+test("applySidebarCurrency converts and restores the sidebar price", () => {
+  const { doc, price } = createListingSidebar();
+  assert.equal(price.textContent, "$500");
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(price.textContent, /€/);
+  assert.match(price.textContent, /\(\$500\)/);
+
+  const restored = applySidebarCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(price.textContent, "$500");
 });

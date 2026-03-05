@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grailed Plus Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="gp-options">
+      <h1>Grailed Plus Settings</h1>
+      <p class="gp-options__copy">
+        Choose a target currency for listing sidebar and Grailed Plus panel amounts.
+      </p>
+
+      <form id="currency-form" class="gp-options__form">
+        <label for="currency-select" class="gp-options__label">Currency</label>
+        <select id="currency-select" class="gp-options__control"></select>
+
+        <label for="currency-custom" class="gp-options__label">Custom 3-letter code</label>
+        <input
+          id="currency-custom"
+          class="gp-options__control"
+          type="text"
+          maxlength="3"
+          placeholder="e.g. SEK"
+          autocomplete="off"
+          spellcheck="false"
+          disabled
+        />
+
+        <div class="gp-options__actions">
+          <button type="submit" class="gp-options__button gp-options__button--primary">Save</button>
+          <button type="button" id="reset-button" class="gp-options__button">Reset to USD</button>
+        </div>
+      </form>
+
+      <p class="gp-options__hint">Changes apply after refreshing open listing tabs.</p>
+      <p id="status" class="gp-options__status" aria-live="polite"></p>
+    </main>
+
+    <script src="domain/settings.js"></script>
+    <script src="domain/currency.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

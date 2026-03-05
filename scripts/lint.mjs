@@ -11,14 +11,19 @@ const filesToCheck = [
   "src/data/listingAdapter.js",
   "src/data/extractListing.js",
   "src/domain/metrics.js",
+  "src/domain/settings.js",
+  "src/domain/currency.js",
   "src/ui/renderPanel.js",
   "src/content/boot.js",
+  "src/options.js",
   "tests/url.test.js",
   "tests/extractListing.test.js",
   "tests/extractListing.snapshot.test.js",
   "tests/listingAdapter.test.js",
   "tests/metrics.test.js",
-  "tests/ui.test.js"
+  "tests/ui.test.js",
+  "tests/settings.test.js",
+  "tests/currency.test.js"
 ];
 
 let hasFailure = false;

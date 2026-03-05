@@ -9,6 +9,8 @@
   var Url = globalThis.GrailedPlusUrl;
   var Extract = globalThis.GrailedPlusExtractListing;
   var Metrics = globalThis.GrailedPlusMetrics;
+  var Settings = globalThis.GrailedPlusSettings;
+  var Currency = globalThis.GrailedPlusCurrency;
   var Render = globalThis.GrailedPlusRender;
 
   if (!Url || !Extract || !Metrics || !Render) {
@@ -26,7 +28,8 @@
     retryTimer: null,
     urlPollTimer: null,
     retryStartedAtMs: null,
-    mutationObserver: null
+    mutationObserver: null,
+    renderToken: 0
   };
 
   function isDebugEnabled() {
@@ -141,38 +144,127 @@
     return null;
   }
 
+  function createUsdCurrencyContext() {
+    return {
+      selectedCurrency: "USD",
+      rate: null,
+      mode: "dual"
+    };
+  }
+
+  function normalizeCurrencyCode(input) {
+    if (Settings && typeof Settings.normalizeCurrencyCode === "function") {
+      return Settings.normalizeCurrencyCode(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  function resolveCurrencyContext() {
+    var defaultContext = createUsdCurrencyContext();
+
+    if (!Settings || typeof Settings.getSelectedCurrency !== "function") {
+      return Promise.resolve(defaultContext);
+    }
+
+    return Settings.getSelectedCurrency()
+      .then(function (savedCurrency) {
+        var selectedCurrency = normalizeCurrencyCode(savedCurrency) || defaultContext.selectedCurrency;
+        var context = {
+          selectedCurrency: selectedCurrency,
+          rate: null,
+          mode: "dual"
+        };
+
+        if (selectedCurrency === "USD") {
+          return context;
+        }
+
+        if (!Currency || typeof Currency.getRates !== "function") {
+          return context;
+        }
+
+        return Currency.getRates("USD")
+          .then(function (result) {
+            var rates = result && result.rates && typeof result.rates === "object" ? result.rates : {};
+            var rate = Number(rates[selectedCurrency]);
+            if (Number.isFinite(rate) && rate > 0) {
+              context.rate = rate;
+            }
+            return context;
+          })
+          .catch(function () {
+            return context;
+          });
+      })
+      .catch(function () {
+        return defaultContext;
+      });
+  }
+
+  function applySidebarCurrency(currencyContext) {
+    if (!Render || typeof Render.applySidebarCurrency !== "function") {
+      return;
+    }
+
+    try {
+      Render.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
+    } catch (_) {
+      // Sidebar rewrite should never block panel rendering.
+    }
+  }
+
   function renderUnavailable(statusMessage) {
     if (!Url.isListingPath(location.pathname)) {
       return;
     }
+
+    var renderToken = state.renderToken + 1;
+    state.renderToken = renderToken;
 
     var mountTarget = resolveMountTarget(document);
     if (!mountTarget || !mountTarget.mountNode) {
       return;
     }
 
-    Render.renderPanel({
-      listing: {
-        id: "unknown",
-        title: "",
-        priceDrops: [],
-        createdAt: null,
-        priceUpdatedAt: null,
-        seller: {
-          createdAt: null
+    resolveCurrencyContext().then(function (currencyContext) {
+      if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+        return;
+      }
+
+      Render.renderPanel({
+        listing: {
+          id: "unknown",
+          title: "",
+          priceDrops: [],
+          createdAt: null,
+          priceUpdatedAt: null,
+          seller: {
+            createdAt: null
+          },
+          rawListing: null
         },
-        rawListing: null
-      },
-      metrics: {
-        avgDropAmount: null,
-        avgDropPercent: null,
-        expectedDropDays: null,
-        expectedDropState: "insufficient_data"
-      },
-      mountNode: mountTarget.mountNode,
-      mountPosition: mountTarget.mountPosition,
-      rawListing: null,
-      statusMessage: statusMessage
+        metrics: {
+          avgDropAmount: null,
+          avgDropPercent: null,
+          expectedDropDays: null,
+          expectedDropState: "insufficient_data"
+        },
+        mountNode: mountTarget.mountNode,
+        mountPosition: mountTarget.mountPosition,
+        rawListing: null,
+        statusMessage: statusMessage,
+        currencyContext: currencyContext
+      });
+      applySidebarCurrency(currencyContext);
     });
   }
 
@@ -202,6 +294,7 @@
 
   function run(reason, attempt) {
     if (!Url.isListingPath(location.pathname)) {
+      state.renderToken += 1;
       clearRetryTimer(true);
       disconnectHydrationObserver();
       Render.removeExistingPanels(document);
@@ -227,22 +320,60 @@
     }
 
     var metrics = Metrics.computeMetrics(listing);
-    Render.renderPanel({
-      listing: listing,
-      metrics: metrics,
-      mountNode: mountTarget.mountNode,
-      mountPosition: mountTarget.mountPosition,
-      rawListing: listing.rawListing
-    });
+    var renderToken = state.renderToken + 1;
+    state.renderToken = renderToken;
 
-    disconnectHydrationObserver();
-    state.retryStartedAtMs = null;
+    resolveCurrencyContext()
+      .then(function (currencyContext) {
+        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+          return;
+        }
 
-    log("rendered", {
-      reason: reason,
-      attempt: attempt,
-      listingId: listing.id
-    });
+        Render.renderPanel({
+          listing: listing,
+          metrics: metrics,
+          mountNode: mountTarget.mountNode,
+          mountPosition: mountTarget.mountPosition,
+          rawListing: listing.rawListing,
+          currencyContext: currencyContext
+        });
+        applySidebarCurrency(currencyContext);
+
+        disconnectHydrationObserver();
+        state.retryStartedAtMs = null;
+
+        log("rendered", {
+          reason: reason,
+          attempt: attempt,
+          listingId: listing.id,
+          currency: currencyContext.selectedCurrency
+        });
+      })
+      .catch(function () {
+        if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
+          return;
+        }
+
+        var fallbackCurrency = createUsdCurrencyContext();
+        Render.renderPanel({
+          listing: listing,
+          metrics: metrics,
+          mountNode: mountTarget.mountNode,
+          mountPosition: mountTarget.mountPosition,
+          rawListing: listing.rawListing,
+          currencyContext: fallbackCurrency
+        });
+        applySidebarCurrency(fallbackCurrency);
+
+        disconnectHydrationObserver();
+        state.retryStartedAtMs = null;
+
+        log("rendered_with_currency_fallback", {
+          reason: reason,
+          attempt: attempt,
+          listingId: listing.id
+        });
+      });
   }
 
   function refresh(reason) {

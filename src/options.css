@@ -1,0 +1,105 @@
+:root {
+  --gp-bg: #f5f4f1;
+  --gp-panel: #ffffff;
+  --gp-border: #d6d2ca;
+  --gp-text: #181818;
+  --gp-muted: #5c584f;
+  --gp-accent: #0f4b33;
+  --gp-error: #a40018;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: linear-gradient(140deg, #e8e4da 0%, var(--gp-bg) 100%);
+  color: var(--gp-text);
+  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
+}
+
+.gp-options {
+  max-width: 520px;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-border);
+  padding: 20px;
+}
+
+.gp-options h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.gp-options__copy {
+  margin: 0 0 16px;
+  color: var(--gp-muted);
+}
+
+.gp-options__form {
+  display: grid;
+  gap: 10px;
+}
+
+.gp-options__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.gp-options__control {
+  width: 100%;
+  border: 1px solid var(--gp-border);
+  padding: 10px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--gp-text);
+}
+
+.gp-options__actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+}
+
+.gp-options__button {
+  appearance: none;
+  border: 1px solid var(--gp-border);
+  background: #fff;
+  color: var(--gp-text);
+  padding: 8px 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.gp-options__button--primary {
+  border-color: var(--gp-accent);
+  background: var(--gp-accent);
+  color: #fff;
+}
+
+.gp-options__hint {
+  margin: 14px 0 0;
+  color: var(--gp-muted);
+  font-size: 13px;
+}
+
+.gp-options__status {
+  min-height: 20px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gp-options__status[data-tone="error"] {
+  color: var(--gp-error);
+}
+
+.gp-options__status[data-tone="success"] {
+  color: var(--gp-accent);
+}

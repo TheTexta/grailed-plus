@@ -7,9 +7,17 @@
     "48": "icons/grailed-48.png",
     "96": "icons/grailed-96.png"
   },
-  "host_permissions": [
-    "*://*.grailed.com/listings/*"
+  "permissions": [
+    "storage"
   ],
+  "host_permissions": [
+    "*://*.grailed.com/listings/*",
+    "https://api.frankfurter.app/*"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": [

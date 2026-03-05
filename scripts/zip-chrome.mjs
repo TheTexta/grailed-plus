@@ -23,6 +23,11 @@ const result = spawnSync(
     "manifest.json",
     "priceHistory.js",
     "priceHistory.css",
+    "options.html",
+    "options.js",
+    "options.css",
+    "domain/settings.js",
+    "domain/currency.js",
     "icons"
   ],
   {
