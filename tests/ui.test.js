@@ -3,7 +3,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { findMountTarget, renderPanel, applySidebarCurrency } = require("../src/ui/renderPanel.js");
+const {
+  findMountTarget,
+  renderPanel,
+  applySidebarCurrency,
+  applyCardCurrency
+} = require("../src/ui/renderPanel.js");
 const { MockDocument, flattenText } = require("./helpers/mockDocument.js");
 
 function createPanelHarness() {
@@ -117,6 +122,92 @@ function createListingSidebar(options) {
     pricePercent,
     ctaWrap,
     ctaButton
+  };
+}
+
+function createCardPriceFeed(options) {
+  const settings = Object.assign(
+    {
+      priceClass: "Price_root__5H7zK Price_small__0o0TB",
+      currentClass: "Money_root__uOwWV Price_onSale__XeWB0",
+      originalClass: "Money_root__uOwWV Price_original__g6NSp",
+      percentClass: "Price_percentOff__DxYgt",
+      items: [
+        {
+          current: "$80",
+          original: "$130",
+          percent: "38% off"
+        }
+      ]
+    },
+    options || {}
+  );
+
+  const doc = new MockDocument();
+  const main = doc.createElement("main");
+  const feed = doc.createElement("section");
+  feed.setAttribute("class", "Homepage_feed__123");
+
+  doc.body.appendChild(main);
+  main.appendChild(feed);
+
+  const cards = [];
+  const currentPrices = [];
+  const originalPrices = [];
+  const percentNodes = [];
+
+  settings.items.forEach((item) => {
+    const price = doc.createElement("div");
+    price.setAttribute("class", settings.priceClass);
+
+    const current = doc.createElement("span");
+    current.setAttribute("class", settings.currentClass);
+    current.setAttribute("data-testid", "Current");
+    current.textContent = item.current;
+    let original = null;
+    let percent = null;
+
+    if (typeof item.original === "string") {
+      original = doc.createElement("span");
+      original.setAttribute("class", settings.originalClass);
+      original.setAttribute("data-testid", "Original");
+      original.textContent = item.original;
+    }
+
+    if (typeof item.percent === "string") {
+      percent = doc.createElement("span");
+      percent.setAttribute("class", settings.percentClass);
+      percent.setAttribute("data-testid", "PercentOff");
+      percent.textContent = item.percent;
+    }
+
+    price.appendChild(current);
+    if (original) {
+      price.appendChild(original);
+    }
+    if (percent) {
+      price.appendChild(percent);
+    }
+    feed.appendChild(price);
+
+    cards.push(price);
+    currentPrices.push(current);
+    if (original) {
+      originalPrices.push(original);
+    }
+    if (percent) {
+      percentNodes.push(percent);
+    }
+  });
+
+  return {
+    doc,
+    main,
+    feed,
+    cards,
+    currentPrices,
+    originalPrices,
+    percentNodes
   };
 }
 
@@ -243,7 +334,7 @@ test("renderPanel inserts panel after mount node by default", () => {
   assert.ok(panel);
   assert.equal(main.children[1], panel);
   assert.equal(panel.getAttribute("data-grailed-plus-panel"), "1");
-  assert.match(flattenText(panel), /Grailed Plus/);
+  assert.match(flattenText(panel), /Price History/);
   assert.match(flattenText(panel), /Listing Metadata/);
 });
 
@@ -498,4 +589,97 @@ test("applySidebarCurrency leaves percent-off text unchanged", () => {
   });
   assert.equal(restored, true);
   assert.equal(pricePercent.textContent, "23% off");
+});
+
+test("applyCardCurrency converts and restores card prices while preserving percent text", () => {
+  const { doc, currentPrices, originalPrices, percentNodes } = createCardPriceFeed();
+
+  const converted = applyCardCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(currentPrices[0].textContent, /€72/);
+  assert.match(currentPrices[0].textContent, /€/);
+  assert.match(originalPrices[0].textContent, /117/);
+  assert.doesNotMatch(originalPrices[0].textContent, /€/);
+  assert.equal(percentNodes[0].textContent, "38% off");
+  assert.equal(currentPrices[0].getAttribute("title"), "USD: $80");
+  assert.equal(originalPrices[0].getAttribute("title"), "USD: $130");
+
+  const restored = applyCardCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(currentPrices[0].textContent, "$80");
+  assert.equal(originalPrices[0].textContent, "$130");
+  assert.equal(percentNodes[0].textContent, "38% off");
+  assert.ok(!currentPrices[0].getAttribute("title"));
+  assert.ok(!originalPrices[0].getAttribute("title"));
+});
+
+test("applyCardCurrency converts multiple card price containers", () => {
+  const { doc, currentPrices, originalPrices, percentNodes } = createCardPriceFeed({
+    items: [
+      { current: "$80", original: "$130", percent: "38% off" },
+      { current: "$200", original: "$260", percent: "23% off" }
+    ]
+  });
+
+  const converted = applyCardCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(currentPrices[0].textContent, /€72/);
+  assert.match(currentPrices[1].textContent, /€180/);
+  assert.match(originalPrices[0].textContent, /117/);
+  assert.match(originalPrices[1].textContent, /234/);
+  assert.doesNotMatch(originalPrices[0].textContent, /€/);
+  assert.doesNotMatch(originalPrices[1].textContent, /€/);
+  assert.equal(percentNodes[0].textContent, "38% off");
+  assert.equal(percentNodes[1].textContent, "23% off");
+});
+
+test("applyCardCurrency converts and restores favorites page price-module markup", () => {
+  const { doc, currentPrices } = createCardPriceFeed({
+    priceClass:
+      "Price-module__root___rNqmD ListingPriceAndHeart-module__listingPrice___qBKiE Price-module__small___iHoYR",
+    currentClass: "Money-module__root___MTGNi",
+    items: [{ current: "$200" }]
+  });
+
+  const converted = applyCardCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(currentPrices[0].textContent, /€180/);
+  assert.equal(currentPrices[0].getAttribute("title"), "USD: $200");
+
+  const restored = applyCardCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(currentPrices[0].textContent, "$200");
+  assert.ok(!currentPrices[0].getAttribute("title"));
+});
+
+test("applyCardCurrency returns false when no card price containers are present", () => {
+  const { doc } = createPanelHarness();
+  assert.equal(
+    applyCardCurrency(doc, {
+      selectedCurrency: "EUR",
+      rate: 0.9,
+      mode: "dual"
+    }),
+    false
+  );
 });

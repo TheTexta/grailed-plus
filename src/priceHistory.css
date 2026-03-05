@@ -6,6 +6,16 @@
   --gp-dm-invert-filter: invert(1) hue-rotate(180deg);
 }
 
+/*
+ * Keep card/favorites "PercentOff" labels visually subordinate after currency rewrites.
+ * This intentionally excludes listing sidebar percent labels.
+ */
+div[class*="Price_root"] [data-testid="PercentOff"],
+div[class*="Price-module__root"] [data-testid="PercentOff"] {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
+
 html[data-grailed-plus-dark-mode="1"] {
   background: #000 !important;
 }
@@ -516,7 +526,7 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
   appearance: none;
   border: 1px solid rgb(225, 225, 225);
   background: transparent !important;
-  color: #fff !important;
+  color: #111 !important;
   padding: 7px 11px;
   font-size: 12px;
   font-weight: 600;
@@ -534,7 +544,7 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
 .grailed-plus__button:focus-visible,
 .grailed-plus__button:active {
   background: transparent !important;
-  color: #fff !important;
+  color: #111 !important;
 }
 
 html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel {
@@ -543,10 +553,14 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel {
 
 html[data-grailed-plus-dark-mode="1"] .grailed-plus__button {
   border-color: var(--gp-dm-primary);
+  color: #fff !important;
 }
 
-html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:hover {
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:hover,
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:focus-visible,
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:active {
   border-color: var(--gp-dm-primary);
+  color: #fff !important;
 }
 
 @media (max-width: 768px) {

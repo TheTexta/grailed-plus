@@ -10,6 +10,11 @@
   var PANEL_ATTR = "data-grailed-plus-panel";
   var PANEL_ATTR_VALUE = "1";
   var PRICE_SELECTORS = ['div[class*="Sidebar_price"]', 'div[class*="sidebar__price_"]'];
+  var CARD_PRICE_CONTAINER_SELECTOR =
+    'div[class*="Price_root"], div[class*="Price-module__root"]';
+  var CARD_PRICE_CURRENT_SELECTOR =
+    'div[class*="Price_root"] [data-testid="Current"], ' +
+    'div[class*="Price-module__root"] [data-testid="Current"]';
   var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-original-price-text";
   var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-original-price-value";
 
@@ -286,6 +291,66 @@
         target.push(candidate);
       }
     }
+  }
+
+  function isCardPriceContainer(node) {
+    if (!node) {
+      return false;
+    }
+
+    var className = getClassName(node);
+    if (
+      typeof className !== "string" ||
+      (className.indexOf("Price_root") === -1 && className.indexOf("Price-module__root") === -1)
+    ) {
+      return false;
+    }
+
+    var tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
+    return tagName === "DIV";
+  }
+
+  function findClosestCardPriceContainer(node) {
+    if (!node) {
+      return null;
+    }
+
+    if (typeof node.closest === "function") {
+      var scoped = node.closest(CARD_PRICE_CONTAINER_SELECTOR);
+      if (scoped) {
+        return scoped;
+      }
+    }
+
+    var current = node;
+    while (current) {
+      if (isCardPriceContainer(current)) {
+        return current;
+      }
+      current = current.parentNode;
+    }
+
+    return null;
+  }
+
+  function collectCardPriceContainers(doc) {
+    if (!doc || typeof doc.querySelectorAll !== "function") {
+      return [];
+    }
+
+    var currentNodes = doc.querySelectorAll(CARD_PRICE_CURRENT_SELECTOR);
+    var containers = [];
+    var i;
+    var container;
+
+    for (i = 0; i < currentNodes.length; i += 1) {
+      container = findClosestCardPriceContainer(currentNodes[i]);
+      if (container) {
+        appendUniqueNodes(containers, [container]);
+      }
+    }
+
+    return containers;
   }
 
   function findSidebarScope(priceNode) {
@@ -665,19 +730,22 @@
     return bestIndex;
   }
 
-  function applySidebarCurrency(doc, currencyContext) {
-    if (!doc || typeof doc.querySelector !== "function") {
-      return false;
-    }
-
-    var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
+  function applyCurrencyToPriceContainer(priceNode, currencyContext) {
     if (!priceNode) {
-      return false;
+      return {
+        handled: false,
+        convertedAny: false,
+        result: false
+      };
     }
 
     var priceTextTargets = getPriceTextTargets(priceNode);
     if (!Array.isArray(priceTextTargets) || priceTextTargets.length === 0) {
-      return false;
+      return {
+        handled: false,
+        convertedAny: false,
+        result: false
+      };
     }
 
     var normalizedContext = normalizeCurrencyContext(currencyContext);
@@ -737,15 +805,19 @@
       });
     }
 
-      if (!conversionEnabled) {
-        for (i = 0; i < targetEntries.length; i += 1) {
-          if (targetEntries[i].storedUsdText) {
-            targetEntries[i].node.textContent = targetEntries[i].storedUsdText;
-          }
-          setNodeTitle(targetEntries[i].node, "");
+    if (!conversionEnabled) {
+      for (i = 0; i < targetEntries.length; i += 1) {
+        if (targetEntries[i].storedUsdText) {
+          targetEntries[i].node.textContent = targetEntries[i].storedUsdText;
         }
-        return handled;
+        setNodeTitle(targetEntries[i].node, "");
       }
+      return {
+        handled: handled,
+        convertedAny: false,
+        result: handled
+      };
+    }
 
     primaryIndex = choosePrimaryPriceIndex(targetEntries);
 
@@ -776,7 +848,47 @@
       convertedAny = true;
     }
 
-    return convertedAny;
+    return {
+      handled: handled,
+      convertedAny: convertedAny,
+      result: convertedAny
+    };
+  }
+
+  function applySidebarCurrency(doc, currencyContext) {
+    if (!doc || typeof doc.querySelector !== "function") {
+      return false;
+    }
+
+    var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
+    if (!priceNode) {
+      return false;
+    }
+
+    return applyCurrencyToPriceContainer(priceNode, currencyContext).result;
+  }
+
+  function applyCardCurrency(doc, currencyContext) {
+    if (!doc || typeof doc.querySelectorAll !== "function") {
+      return false;
+    }
+
+    var containers = collectCardPriceContainers(doc);
+    if (!Array.isArray(containers) || containers.length === 0) {
+      return false;
+    }
+
+    var handledAny = false;
+    var i;
+    var outcome;
+    for (i = 0; i < containers.length; i += 1) {
+      outcome = applyCurrencyToPriceContainer(containers[i], currencyContext);
+      if (outcome && outcome.handled) {
+        handledAny = true;
+      }
+    }
+
+    return handledAny;
   }
 
   function openMetadataInNewTab(rawListing, listing) {
@@ -840,11 +952,6 @@
     var panel = doc.createElement("section");
     panel.className = "grailed-plus-panel";
     panel.setAttribute(PANEL_ATTR, PANEL_ATTR_VALUE);
-
-    var heading = doc.createElement("h2");
-    heading.className = "grailed-plus-panel__title";
-    heading.textContent = "Grailed Plus";
-    panel.appendChild(heading);
 
     if (statusMessage) {
       panel.appendChild(createRow(doc, "Status", statusMessage, "grailed-plus__row--status"));
@@ -947,6 +1054,7 @@
     findMountTarget: findMountTarget,
     findMountNode: findMountNode,
     applySidebarCurrency: applySidebarCurrency,
+    applyCardCurrency: applyCardCurrency,
     removeExistingPanels: removeExistingPanels,
     renderPanel: renderPanel,
     formatCurrency: formatCurrency,

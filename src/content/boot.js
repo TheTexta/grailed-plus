@@ -23,6 +23,9 @@
   var RETRY_DELAY_MS = 500;
   var MAX_RETRY_WINDOW_MS = 15000;
   var URL_POLL_INTERVAL_MS = 1000;
+  var CARD_PRICE_CONTAINER_SELECTOR =
+    'div[class*="Price_root"], div[class*="Price-module__root"]';
+  var CARD_PRICE_CURRENT_SELECTOR = '[data-testid="Current"]';
   var FILTER_TARGET_ATTR = "data-grailed-plus-filter-target";
   var FILTER_TARGET_ATTR_VALUE = "1";
   var FILTER_SCOPE_SKIP_ATTR = "data-grailed-plus-filter-skip";
@@ -62,7 +65,11 @@
     darkModeMediaListener: null,
     filterScopeTick: null,
     filterScopeDelayTimers: [],
-    filterScopeObserver: null
+    filterScopeObserver: null,
+    cardCurrencyObserver: null,
+    cardCurrencyTick: null,
+    cardCurrencyTickUsesAnimationFrame: false,
+    cardCurrencyContext: null
   };
 
   function isDebugEnabled() {
@@ -374,14 +381,181 @@
 
   function applySidebarCurrency(currencyContext) {
     if (!Render || typeof Render.applySidebarCurrency !== "function") {
-      return;
+      return false;
     }
 
     try {
-      Render.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
+      return Render.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
     } catch (_) {
       // Sidebar rewrite should never block panel rendering.
+      return false;
     }
+  }
+
+  function applyCardCurrency(currencyContext) {
+    if (!Render || typeof Render.applyCardCurrency !== "function") {
+      return false;
+    }
+
+    try {
+      return Render.applyCardCurrency(document, currencyContext || createUsdCurrencyContext());
+    } catch (_) {
+      // Card rewrite should never block the rest of the extension.
+      return false;
+    }
+  }
+
+  function isConversionContextEnabled(currencyContext) {
+    var selectedCurrency = normalizeCurrencyCode(currencyContext && currencyContext.selectedCurrency);
+    var rate = Number(currencyContext && currencyContext.rate);
+    return Boolean(selectedCurrency && selectedCurrency !== "USD" && Number.isFinite(rate) && rate > 0);
+  }
+
+  function isElementNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    if (node.nodeType === 1) {
+      return true;
+    }
+
+    return typeof node.querySelector === "function";
+  }
+
+  function nodeContainsCardPriceTarget(node) {
+    if (!isElementNode(node)) {
+      return false;
+    }
+
+    if (typeof node.matches === "function") {
+      if (node.matches(CARD_PRICE_CONTAINER_SELECTOR) || node.matches(CARD_PRICE_CURRENT_SELECTOR)) {
+        return true;
+      }
+    }
+
+    if (typeof node.querySelector === "function") {
+      return Boolean(node.querySelector(CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR));
+    }
+
+    return false;
+  }
+
+  function clearCardCurrencyTick() {
+    if (state.cardCurrencyTick == null) {
+      return;
+    }
+
+    if (
+      state.cardCurrencyTickUsesAnimationFrame &&
+      typeof globalThis.cancelAnimationFrame === "function"
+    ) {
+      globalThis.cancelAnimationFrame(state.cardCurrencyTick);
+    } else {
+      clearTimeout(state.cardCurrencyTick);
+    }
+
+    state.cardCurrencyTick = null;
+    state.cardCurrencyTickUsesAnimationFrame = false;
+  }
+
+  function disconnectCardCurrencyObserver() {
+    if (state.cardCurrencyObserver && typeof state.cardCurrencyObserver.disconnect === "function") {
+      state.cardCurrencyObserver.disconnect();
+    }
+    state.cardCurrencyObserver = null;
+    state.cardCurrencyContext = null;
+    clearCardCurrencyTick();
+  }
+
+  function scheduleCardCurrencyRefresh() {
+    if (state.cardCurrencyTick != null) {
+      return;
+    }
+
+    var run = function () {
+      state.cardCurrencyTick = null;
+      state.cardCurrencyTickUsesAnimationFrame = false;
+
+      if (Url.isListingPath(location.pathname)) {
+        return;
+      }
+
+      applyCardCurrency(state.cardCurrencyContext || createUsdCurrencyContext());
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      state.cardCurrencyTickUsesAnimationFrame = true;
+      state.cardCurrencyTick = globalThis.requestAnimationFrame(run);
+      return;
+    }
+
+    state.cardCurrencyTickUsesAnimationFrame = false;
+    state.cardCurrencyTick = globalThis.setTimeout(run, 16);
+  }
+
+  function setupCardCurrencyObserver() {
+    if (state.cardCurrencyObserver || typeof MutationObserver !== "function") {
+      return;
+    }
+
+    var root = document.body || document.documentElement;
+    if (!root) {
+      return;
+    }
+
+    var observer = new MutationObserver(function (mutations) {
+      var i;
+      var j;
+      var mutation;
+      var addedNode;
+      var shouldRefresh = false;
+
+      for (i = 0; i < mutations.length; i += 1) {
+        mutation = mutations[i];
+        if (!mutation || mutation.type !== "childList" || !mutation.addedNodes) {
+          continue;
+        }
+
+        for (j = 0; j < mutation.addedNodes.length; j += 1) {
+          addedNode = mutation.addedNodes[j];
+          if (nodeContainsCardPriceTarget(addedNode)) {
+            shouldRefresh = true;
+            break;
+          }
+        }
+
+        if (shouldRefresh) {
+          break;
+        }
+      }
+
+      if (shouldRefresh) {
+        scheduleCardCurrencyRefresh();
+      }
+    });
+
+    observer.observe(root, {
+      childList: true,
+      subtree: true
+    });
+
+    state.cardCurrencyObserver = observer;
+  }
+
+  function syncCardCurrencyObserver(currencyContext) {
+    if (Url.isListingPath(location.pathname)) {
+      disconnectCardCurrencyObserver();
+      return;
+    }
+
+    state.cardCurrencyContext = currencyContext || createUsdCurrencyContext();
+    if (!isConversionContextEnabled(state.cardCurrencyContext)) {
+      disconnectCardCurrencyObserver();
+      return;
+    }
+
+    setupCardCurrencyObserver();
   }
 
   function applyDarkMode(darkModeContext) {
@@ -766,6 +940,8 @@
         currencyContext: currencyContext
       });
       applySidebarCurrency(currencyContext);
+      applyCardCurrency(currencyContext);
+      syncCardCurrencyObserver(null);
     });
   }
 
@@ -795,12 +971,33 @@
 
   function run(reason, attempt) {
     if (!Url.isListingPath(location.pathname)) {
-      state.renderToken += 1;
+      var nonListingToken = state.renderToken + 1;
+      state.renderToken = nonListingToken;
       clearRetryTimer(true);
       disconnectHydrationObserver();
       Render.removeExistingPanels(document);
+      resolveCurrencyContext()
+        .then(function (currencyContext) {
+          if (nonListingToken !== state.renderToken || Url.isListingPath(location.pathname)) {
+            return;
+          }
+
+          applyCardCurrency(currencyContext);
+          syncCardCurrencyObserver(currencyContext);
+        })
+        .catch(function () {
+          if (nonListingToken !== state.renderToken || Url.isListingPath(location.pathname)) {
+            return;
+          }
+
+          var fallbackCurrency = createUsdCurrencyContext();
+          applyCardCurrency(fallbackCurrency);
+          syncCardCurrencyObserver(fallbackCurrency);
+        });
       return;
     }
+
+    syncCardCurrencyObserver(null);
 
     var nextData = Extract.readNextDataFromDocument(document);
     if (!nextData) {
@@ -839,6 +1036,8 @@
           currencyContext: currencyContext
         });
         applySidebarCurrency(currencyContext);
+        applyCardCurrency(currencyContext);
+        syncCardCurrencyObserver(null);
 
         disconnectHydrationObserver();
         state.retryStartedAtMs = null;
@@ -865,6 +1064,8 @@
           currencyContext: fallbackCurrency
         });
         applySidebarCurrency(fallbackCurrency);
+        applyCardCurrency(fallbackCurrency);
+        syncCardCurrencyObserver(null);
 
         disconnectHydrationObserver();
         state.retryStartedAtMs = null;
