@@ -27,7 +27,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - ~Dark mode integration~ *Completed*
 - ~Improved UI integration~ *Completed*
 - Price trend graph view
-- Updated logo and screenshots
+- Updated logo and screenshots *Partially Completed*
 - ~Automatic currency conversion~ *Completed*
 - Better inspect (hover inspect without clicking)
 
