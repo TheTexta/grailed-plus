@@ -6,26 +6,17 @@ Grailed Plus restores price-history insights on modern grailed.com listing pages
 
 ## Extension Store Description
 ### Project Overview
-```text
+
 Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads listing data directly from the page and shows useful context in a clean sidebar panel so buyers and sellers can make faster decisions.
-```
+
 
 ### Current Features
-```text
+
 - Price history
 - Average price drop
 - Next expected drop estimate
 - Seller account creation date
 - Listing metadata button (opens listing JSON in a new tab)
-- Automatic currency conversion (USD -> selected currency)
-```
-
-## Current Beta Features
-- Price history
-- Average price drop
-- Next expected drop estimate
-- Seller account creation date
-- Listing metadata button (opens JSON in a new tab)
 - Automatic currency conversion (USD -> selected currency with tooltip original pricing shown on hover)
 
 ## Planned Features
@@ -37,7 +28,7 @@ Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads l
 - ~Automatic currency conversion~ *Completed*
 
 ## Project Layout
-- `src/manifest.json`: Chrome MV3 manifest (primary beta target)
+- `src/manifest.json`: Chrome MV3 manifest
 - `src/manifest.firefox.json`: Firefox MV3 manifest template for Phase 2
 - `src/content/boot.js`: lifecycle + route transition handling
 - `src/data/extractListing.js`: `__NEXT_DATA__` extraction + listing normalization

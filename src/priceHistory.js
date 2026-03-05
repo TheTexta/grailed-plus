@@ -1704,7 +1704,7 @@
       targetEntries[i].node.textContent = convertedText;
       setNodeTitle(
         targetEntries[i].node,
-        "Original USD: " + (targetEntries[i].storedUsdText || formatCurrency(targetEntries[i].usdValue))
+        "USD: " + (targetEntries[i].storedUsdText || formatCurrency(targetEntries[i].usdValue))
       );
       convertedAny = true;
     }
@@ -1804,7 +1804,7 @@
           return display.originalUsdText;
         });
       if (convertedOriginals.length > 0) {
-        historyTitle = "Original USD: " + convertedOriginals.join(", ");
+        historyTitle = "USD: " + convertedOriginals.join(", ");
       }
     } else {
       historyText = "No price drops on record";
@@ -1818,7 +1818,7 @@
       var avgDisplay = buildMoneyDisplay(metrics.avgDropAmount, currencyContext);
       avgText = String(metrics.avgDropPercent) + "% (" + avgDisplay.text + ")";
       if (avgDisplay.isConverted) {
-        avgTitle = "Original USD: " + avgDisplay.originalUsdText;
+        avgTitle = "USD: " + avgDisplay.originalUsdText;
       }
     }
 
