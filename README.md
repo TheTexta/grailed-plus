@@ -1,13 +1,8 @@
 # Grailed Plus (V2)
-
 Credit: Forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
 
-Grailed Plus delivers listing insights on modern grailed.com listing pages.
 
-Latest release notes: `docs/release-notes-2.1.0-beta.0.md`
-
-## Extension Store Description
-### Project Overview
+## Project Overview
 
 Extension enhancing Grailed listing pages with a streamlined insights sidebar surfacing average and expected price-drop estimates, seller account age, one-click listing JSON metadata, automatic USD-to-selected-currency conversion. Additionally adds a site-wide dark mode with a customisable primary color.
 
@@ -22,7 +17,7 @@ Extension enhancing Grailed listing pages with a streamlined insights sidebar su
 - Automatic currency conversion (USD -> selected currency with tooltip original pricing shown on hover)
 - Site-wide dark mode with customizable primary color
 
-## Planned Features
+### Planned Features
 - Depop autocomparison with like / matching listings (Possible ML image checking for like listings)
 - ~Dark mode integration~ *Completed*
 - ~Improved UI integration~ *Completed*
@@ -31,7 +26,7 @@ Extension enhancing Grailed listing pages with a streamlined insights sidebar su
 - ~Automatic currency conversion~ *Completed*
 - Better inspect (hover inspect without clicking)
 
-## Project Layout
+### Project Layout
 - `src/manifest.json`: Chrome MV3 manifest
 - `src/manifest.firefox.json`: Firefox MV3 manifest template for Phase 2
 - `src/content/boot.js`: lifecycle + route transition handling
@@ -46,7 +41,7 @@ Extension enhancing Grailed listing pages with a streamlined insights sidebar su
 - `src/options.js`: currency settings UI logic
 - `src/contentScript.js`: generated content-script bundle
 
-## Scripts
+### Scripts
 - `npm run build`: rebuilds `src/contentScript.js` from modules
 - `npm run test`: runs unit tests
 - `npm run lint`: syntax checks for source and tests
