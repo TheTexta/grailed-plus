@@ -9,7 +9,7 @@ Latest release notes: `docs/release-notes-2.1.0-beta.0.md`
 ## Extension Store Description
 ### Project Overview
 
-Grailed Plus adds pricing intelligence back to Grailed listing pages. It reads listing data directly from the page and shows useful context in a clean sidebar panel so buyers and sellers can make faster decisions.
+Extension enhancing Grailed listing pages with a streamlined insights sidebar surfacing average and expected price-drop estimates, seller account age, one-click listing JSON metadata, automatic USD-to-selected-currency conversion. Additionally adds a site-wide dark mode with a customisable primary color.
 
 
 ### Current Features
