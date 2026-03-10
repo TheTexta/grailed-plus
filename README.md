@@ -4,8 +4,7 @@ Credit: Forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
 
 ## Project Overview
 
-Extension enhancing Grailed listing pages with a streamlined insights sidebar surfacing average and expected price-drop estimates, seller account age, one-click listing JSON metadata, automatic USD-to-selected-currency conversion. Additionally adds a site-wide dark mode with a customisable primary color.
-
+Enhance Grailed pages with a streamlined insights sidebar surfacing average and expected price-drop estimates, seller account age, one-click listing JSON metadata, automatic USD-to-selected-currency conversion and a site-wide dark mode with a customisable primary color
 
 ### Current Features
 

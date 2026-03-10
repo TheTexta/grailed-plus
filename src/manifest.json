@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Grailed Plus",
-  "version": "2.1.2.0",
+  "version": "2.1.2.1",
   "description": "Listing insights, currency conversion, and dark mode for grailed.com.",
   "icons": {
     "64": "icons/Logo0.5x.png",
@@ -13,8 +13,7 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.grailed.com/*",
-    "https://api.frankfurter.app/*"
+    "https://api.frankfurter.app/latest*"
   ],
   "action": {
     "default_title": "Grailed Plus",
@@ -27,7 +26,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.grailed.com/*"
+        "https://*.grailed.com/*"
       ],
       "js": [
         "contentScript.js"

@@ -18,8 +18,7 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.grailed.com/*",
-    "https://api.frankfurter.app/*"
+    "https://api.frankfurter.app/latest*"
   ],
   "action": {
     "default_title": "Grailed Plus",
@@ -32,7 +31,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.grailed.com/*"
+        "https://*.grailed.com/*"
       ],
       "js": [
         "contentScript.js"
