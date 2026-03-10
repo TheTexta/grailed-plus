@@ -4,8 +4,10 @@
   "version": "2.1.0.0",
   "description": "Listing insights, currency conversion, and dark mode for grailed.com.",
   "icons": {
-    "48": "icons/grailed-48.png",
-    "96": "icons/grailed-96.png"
+    "64": "icons/Logo0.5x.png",
+    "128": "icons/Logo1x.png",
+    "256": "icons/Logo2x.png",
+    "512": "icons/Logo4x.png"
   },
   "browser_specific_settings": {
     "gecko": {

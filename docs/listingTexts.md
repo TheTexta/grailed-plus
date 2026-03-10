@@ -38,9 +38,9 @@ https://github.com/TheTexta/grailed-plus/issues
 
 ## Assets
 ### Icons
-- Store Icon (128px): ![128px icon](grailed-128.png "128px icon")
-- Icon Large (96px): ![96px icon](../src/icons/grailed-96.png "96px icon")
-- Icon Small (48px): ![48px icon](../src/icons/grailed-48.png "48px icon")
+- Store Icon (128px): ![128px icon](../src/icons/Logo1x.png "128px icon")
+- Icon Large (64px): ![64px icon](../src/icons/Logo0.5x.png "64px icon")
+- Icon XL (512px): ![512px icon](../src/icons/Logo4x.png "512px icon")
 
 ### Screenshots
 - Upper panel: ![Sidebar Upper](screenshot-sidebar-upper.png "Sidebar upper")
