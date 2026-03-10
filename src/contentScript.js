@@ -1795,10 +1795,6 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
-  function hasElementChildren(node) {
-    return Boolean(node && node.children && node.children.length > 0);
-  }
-
   function getNodeText(node) {
     if (!node || typeof node.textContent !== "string") {
       return "";
@@ -1806,14 +1802,90 @@
     return node.textContent.trim();
   }
 
+  function getNodePrimaryText(node) {
+    var fallback = getNodeText(node);
+    if (!node || !node.childNodes || node.childNodes.length === 0) {
+      return fallback;
+    }
+
+    var i;
+    var child;
+    var text;
+    for (i = 0; i < node.childNodes.length; i += 1) {
+      child = node.childNodes[i];
+      if (!child || child.nodeType !== 3) {
+        continue;
+      }
+
+      text = String(child.textContent || "").trim();
+      if (text) {
+        return text;
+      }
+    }
+
+    return fallback;
+  }
+
+  function setNodePrimaryText(node, text) {
+    if (!node || typeof text !== "string") {
+      return;
+    }
+
+    if (node.childNodes && node.childNodes.length > 0) {
+      var i;
+      var child;
+      for (i = 0; i < node.childNodes.length; i += 1) {
+        child = node.childNodes[i];
+        if (!child || child.nodeType !== 3) {
+          continue;
+        }
+
+        child.textContent = text;
+        return;
+      }
+    }
+
+    node.textContent = text;
+  }
+
+  function isDescendantOf(node, potentialAncestor) {
+    var current = node && node.parentNode;
+    while (current) {
+      if (current === potentialAncestor) {
+        return true;
+      }
+      current = current.parentNode;
+    }
+    return false;
+  }
+
+  function hasConvertibleDescendant(node, candidates) {
+    if (!node || !Array.isArray(candidates) || candidates.length === 0) {
+      return false;
+    }
+
+    var i;
+    for (i = 0; i < candidates.length; i += 1) {
+      if (candidates[i] === node) {
+        continue;
+      }
+
+      if (isDescendantOf(candidates[i], node)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   function isUsdPriceText(text) {
     if (typeof text !== "string") {
       return false;
     }
 
-    // Convert only plain USD-like price text (e.g. "$500", "US $500", "CA$500").
+    // Convert USD-like price text (e.g. "$500", "US $500", "$500 (Offer Price)").
     // This intentionally excludes percentage/label strings like "23% off".
-    return /^\s*(?:[A-Z]{0,3}\s*)?\$\s*-?\d[\d,]*(?:\.\d+)?\s*$/i.test(text);
+    return /^\s*(?:[A-Z]{0,3}\s*)?\$\s*-?\d[\d,]*(?:\.\d+)?\s*(?:\([^)]*\))?\s*$/i.test(text);
   }
 
   function hasStoredOriginalPrice(node) {
@@ -1867,7 +1939,7 @@
     }
 
     return candidates.filter(function (node) {
-      var text = getNodeText(node);
+      var text = getNodePrimaryText(node);
       if (!text && !hasStoredOriginalPrice(node)) {
         return false;
       }
@@ -1889,12 +1961,12 @@
       return priceNode ? [priceNode] : [];
     }
 
-    var leafCandidates = candidates.filter(function (node) {
-      return !hasElementChildren(node);
+    var terminalCandidates = candidates.filter(function (node) {
+      return !hasConvertibleDescendant(node, candidates);
     });
 
-    if (leafCandidates.length > 0) {
-      return leafCandidates;
+    if (terminalCandidates.length > 0) {
+      return terminalCandidates;
     }
 
     return [candidates[0]];
@@ -2013,7 +2085,7 @@
         continue;
       }
 
-      existingText = getNodeText(priceTextTarget);
+      existingText = getNodePrimaryText(priceTextTarget);
       storedUsdText =
         typeof priceTextTarget.getAttribute === "function"
           ? priceTextTarget.getAttribute(SIDEBAR_USD_TEXT_ATTR) || ""
@@ -2050,7 +2122,7 @@
     if (!conversionEnabled) {
       for (i = 0; i < targetEntries.length; i += 1) {
         if (targetEntries[i].storedUsdText) {
-          targetEntries[i].node.textContent = targetEntries[i].storedUsdText;
+          setNodePrimaryText(targetEntries[i].node, targetEntries[i].storedUsdText);
         }
         setNodeTitle(targetEntries[i].node, "");
       }
@@ -2087,7 +2159,7 @@
         continue;
       }
 
-      targetEntries[i].node.textContent = convertedText;
+      setNodePrimaryText(targetEntries[i].node, convertedText);
       setNodeTitle(
         targetEntries[i].node,
         "USD: " + (targetEntries[i].storedUsdText || formatCurrency(targetEntries[i].usdValue))

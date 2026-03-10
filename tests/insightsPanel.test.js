@@ -32,6 +32,7 @@ function createListingSidebar(options) {
       nestedPriceValue: false,
       withStrikePrice: false,
       withPercentOff: false,
+      withOfferLabel: false,
       reversePriceOrder: false,
       dropPriceClasses: false
     },
@@ -51,13 +52,21 @@ function createListingSidebar(options) {
   const priceValue = settings.includePrice && hasNestedPriceNodes ? doc.createElement("span") : null;
   const pricePrevious = settings.includePrice && settings.withStrikePrice ? doc.createElement("span") : null;
   const pricePercent = settings.includePrice && settings.withPercentOff ? doc.createElement("span") : null;
+  const priceOfferLabel =
+    settings.includePrice && settings.withOfferLabel && priceValue ? doc.createElement("span") : null;
   if (price) {
     price.setAttribute("class", "Sidebar_price__456");
     if (priceValue) {
       if (!settings.dropPriceClasses) {
         priceValue.setAttribute("class", "Sidebar_priceValue__999");
       }
-      priceValue.textContent = "$500";
+      priceValue.textContent = settings.withOfferLabel ? "$500 (Offer Price)" : "$500";
+    }
+
+    if (priceOfferLabel) {
+      priceOfferLabel.setAttribute("class", "Money_label__KEvAE");
+      priceOfferLabel.textContent = " (Offer Price)";
+      priceValue.appendChild(priceOfferLabel);
     }
 
     if (pricePrevious) {
@@ -120,6 +129,7 @@ function createListingSidebar(options) {
     pricePrevious,
     priceValue,
     pricePercent,
+    priceOfferLabel,
     ctaWrap,
     ctaButton
   };
@@ -498,6 +508,34 @@ test("applySidebarCurrency preserves nested price markup and classes", () => {
   assert.equal(priceValue.getAttribute("class"), "Sidebar_priceValue__999");
   assert.equal(priceValue.textContent, "$500");
   assert.ok(!priceValue.getAttribute("title"));
+});
+
+test("applySidebarCurrency converts offer-mode current price text", () => {
+  const { doc, priceValue, priceOfferLabel } = createListingSidebar({
+    nestedPriceValue: true,
+    withOfferLabel: true
+  });
+
+  assert.ok(priceValue);
+  assert.ok(priceOfferLabel);
+  assert.equal(priceValue.textContent, "$500 (Offer Price)");
+
+  const converted = applySidebarCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(priceValue.textContent, /€450/);
+  assert.equal(priceValue.getAttribute("title"), "USD: $500 (Offer Price)");
+
+  const restored = applySidebarCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(priceValue.textContent, "$500 (Offer Price)");
 });
 
 test("applySidebarCurrency converts strike and current listing prices without USD brackets", () => {
