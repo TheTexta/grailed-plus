@@ -631,11 +631,6 @@
     var run = function () {
       state.cardCurrencyTick = null;
       state.cardCurrencyTickUsesAnimationFrame = false;
-
-      if (Url.isListingPath(location.pathname)) {
-        return;
-      }
-
       applyCardCurrency(state.cardCurrencyContext || createUsdCurrencyContext());
     };
 
@@ -699,11 +694,6 @@
   }
 
   function syncCardCurrencyObserver(currencyContext) {
-    if (Url.isListingPath(location.pathname)) {
-      disconnectCardCurrencyObserver();
-      return;
-    }
-
     state.cardCurrencyContext = currencyContext || createUsdCurrencyContext();
     if (!isConversionContextEnabled(state.cardCurrencyContext)) {
       disconnectCardCurrencyObserver();

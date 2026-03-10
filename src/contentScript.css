@@ -18,6 +18,16 @@ div[class*="Price-module__root"] [data-testid="PercentOff"] {
   line-height: 1.1 !important;
 }
 
+/*
+ * Offer-mode helper text is too prominent after currency rewrites.
+ * Render it at roughly half the size of the price amount.
+ */
+[data-testid="Current"][class*="Price_offer"] [class*="Money_label"],
+[class*="Price_offer"] [class*="Money_label"] {
+  font-size: 0.5em !important;
+  line-height: 1.1 !important;
+}
+
 html[data-grailed-plus-dark-mode="1"] {
   background: #000 !important;
 }

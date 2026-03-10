@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Grailed Plus",
-  "version": "2.1.1.1",
+  "version": "2.1.1.2",
   "description": "Listing insights, currency conversion, and dark mode for grailed.com.",
   "icons": {
     "48": "icons/grailed-48.png",
