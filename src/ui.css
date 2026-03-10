@@ -97,11 +97,10 @@ body.gp-ui-body {
 }
 
 .gp-options {
-  max-width: 520px;
-  margin: 24px;
-  padding: 20px;
-  border: 1px solid var(--gp-ui-border);
   background: transparent;
+  display: flex;
+  margin: 5%;
+  flex-direction: column;
 }
 
 .gp-options h1 {
@@ -121,12 +120,12 @@ body.gp-ui-body {
 .gp-options__section {
   display: grid;
   gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--gp-ui-border);
 }
 
 .gp-options__section-title {
   margin: 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--gp-ui-border-soft);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -134,10 +133,7 @@ body.gp-ui-body {
   color: var(--gp-ui-muted);
 }
 
-.gp-options__section:first-child .gp-options__section-title {
-  padding-top: 0;
-  border-top: 0;
-}
+
 
 .gp-options__setting-card {
   display: grid;
