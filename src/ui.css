@@ -1,11 +1,14 @@
 :root {
   --gp-ui-surface: #ffffff;
+  --gp-ui-surface-soft: #fcfcfc;
   --gp-ui-border: #d9d9d9;
   --gp-ui-border-strong: rgb(225, 225, 225);
   --gp-ui-border-soft: #f1f1f1;
+  --gp-ui-setting-border: #ececec;
   --gp-ui-text: #111111;
   --gp-ui-muted: #5a564f;
   --gp-ui-accent: #0f4b33;
+  --gp-ui-accent-soft: rgba(15, 75, 51, 0.14);
   --gp-ui-error: #b00020;
   --gp-ui-status: #8a6100;
   --gp-ui-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -117,7 +120,7 @@ body.gp-ui-body {
 
 .gp-options__section {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .gp-options__section-title {
@@ -136,7 +139,23 @@ body.gp-ui-body {
   border-top: 0;
 }
 
+.gp-options__setting-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--gp-ui-setting-border);
+  border-radius: 8px;
+  background: var(--gp-ui-surface-soft);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gp-options__setting-card:focus-within {
+  border-color: var(--gp-ui-accent);
+  box-shadow: 0 0 0 2px var(--gp-ui-accent-soft);
+}
+
 .gp-options__label {
+  margin: 0;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -147,6 +166,7 @@ body.gp-ui-body {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0;
   font-size: 14px;
   font-weight: 600;
 }
@@ -167,6 +187,7 @@ body.gp-ui-body {
 
 .gp-options__control:disabled {
   opacity: 0.6;
+  background: var(--gp-ui-border-soft);
 }
 
 .gp-options__color-row {
