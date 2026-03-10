@@ -25,10 +25,9 @@ const result = spawnSync(
     "contentScript.css",
     "options.html",
     "options.js",
-    "options.css",
     "popup.html",
     "popup.js",
-    "popup.css",
+    "ui.css",
     "domain/settings.js",
     "domain/currency.js",
     "icons"
