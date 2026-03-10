@@ -1,0 +1,220 @@
+:root {
+  --gp-ui-surface: #ffffff;
+  --gp-ui-border: #d9d9d9;
+  --gp-ui-border-strong: rgb(225, 225, 225);
+  --gp-ui-border-soft: #f1f1f1;
+  --gp-ui-text: #111111;
+  --gp-ui-muted: #5a564f;
+  --gp-ui-accent: #0f4b33;
+  --gp-ui-error: #b00020;
+  --gp-ui-status: #8a6100;
+  --gp-ui-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body.gp-ui-body * {
+  box-sizing: border-box;
+}
+
+body.gp-ui-body {
+  margin: 0;
+  background: var(--gp-ui-surface);
+  color: var(--gp-ui-text);
+  font-family: var(--gp-ui-font-stack);
+}
+
+.gp-popup h1,
+.gp-options h1 {
+  margin: 0 0 8px;
+}
+
+.gp-popup__button,
+.gp-options__button {
+  appearance: none;
+  border: 1px solid var(--gp-ui-border-strong);
+  background: transparent;
+  color: var(--gp-ui-text);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.gp-popup__button:hover,
+.gp-options__button:hover {
+  border-color: #ffffff;
+}
+
+.gp-popup__button:focus-visible,
+.gp-popup__button:active,
+.gp-options__button:focus-visible,
+.gp-options__button:active {
+  color: var(--gp-ui-text);
+}
+
+.gp-options__button--primary {
+  border-color: var(--gp-ui-accent);
+  background: var(--gp-ui-accent);
+  color: #ffffff;
+}
+
+.gp-options__button--primary:hover,
+.gp-options__button--primary:focus-visible,
+.gp-options__button--primary:active {
+  border-color: var(--gp-ui-accent);
+  color: #ffffff;
+}
+
+.gp-popup {
+  margin: 10px;
+  min-width: 260px;
+  padding: 12px;
+  border: 1px solid var(--gp-ui-border);
+  background: transparent;
+  color: var(--gp-ui-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.gp-popup h1 {
+  font-size: 16px;
+}
+
+.gp-popup__status {
+  margin: 0 0 10px;
+  color: var(--gp-ui-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.gp-popup__button {
+  width: 100%;
+}
+
+.gp-options {
+  max-width: 520px;
+  margin: 24px;
+  padding: 20px;
+  border: 1px solid var(--gp-ui-border);
+  background: transparent;
+}
+
+.gp-options h1 {
+  font-size: 24px;
+}
+
+.gp-options__copy {
+  margin: 0 0 16px;
+  color: var(--gp-ui-muted);
+}
+
+.gp-options__form {
+  display: grid;
+  gap: 14px;
+}
+
+.gp-options__section {
+  display: grid;
+  gap: 10px;
+}
+
+.gp-options__section-title {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--gp-ui-border-soft);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--gp-ui-muted);
+}
+
+.gp-options__section:first-child .gp-options__section-title {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.gp-options__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.gp-options__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gp-options__toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.gp-options__control {
+  width: 100%;
+  border: 1px solid var(--gp-ui-border);
+  padding: 10px;
+  font-size: 14px;
+  background: transparent;
+  color: var(--gp-ui-text);
+}
+
+.gp-options__control:disabled {
+  opacity: 0.6;
+}
+
+.gp-options__color-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gp-options__color {
+  width: 56px;
+  height: 42px;
+  border: 1px solid var(--gp-ui-border);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.gp-options__control--hex {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.gp-options__actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+}
+
+.gp-options__hint {
+  margin: 14px 0 0;
+  color: var(--gp-ui-muted);
+  font-size: 13px;
+}
+
+.gp-options__status {
+  min-height: 20px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gp-options__status[data-tone="error"] {
+  color: var(--gp-ui-error);
+}
+
+.gp-options__status[data-tone="success"] {
+  color: var(--gp-ui-accent);
+}
+
+.gp-options__status[data-tone="warning"] {
+  color: var(--gp-ui-status);
+}

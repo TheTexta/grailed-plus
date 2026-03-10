@@ -1,3 +1,5 @@
+@import url("ui.css");
+
 :root {
   --gp-dm-primary: #ffffff;
   --gp-dm-primary-user: #000000;
@@ -479,12 +481,21 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
 .grailed-plus-panel {
   margin: 10px 0 16px;
   padding: 12px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--gp-ui-border, #d9d9d9);
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
-  color: #111;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--gp-ui-text, #111111);
+  font-family: var(
+    --gp-ui-font-stack,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
   font-size: 13px;
   line-height: 1.45;
 }
@@ -503,7 +514,7 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
   justify-content: space-between;
   gap: 14px;
   padding: 5px 0;
-  border-top: 1px solid #f1f1f1;
+  border-top: 1px solid var(--gp-ui-border-soft, #f1f1f1);
 }
 
 .grailed-plus__row:first-of-type {
@@ -521,12 +532,12 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
 }
 
 .grailed-plus__row--alert .grailed-plus__value {
-  color: #b00020;
+  color: var(--gp-ui-error, #b00020);
   font-weight: 700;
 }
 
 .grailed-plus__row--status .grailed-plus__value {
-  color: #8a6100;
+  color: var(--gp-ui-status, #8a6100);
   font-weight: 600;
 }
 
@@ -538,9 +549,9 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
 
 .grailed-plus__button {
   appearance: none;
-  border: 1px solid rgb(225, 225, 225);
+  border: 1px solid var(--gp-ui-border-strong, rgb(225, 225, 225));
   background: transparent !important;
-  color: #111 !important;
+  color: var(--gp-ui-text, #111111) !important;
   padding: 7px 11px;
   font-size: 12px;
   font-weight: 600;
@@ -558,7 +569,7 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
 .grailed-plus__button:focus-visible,
 .grailed-plus__button:active {
   background: transparent !important;
-  color: #111 !important;
+  color: var(--gp-ui-text, #111111) !important;
 }
 
 html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel {

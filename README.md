@@ -25,6 +25,7 @@ Extension enhancing Grailed listing pages with a streamlined insights sidebar su
 - Updated logo and screenshots *Partially Completed*
 - ~Automatic currency conversion~ *Completed*
 - Better inspect (hover inspect without clicking)
+- better settings ui
 
 ### Project Layout
 - `src/manifest.json`: Chrome MV3 manifest
@@ -37,6 +38,7 @@ Extension enhancing Grailed listing pages with a streamlined insights sidebar su
 - `src/domain/url.js`: listing URL parsing helpers
 - `src/ui/renderInsightsPanel.js`: listing insights panel rendering + mount heuristics
 - `src/ui/theme.js`: site-wide dark-mode attribute + CSS variable application
+- `src/ui.css`: shared popup/options extension UI styles aligned with insights panel theme
 - `src/options.html`: extension settings page
 - `src/options.js`: currency settings UI logic
 - `src/contentScript.js`: generated content-script bundle
