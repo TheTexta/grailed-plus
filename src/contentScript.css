@@ -28,6 +28,13 @@ div[class*="Price-module__root"] [data-testid="PercentOff"] {
   line-height: 1.1 !important;
 }
 
+/* Keep the Klarna promo copy visually lighter than price rows. */
+.p-CondensedSinglePromotionView--Message .p-CondensedSinglePromotionView--Message-text,
+.p-CondensedSinglePromotionView--Message .p-CondensedSinglePromotionView--LearnMoreText {
+  font-size: 0.9em !important;
+  line-height: 1.2 !important;
+}
+
 html[data-grailed-plus-dark-mode="1"] {
   background: #000 !important;
 }

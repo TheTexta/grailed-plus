@@ -17,14 +17,14 @@ Enhance Grailed pages with a streamlined insights sidebar surfacing average and 
 - Site-wide dark mode with customizable primary color
 
 ### Planned Features
-- Depop autocomparison with like / matching listings (Possible ML image checking for like listings)
+- Depop/ebay autocomparison with like / matching listings (Possible ML image checking for like listings)
 - ~Dark mode integration~ *Completed*
 - ~Improved UI integration~ *Completed*
 - Price trend graph view
-- Updated logo and screenshots *Partially Completed*
+- ~Updated logo and screenshots~ *Completed*
 - ~Automatic currency conversion~ *Completed*
 - Better inspect (hover inspect without clicking)
-- better settings ui
+- ~better settings ui~ *Completed*
 
 ### Project Layout
 - `src/manifest.json`: Chrome MV3 manifest
