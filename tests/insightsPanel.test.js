@@ -221,6 +221,43 @@ function createCardPriceFeed(options) {
   };
 }
 
+function createMoneyRootOnlyFeed(options) {
+  const settings = Object.assign(
+    {
+      classes: ["Money_root__abc123", "Money_root__xyz999"],
+      values: ["$120", "$35"]
+    },
+    options || {}
+  );
+
+  const doc = new MockDocument();
+  const main = doc.createElement("main");
+  const feed = doc.createElement("section");
+  feed.setAttribute("class", "Random_surface__123");
+  doc.body.appendChild(main);
+  main.appendChild(feed);
+
+  const prices = [];
+  settings.values.forEach((value, index) => {
+    const node = doc.createElement("span");
+    node.setAttribute("class", settings.classes[index] || "Money_root__fallback");
+    node.textContent = value;
+    feed.appendChild(node);
+    prices.push(node);
+  });
+
+  const nonPrice = doc.createElement("span");
+  nonPrice.setAttribute("class", "Money_root__abc123");
+  nonPrice.textContent = "Offer accepted";
+  feed.appendChild(nonPrice);
+
+  return {
+    doc,
+    prices,
+    nonPrice
+  };
+}
+
 function sampleListing() {
   return {
     id: 123,
@@ -346,7 +383,7 @@ test("renderInsightsPanel inserts panel after mount node by default", () => {
   assert.ok(panel);
   assert.equal(main.children[1], panel);
   assert.equal(panel.getAttribute("data-grailed-plus-panel"), "1");
-  assert.match(flattenText(panel), /Price Trend/);
+  assert.ok(panel.querySelector(".grailed-plus__trend-chart"));
   assert.match(flattenText(panel), /Listing Metadata/);
 });
 
@@ -407,18 +444,11 @@ test("renderInsightsPanel shows converted + USD values when currency context has
   });
 
   const text = flattenText(panel);
-  assert.match(text, /Price Trend/);
-  assert.match(text, /€/);
-  assert.doesNotMatch(text, /\(\$1,000\)/);
+  assert.ok(panel.querySelector(".grailed-plus__trend-chart"));
   assert.match(text, /Avg\. Price Drop/);
-  assert.doesNotMatch(text, /\(\$95\)/);
 
-  const historyValueNode = findValueNodeByLabel(panel, "Price Trend");
   const avgValueNode = findValueNodeByLabel(panel, "Avg. Price Drop");
-  assert.ok(historyValueNode);
   assert.ok(avgValueNode);
-  assert.match(historyValueNode.getAttribute("title"), /USD:/);
-  assert.match(historyValueNode.getAttribute("title"), /\$1,000/);
   assert.equal(avgValueNode.getAttribute("title"), "USD: $95");
 });
 
@@ -438,15 +468,28 @@ test("renderInsightsPanel falls back to USD-only values when no conversion rate 
   });
 
   const text = flattenText(panel);
-  assert.match(text, /\$1,000/);
-  assert.doesNotMatch(text, /€/);
+  assert.ok(panel.querySelector(".grailed-plus__trend-chart"));
 
-  const historyValueNode = findValueNodeByLabel(panel, "Price Trend");
   const avgValueNode = findValueNodeByLabel(panel, "Avg. Price Drop");
-  assert.ok(historyValueNode);
   assert.ok(avgValueNode);
-  assert.ok(!historyValueNode.getAttribute("title"));
   assert.ok(!avgValueNode.getAttribute("title"));
+});
+
+test("renderInsightsPanel shows centered empty-state trend text when only one price point exists", () => {
+  const { anchor } = createPanelHarness();
+  const listing = sampleListing();
+  listing.pricing.history = [1000];
+
+  const panel = renderInsightsPanel({
+    listing,
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 }
+  });
+
+  const emptyNode = panel.querySelector(".grailed-plus__trend-empty");
+  assert.ok(emptyNode);
+  assert.equal(emptyNode.textContent, "no price history data");
 });
 
 test("applySidebarCurrency converts and restores the sidebar price", () => {
@@ -749,4 +792,44 @@ test("applyCardCurrency returns false when no card price containers are present"
     }),
     false
   );
+});
+
+test("applyCardCurrency converts site-wide Money_root spans outside card containers", () => {
+  const { doc, prices, nonPrice } = createMoneyRootOnlyFeed();
+
+  const converted = applyCardCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+  assert.equal(converted, true);
+  assert.match(prices[0].textContent, /€108/);
+  assert.match(prices[1].textContent, /€31\.5/);
+  assert.equal(prices[0].getAttribute("title"), "USD: $120");
+  assert.equal(prices[1].getAttribute("title"), "USD: $35");
+  assert.equal(nonPrice.textContent, "Offer accepted");
+  assert.ok(!nonPrice.getAttribute("title"));
+});
+
+test("applyCardCurrency restores site-wide Money_root spans when switching back to USD", () => {
+  const { doc, prices } = createMoneyRootOnlyFeed({
+    values: ["$42", "$10"]
+  });
+
+  applyCardCurrency(doc, {
+    selectedCurrency: "EUR",
+    rate: 0.9,
+    mode: "dual"
+  });
+
+  const restored = applyCardCurrency(doc, {
+    selectedCurrency: "USD",
+    rate: null,
+    mode: "dual"
+  });
+  assert.equal(restored, true);
+  assert.equal(prices[0].textContent, "$42");
+  assert.equal(prices[1].textContent, "$10");
+  assert.ok(!prices[0].getAttribute("title"));
+  assert.ok(!prices[1].getAttribute("title"));
 });

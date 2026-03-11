@@ -558,6 +558,77 @@ html[data-grailed-plus-dark-mode="1"] [class*="MobileSortFilter_sortItem__"] {
   font-weight: 600;
 }
 
+.grailed-plus__trend-row {
+  border-top: 1px solid var(--gp-ui-border-soft, #f1f1f1);
+  padding-top: 8px;
+  margin-bottom: 2px;
+}
+
+.grailed-plus__trend-chart {
+  position: relative;
+  width: 100%;
+  min-height: 108px;
+}
+
+.grailed-plus__trend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.grailed-plus__trend-line {
+  fill: none;
+  stroke: var(--gp-ui-text, #111111);
+  stroke-width: 1.5;
+}
+
+.grailed-plus__trend-point {
+  fill: var(--gp-ui-text, #111111);
+  stroke: transparent;
+  cursor: pointer;
+}
+
+.grailed-plus__trend-point.is-active {
+  stroke: var(--gp-ui-border, #d9d9d9);
+  stroke-width: 4;
+}
+
+.grailed-plus__trend-hit-area {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.grailed-plus__trend-point:focus-visible,
+.grailed-plus__trend-point:hover {
+  stroke: var(--gp-ui-border, #d9d9d9);
+  stroke-width: 4;
+}
+
+.grailed-plus__trend-tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  padding: 4px 6px;
+  border: 1px solid var(--gp-ui-border, #d9d9d9);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--gp-ui-text, #111111);
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.grailed-plus__trend-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gp-ui-muted, #666666);
+  font-size: 12px;
+  text-transform: lowercase;
+}
+
 .grailed-plus__actions {
   margin-top: 10px;
   display: flex;
@@ -598,6 +669,26 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus__button {
   color: #fff !important;
 }
 
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__trend-line,
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__trend-point {
+  stroke: var(--gp-dm-primary);
+  fill: var(--gp-dm-primary);
+}
+
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__trend-point.is-active {
+  stroke: rgba(255, 255, 255, 0.55);
+}
+
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__trend-tooltip {
+  border-color: var(--gp-dm-primary);
+  background: rgba(10, 10, 10, 0.94);
+  color: #ffffff;
+}
+
+html[data-grailed-plus-dark-mode="1"] .grailed-plus__trend-empty {
+  color: rgba(255, 255, 255, 0.78);
+}
+
 html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:hover,
 html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:focus-visible,
 html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:active {
@@ -628,6 +719,14 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus__button:active {
 
   .grailed-plus__actions {
     margin-top: 8px;
+  }
+
+  .grailed-plus__trend-row {
+    padding-top: 6px;
+  }
+
+  .grailed-plus__trend-chart {
+    min-height: 96px;
   }
 
   .grailed-plus__button {

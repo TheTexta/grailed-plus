@@ -219,6 +219,38 @@
       });
   }
 
+  function _persistBooleanSetting(storageKey, enabled, settingDescription) {
+    var storage = getStorageLocal();
+    if (!storage) {
+      return Promise.resolve({
+        ok: false,
+        error: "Storage unavailable."
+      });
+    }
+
+    var payload = {};
+    payload[storageKey] = Boolean(enabled);
+
+    return storageSet(storage, payload)
+      .then(function (ok) {
+        if (!ok) {
+          return {
+            ok: false,
+            error: "Failed to persist " + settingDescription + "."
+          };
+        }
+        return {
+          ok: true
+        };
+      })
+      .catch(function () {
+        return {
+          ok: false,
+          error: "Failed to persist " + settingDescription + "."
+        };
+      });
+  }
+
   function getCurrencyConversionEnabled() {
     var storage = getStorageLocal();
     if (!storage) {
@@ -235,35 +267,11 @@
   }
 
   function setCurrencyConversionEnabled(enabled) {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[CONVERSION_ENABLED_STORAGE_KEY] = Boolean(enabled);
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist conversion status."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist conversion status."
-        };
-      });
+    return _persistBooleanSetting(
+      CONVERSION_ENABLED_STORAGE_KEY,
+      enabled,
+      "conversion status"
+    );
   }
 
   function getListingInsightsEnabled() {
@@ -283,35 +291,11 @@
   }
 
   function setListingInsightsEnabled(enabled) {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[LISTING_INSIGHTS_ENABLED_STORAGE_KEY] = Boolean(enabled);
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist listing insights status."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist listing insights status."
-        };
-      });
+    return _persistBooleanSetting(
+      LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+      enabled,
+      "listing insights status"
+    );
   }
 
   function getDarkModeEnabled() {
@@ -331,35 +315,7 @@
   }
 
   function setDarkModeEnabled(enabled) {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[DARK_MODE_ENABLED_STORAGE_KEY] = Boolean(enabled);
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist dark mode status."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist dark mode status."
-        };
-      });
+    return _persistBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, enabled, "dark mode status");
   }
 
   function getDarkModePrimaryColor() {

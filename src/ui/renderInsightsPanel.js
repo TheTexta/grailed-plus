@@ -15,8 +15,21 @@
   var CARD_PRICE_CURRENT_SELECTOR =
     'div[class*="Price_root"] [data-testid="Current"], ' +
     'div[class*="Price-module__root"] [data-testid="Current"]';
+  var MONEY_ROOT_PRICE_SELECTOR =
+    'span[class*="Money_root_"], span[class*="Money-module__root"]';
+  var CARD_PRICE_TARGET_SELECTOR =
+    CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR + ", " + MONEY_ROOT_PRICE_SELECTOR;
   var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-original-price-text";
   var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-original-price-value";
+  var TREND_EMPTY_TEXT = "no price history data";
+  var TREND_CHART_WIDTH = 296;
+  var TREND_CHART_HEIGHT = 108;
+  var TREND_MARGIN = {
+    top: 8,
+    right: 8,
+    bottom: 14,
+    left: 8
+  };
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -59,7 +72,7 @@
     return {
       selectedCurrency: selectedCurrency || "USD",
       rate: Number.isFinite(rate) ? rate : null,
-      mode: currencyContext && currencyContext.mode === "dual" ? "dual" : "dual"
+      mode: "dual"
     };
   }
 
@@ -170,6 +183,261 @@
       return "Unknown";
     }
     return date.toDateString();
+  }
+
+  function getD3() {
+    if (typeof globalThis !== "undefined" && globalThis && globalThis.d3) {
+      return globalThis.d3;
+    }
+
+    return null;
+  }
+
+  function parseDateMs(value) {
+    if (!value) {
+      return null;
+    }
+
+    var date = new Date(value);
+    var ms = date.getTime();
+    if (!Number.isFinite(ms)) {
+      return null;
+    }
+
+    return ms;
+  }
+
+  function normalizeTrendPoints(listing) {
+    var history =
+      listing && listing.pricing && Array.isArray(listing.pricing.history)
+        ? listing.pricing.history
+        : [];
+
+    if (!Array.isArray(history) || history.length <= 1) {
+      return [];
+    }
+
+    var createdAtMs = parseDateMs(listing ? listing.createdAt : null);
+    var updatedAtMs = parseDateMs(listing && listing.pricing ? listing.pricing.updatedAt : null);
+    if (!Number.isFinite(createdAtMs) || !Number.isFinite(updatedAtMs) || updatedAtMs <= createdAtMs) {
+      return [];
+    }
+
+    var intervalMs = (updatedAtMs - createdAtMs) / (history.length - 1);
+    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+      return [];
+    }
+
+    var points = [];
+    var i;
+    var price;
+    var ts;
+    for (i = 0; i < history.length; i += 1) {
+      price = Number(history[i]);
+      if (!Number.isFinite(price) || price <= 0) {
+        continue;
+      }
+
+      ts = createdAtMs + intervalMs * i;
+      points.push({
+        key: String(Math.round(ts)) + ":" + String(price) + ":" + String(i),
+        index: i,
+        timestampMs: Math.round(ts),
+        date: new Date(ts),
+        priceUsd: price
+      });
+    }
+
+    points.sort(function (a, b) {
+      return a.timestampMs - b.timestampMs;
+    });
+
+    return points;
+  }
+
+  function createTrendChartRow(doc, listing, currencyContext) {
+    var row = doc.createElement("div");
+    row.className = "grailed-plus__trend-row";
+
+    var chart = doc.createElement("div");
+    chart.className = "grailed-plus__trend-chart";
+    chart.setAttribute("role", "img");
+    chart.setAttribute("aria-label", "Price trend");
+    row.appendChild(chart);
+
+    var points = normalizeTrendPoints(listing);
+    var d3 = getD3();
+    if (!d3 || points.length <= 1) {
+      var emptyNode = doc.createElement("div");
+      emptyNode.className = "grailed-plus__trend-empty";
+      emptyNode.textContent = TREND_EMPTY_TEXT;
+      chart.appendChild(emptyNode);
+      return row;
+    }
+
+    var width = TREND_CHART_WIDTH;
+    var height = TREND_CHART_HEIGHT;
+    var innerWidth = Math.max(1, width - TREND_MARGIN.left - TREND_MARGIN.right);
+    var innerHeight = Math.max(1, height - TREND_MARGIN.top - TREND_MARGIN.bottom);
+
+    var svg = d3
+      .select(chart)
+      .append("svg")
+      .attr("class", "grailed-plus__trend-svg")
+      .attr("viewBox", "0 0 " + String(width) + " " + String(height))
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("aria-hidden", "true");
+
+    var root = svg
+      .append("g")
+      .attr("class", "grailed-plus__trend-root")
+      .attr("transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
+
+    var x = d3
+      .scaleTime()
+      .domain(d3.extent(points, function (d) {
+        return d.date;
+      }))
+      .range([0, innerWidth]);
+
+    var yExtent = d3.extent(points, function (d) {
+      return d.priceUsd;
+    });
+    var yMin = yExtent[0];
+    var yMax = yExtent[1];
+    if (yMin === yMax) {
+      yMin = yMin - 1;
+      yMax = yMax + 1;
+    }
+
+    var y = d3.scaleLinear().domain([yMin, yMax]).nice(3).range([innerHeight, 0]);
+
+    var line = d3
+      .line()
+      .defined(function (d) {
+        return Number.isFinite(d.priceUsd) && d.date instanceof Date;
+      })
+      .x(function (d) {
+        return x(d.date);
+      })
+      .y(function (d) {
+        return y(d.priceUsd);
+      });
+
+    root
+      .selectAll("path.grailed-plus__trend-line")
+      .data([points])
+      .join("path")
+      .attr("class", "grailed-plus__trend-line")
+      .attr("d", line);
+
+    var tooltip = d3
+      .select(chart)
+      .append("div")
+      .attr("class", "grailed-plus__trend-tooltip")
+      .attr("aria-hidden", "true");
+
+    function showTooltip(event, point) {
+      var display = buildMoneyDisplay(point.priceUsd, currencyContext);
+      var tooltipText = display.text + " - " + formatDate(point.date.toISOString());
+
+      tooltip.text(tooltipText);
+      if (display.isConverted) {
+        tooltip.attr("title", "USD: " + display.originalUsdText);
+      } else {
+        tooltip.attr("title", "");
+      }
+
+      var xPos = Number(event && event.offsetX);
+      var yPos = Number(event && event.offsetY);
+      if (!Number.isFinite(xPos) || !Number.isFinite(yPos)) {
+        xPos = x(point.date) + TREND_MARGIN.left;
+        yPos = y(point.priceUsd) + TREND_MARGIN.top;
+      }
+
+      tooltip
+        .style("opacity", "1")
+        .style("left", String(xPos + 10) + "px")
+        .style("top", String(yPos - 12) + "px")
+        .attr("aria-hidden", "false");
+    }
+
+    function hideTooltip() {
+      tooltip.style("opacity", "0").attr("aria-hidden", "true");
+    }
+
+    var pointNodes = root
+      .selectAll("circle.grailed-plus__trend-point")
+      .data(points, function (d) {
+        return d.key;
+      })
+      .join("circle")
+      .attr("class", "grailed-plus__trend-point")
+      .attr("cx", function (d) {
+        return x(d.date);
+      })
+      .attr("cy", function (d) {
+        return y(d.priceUsd);
+      })
+      .attr("r", 3)
+      .attr("tabindex", 0)
+      .on("focus", function (event, point) {
+        pointNodes.classed("is-active", false);
+        d3.select(this).classed("is-active", true);
+        showTooltip(event, point);
+      })
+      .on("blur", function () {
+        pointNodes.classed("is-active", false);
+        hideTooltip();
+      });
+
+    var bisectByDate = d3.bisector(function (d) {
+      return d.date;
+    }).center;
+
+    function findNearestPoint(event) {
+      var pointer = d3.pointer(event, root.node());
+      var px = Number(pointer && pointer[0]);
+      if (!Number.isFinite(px)) {
+        return points[points.length - 1];
+      }
+
+      var clampedPx = Math.max(0, Math.min(innerWidth, px));
+      var hoverDate = x.invert(clampedPx);
+      var index = bisectByDate(points, hoverDate);
+      if (!Number.isFinite(index)) {
+        return points[points.length - 1];
+      }
+
+      index = Math.max(0, Math.min(points.length - 1, index));
+      return points[index];
+    }
+
+    function syncHoverState(event) {
+      var nearest = findNearestPoint(event);
+      pointNodes.classed("is-active", function (d) {
+        return d.key === nearest.key;
+      });
+      showTooltip(event, nearest);
+    }
+
+    root
+      .selectAll("rect.grailed-plus__trend-hit-area")
+      .data([null])
+      .join("rect")
+      .attr("class", "grailed-plus__trend-hit-area")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", innerWidth)
+      .attr("height", innerHeight)
+      .on("mouseenter", syncHoverState)
+      .on("mousemove", syncHoverState)
+      .on("mouseleave", function () {
+        pointNodes.classed("is-active", false);
+        hideTooltip();
+      });
+
+    return row;
   }
 
   function createRow(doc, label, value, extraClass, valueTitle) {
@@ -366,6 +634,70 @@
     }
 
     return containers;
+  }
+
+  function collectMoneyRootPriceNodes(doc) {
+    if (!doc || typeof doc.querySelectorAll !== "function") {
+      return [];
+    }
+
+    var nodes = doc.querySelectorAll(MONEY_ROOT_PRICE_SELECTOR);
+    var matches = [];
+    var i;
+    for (i = 0; i < nodes.length; i += 1) {
+      appendUniqueNodes(matches, [nodes[i]]);
+    }
+
+    return matches;
+  }
+
+  function isNodeWithinAnyTarget(node, targets) {
+    if (!node || !Array.isArray(targets) || targets.length === 0) {
+      return false;
+    }
+
+    var current = node;
+    var i;
+    while (current) {
+      for (i = 0; i < targets.length; i += 1) {
+        if (targets[i] === current) {
+          return true;
+        }
+      }
+      current = current.parentNode;
+    }
+
+    return false;
+  }
+
+  function collectCardPriceTargets(doc) {
+    var targets = collectCardPriceContainers(doc);
+    var moneyNodes = collectMoneyRootPriceNodes(doc);
+    var i;
+
+    for (i = 0; i < moneyNodes.length; i += 1) {
+      if (!isNodeWithinAnyTarget(moneyNodes[i], targets)) {
+        appendUniqueNodes(targets, [moneyNodes[i]]);
+      }
+    }
+
+    return targets;
+  }
+
+  function nodeContainsCardPriceTarget(node) {
+    if (!node) {
+      return false;
+    }
+
+    if (typeof node.matches === "function" && node.matches(CARD_PRICE_TARGET_SELECTOR)) {
+      return true;
+    }
+
+    if (typeof node.querySelector === "function") {
+      return Boolean(node.querySelector(CARD_PRICE_TARGET_SELECTOR));
+    }
+
+    return false;
   }
 
   function findSidebarScope(priceNode) {
@@ -970,16 +1302,16 @@
       return false;
     }
 
-    var containers = collectCardPriceContainers(doc);
-    if (!Array.isArray(containers) || containers.length === 0) {
+    var targets = collectCardPriceTargets(doc);
+    if (!Array.isArray(targets) || targets.length === 0) {
       return false;
     }
 
     var handledAny = false;
     var i;
     var outcome;
-    for (i = 0; i < containers.length; i += 1) {
-      outcome = applyCurrencyToPriceContainer(containers[i], currencyContext, {
+    for (i = 0; i < targets.length; i += 1) {
+      outcome = applyCurrencyToPriceContainer(targets[i], currencyContext, {
         strikeMaxFractionDigits: 0
       });
       if (outcome && outcome.handled) {
@@ -1062,39 +1394,11 @@
       panel.appendChild(createRow(doc, "Status", statusMessage, "grailed-plus__row--status"));
     }
 
-    var historyText;
-    var historyTitle = "";
     var pricingHistory =
       listing && listing.pricing && Array.isArray(listing.pricing.history)
         ? listing.pricing.history
         : [];
-
-    if (pricingHistory.length > 0) {
-      var historyDisplays = pricingHistory.map(function (value) {
-        return buildMoneyDisplay(Number(value), currencyContext);
-      });
-      historyText = historyDisplays
-        .map(function (display) {
-          return display.text;
-        })
-        .join(", ");
-      historyText += " (total drops: " + pricingHistory.length + ")";
-
-      var convertedOriginals = historyDisplays
-        .filter(function (display) {
-          return display.isConverted;
-        })
-        .map(function (display) {
-          return display.originalUsdText;
-        });
-      if (convertedOriginals.length > 0) {
-        historyTitle = "USD: " + convertedOriginals.join(", ");
-      }
-    } else {
-      historyText = "No price drops on record";
-    }
-
-    panel.appendChild(createRow(doc, "Price Trend", historyText, "", historyTitle));
+    panel.appendChild(createTrendChartRow(doc, listing, currencyContext));
 
     var avgText = "N/A";
     var avgTitle = "";
@@ -1168,6 +1472,7 @@
     findMountNode: findMountNode,
     applySidebarCurrency: applySidebarCurrency,
     applyCardCurrency: applyCardCurrency,
+    nodeContainsCardPriceTarget: nodeContainsCardPriceTarget,
     removeExistingPanels: removeExistingPanels,
     renderInsightsPanel: renderInsightsPanel,
     formatCurrency: formatCurrency,

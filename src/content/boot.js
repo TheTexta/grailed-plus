@@ -29,6 +29,10 @@
   var CARD_PRICE_CONTAINER_SELECTOR =
     'div[class*="Price_root"], div[class*="Price-module__root"]';
   var CARD_PRICE_CURRENT_SELECTOR = '[data-testid="Current"]';
+  var MONEY_ROOT_PRICE_SELECTOR =
+    'span[class*="Money_root_"], span[class*="Money-module__root"]';
+  var CARD_PRICE_TARGET_SELECTOR =
+    CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR + ", " + MONEY_ROOT_PRICE_SELECTOR;
   var FILTER_TARGET_ATTR = "data-grailed-plus-filter-target";
   var FILTER_TARGET_ATTR_VALUE = "1";
   var FILTER_SCOPE_SKIP_ATTR = "data-grailed-plus-filter-skip";
@@ -583,14 +587,25 @@
       return false;
     }
 
+    if (
+      InsightsPanel &&
+      typeof InsightsPanel.nodeContainsCardPriceTarget === "function"
+    ) {
+      try {
+        return Boolean(InsightsPanel.nodeContainsCardPriceTarget(node));
+      } catch (_) {
+        // Fall through to local selector checks.
+      }
+    }
+
     if (typeof node.matches === "function") {
-      if (node.matches(CARD_PRICE_CONTAINER_SELECTOR) || node.matches(CARD_PRICE_CURRENT_SELECTOR)) {
+      if (node.matches(CARD_PRICE_TARGET_SELECTOR)) {
         return true;
       }
     }
 
     if (typeof node.querySelector === "function") {
-      return Boolean(node.querySelector(CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR));
+      return Boolean(node.querySelector(CARD_PRICE_TARGET_SELECTOR));
     }
 
     return false;

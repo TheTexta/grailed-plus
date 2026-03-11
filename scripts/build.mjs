@@ -5,9 +5,11 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
+const d3BundlePath = path.join(rootDir, "node_modules", "d3", "dist", "d3.min.js");
 
 const inputFiles = [
   "src/domain/url.js",
+  "src/domain/normalize.js",
   "src/data/listingModel.js",
   "src/data/listingExtractor.js",
   "src/domain/pricingInsights.js",
@@ -33,8 +35,13 @@ const banner = [
   ""
 ].join("\n");
 
+if (!fs.existsSync(d3BundlePath)) {
+  throw new Error("Missing D3 runtime at node_modules/d3/dist/d3.min.js. Run npm install.");
+}
+
+const d3Runtime = fs.readFileSync(d3BundlePath, "utf8").trimEnd();
 const contents = inputFiles.map(readFile);
-const output = `${banner}${contents.join("\n\n")}\n`;
+const output = `${banner}${d3Runtime}\n\n${contents.join("\n\n")}\n`;
 
 fs.writeFileSync(outputFile, output, "utf8");
 console.log(`Built ${path.relative(rootDir, outputFile)}`);

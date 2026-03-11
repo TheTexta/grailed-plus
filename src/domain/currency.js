@@ -108,15 +108,7 @@
   }
 
   function isCacheUsable(cache, baseCurrency, nowMs) {
-    if (!cache || typeof cache !== "object") {
-      return false;
-    }
-
-    if (cache.base !== baseCurrency) {
-      return false;
-    }
-
-    if (!cache.rates || typeof cache.rates !== "object") {
+    if (!isCacheStaleButCompatible(cache, baseCurrency)) {
       return false;
     }
 

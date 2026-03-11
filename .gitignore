@@ -3,3 +3,5 @@
 *.\idea
 /web-ext-artifacts/*
 *.zip
+
+/node_modules

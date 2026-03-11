@@ -7,26 +7,42 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  function createDefaultListing(sourceStatus) {
-    return {
-      id: null,
-      title: "",
-      createdAt: null,
-      pricing: {
-        history: [],
-        updatedAt: null
-      },
-      seller: {
-        createdAt: null
-      },
-      prettyPath: null,
-      sold: false,
-      rawListing: null,
-      sourceStatus: sourceStatus || "missing_listing"
-    };
+  var Normalize = null;
+  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusNormalize) {
+    Normalize = globalThis.GrailedPlusNormalize;
+  }
+  if (!Normalize && typeof require === "function") {
+    try {
+      Normalize = require("../domain/normalize.js");
+    } catch (_) {
+      Normalize = null;
+    }
+  }
+
+  function getNormalizeHelpers() {
+    if (!Normalize || typeof Normalize !== "object") {
+      return null;
+    }
+
+    if (
+      typeof Normalize.getNestedValue !== "function" ||
+      typeof Normalize.normalizeDate !== "function" ||
+      typeof Normalize.normalizeString !== "function" ||
+      typeof Normalize.normalizeListingId !== "function" ||
+      typeof Normalize.normalizePriceDrops !== "function"
+    ) {
+      return null;
+    }
+
+    return Normalize;
   }
 
   function getNestedValue(input, paths, fallback) {
+    var helpers = getNormalizeHelpers();
+    if (helpers) {
+      return helpers.getNestedValue(input, paths, fallback);
+    }
+
     var i;
     var path;
     var value;
@@ -55,6 +71,11 @@
   }
 
   function normalizeDate(value) {
+    var helpers = getNormalizeHelpers();
+    if (helpers) {
+      return helpers.normalizeDate(value);
+    }
+
     if (!value) {
       return null;
     }
@@ -68,6 +89,11 @@
   }
 
   function normalizeString(value, fallback) {
+    var helpers = getNormalizeHelpers();
+    if (helpers) {
+      return helpers.normalizeString(value, fallback);
+    }
+
     if (typeof value === "string") {
       return value;
     }
@@ -83,6 +109,11 @@
   }
 
   function normalizeListingId(value) {
+    var helpers = getNormalizeHelpers();
+    if (helpers) {
+      return helpers.normalizeListingId(value);
+    }
+
     if (typeof value === "number" && Number.isInteger(value) && value > 0) {
       return value;
     }
@@ -96,6 +127,11 @@
   }
 
   function normalizePriceDrops(value) {
+    var helpers = getNormalizeHelpers();
+    if (helpers) {
+      return helpers.normalizePriceDrops(value);
+    }
+
     if (!Array.isArray(value)) {
       return [];
     }
@@ -110,6 +146,25 @@
       .filter(function (entry) {
         return Number.isFinite(entry) && entry > 0;
       });
+  }
+
+  function createDefaultListing(sourceStatus) {
+    return {
+      id: null,
+      title: "",
+      createdAt: null,
+      pricing: {
+        history: [],
+        updatedAt: null
+      },
+      seller: {
+        createdAt: null
+      },
+      prettyPath: null,
+      sold: false,
+      rawListing: null,
+      sourceStatus: sourceStatus || "missing_listing"
+    };
   }
 
   function getRawListing(rawNextData) {
