@@ -9,6 +9,7 @@ interface CMarketCompareState {
     rawListing: any;
     statusMessage: string;
     currencyContext: any;
+    marketCompareResultsLimit: number;
     renderToken: number;
   } | null;
   renderToken: number;
@@ -57,6 +58,7 @@ interface CRenderPanelOptions {
     rawListing: any;
     statusMessage: string;
     currencyContext: any;
+    marketCompareResultsLimit: number;
     marketCompare: any;
     onMarketCompareClick: () => void;
   }) => unknown;
@@ -69,6 +71,7 @@ interface CRenderPanelOptions {
     rawListing?: any;
     statusMessage?: string;
     currencyContext?: any;
+    marketCompareResultsLimit?: number;
   };
 }
 
@@ -182,6 +185,11 @@ interface CMarketCompareGlobal {
         context.currencyContext && context.currencyContext.selectedCurrency
           ? context.currencyContext.selectedCurrency
           : "USD",
+      limit:
+        Number.isFinite(Number(context.marketCompareResultsLimit)) &&
+        Number(context.marketCompareResultsLimit) > 0
+          ? Math.floor(Number(context.marketCompareResultsLimit))
+          : 5,
       currencyRate:
         context.currencyContext && Number.isFinite(Number(context.currencyContext.rate))
           ? Number(context.currencyContext.rate)
@@ -232,6 +240,11 @@ interface CMarketCompareGlobal {
       rawListing: panelOptions.rawListing || null,
       statusMessage: panelOptions.statusMessage || "",
       currencyContext: panelOptions.currencyContext || null,
+      marketCompareResultsLimit:
+        Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
+        Number(panelOptions.marketCompareResultsLimit) > 0
+          ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
+          : 5,
       renderToken: state.renderToken
     };
 
@@ -243,6 +256,7 @@ interface CMarketCompareGlobal {
       rawListing: state.latestPanelContext.rawListing,
       statusMessage: state.latestPanelContext.statusMessage,
       currencyContext: state.latestPanelContext.currencyContext,
+      marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
       marketCompare: marketCompareState,
       onMarketCompareClick: onMarketCompareClick
     });

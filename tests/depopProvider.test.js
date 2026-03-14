@@ -113,6 +113,328 @@ test("parseCandidates extracts product info from Next flight payload", () => {
   assert.equal(parsed.candidates[0].currency, "USD");
 });
 
+test("parseCandidates derives title keywords from description when title is missing", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "desc-1",
+                  title: "",
+                  description: "Stone Island nylon metal overshirt size medium great condition",
+                  url: "https://www.depop.com/products/user-desc-1/",
+                  price: {
+                    amount: 160,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "desc-1");
+  assert.equal(parsed.candidates[0].title, "Stone Island nylon metal overshirt medium");
+});
+
+test("parseCandidates drops generic condition words from description-derived title", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "desc-2",
+                  title: "Untitled",
+                  description: "Authentic black hoodie like new with tags great condition size large",
+                  url: "https://www.depop.com/products/user-desc-2/",
+                  price: {
+                    amount: 120,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "desc-2");
+  assert.equal(parsed.candidates[0].title, "black hoodie large");
+});
+
+test("parseCandidates strips seller username from URL fallback title", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "slug-1",
+                  title: "",
+                  description: "",
+                  seller: {
+                    username: "seller_name"
+                  },
+                  url: "https://www.depop.com/products/seller-name-black-denim-jacket-size-m/",
+                  price: {
+                    amount: 140,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "slug-1");
+  assert.equal(parsed.candidates[0].title, "black denim jacket size m");
+});
+
+test("parseCandidates strips seller username prefix from explicit title", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "slug-2",
+                  title: "seller_name black denim jacket size m",
+                  description: "",
+                  seller: {
+                    username: "seller_name"
+                  },
+                  url: "https://www.depop.com/products/seller-name-black-denim-jacket-size-m/",
+                  price: {
+                    amount: 140,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "slug-2");
+  assert.equal(parsed.candidates[0].title, "black denim jacket size m");
+});
+
+test("parseCandidates strips underscore username from explicit title without seller metadata", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "slug-3",
+                  title: "seller_name black denim jacket size m",
+                  description: "",
+                  url: "https://www.depop.com/products/seller-name-black-denim-jacket-size-m/",
+                  price: {
+                    amount: 140,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "slug-3");
+  assert.equal(parsed.candidates[0].title, "black denim jacket size m");
+});
+
+test("parseCandidates strips underscore username from URL fallback title", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "slug-4",
+                  title: "",
+                  description: "",
+                  url: "https://www.depop.com/products/lain_xox-drain-gang-2022-world-tour/",
+                  price: {
+                    amount: 110,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "slug-4");
+  assert.equal(parsed.candidates[0].title, "drain gang 2022 world tour");
+});
+
+test("parseCandidates strips repro-style username from space-split explicit title", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "slug-5",
+                  title: "lain xox drain gang 2022 world tour",
+                  description: "",
+                  url: "https://www.depop.com/products/lain_xox-drain-gang-2022-world-tour/",
+                  price: {
+                    amount: 110,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "slug-5");
+  assert.equal(parsed.candidates[0].title, "drain gang 2022 world tour");
+});
+
+test("parseCandidates normalizes protocol-relative image URLs", () => {
+  const flightData = JSON.stringify({
+    state: {
+      data: {
+        pages: [
+          {
+            data: {
+              products: [
+                {
+                  id: "img-1",
+                  title: "Image test listing",
+                  url: "https://www.depop.com/products/user-image-test/",
+                  pictures: [
+                    {
+                      url: "//images.depop.test/image-test.jpg"
+                    }
+                  ],
+                  price: {
+                    amount: 99,
+                    currency: "USD"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
+  const escaped = JSON.stringify(flightData).slice(1, -1);
+  const html = [
+    "<html><head></head><body>",
+    `<script>self.__next_f.push([1, "${escaped}"])</script>`,
+    "</body></html>"
+  ].join("");
+
+  const parsed = parseCandidates(html);
+  assert.equal(parsed.candidates.length, 1);
+  assert.equal(parsed.candidates[0].id, "img-1");
+  assert.equal(parsed.candidates[0].imageUrl, "https://images.depop.test/image-test.jpg");
+});
+
 test("depop provider returns parsed candidates for successful fetch", async () => {
   const html = [
     "<html><head>",
@@ -214,6 +536,164 @@ test("depop provider falls back to api v3 search when html has no candidates", a
   assert.ok(result.candidates.length >= 1);
   assert.ok(result.candidates.some((candidate) => candidate.id === "api-1"));
   assert.ok(calls.some((url) => url.indexOf("/api/v3/search/products/") !== -1));
+});
+
+test("depop provider reuses cached image URLs across repeated searches", async () => {
+  let apiCalls = 0;
+
+  const provider = createDepopProvider({
+    fetchImpl: async function (url) {
+      if (String(url).indexOf("/api/v3/search/products/") !== -1) {
+        apiCalls += 1;
+        if (apiCalls === 1) {
+          return {
+            ok: true,
+            status: 200,
+            text: async function () {
+              return JSON.stringify({
+                data: {
+                  products: [
+                    {
+                      id: "cached-img-1",
+                      title: "Cached Image Tee",
+                      url: "https://www.depop.com/products/user-cached-image-tee/",
+                      price: {
+                        amount: 105,
+                        currency: "USD"
+                      },
+                      pictures: [
+                        {
+                          url: "https://images.depop.test/cached-image-tee.jpg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              });
+            }
+          };
+        }
+
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              data: {
+                products: [
+                  {
+                    id: "cached-img-1",
+                    title: "Cached Image Tee",
+                    url: "https://www.depop.com/products/user-cached-image-tee/",
+                    price: {
+                      amount: 105,
+                      currency: "USD"
+                    }
+                  }
+                ]
+              }
+            });
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return "<html><head><title>Search | Depop</title></head><body></body></html>";
+        }
+      };
+    }
+  });
+
+  const first = await provider.search({
+    queries: ["cached image tee"],
+    limit: 5,
+    currency: "USD"
+  });
+  const second = await provider.search({
+    queries: ["cached image tee"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.equal(first.candidates[0].id, "cached-img-1");
+  assert.equal(second.candidates[0].id, "cached-img-1");
+  assert.equal(first.candidates[0].imageUrl, "https://images.depop.test/cached-image-tee.jpg");
+  assert.equal(second.candidates[0].imageUrl, "https://images.depop.test/cached-image-tee.jpg");
+});
+
+test("depop provider preserves richer duplicate candidates with image URLs across multi-query merges", async () => {
+  const provider = createDepopProvider({
+    maxRequests: 6,
+    fetchImpl: async function (url) {
+      const textUrl = String(url || "");
+
+      if (textUrl.indexOf("/search/?q=") !== -1) {
+        return {
+          ok: false,
+          status: 500,
+          text: async function () {
+            return "";
+          }
+        };
+      }
+
+      if (textUrl.indexOf("/api/v3/search/products/") !== -1) {
+        const isFirstQuery = textUrl.indexOf("what=first+query") !== -1;
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              data: {
+                products: [
+                  {
+                    id: "dupe-1",
+                    title: "Duplicate Candidate",
+                    url: "https://www.depop.com/products/user-duplicate-candidate/",
+                    price: {
+                      amount: 88,
+                      currency: "USD"
+                    },
+                    pictures: isFirstQuery
+                      ? []
+                      : [
+                          {
+                            url: "https://images.depop.test/dupe-1.jpg"
+                          }
+                        ]
+                  }
+                ]
+              }
+            });
+          }
+        };
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        text: async function () {
+          return "";
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["first query", "second query"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.candidates[0].id, "dupe-1");
+  assert.equal(result.candidates[0].imageUrl, "https://images.depop.test/dupe-1.jpg");
 });
 
 test("depop provider returns MISSING_LISTING_DATA when queries missing", async () => {
@@ -882,6 +1362,78 @@ test("depop provider extracts amount from pricing-shaped API payload", async () 
   assert.ok(result.candidates.every((candidate) => Number(candidate.price) > 0));
 });
 
+test("depop provider extracts amount from pricing final_price_key total_price payload", async () => {
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 3,
+    fetchImpl: async function (url) {
+      if (String(url).indexOf("/api/v3/search/products") !== -1) {
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              products: [
+                {
+                  id: "api-pricing-final-key-1",
+                  slug: "api-pricing-final-key-1",
+                  description: "Drain Gang Chaos T-Shirt White",
+                  pricing: {
+                    final_price_key: "discounted_price",
+                    discounted_price: {
+                      total_price: "60.00",
+                      price_breakdown: {
+                        price: {
+                          amount: "60.00"
+                        }
+                      }
+                    },
+                    original_price: {
+                      total_price: "115.00",
+                      price_breakdown: {
+                        price: {
+                          amount: "115.00"
+                        }
+                      }
+                    },
+                    currency_name: "USD"
+                  },
+                  preview: {
+                    150: "https://images.depop.test/api-pricing-final-key-1.jpg"
+                  }
+                }
+              ]
+            });
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return "<html><body><span>loading results</span></body></html>";
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["drain gang chaos"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.candidates.length >= 1);
+  assert.ok(result.candidates.some((candidate) => candidate.id === "api-pricing-final-key-1"));
+  assert.ok(result.candidates.every((candidate) => Number(candidate.price) > 0));
+  assert.equal(
+    result.candidates.find((candidate) => candidate.id === "api-pricing-final-key-1").imageUrl,
+    "https://images.depop.test/api-pricing-final-key-1.jpg"
+  );
+});
+
 test("depop provider enriches href fallback candidates from product pages", async () => {
   const searchHtml = [
     "<!DOCTYPE html>",
@@ -955,4 +1507,86 @@ test("depop provider enriches href fallback candidates from product pages", asyn
   assert.ok(result.candidates.length >= 1);
   assert.ok(result.candidates.some((candidate) => candidate.id === "enriched-item-1"));
   assert.ok(result.candidates.every((candidate) => Number(candidate.price) > 0));
+});
+
+test("depop provider returns NETWORK_ERROR when all attempts fail with status 0", async () => {
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 1,
+    fetchImpl: async function () {
+      return {
+        ok: false,
+        status: 0,
+        text: async function () {
+          return "";
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["network failure"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.errorCode, "NETWORK_ERROR");
+  assert.equal(result.retryAfterMs, 1500);
+});
+
+test("depop provider does not exceed maxRequests during broad fallback", async () => {
+  const noResultsHtml = [
+    "<!DOCTYPE html>",
+    "<html><head><title>Search | Depop</title></head>",
+    '<body><script>self.__next_f.push([1, "{\\\"total_count\\\":0,\\\"result_count\\\":0}"])</script></body></html>'
+  ].join("");
+
+  let calls = 0;
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 1,
+    fetchImpl: async function () {
+      calls += 1;
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return noResultsHtml;
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["foo bar baz"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.errorCode, "NO_RESULTS");
+  assert.equal(calls, 1);
+});
+
+test("depop provider times out stalled runtime bridge requests", async () => {
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 1,
+    fetchTimeoutMs: 10,
+    fetchImpl: null,
+    runtimeSendMessage: async function () {
+      return new Promise(function () {});
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["stalled bridge"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.errorCode, "NETWORK_ERROR");
+  assert.equal(result.retryAfterMs, 1500);
 });

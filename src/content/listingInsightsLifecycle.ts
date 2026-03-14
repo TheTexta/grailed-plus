@@ -250,6 +250,11 @@ interface CListingInsightsGlobal {
         rawListing: panelOptions.rawListing || null,
         statusMessage: panelOptions.statusMessage || "",
         currencyContext: panelOptions.currencyContext || null,
+        marketCompareResultsLimit:
+          Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
+          Number(panelOptions.marketCompareResultsLimit) > 0
+            ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
+            : 5,
         marketCompare: panelOptions.marketCompare || null,
         onMarketCompareClick:
           typeof panelOptions.onMarketCompareClick === "function"

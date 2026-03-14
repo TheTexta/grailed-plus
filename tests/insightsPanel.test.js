@@ -388,6 +388,24 @@ test("renderInsightsPanel inserts panel after mount node by default", () => {
   assert.match(flattenText(panel), /Compare on Depop/);
 });
 
+test("renderInsightsPanel exposes a semantic title linked from the section landmark", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 }
+  });
+
+  const title = panel.querySelector(".grailed-plus-panel__title");
+  assert.ok(title);
+  assert.equal(title.tagName, "H2");
+  assert.equal(title.textContent, "Pricing Insights");
+  assert.ok(panel.getAttribute("aria-labelledby"));
+  assert.equal(panel.getAttribute("aria-labelledby"), title.id);
+});
+
 test("renderInsightsPanel renders market compare result rows", () => {
   const { anchor } = createPanelHarness();
 
@@ -421,6 +439,166 @@ test("renderInsightsPanel renders market compare result rows", () => {
   assert.match(flattenText(panel), /score 71/);
 });
 
+test("renderInsightsPanel caps market compare rows to five by default", () => {
+  const { anchor } = createPanelHarness();
+
+  const results = Array.from({ length: 12 }, function (_value, index) {
+    const id = String(index + 1);
+    return {
+      id: "r" + id,
+      title: "Sample listing alt " + id,
+      url: "https://depop.test/item/" + id,
+      price: 80 + index,
+      currency: "USD",
+      score: 60 + index,
+      deltaLabel: "-10.0% cheaper"
+    };
+  });
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: results
+    }
+  });
+
+  const rows = panel.querySelectorAll(".grailed-plus__market-row");
+  assert.equal(rows.length, 5);
+  assert.match(flattenText(panel), /Sample listing alt 5/);
+  assert.doesNotMatch(flattenText(panel), /Sample listing alt 6/);
+});
+
+test("renderInsightsPanel shows ten market compare rows when expanded amount is enabled", () => {
+  const { anchor } = createPanelHarness();
+
+  const results = Array.from({ length: 12 }, function (_value, index) {
+    const id = String(index + 1);
+    return {
+      id: "r" + id,
+      title: "Expanded listing alt " + id,
+      url: "https://depop.test/item/expanded-" + id,
+      price: 90 + index,
+      currency: "USD",
+      score: 70 + index,
+      deltaLabel: "-11.0% cheaper"
+    };
+  });
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompareResultsLimit: 10,
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: results
+    }
+  });
+
+  const rows = panel.querySelectorAll(".grailed-plus__market-row");
+  assert.equal(rows.length, 10);
+  assert.match(flattenText(panel), /Expanded listing alt 10/);
+  assert.doesNotMatch(flattenText(panel), /Expanded listing alt 11/);
+});
+
+test("renderInsightsPanel degrades invalid market result URLs into non-interactive text", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r2",
+          title: "Listing without safe URL",
+          url: "javascript:alert(1)",
+          price: 72,
+          currency: "USD"
+        }
+      ]
+    }
+  });
+
+  const link = panel.querySelector(".grailed-plus__market-link");
+  assert.ok(link);
+  assert.equal(link.tagName, "SPAN");
+  assert.equal(link.getAttribute("aria-disabled"), "true");
+  assert.equal(link.textContent, "Listing without safe URL");
+});
+
+test("renderInsightsPanel shows a left-side thumbnail preview for Depop results", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r3",
+          title: "Preview listing",
+          url: "https://depop.test/item/3",
+          imageUrl: "https://images.depop.test/preview-3.jpg",
+          price: 90,
+          currency: "USD"
+        }
+      ]
+    }
+  });
+
+  const preview = panel.querySelector(".grailed-plus__market-preview");
+  const previewImage = panel.querySelector(".grailed-plus__market-preview-image");
+  assert.ok(preview);
+  assert.ok(previewImage);
+  assert.equal(previewImage.tagName, "IMG");
+  assert.equal(previewImage.src, "https://images.depop.test/preview-3.jpg");
+  assert.equal(previewImage.alt, "Preview listing");
+});
+
+test("renderInsightsPanel omits thumbnail preview for non-Depop providers", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Etsy",
+      results: [
+        {
+          id: "r4",
+          title: "Other market listing",
+          url: "https://etsy.test/item/4",
+          imageUrl: "https://images.etsy.test/preview-4.jpg",
+          price: 120,
+          currency: "USD"
+        }
+      ]
+    }
+  });
+
+  assert.equal(panel.querySelector(".grailed-plus__market-preview"), null);
+  assert.equal(panel.querySelector(".grailed-plus__market-preview-image"), null);
+});
+
 test("renderInsightsPanel shows loading market compare state with disabled action", () => {
   const { anchor } = createPanelHarness();
 
@@ -438,7 +616,7 @@ test("renderInsightsPanel shows loading market compare state with disabled actio
   });
 
   const chip = panel.querySelector(".grailed-plus__market-chip");
-  const button = panel.querySelector(".grailed-plus__button--market-compare");
+  const button = panel.querySelector(".grailed-plus__market-actions .grailed-plus__panel-button");
   assert.ok(chip);
   assert.ok(button);
   assert.equal(chip.textContent, "Searching");
@@ -464,7 +642,7 @@ test("renderInsightsPanel shows no-results market state and keeps action enabled
   });
 
   const chip = panel.querySelector(".grailed-plus__market-chip");
-  const button = panel.querySelector(".grailed-plus__button--market-compare");
+  const button = panel.querySelector(".grailed-plus__market-actions .grailed-plus__panel-button");
   assert.ok(chip);
   assert.ok(button);
   assert.equal(chip.textContent, "No Results");
@@ -500,8 +678,71 @@ test("renderInsightsPanel omits score fragment when score is not finite", () => 
 
   const metaNode = panel.querySelector(".grailed-plus__market-meta");
   assert.ok(metaNode);
-  assert.doesNotMatch(metaNode.textContent, /score\s+/i);
-  assert.match(metaNode.textContent, /\$88/);
+  const metaText = flattenText(metaNode);
+  assert.doesNotMatch(metaText, /score\s+/i);
+  assert.match(metaText, /\$88/);
+});
+
+test("renderInsightsPanel styles Depop delta percentages by direction and magnitude", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r1",
+          title: "Cheaper sample",
+          url: "https://depop.test/item/1",
+          price: 88,
+          currency: "USD",
+          score: 79,
+          deltaLabel: "-12.0% cheaper"
+        },
+        {
+          id: "r2",
+          title: "Higher sample",
+          url: "https://depop.test/item/2",
+          price: 120,
+          currency: "USD",
+          score: 71,
+          deltaLabel: "+17.0% higher"
+        }
+      ]
+    }
+  });
+
+  const cheaperNode = panel.querySelector(
+    ".grailed-plus__market-meta-segment.grailed-plus__percent--down-mid"
+  );
+  const higherNode = panel.querySelector(
+    ".grailed-plus__market-meta-segment.grailed-plus__percent--up-strong"
+  );
+
+  assert.ok(cheaperNode);
+  assert.ok(higherNode);
+  assert.match(cheaperNode.textContent, /-12\.0% cheaper/);
+  assert.match(higherNode.textContent, /\+17\.0% higher/);
+});
+
+test("renderInsightsPanel styles Avg. Price Drop with stronger green at larger percentages", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics({ averageDropPercent: 16, averageDropAmountUsd: 120 }),
+    mountNode: anchor,
+    rawListing: { id: 123 }
+  });
+
+  const avgValueNode = findValueNodeByLabel(panel, "Avg. Price Drop");
+  assert.ok(avgValueNode);
+  assert.match(avgValueNode.className, /grailed-plus__percent--down-strong/);
 });
 
 test("renderInsightsPanel inserts panel before mount node when mountPosition is beforebegin", () => {
@@ -607,6 +848,9 @@ test("renderInsightsPanel shows centered empty-state trend text when only one pr
   const emptyNode = panel.querySelector(".grailed-plus__trend-empty");
   assert.ok(emptyNode);
   assert.equal(emptyNode.textContent, "no price history data");
+  const chartNode = panel.querySelector(".grailed-plus__trend-chart");
+  assert.ok(chartNode);
+  assert.match(chartNode.getAttribute("aria-label"), /Price trend unavailable/i);
 });
 
 test("applySidebarCurrency converts and restores the sidebar price", () => {

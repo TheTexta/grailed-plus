@@ -480,6 +480,10 @@ interface MCGlobalRoot {
       const requestToken = activeRequestToken + 1;
       activeRequestToken = requestToken;
       const listingPrice = pickListingPrice(listing);
+      const resultLimit =
+        Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
+          ? Math.floor(Number(payload.limit))
+          : null;
       const queryResult =
         synthesizeQueries && listing
           ? synthesizeQueries(listing, {
@@ -526,9 +530,9 @@ interface MCGlobalRoot {
           size: normalizeString(listing && listing.size, ""),
           category: normalizeString(listing && listing.category, ""),
           queries: queryResult.queries,
-          limit: 12,
           listingPrice: listingPrice,
-          currency: normalizeString(payload.currency, "USD")
+          currency: normalizeString(payload.currency, "USD"),
+          limit: resultLimit
         })
         .then(function (result) {
           if (requestToken !== activeRequestToken) {
@@ -667,9 +671,8 @@ interface MCGlobalRoot {
               };
             })
             .filter(function (entry) {
-              return normalizeNumber(entry && entry.score) != null && (normalizeNumber(entry && entry.score) as number) > 0;
-            })
-            .slice(0, 5);
+              return normalizeNumber(entry && entry.score) != null && (normalizeNumber(entry && entry.score) as number) >= 0;
+            });
 
           if (!normalizedResults.length) {
             const noDisplayableResults = toErrorModel("NO_RESULTS");

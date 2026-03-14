@@ -171,6 +171,32 @@
     return Settings.setListingInsightsEnabled(Boolean(enabled));
   }
 
+  function loadMarketCompareExpandedAmountEnabled(): Promise<boolean> {
+    var fallbackEnabled =
+      Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
+        ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
+        : false;
+
+    if (!Settings || typeof Settings.getMarketCompareExpandedAmountEnabled !== "function") {
+      return Promise.resolve(fallbackEnabled);
+    }
+
+    return Settings.getMarketCompareExpandedAmountEnabled().then(function (value: any) {
+      return typeof value === "boolean" ? value : fallbackEnabled;
+    });
+  }
+
+  function saveMarketCompareExpandedAmountEnabled(enabled: boolean) {
+    if (!Settings || typeof Settings.setMarketCompareExpandedAmountEnabled !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setMarketCompareExpandedAmountEnabled(Boolean(enabled));
+  }
+
   function loadDarkModeEnabled(): Promise<boolean> {
     var fallbackEnabled =
       Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
@@ -358,6 +384,9 @@
     var form = document.getElementById("currency-form") as any;
     var enabledNode = document.getElementById("conversion-enabled") as any;
     var listingInsightsEnabledNode = document.getElementById("listing-insights-enabled") as any;
+    var marketCompareExpandedAmountEnabledNode = document.getElementById(
+      "market-compare-expanded-amount-enabled"
+    ) as any;
     var selectNode = document.getElementById("currency-select") as any;
     var customInputNode = document.getElementById("currency-custom") as any;
     var darkModeEnabledNode = document.getElementById("dark-mode-enabled") as any;
@@ -371,6 +400,7 @@
       !form ||
       !enabledNode ||
       !listingInsightsEnabledNode ||
+      !marketCompareExpandedAmountEnabledNode ||
       !selectNode ||
       !customInputNode ||
       !darkModeEnabledNode ||
@@ -399,6 +429,7 @@
       loadSelectedCurrency(),
       loadConversionEnabled(),
       loadListingInsightsEnabled(),
+      loadMarketCompareExpandedAmountEnabled(),
       loadDarkModeEnabled(),
       loadDarkModeBehavior(),
       loadDarkModePrimaryColor()
@@ -406,14 +437,16 @@
       var selectedCurrency = values[0];
       var enabled = values[1];
       var listingInsightsEnabled = values[2];
-      var darkModeEnabled = values[3];
-      var darkModeBehavior = values[4];
-      var darkModePrimaryColor = values[5];
+      var marketCompareExpandedAmountEnabled = values[3];
+      var darkModeEnabled = values[4];
+      var darkModeBehavior = values[5];
+      var darkModePrimaryColor = values[6];
 
       applySelection(selectNode, customInputNode, selectedCurrency, curatedSet);
       enabledNode.checked = enabled;
       syncCurrencyInputs(selectNode, customInputNode, enabled);
       listingInsightsEnabledNode.checked = listingInsightsEnabled;
+      marketCompareExpandedAmountEnabledNode.checked = marketCompareExpandedAmountEnabled;
       darkModeEnabledNode.checked = darkModeEnabled;
       darkModeBehaviorNode.value = darkModeBehavior;
       applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryColor);
@@ -436,6 +469,12 @@
 
     if (typeof listingInsightsEnabledNode.addEventListener === "function") {
       listingInsightsEnabledNode.addEventListener("change", function () {
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof marketCompareExpandedAmountEnabledNode.addEventListener === "function") {
+      marketCompareExpandedAmountEnabledNode.addEventListener("change", function () {
         setStatus(statusNode, null, "");
       });
     }
@@ -485,6 +524,9 @@
 
         var conversionEnabled = Boolean(enabledNode.checked);
         var listingInsightsEnabled = Boolean(listingInsightsEnabledNode.checked);
+        var marketCompareExpandedAmountEnabled = Boolean(
+          marketCompareExpandedAmountEnabledNode.checked
+        );
         var usingCustom = selectNode.value === "CUSTOM";
         var darkModeEnabled = Boolean(darkModeEnabledNode.checked);
         var darkModeBehavior = normalizeDarkModeBehavior(darkModeBehaviorNode.value);
@@ -537,6 +579,7 @@
               saveSelectedCurrency(safeTargetCode),
               saveConversionEnabled(conversionEnabled),
               saveListingInsightsEnabled(listingInsightsEnabled),
+              saveMarketCompareExpandedAmountEnabled(marketCompareExpandedAmountEnabled),
               saveDarkModeEnabled(darkModeEnabled),
               saveDarkModeBehavior(safeDarkModeBehavior),
               saveDarkModePrimaryColor(safeDarkModePrimaryColor)
@@ -570,6 +613,10 @@
           Settings && typeof Settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
             ? Settings.DEFAULT_LISTING_INSIGHTS_ENABLED
             : true;
+        var defaultMarketCompareExpandedAmountEnabled =
+          Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
+            ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
+            : false;
         var defaultDarkModeEnabled =
           Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
             ? Settings.DEFAULT_DARK_MODE_ENABLED
@@ -585,6 +632,7 @@
           saveSelectedCurrency(defaultCurrency),
           saveConversionEnabled(defaultConversionEnabled),
           saveListingInsightsEnabled(defaultListingInsightsEnabled),
+          saveMarketCompareExpandedAmountEnabled(defaultMarketCompareExpandedAmountEnabled),
           saveDarkModeEnabled(defaultDarkModeEnabled),
           saveDarkModeBehavior(defaultDarkModeBehavior),
           saveDarkModePrimaryColor(defaultDarkModePrimaryColor)
@@ -601,6 +649,7 @@
           applySelection(selectNode, customInputNode, defaultCurrency, curatedSet);
           syncCurrencyInputs(selectNode, customInputNode, defaultConversionEnabled);
           listingInsightsEnabledNode.checked = defaultListingInsightsEnabled;
+          marketCompareExpandedAmountEnabledNode.checked = defaultMarketCompareExpandedAmountEnabled;
 
           darkModeEnabledNode.checked = defaultDarkModeEnabled;
           darkModeBehaviorNode.value = defaultDarkModeBehavior;

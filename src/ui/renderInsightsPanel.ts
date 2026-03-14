@@ -31,7 +31,13 @@
     left: 8
   };
   var TREND_CLIP_ID_PREFIX = "grailed-plus__trend-clip-";
+  var TREND_POINT_RADIUS = 3;
+  var TREND_PLOT_PADDING = 6;
+  var PANEL_TITLE_TEXT = "Pricing Insights";
+  var DEFAULT_MARKET_COMPARE_RESULTS_LIMIT = 5;
   var trendClipIdCounter = 0;
+  var panelTitleIdCounter = 0;
+  var cachedDateFormatter: Intl.DateTimeFormat | null = null;
 
   function normalizeCurrencyCode(input: any) {
     if (typeof input !== "string") {
@@ -186,16 +192,85 @@
     if (Number.isNaN(date.getTime())) {
       return "Unknown";
     }
-    return date.toDateString();
-  }
-
-  function getD3() {
-    var globalScope = typeof globalThis !== "undefined" ? (globalThis as any) : null;
-    if (globalScope && globalScope.d3) {
-      return globalScope.d3;
+    if (!cachedDateFormatter) {
+      try {
+        cachedDateFormatter = new Intl.DateTimeFormat(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric"
+        });
+      } catch (_) {
+        cachedDateFormatter = null;
+      }
     }
 
-    return null;
+    if (cachedDateFormatter) {
+      return cachedDateFormatter.format(date);
+    }
+
+    try {
+      return date.toDateString();
+    } catch (_) {
+      return "Unknown";
+    }
+  }
+
+  function normalizeExternalUrl(input: any) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      var parsed = new URL(trimmed);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        return null;
+      }
+      return parsed.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function formatTrendPointAriaLabel(point: any, currencyContext: any) {
+    if (!point || !(point.date instanceof Date) || !Number.isFinite(point.priceUsd)) {
+      return "Price point";
+    }
+
+    var display = buildMoneyDisplay(point.priceUsd, currencyContext);
+    var dateText = formatDate(point.date.toISOString());
+    if (display.isConverted) {
+      return dateText + ": " + display.text + " (USD: " + display.originalUsdText + ")";
+    }
+
+    return dateText + ": " + display.text;
+  }
+
+  function buildTrendChartAriaLabel(points: any, currencyContext: any) {
+    if (!Array.isArray(points) || points.length <= 1) {
+      return "Price trend unavailable: no price history data";
+    }
+
+    var first = points[0];
+    var last = points[points.length - 1];
+    if (!first || !last) {
+      return "Price trend";
+    }
+
+    return (
+      "Price trend with " +
+      String(points.length) +
+      " points from " +
+      formatDate(first.date.toISOString()) +
+      " to " +
+      formatDate(last.date.toISOString()) +
+      ". Latest " +
+      buildMoneyDisplay(last.priceUsd, currencyContext).text
+    );
   }
 
   function parseDateMs(value: any) {
@@ -277,8 +352,9 @@
     row.appendChild(chart);
 
     var points = normalizeTrendPoints(listing);
-    var d3 = getD3();
-    if (!d3 || points.length <= 1) {
+    chart.setAttribute("aria-label", buildTrendChartAriaLabel(points, currencyContext));
+
+    if (points.length <= 1) {
       var emptyNode = doc.createElement("div");
       emptyNode.className = "grailed-plus__trend-empty";
       emptyNode.textContent = TREND_EMPTY_TEXT;
@@ -291,187 +367,347 @@
     var innerWidth = Math.max(1, width - TREND_MARGIN.left - TREND_MARGIN.right);
     var innerHeight = Math.max(1, height - TREND_MARGIN.top - TREND_MARGIN.bottom);
 
-    var svg = d3
-      .select(chart)
-      .append("svg")
-      .attr("class", "grailed-plus__trend-svg")
-      .attr("viewBox", "0 0 " + String(width) + " " + String(height))
-      .attr("preserveAspectRatio", "xMidYMid meet")
-      .attr("aria-hidden", "true");
+    function createSvgElement(tagName: any) {
+      if (doc && typeof doc.createElementNS === "function") {
+        return doc.createElementNS("http://www.w3.org/2000/svg", tagName);
+      }
 
-    var root = svg
-      .append("g")
-      .attr("class", "grailed-plus__trend-root")
-      .attr("transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
+      return doc.createElement(tagName);
+    }
 
-    var clipPathId = TREND_CLIP_ID_PREFIX + String(trendClipIdCounter);
-    trendClipIdCounter += 1;
+    function setAttr(node: any, key: any, value: any) {
+      if (!node || typeof node.setAttribute !== "function") {
+        return;
+      }
 
-    svg
-      .append("defs")
-      .append("clipPath")
-      .attr("id", clipPathId)
-      .attr("clipPathUnits", "userSpaceOnUse")
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", innerWidth)
-      .attr("height", innerHeight);
+      node.setAttribute(key, String(value));
+    }
 
-    var trendLineLayer = root
-      .append("g")
-      .attr("class", "grailed-plus__trend-line-layer")
-      .attr("clip-path", "url(#" + clipPathId + ")");
+    function setClass(node: any, className: any) {
+      if (!node) {
+        return;
+      }
 
-    var trendPointLayer = root
-      .append("g")
-      .attr("class", "grailed-plus__trend-point-layer")
-      .attr("clip-path", "url(#" + clipPathId + ")");
+      if (typeof node.className === "string") {
+        node.className = className;
+      }
 
-    var x = d3
-      .scaleTime()
-      .domain(d3.extent(points, function (d: any) {
-        return d.date;
-      }))
-      .range([0, innerWidth]);
+      if (typeof node.setAttribute === "function") {
+        node.setAttribute("class", className);
+      }
+    }
 
-    var yExtent = d3.extent(points, function (d: any) {
-      return d.priceUsd;
-    });
-    var yMin = yExtent[0];
-    var yMax = yExtent[1];
+    var minTimestamp = points[0].timestampMs;
+    var maxTimestamp = points[points.length - 1].timestampMs;
+    var yMin = points[0].priceUsd;
+    var yMax = points[0].priceUsd;
+    var i;
+
+    for (i = 1; i < points.length; i += 1) {
+      if (points[i].priceUsd < yMin) {
+        yMin = points[i].priceUsd;
+      }
+      if (points[i].priceUsd > yMax) {
+        yMax = points[i].priceUsd;
+      }
+    }
+
     if (yMin === yMax) {
       yMin = yMin - 1;
       yMax = yMax + 1;
     }
 
-    var y = d3.scaleLinear().domain([yMin, yMax]).nice(3).range([innerHeight, 0]);
+    var xStart = TREND_PLOT_PADDING;
+    var xEnd = Math.max(TREND_PLOT_PADDING, innerWidth - TREND_PLOT_PADDING);
+    var yStart = Math.max(TREND_PLOT_PADDING, innerHeight - TREND_PLOT_PADDING);
+    var yEnd = TREND_PLOT_PADDING;
 
-    var line = d3
-      .line()
-      .defined(function (d: any) {
-        return Number.isFinite(d.priceUsd) && d.date instanceof Date;
-      })
-      .curve(d3.curveMonotoneX)
-      .x(function (d: any) {
-        return x(d.date);
-      })
-      .y(function (d: any) {
-        return y(d.priceUsd);
-      });
+    function scaleX(timestampMs: any) {
+      if (maxTimestamp === minTimestamp) {
+        return (xStart + xEnd) / 2;
+      }
 
-    trendLineLayer
-      .selectAll("path.grailed-plus__trend-line")
-      .data([points])
-      .join("path")
-      .attr("class", "grailed-plus__trend-line")
-      .attr("d", line);
+      return xStart + ((timestampMs - minTimestamp) / (maxTimestamp - minTimestamp)) * (xEnd - xStart);
+    }
 
-    var tooltip = d3
-      .select(chart)
-      .append("div")
-      .attr("class", "grailed-plus__trend-tooltip")
-      .attr("aria-hidden", "true");
+    function scaleY(priceUsd: any) {
+      if (yMax === yMin) {
+        return (yStart + yEnd) / 2;
+      }
+
+      return yStart + ((priceUsd - yMin) / (yMax - yMin)) * (yEnd - yStart);
+    }
+
+    var svg = createSvgElement("svg");
+    setClass(svg, "grailed-plus__trend-svg");
+    setAttr(svg, "viewBox", "0 0 " + String(width) + " " + String(height));
+    setAttr(svg, "preserveAspectRatio", "xMidYMid meet");
+    setAttr(svg, "aria-hidden", "true");
+    chart.appendChild(svg);
+
+    var root = createSvgElement("g");
+    setClass(root, "grailed-plus__trend-root");
+    setAttr(root, "transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
+    svg.appendChild(root);
+
+    var clipPathId = TREND_CLIP_ID_PREFIX + String(trendClipIdCounter);
+    var clipPadding = TREND_POINT_RADIUS + 1;
+    trendClipIdCounter += 1;
+
+    var defs = createSvgElement("defs");
+    svg.appendChild(defs);
+
+    var clipPath = createSvgElement("clipPath");
+    setAttr(clipPath, "id", clipPathId);
+    setAttr(clipPath, "clipPathUnits", "userSpaceOnUse");
+    defs.appendChild(clipPath);
+
+    var clipRect = createSvgElement("rect");
+    setAttr(clipRect, "x", -clipPadding);
+    setAttr(clipRect, "y", -clipPadding);
+    setAttr(clipRect, "width", innerWidth + clipPadding * 2);
+    setAttr(clipRect, "height", innerHeight + clipPadding * 2);
+    clipPath.appendChild(clipRect);
+
+    var trendLineLayer = createSvgElement("g");
+    setClass(trendLineLayer, "grailed-plus__trend-line-layer");
+    setAttr(trendLineLayer, "clip-path", "url(#" + clipPathId + ")");
+    root.appendChild(trendLineLayer);
+
+    var trendPointLayer = createSvgElement("g");
+    setClass(trendPointLayer, "grailed-plus__trend-point-layer");
+    setAttr(trendPointLayer, "clip-path", "url(#" + clipPathId + ")");
+    root.appendChild(trendPointLayer);
+
+    var pathData = "";
+    for (i = 0; i < points.length; i += 1) {
+      var cmd = i === 0 ? "M" : "L";
+      pathData +=
+        cmd + String(scaleX(points[i].timestampMs)) + " " + String(scaleY(points[i].priceUsd)) + " ";
+    }
+
+    var linePath = createSvgElement("path");
+    setClass(linePath, "grailed-plus__trend-line");
+    setAttr(linePath, "d", pathData.trim());
+    trendLineLayer.appendChild(linePath);
+
+    var tooltip = doc.createElement("div");
+    tooltip.className = "grailed-plus__trend-tooltip";
+    tooltip.setAttribute("aria-hidden", "true");
+    chart.appendChild(tooltip);
+
+    function setTooltipAlignment(alignment: any) {
+      var normalized = alignment === "left" || alignment === "right" ? alignment : "center";
+      tooltip.className = "grailed-plus__trend-tooltip grailed-plus__trend-tooltip--" + normalized;
+    }
+
+    setTooltipAlignment("center");
 
     function showTooltip(event: any, point: any) {
       var display = buildMoneyDisplay(point.priceUsd, currencyContext);
       var tooltipText = display.text + " - " + formatDate(point.date.toISOString());
 
-      tooltip.text(tooltipText);
+      tooltip.textContent = tooltipText;
       if (display.isConverted) {
-        tooltip.attr("title", "USD: " + display.originalUsdText);
+        tooltip.setAttribute("title", "USD: " + display.originalUsdText);
       } else {
-        tooltip.attr("title", "");
+        tooltip.removeAttribute("title");
       }
 
       var xPos = Number(event && event.offsetX);
       var yPos = Number(event && event.offsetY);
       if (!Number.isFinite(xPos) || !Number.isFinite(yPos)) {
-        xPos = x(point.date) + TREND_MARGIN.left;
-        yPos = y(point.priceUsd) + TREND_MARGIN.top;
+        xPos = scaleX(point.timestampMs) + TREND_MARGIN.left;
+        yPos = scaleY(point.priceUsd) + TREND_MARGIN.top;
       }
 
-      tooltip
-        .style("opacity", "1")
-        .style("left", String(xPos + 10) + "px")
-        .style("top", String(yPos - 12) + "px")
-        .attr("aria-hidden", "false");
+      var chartWidth = Number(chart && chart.clientWidth);
+      if (!Number.isFinite(chartWidth) || chartWidth <= 0) {
+        chartWidth = width;
+      }
+      var chartHeight = Number(chart && chart.clientHeight);
+      if (!Number.isFinite(chartHeight) || chartHeight <= 0) {
+        chartHeight = height;
+      }
+
+      var tooltipRect =
+        tooltip && typeof tooltip.getBoundingClientRect === "function"
+          ? tooltip.getBoundingClientRect()
+          : null;
+      var tooltipWidth = Number(tooltipRect && tooltipRect.width);
+      if (!Number.isFinite(tooltipWidth) || tooltipWidth <= 0) {
+        tooltipWidth = tooltipText.length * 6.2;
+      }
+
+      var chartInset = 8;
+      var edgeOffset = 5;
+      var alignment = "center";
+      var tooltipX = xPos;
+
+      if (xPos + tooltipWidth / 2 > chartWidth - chartInset) {
+        alignment = "right";
+        tooltipX = Math.max(chartInset, xPos - edgeOffset);
+      } else if (xPos - tooltipWidth / 2 < chartInset) {
+        alignment = "left";
+        tooltipX = Math.min(chartWidth - chartInset, xPos + edgeOffset);
+      }
+
+      var tooltipY = Math.max(10, Math.min(chartHeight - 4, yPos - 12));
+
+      if (tooltip && tooltip.style) {
+        setTooltipAlignment(alignment);
+        tooltip.style.opacity = "1";
+        tooltip.style.left = String(tooltipX) + "px";
+        tooltip.style.top = String(tooltipY) + "px";
+      }
+      tooltip.setAttribute("aria-hidden", "false");
     }
 
     function hideTooltip() {
-      tooltip.style("opacity", "0").attr("aria-hidden", "true");
+      if (tooltip && tooltip.style) {
+        tooltip.style.opacity = "0";
+      }
+      tooltip.setAttribute("aria-hidden", "true");
     }
 
-    var pointNodes = trendPointLayer
-      .selectAll("circle.grailed-plus__trend-point")
-      .data(points, function (d: any) {
-        return d.key;
-      })
-      .join("circle")
-      .attr("class", "grailed-plus__trend-point")
-      .attr("cx", function (d: any) {
-        return x(d.date);
-      })
-      .attr("cy", function (d: any) {
-        return y(d.priceUsd);
-      })
-      .attr("r", 3)
-      .attr("tabindex", 0)
-      .on("focus", function (this: any, event: any, point: any) {
-        pointNodes.classed("is-active", false);
-        d3.select(this).classed("is-active", true);
-        showTooltip(event, point);
-      })
-      .on("blur", function () {
-        pointNodes.classed("is-active", false);
-        hideTooltip();
-      });
+    var pointNodes: any[] = [];
 
-    var bisectByDate = d3.bisector(function (d: any) {
-      return d.date;
-    }).center;
+    function setActivePointByKey(pointKey: any) {
+      var j;
+      var node;
+      var key;
+      for (j = 0; j < pointNodes.length; j += 1) {
+        node = pointNodes[j];
+        key = typeof node.getAttribute === "function" ? node.getAttribute("data-point-key") : null;
+        setClass(node, key === pointKey ? "grailed-plus__trend-point is-active" : "grailed-plus__trend-point");
+      }
+    }
+
+    for (i = 0; i < points.length; i += 1) {
+      (function (point: any) {
+        var pointNode = createSvgElement("circle");
+        setClass(pointNode, "grailed-plus__trend-point");
+        setAttr(pointNode, "cx", scaleX(point.timestampMs));
+        setAttr(pointNode, "cy", scaleY(point.priceUsd));
+        setAttr(pointNode, "r", TREND_POINT_RADIUS);
+        setAttr(pointNode, "tabindex", 0);
+        setAttr(pointNode, "data-point-key", point.key);
+        setAttr(pointNode, "aria-label", formatTrendPointAriaLabel(point, currencyContext));
+
+        if (typeof pointNode.addEventListener === "function") {
+          pointNode.addEventListener("focus", function (event: any) {
+            setActivePointByKey(point.key);
+            showTooltip(event, point);
+          });
+          pointNode.addEventListener("blur", function () {
+            setActivePointByKey(null);
+            hideTooltip();
+          });
+        }
+
+        trendPointLayer.appendChild(pointNode);
+        pointNodes.push(pointNode);
+      })(points[i]);
+    }
 
     function findNearestPoint(event: any) {
-      var pointer = d3.pointer(event, root.node());
-      var px = Number(pointer && pointer[0]);
+      var px = Number(event && event.offsetX);
+      if (Number.isFinite(px)) {
+        px = px - TREND_MARGIN.left;
+      }
+
+      if (!Number.isFinite(px) && event && Number.isFinite(Number(event.clientX))) {
+        var svgRect = typeof svg.getBoundingClientRect === "function" ? svg.getBoundingClientRect() : null;
+        if (svgRect) {
+          px = Number(event.clientX) - Number(svgRect.left) - TREND_MARGIN.left;
+        }
+      }
+
       if (!Number.isFinite(px)) {
         return points[points.length - 1];
       }
 
       var clampedPx = Math.max(0, Math.min(innerWidth, px));
-      var hoverDate = x.invert(clampedPx);
-      var index = bisectByDate(points, hoverDate);
-      if (!Number.isFinite(index)) {
-        return points[points.length - 1];
+      var nearestPoint = points[0];
+      var nearestDelta = Math.abs(scaleX(points[0].timestampMs) - clampedPx);
+      var j;
+      var nextDelta;
+      for (j = 1; j < points.length; j += 1) {
+        nextDelta = Math.abs(scaleX(points[j].timestampMs) - clampedPx);
+        if (nextDelta < nearestDelta) {
+          nearestDelta = nextDelta;
+          nearestPoint = points[j];
+        }
       }
 
-      index = Math.max(0, Math.min(points.length - 1, index));
-      return points[index];
+      return nearestPoint;
     }
 
     function syncHoverState(event: any) {
       var nearest = findNearestPoint(event);
-      pointNodes.classed("is-active", function (d: any) {
-        return d.key === nearest.key;
-      });
+      setActivePointByKey(nearest.key);
       showTooltip(event, nearest);
     }
 
-    root
-      .selectAll("rect.grailed-plus__trend-hit-area")
-      .data([null])
-      .join("rect")
-      .attr("class", "grailed-plus__trend-hit-area")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", innerWidth)
-      .attr("height", innerHeight)
-      .on("mouseenter", syncHoverState)
-      .on("mousemove", syncHoverState)
-      .on("mouseleave", function () {
-        pointNodes.classed("is-active", false);
+    var rafScope = typeof globalThis !== "undefined" ? (globalThis as any) : null;
+    var requestFrame =
+      rafScope && typeof rafScope.requestAnimationFrame === "function"
+        ? rafScope.requestAnimationFrame.bind(rafScope)
+        : null;
+    var cancelFrame =
+      rafScope && typeof rafScope.cancelAnimationFrame === "function"
+        ? rafScope.cancelAnimationFrame.bind(rafScope)
+        : null;
+    var pendingHoverEvent: any = null;
+    var hoverFrameHandle: any = null;
+
+    function flushHoverFrame() {
+      hoverFrameHandle = null;
+      if (!pendingHoverEvent) {
+        return;
+      }
+
+      var nextEvent = pendingHoverEvent;
+      pendingHoverEvent = null;
+      syncHoverState(nextEvent);
+    }
+
+    function scheduleHoverSync(event: any) {
+      pendingHoverEvent = event;
+      if (!requestFrame) {
+        flushHoverFrame();
+        return;
+      }
+
+      if (hoverFrameHandle !== null) {
+        return;
+      }
+
+      hoverFrameHandle = requestFrame(flushHoverFrame);
+    }
+
+    var hitArea = createSvgElement("rect");
+    setClass(hitArea, "grailed-plus__trend-hit-area");
+    setAttr(hitArea, "x", 0);
+    setAttr(hitArea, "y", 0);
+    setAttr(hitArea, "width", innerWidth);
+    setAttr(hitArea, "height", innerHeight);
+    setAttr(hitArea, "fill", "transparent");
+    setAttr(hitArea, "pointer-events", "all");
+    if (typeof hitArea.addEventListener === "function") {
+      hitArea.addEventListener("mouseenter", scheduleHoverSync);
+      hitArea.addEventListener("mousemove", scheduleHoverSync);
+      hitArea.addEventListener("mouseleave", function () {
+        pendingHoverEvent = null;
+        if (hoverFrameHandle !== null && cancelFrame) {
+          cancelFrame(hoverFrameHandle);
+        }
+        hoverFrameHandle = null;
+        setActivePointByKey(null);
         hideTooltip();
       });
+    }
+    root.appendChild(hitArea);
 
     return row;
   }
@@ -1437,12 +1673,84 @@
     return String(days) + "d ago";
   }
 
-  function createMarketCompareSection(doc: any, marketCompare: any, onCompareClick: any) {
+  function extractPercentValue(input: any) {
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var match = input.match(/([+-]?\d+(?:\.\d+)?)\s*%/);
+    if (!match) {
+      return null;
+    }
+
+    var value = Number(match[1]);
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+
+    return value;
+  }
+
+  function normalizeMarketCompareResultsLimit(input: any) {
+    var parsed = Number(input);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return DEFAULT_MARKET_COMPARE_RESULTS_LIMIT;
+    }
+
+    return Math.floor(parsed);
+  }
+
+  function getPercentToneClass(percentValue: any) {
+    if (!Number.isFinite(percentValue) || percentValue === 0) {
+      return "";
+    }
+
+    var absPercent = Math.abs(Number(percentValue));
+    var intensity = "soft";
+    if (absPercent >= 15) {
+      intensity = "strong";
+    } else if (absPercent >= 8) {
+      intensity = "mid";
+    }
+
+    if (percentValue < 0) {
+      return "grailed-plus__percent--down-" + intensity;
+    }
+
+    return "grailed-plus__percent--up-" + intensity;
+  }
+
+  function appendMetaSegment(doc: any, parent: any, text: any, extraClass: any = "") {
+    if (!parent || typeof text !== "string") {
+      return;
+    }
+
+    if (parent.childNodes && parent.childNodes.length > 0) {
+      var separator = doc.createElement("span");
+      separator.className = "grailed-plus__market-meta-separator";
+      separator.textContent = " | ";
+      parent.appendChild(separator);
+    }
+
+    var segment = doc.createElement("span");
+    segment.className = "grailed-plus__market-meta-segment" + (extraClass ? " " + extraClass : "");
+    segment.textContent = text;
+    parent.appendChild(segment);
+  }
+
+  function createMarketCompareSection(
+    doc: any,
+    marketCompare: any,
+    onCompareClick: any,
+    marketCompareResultsLimit: any
+  ) {
     var state = marketCompare && typeof marketCompare === "object" ? marketCompare : {};
     var status = typeof state.status === "string" ? state.status : "idle";
     var provider = typeof state.provider === "string" ? state.provider : "Depop";
     var message = typeof state.message === "string" ? state.message : "";
     var results = Array.isArray(state.results) ? state.results : [];
+    var displayLimit = normalizeMarketCompareResultsLimit(marketCompareResultsLimit);
+    var displayResults = results.slice(0, displayLimit);
 
     var section = doc.createElement("div");
     section.className = "grailed-plus__market";
@@ -1485,39 +1793,76 @@
       section.appendChild(messageNode);
     }
 
-    if (status === "results" && results.length > 0) {
-      var list = doc.createElement("div");
+    if (status === "results" && displayResults.length > 0) {
+      var list = doc.createElement("ul");
       list.className = "grailed-plus__market-list";
+      var providerLower = provider.toLowerCase();
 
-      results.forEach(function (entry: any) {
-        var row = doc.createElement("div");
+      displayResults.forEach(function (entry: any) {
+        var row = doc.createElement("li");
         row.className = "grailed-plus__market-row";
+        var body = doc.createElement("div");
+        body.className = "grailed-plus__market-body";
 
-        var link = doc.createElement("a");
-        link.className = "grailed-plus__market-link";
-        link.href = entry.url || "#";
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = entry.title || "Listing";
+        var listingTitle =
+          entry && typeof entry.title === "string" && entry.title.trim()
+            ? entry.title.trim()
+            : "Listing";
+        var url = normalizeExternalUrl(entry && entry.url);
+        var link;
+        if (url) {
+          link = doc.createElement("a");
+          link.className = "grailed-plus__market-link";
+          link.href = url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = listingTitle;
+        } else {
+          link = doc.createElement("span");
+          link.className = "grailed-plus__market-link grailed-plus__market-link--unavailable";
+          link.textContent = listingTitle;
+          if (typeof link.setAttribute === "function") {
+            link.setAttribute("aria-disabled", "true");
+          }
+        }
 
         var meta = doc.createElement("span");
         meta.className = "grailed-plus__market-meta";
-        var parts = [];
+        var deltaText =
+          entry && typeof entry.deltaLabel === "string" ? entry.deltaLabel.trim() : "";
+        var deltaPercent = extractPercentValue(deltaText);
+        var deltaToneClass = getPercentToneClass(deltaPercent);
 
         if (Number.isFinite(entry.price)) {
-          parts.push(formatCurrencyByCode(entry.price, entry.currency || "USD"));
+          appendMetaSegment(doc, meta, formatCurrencyByCode(entry.price, entry.currency || "USD"));
         }
         if (Number.isFinite(entry.score)) {
-          parts.push("score " + String(Math.round(entry.score)));
+          appendMetaSegment(doc, meta, "score " + String(Math.round(entry.score)));
         }
-        if (entry.deltaLabel) {
-          parts.push(entry.deltaLabel);
+        if (deltaText) {
+          appendMetaSegment(doc, meta, deltaText, deltaToneClass);
         }
 
-        meta.textContent = parts.join(" | ");
+        var imageUrl = normalizeExternalUrl(entry && entry.imageUrl);
+        if (providerLower === "depop" && imageUrl) {
+          var preview = doc.createElement("span");
+          preview.className = "grailed-plus__market-preview";
 
-        row.appendChild(link);
-        row.appendChild(meta);
+          var previewImage = doc.createElement("img");
+          previewImage.className = "grailed-plus__market-preview-image";
+          previewImage.src = imageUrl;
+          previewImage.alt = listingTitle;
+          previewImage.loading = "lazy";
+          previewImage.decoding = "async";
+
+          preview.appendChild(previewImage);
+          row.appendChild(preview);
+        }
+
+        body.appendChild(link);
+        body.appendChild(meta);
+        row.appendChild(body);
+
         list.appendChild(row);
       });
 
@@ -1536,7 +1881,7 @@
 
     var compareButton = doc.createElement("button");
     compareButton.type = "button";
-    compareButton.className = "grailed-plus__button gp-button grailed-plus__button--market-compare";
+    compareButton.className = "gp-button grailed-plus__panel-button";
     compareButton.textContent = status === "loading" ? "Searching..." : "Compare on Depop";
     compareButton.disabled = status === "loading";
     if (typeof compareButton.addEventListener === "function") {
@@ -1563,6 +1908,10 @@
     var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
     var currencyContext = options && options.currencyContext ? options.currencyContext : null;
     var marketCompare = options && options.marketCompare ? options.marketCompare : null;
+    var marketCompareResultsLimit =
+      options && options.marketCompareResultsLimit != null
+        ? options.marketCompareResultsLimit
+        : DEFAULT_MARKET_COMPARE_RESULTS_LIMIT;
     var onMarketCompareClick =
       options && typeof options.onMarketCompareClick === "function"
         ? options.onMarketCompareClick
@@ -1578,6 +1927,16 @@
     var panel = doc.createElement("section");
     panel.className = "grailed-plus-panel";
     panel.setAttribute(PANEL_ATTR, PANEL_ATTR_VALUE);
+
+    var panelTitleId = "grailed-plus-panel-title-" + String(panelTitleIdCounter);
+    panelTitleIdCounter += 1;
+    panel.setAttribute("aria-labelledby", panelTitleId);
+
+    var panelTitle = doc.createElement("h2");
+    panelTitle.className = "grailed-plus-panel__title";
+    panelTitle.id = panelTitleId;
+    panelTitle.textContent = PANEL_TITLE_TEXT;
+    panel.appendChild(panelTitle);
 
     if (statusMessage) {
       panel.appendChild(createRow(doc, "Status", statusMessage, "grailed-plus__row--status"));
@@ -1607,19 +1966,32 @@
       avgClass = "grailed-plus__row--alert";
     }
 
-    panel.appendChild(createRow(doc, "Avg. Price Drop", avgText, avgClass, avgTitle));
+    var avgRow = createRow(doc, "Avg. Price Drop", avgText, avgClass, avgTitle);
+    var avgValueNode = avgRow.querySelector(".grailed-plus__value");
+    var avgToneClass = getPercentToneClass(-Number(metrics.averageDropPercent));
+    if (avgValueNode && avgToneClass) {
+      avgValueNode.className += " " + avgToneClass;
+    }
+    panel.appendChild(avgRow);
     panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics)));
     panel.appendChild(
       createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt))
     );
-    panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick));
+    panel.appendChild(
+      createMarketCompareSection(
+        doc,
+        marketCompare,
+        onMarketCompareClick,
+        marketCompareResultsLimit
+      )
+    );
 
     var actions = doc.createElement("div");
     actions.className = "grailed-plus__actions";
 
     var metadataButton = doc.createElement("button");
     metadataButton.type = "button";
-    metadataButton.className = "grailed-plus__button gp-button";
+    metadataButton.className = "gp-button grailed-plus__panel-button";
     metadataButton.textContent = "Listing Metadata";
     if (typeof metadataButton.addEventListener === "function") {
       metadataButton.addEventListener("click", function () {

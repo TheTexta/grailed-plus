@@ -33,6 +33,7 @@
   };
   var RUNTIME_FETCH_MESSAGE_TYPE = "grailed-plus:depop-search-fetch";
   var RUNTIME_FETCH_MESSAGE_VERSION = 1;
+  var DEFAULT_FETCH_TIMEOUT_MS = 20000;
 
   function isObjectRecord(value: any): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object";
@@ -44,6 +45,23 @@
       return trimmed || fallback;
     }
     return fallback;
+  }
+
+  function normalizeUrlString(value: any) {
+    var raw = normalizeString(value, "");
+    if (!raw) {
+      return "";
+    }
+
+    if (raw.indexOf("//") === 0) {
+      return "https:" + raw;
+    }
+
+    if (raw.indexOf("/") === 0) {
+      return "https://www.depop.com" + raw;
+    }
+
+    return raw;
   }
 
   function normalizeNumber(value: any) {
@@ -197,13 +215,287 @@
     return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
   }
 
+  function normalizeTitleCandidate(value: any) {
+    var title = normalizeString(value, "");
+    if (!title) {
+      return "";
+    }
+    return title.replace(/\s+/g, " ").trim();
+  }
+
+  function buildTitleFromDescription(description: any) {
+    var text = normalizeString(description, "");
+    if (!text) {
+      return "";
+    }
+
+    var cleaned = text
+      .replace(/https?:\/\/\S+/gi, " ")
+      .replace(/[@#][\w-]+/g, " ")
+      .replace(/[\"'`]/g, " ")
+      .replace(/[^a-zA-Z0-9\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!cleaned) {
+      return "";
+    }
+
+    var tokens = cleaned.split(" ").filter(function (token: any) {
+      if (!token) {
+        return false;
+      }
+      var lowered = token.toLowerCase();
+      if (lowered.length < 3 && !/^\d+$/.test(lowered)) {
+        return false;
+      }
+      return !(
+        lowered === "the" ||
+        lowered === "and" ||
+        lowered === "with" ||
+        lowered === "for" ||
+        lowered === "this" ||
+        lowered === "that" ||
+        lowered === "from" ||
+        lowered === "like" ||
+        lowered === "very" ||
+        lowered === "super" ||
+        lowered === "size" ||
+        lowered === "brand" ||
+        lowered === "item" ||
+        lowered === "listing" ||
+        lowered === "sale" ||
+        lowered === "good" ||
+        lowered === "great" ||
+        lowered === "excellent" ||
+        lowered === "amazing" ||
+        lowered === "nice" ||
+        lowered === "new" ||
+        lowered === "authentic" ||
+        lowered === "original" ||
+        lowered === "tags" ||
+        lowered === "tag" ||
+        lowered === "worn" ||
+        lowered === "wear" ||
+        lowered === "condition"
+      );
+    });
+
+    if (!tokens.length) {
+      return "";
+    }
+
+    return tokens.slice(0, 8).join(" ");
+  }
+
+  function splitSlugTokens(value: any) {
+    var text = normalizeSlugToken(value);
+    if (!text) {
+      return [];
+    }
+
+    return text.split("-").filter(Boolean);
+  }
+
+  function inferUsernameTokensFromSlug(slug: any) {
+    var rawSlug = normalizeString(slug, "");
+    if (!rawSlug) {
+      return [];
+    }
+
+    var firstSegment = rawSlug.split("-")[0] || "";
+    if (firstSegment.indexOf("_") !== -1) {
+      return splitSlugTokens(firstSegment);
+    }
+
+    var slugTokens = splitSlugTokens(rawSlug);
+    if (slugTokens.length >= 4) {
+      return [slugTokens[0]];
+    }
+
+    return [];
+  }
+
+  function normalizeSlugToken(value: any) {
+    var text = normalizeString(value, "");
+    if (!text) {
+      return "";
+    }
+
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+/, "")
+      .replace(/-+$/, "");
+  }
+
+  function extractCandidateUsername(input: any) {
+    return normalizeString(
+      getNestedValue(input, [
+        ["username"],
+        ["seller", "username"],
+        ["raw", "username"],
+        ["raw", "seller", "username"],
+        ["raw", "author", "username"],
+        ["raw", "user", "username"]
+      ]),
+      ""
+    );
+  }
+
+  function buildTitleFromUrl(url: any, username: any) {
+    var normalizedUrl = normalizeUrlString(url);
+    if (!normalizedUrl) {
+      return "";
+    }
+
+    var slug = normalizedUrl
+      .split("/")
+      .filter(Boolean)
+      .pop();
+
+    if (!slug) {
+      return "";
+    }
+
+    var slugTokens = splitSlugTokens(slug);
+    var usernameTokens = splitSlugTokens(username);
+    if (!usernameTokens.length) {
+      usernameTokens = inferUsernameTokensFromSlug(slug);
+    }
+
+    var consumed = 0;
+    while (
+      consumed < usernameTokens.length &&
+      consumed < slugTokens.length &&
+      normalizeSlugToken(slugTokens[consumed]) === normalizeSlugToken(usernameTokens[consumed])
+    ) {
+      consumed += 1;
+    }
+
+    if (consumed > 0 && slugTokens.length - consumed >= 2) {
+      slugTokens = slugTokens.slice(consumed);
+    }
+
+    if (!slugTokens.length) {
+      return "";
+    }
+
+    return slugTokens.join(" ").trim();
+  }
+
+  function stripUsernameFromTitlePrefix(title: any, url: any, input: any) {
+    var normalizedTitle = normalizeTitleCandidate(title);
+    if (!normalizedTitle) {
+      return "";
+    }
+
+    var rawTitleTokens = normalizedTitle.split(/\s+/).filter(Boolean);
+    if (rawTitleTokens.length >= 3) {
+      var firstToken = rawTitleTokens[0].replace(/^@+/, "");
+      if (/^[a-z0-9]+(?:_[a-z0-9]+)+$/i.test(firstToken)) {
+        return rawTitleTokens.slice(1).join(" ");
+      }
+    }
+
+    var titleTokens = normalizedTitle
+      .replace(/[_-]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (titleTokens.length < 2) {
+      return normalizedTitle;
+    }
+
+    var usernameTokens = splitSlugTokens(extractCandidateUsername(input));
+    if (!usernameTokens.length) {
+      var normalizedUrl = normalizeUrlString(url);
+      var slug = normalizedUrl
+        .split("/")
+        .filter(Boolean)
+        .pop();
+      usernameTokens = inferUsernameTokensFromSlug(slug);
+    }
+
+    if (!usernameTokens.length) {
+      return normalizedTitle;
+    }
+
+    var consumed = 0;
+    while (
+      consumed < usernameTokens.length &&
+      consumed < titleTokens.length &&
+      normalizeSlugToken(titleTokens[consumed]) === normalizeSlugToken(usernameTokens[consumed])
+    ) {
+      consumed += 1;
+    }
+
+    if (consumed === 0 || titleTokens.length - consumed < 2) {
+      return normalizedTitle;
+    }
+
+    return titleTokens.slice(consumed).join(" ");
+  }
+
+  function pickCandidateImageUrl(input: any) {
+    return normalizeUrlString(
+      getNestedValue(input, [
+        ["imageUrl"],
+        ["image_url"],
+        ["preview", "150"],
+        ["preview", 150],
+        ["preview", "300"],
+        ["preview", 300],
+        ["preview", "450"],
+        ["preview", 450],
+        ["preview", "600"],
+        ["preview", 600],
+        ["previewUrl"],
+        ["preview_url"],
+        ["image", "url"],
+        ["images", 0, "url"],
+        ["images", 0, "image_url"],
+        ["pictures", 0, "url"],
+        ["pictures", 0, "image_url"],
+        ["pictures_data", 0, "sizes", "P0", "url"],
+        ["pictures_data", 0, "sizes", "P1", "url"],
+        ["photo", "url"],
+        ["photos", 0, "url"],
+        ["primary_photo", "url"],
+        ["thumbnail", "url"],
+        ["cover_photo", "url"]
+      ])
+    );
+  }
+
+  function resolveCandidateTitle(input: any, url: any) {
+    var explicitTitle = normalizeTitleCandidate(input && input.title);
+    if (explicitTitle && explicitTitle.toLowerCase() !== "untitled") {
+      return stripUsernameFromTitlePrefix(explicitTitle, url, input);
+    }
+
+    var descriptionTitle = buildTitleFromDescription(
+      normalizeString(input && input.description, "") ||
+      normalizeString(getNestedValue(input, [["raw", "description"], ["raw", "caption"]]), "")
+    );
+    if (descriptionTitle) {
+      return descriptionTitle;
+    }
+
+    var urlTitle = buildTitleFromUrl(url, extractCandidateUsername(input));
+    if (urlTitle) {
+      return urlTitle;
+    }
+
+    return "Untitled";
+  }
+
   function normalizeProductCandidate(candidate: any) {
     var input = candidate && typeof candidate === "object" ? candidate : {};
     var isHrefFallback = Boolean(input && input.raw && input.raw.source === "href_fallback");
     var id = normalizeString(input.id, null);
-    var title = normalizeString(input.title, "Untitled");
-    var url = normalizeString(input.url, "");
-    var imageUrl = normalizeString(input.imageUrl, "");
+    var url = normalizeUrlString(input.url);
+    var title = resolveCandidateTitle(input, url);
+    var imageUrl = normalizeUrlString(input.imageUrl);
     var inferredAmount = parseAmountFromLabel(input.priceLabel);
     var price = normalizeNumber(input.price);
     if (price == null) {
@@ -263,8 +555,9 @@
             var candidate = normalizeProductCandidate({
               id: normalizeString(node.sku, null) || normalizeString(node.productID, null) || normalizeString(node.url, "").split("/").filter(Boolean).pop(),
               title: normalizeString(node.name, "Untitled"),
-              url: normalizeString(node.url, ""),
-              imageUrl: Array.isArray(node.image) ? normalizeString(node.image[0], "") : normalizeString(node.image, ""),
+              description: normalizeString(node.description, ""),
+              url: normalizeUrlString(node.url),
+              imageUrl: normalizeUrlString(Array.isArray(node.image) ? normalizeString(node.image[0], "") : normalizeString(node.image, "")),
               price: normalizeNumber(offer.price),
               currency: normalizeCurrencyCode(normalizeString(offer.priceCurrency, "")) || "USD",
               priceLabel: normalizeString(offer.priceCurrency, "") + " " + normalizeString(offer.price, ""),
@@ -363,35 +656,47 @@
       .replace(/\\t/g, " ");
   }
 
+  function pickPricingAmount(input: any) {
+    var pricing = getNestedValue(input, [["pricing"]]);
+    if (!pricing || typeof pricing !== "object") {
+      return null;
+    }
+
+    var finalPriceKey = normalizeString(getNestedValue(pricing, [["final_price_key"]]), "");
+    var finalPriceKeyAmountPaths = finalPriceKey
+      ? [
+          ["pricing", finalPriceKey, "total_price"],
+          ["pricing", finalPriceKey, "price_breakdown", "price", "amount"],
+          ["pricing", finalPriceKey, "amount"]
+        ]
+      : [];
+
+    return normalizeNumber(
+      getNestedValue(input, finalPriceKeyAmountPaths.concat([
+        ["pricing", "discounted_price", "total_price"],
+        ["pricing", "discounted_price", "price_breakdown", "price", "amount"],
+        ["pricing", "original_price", "total_price"],
+        ["pricing", "original_price", "price_breakdown", "price", "amount"]
+      ]))
+    );
+  }
+
   function mapFlightProduct(product: any) {
     var input = product && typeof product === "object" ? product : {};
     var slug = normalizeString(getNestedValue(input, [["slug"], ["seo", "slug"]]), "");
     var url =
-      normalizeString(getNestedValue(input, [["url"], ["path"], ["route"]]), "") ||
-      normalizeString(getNestedValue(input, [["permalink"]]), "");
+      normalizeUrlString(getNestedValue(input, [["url"], ["path"], ["route"]])) ||
+      normalizeUrlString(getNestedValue(input, [["permalink"]]));
 
     if (!url && slug) {
       url = "https://www.depop.com/products/" + slug + "/";
-    }
-
-    if (url && url.indexOf("/") === 0) {
-      url = "https://www.depop.com" + url;
     }
 
     var id =
       normalizeString(getNestedValue(input, [["id"], ["productId"], ["product_id"], ["slug"]]), null) ||
       (url ? normalizeString(url.split("/").filter(Boolean).pop(), null) : null);
 
-    var imageUrl =
-      normalizeString(
-        getNestedValue(input, [
-          ["imageUrl"],
-          ["image", "url"],
-          ["pictures", 0, "url"],
-          ["photos", 0, "url"]
-        ]),
-        ""
-      ) || "";
+    var imageUrl = pickCandidateImageUrl(input) || "";
 
     var amount = normalizeNumber(input.price);
     if (amount == null) {
@@ -414,6 +719,10 @@
         );
     }
 
+    if (amount == null) {
+      amount = pickPricingAmount(input);
+    }
+
     var cents = normalizeNumber(
       getNestedValue(input, [
         ["priceCents"],
@@ -433,6 +742,10 @@
     return normalizeProductCandidate({
       id: id,
       title: normalizeString(getNestedValue(input, [["title"], ["name"], ["description"]]), "Untitled"),
+      description: normalizeString(
+        getNestedValue(input, [["description"], ["caption"], ["item_description"], ["attributes", "description"]]),
+        ""
+      ),
       url: url,
       imageUrl: imageUrl,
       price: amount,
@@ -442,6 +755,7 @@
           ["price", "currency"],
           ["priceInfo", "currency"],
           ["pricing", "currency"],
+          ["pricing", "currency_name"],
           ["pricing", "price", "currency"],
           ["pricing", "discounted_price", "currency"],
           ["pricing", "discountedPrice", "currency"]
@@ -791,15 +1105,66 @@
   }
 
   function dedupeById(candidates: any) {
-    var seen = Object.create(null);
-    return candidates.filter(function (candidate: any) {
-      var id = normalizeString(candidate && candidate.id, "");
-      if (!id || seen[id]) {
-        return false;
+    function mergeDuplicateCandidate(existingCandidate: any, incomingCandidate: any) {
+      var existing = existingCandidate && typeof existingCandidate === "object" ? existingCandidate : {};
+      var incoming = incomingCandidate && typeof incomingCandidate === "object" ? incomingCandidate : {};
+      var merged = Object.assign({}, existing);
+
+      var existingImageUrl = normalizeUrlString(existing.imageUrl);
+      var incomingImageUrl = normalizeUrlString(incoming.imageUrl);
+      if (!existingImageUrl && incomingImageUrl) {
+        merged.imageUrl = incomingImageUrl;
       }
-      seen[id] = true;
-      return true;
+
+      var existingUrl = normalizeUrlString(existing.url);
+      var incomingUrl = normalizeUrlString(incoming.url);
+      if (!existingUrl && incomingUrl) {
+        merged.url = incomingUrl;
+      }
+
+      var existingTitle = normalizeString(existing.title, "");
+      var incomingTitle = normalizeString(incoming.title, "");
+      if ((!existingTitle || existingTitle.toLowerCase() === "untitled") && incomingTitle) {
+        merged.title = incomingTitle;
+      }
+
+      var existingPrice = normalizeNumber(existing.price);
+      var incomingPrice = normalizeNumber(incoming.price);
+      if ((existingPrice == null || existingPrice <= 0) && incomingPrice != null && incomingPrice > 0) {
+        merged.price = incomingPrice;
+      }
+
+      if (!normalizeString(existing.currency, "") && normalizeString(incoming.currency, "")) {
+        merged.currency = incoming.currency;
+      }
+
+      if (!merged.raw && incoming.raw) {
+        merged.raw = incoming.raw;
+      }
+
+      return merged;
+    }
+
+    var indexById = Object.create(null);
+    var output: any[] = [];
+
+    (Array.isArray(candidates) ? candidates : []).forEach(function (candidate: any) {
+      var id = normalizeString(candidate && candidate.id, "");
+      if (!id) {
+        return;
+      }
+
+      if (typeof indexById[id] === "number") {
+        var existingIndex = indexById[id];
+        output[existingIndex] = mergeDuplicateCandidate(output[existingIndex], candidate);
+        return;
+      }
+
+      indexById[id] = output.length;
+      output.push(candidate);
     });
+
+    return output;
   }
 
   function hasMeaningfulPrice(candidate: any) {
@@ -930,22 +1295,52 @@
     return "https://www.depop.com/api/v3/search/products/?" + params.toString();
   }
 
-  async function fetchSearchPage(url: any, fetchImpl: any, runtimeSendMessage: any, acceptHeader: any = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8") {
+  async function fetchSearchPage(url: any, fetchImpl: any, runtimeSendMessage: any, acceptHeader: any = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", timeoutMs: any = DEFAULT_FETCH_TIMEOUT_MS) {
     var accept = normalizeString(acceptHeader, "") || "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+    var timeout = Math.max(100, Number(timeoutMs) || DEFAULT_FETCH_TIMEOUT_MS);
 
     if (typeof runtimeSendMessage === "function") {
-      var runtimeResponse = await runtimeSendMessage({
-        type: RUNTIME_FETCH_MESSAGE_TYPE,
-        v: RUNTIME_FETCH_MESSAGE_VERSION,
-        url: url,
-        accept: accept
-      });
+      var runtimeResult = await Promise.race([
+        Promise.resolve(runtimeSendMessage({
+          type: RUNTIME_FETCH_MESSAGE_TYPE,
+          v: RUNTIME_FETCH_MESSAGE_VERSION,
+          url: url,
+          accept: accept
+        }))
+          .then(function (value) {
+            return {
+              timedOut: false,
+              value: value
+            };
+          })
+          .catch(function () {
+            return {
+              timedOut: false,
+              value: null
+            };
+          }),
+        sleep(timeout).then(function () {
+          return {
+            timedOut: true,
+            value: null
+          };
+        })
+      ]);
 
-      if (isValidRuntimeFetchResponse(runtimeResponse)) {
+      if (runtimeResult && runtimeResult.timedOut) {
         return {
-          ok: Boolean(runtimeResponse.ok),
-          status: Number(runtimeResponse.status) || 0,
-          text: normalizeString(runtimeResponse.text, ""),
+          ok: false,
+          status: 0,
+          text: "",
+          source: "runtime"
+        };
+      }
+
+      if (isValidRuntimeFetchResponse(runtimeResult && runtimeResult.value)) {
+        return {
+          ok: Boolean(runtimeResult.value.ok),
+          status: Number(runtimeResult.value.status) || 0,
+          text: normalizeString(runtimeResult.value.text, ""),
           source: "runtime"
         };
       }
@@ -961,14 +1356,35 @@
     }
 
     try {
-      var response = await fetchImpl(url, {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-        headers: {
-          Accept: accept
+      var abortController = typeof AbortController === "function" ? new AbortController() : null;
+      var timeoutId =
+        abortController && typeof setTimeout === "function"
+          ? setTimeout(function () {
+              try {
+                abortController.abort();
+              } catch (_) {
+                // Ignore abort failures.
+              }
+            }, timeout)
+          : null;
+
+      var response;
+      try {
+        response = await fetchImpl(url, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
+            Accept: accept
+          },
+          signal: abortController ? abortController.signal : undefined
+        });
+      } finally {
+        if (timeoutId != null && typeof clearTimeout === "function") {
+          clearTimeout(timeoutId);
         }
-      });
+      }
+
       var text = "";
       try {
         text = await response.text();
@@ -982,7 +1398,16 @@
         text: text,
         source: "fetch"
       };
-    } catch (_) {
+    } catch (error: any) {
+      if (error && error.name === "AbortError") {
+        return {
+          ok: false,
+          status: 0,
+          text: "",
+          source: "fetch"
+        };
+      }
+
       return {
         ok: false,
         status: 0,
@@ -992,13 +1417,14 @@
     }
   }
 
-  async function tryApiSearch(query: any, payload: any, fetchImpl: any, runtimeSendMessage: any) {
+  async function tryApiSearch(query: any, payload: any, fetchImpl: any, runtimeSendMessage: any, timeoutMs: any) {
     var apiUrl = buildApiSearchUrl(query, payload);
     var fetched = await fetchSearchPage(
       apiUrl,
       fetchImpl,
       runtimeSendMessage,
-      "application/json,text/plain,*/*"
+      "application/json,text/plain,*/*",
+      timeoutMs
     );
 
     if (!fetched.ok) {
@@ -1084,7 +1510,7 @@
     };
   }
 
-  async function enrichHrefFallbackCandidates(candidates: any, fetchImpl: any, runtimeSendMessage: any, maxFetches: any) {
+  async function enrichHrefFallbackCandidates(candidates: any, fetchImpl: any, runtimeSendMessage: any, maxFetches: any, timeoutMs: any) {
     var list = Array.isArray(candidates) ? candidates : [];
     var fetchBudget = Math.max(0, Number(maxFetches) || 0);
     if (!list.length || fetchBudget < 1) {
@@ -1105,7 +1531,7 @@
         continue;
       }
 
-      var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+      var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
       requestCount += 1;
       if (!fetched.ok || !fetched.text) {
         continue;
@@ -1137,7 +1563,7 @@
     };
   }
 
-  async function trySingleQueryFallback(fetchImpl: any, runtimeSendMessage: any, query: any, cooldownMs: any) {
+  async function trySingleQueryFallback(fetchImpl: any, runtimeSendMessage: any, query: any, cooldownMs: any, timeoutMs: any) {
     var fallbackQuery = normalizeString(query, "");
     if (!fallbackQuery) {
       return {
@@ -1153,7 +1579,7 @@
     await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
 
     var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
-    var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
+    var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
 
     if (!fetched.ok && fetched.status === 0) {
       return {
@@ -1203,7 +1629,7 @@
 
       while (!normalizedWithPrice.length && loadingAttempts < maxLoadingRetries) {
         await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
-        var retryFetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
+        var retryFetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
         if (!retryFetched.ok || !retryFetched.text) {
           break;
         }
@@ -1262,6 +1688,70 @@
         : resolveRuntimeSendMessage();
     var maxRequests = Number.isFinite(Number(config.maxRequests)) ? Number(config.maxRequests) : 3;
     var cooldownMs = Number.isFinite(Number(config.cooldownMs)) ? Number(config.cooldownMs) : 1200;
+    var fetchTimeoutMs =
+      Number.isFinite(Number(config.fetchTimeoutMs)) && Number(config.fetchTimeoutMs) > 0
+        ? Math.max(100, Number(config.fetchTimeoutMs))
+        : DEFAULT_FETCH_TIMEOUT_MS;
+    var imageUrlCache: Record<string, string> = Object.create(null);
+
+    function getCandidateCacheKeys(candidate: any) {
+      var keys = [];
+      var id = normalizeString(candidate && candidate.id, "");
+      if (id) {
+        keys.push("id:" + id.toLowerCase());
+      }
+
+      var normalizedUrl = normalizeUrlString(candidate && candidate.url);
+      if (normalizedUrl) {
+        keys.push("url:" + normalizedUrl.toLowerCase());
+        var slug = normalizedUrl
+          .split("/")
+          .filter(Boolean)
+          .pop();
+        var normalizedSlug = normalizeSlugToken(slug);
+        if (normalizedSlug) {
+          keys.push("slug:" + normalizedSlug);
+        }
+      }
+
+      return keys;
+    }
+
+    function applyImageUrlCache(candidate: any) {
+      if (!candidate || typeof candidate !== "object") {
+        return candidate;
+      }
+
+      var keys = getCandidateCacheKeys(candidate);
+      if (!keys.length) {
+        return candidate;
+      }
+
+      var imageUrl = normalizeUrlString(candidate.imageUrl);
+      if (imageUrl) {
+        for (var i = 0; i < keys.length; i += 1) {
+          imageUrlCache[keys[i]] = imageUrl;
+        }
+        candidate.imageUrl = imageUrl;
+        return candidate;
+      }
+
+      for (var j = 0; j < keys.length; j += 1) {
+        if (imageUrlCache[keys[j]]) {
+          candidate.imageUrl = imageUrlCache[keys[j]];
+          break;
+        }
+      }
+
+      return candidate;
+    }
+
+    function normalizeAndHydrateCandidates(candidates: any) {
+      return dedupeById(candidates || [])
+        .map(normalizeProductCandidate)
+        .filter(Boolean)
+        .map(applyImageUrlCache);
+    }
 
     return {
       market: "depop",
@@ -1281,13 +1771,14 @@
 
         var payload = input && typeof input === "object" ? input : {};
         var queries = Array.isArray(payload.queries) ? payload.queries.filter(Boolean) : [];
-        var limit = Number.isFinite(Number(payload.limit)) ? Number(payload.limit) : 12;
+        var limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Number(payload.limit)) : null;
         var requestTotal = 0;
         var partial = false;
         var merged: any[] = [];
         var blockedFallbackAttempted = false;
         var sourceType = "html";
         var sawNoResults = false;
+        var sawNetworkError = false;
 
         if (!queries.length) {
           return {
@@ -1306,8 +1797,9 @@
           var query = queries[i];
           var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
 
-          var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+          var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
           if (!fetched.ok && fetched.status === 0) {
+            sawNetworkError = true;
             partial = true;
             continue;
           }
@@ -1316,7 +1808,7 @@
 
           if (!fetched.ok) {
             if (requestTotal < maxRequests) {
-              var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
+              var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
               requestTotal += apiOnHttpError.requestCount || 0;
 
               if (apiOnHttpError.ok) {
@@ -1339,7 +1831,8 @@
                 fetchImpl,
                 runtimeSendMessage,
                 queries[0],
-                cooldownMs
+                cooldownMs,
+                fetchTimeoutMs
               );
               requestTotal += fallbackAttempt.requestCount || 0;
 
@@ -1401,7 +1894,8 @@
 
           var parsedCandidates = dedupeById(parsed.candidates || [])
             .map(normalizeProductCandidate)
-            .filter(Boolean);
+            .filter(Boolean)
+            .map(applyImageUrlCache);
           var pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
 
           if (
@@ -1418,10 +1912,13 @@
               requestTotal + 1 < maxRequests
             ) {
               await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
-              var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+              var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
               requestTotal += 1;
 
               if (!retryFetched.ok || !retryFetched.text) {
+                if (!retryFetched.ok && retryFetched.status === 0) {
+                  sawNetworkError = true;
+                }
                 partial = true;
                 break;
               }
@@ -1441,9 +1938,7 @@
               }
 
               var retryParsed = parseCandidates(latestHtml);
-              parsedCandidates = dedupeById(retryParsed.candidates || [])
-                .map(normalizeProductCandidate)
-                .filter(Boolean);
+              parsedCandidates = normalizeAndHydrateCandidates(retryParsed.candidates || []);
               pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
 
               if (!isLikelyLoadingShellHtml(latestHtml)) {
@@ -1455,13 +1950,11 @@
           }
 
           if (!pricedParsedCandidates.length && requestTotal < maxRequests) {
-            var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
+            var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
             requestTotal += apiFallback.requestCount || 0;
 
             if (apiFallback.ok) {
-              parsedCandidates = dedupeById(apiFallback.candidates || [])
-                .map(normalizeProductCandidate)
-                .filter(Boolean);
+              parsedCandidates = normalizeAndHydrateCandidates(apiFallback.candidates || []);
               pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
               sourceType = sourceType === "html" ? "hybrid" : sourceType;
             } else if (apiFallback.errorCode === "NO_RESULTS") {
@@ -1476,13 +1969,12 @@
               parsedCandidates,
               fetchImpl,
               runtimeSendMessage,
-              remainingBudget
+              remainingBudget,
+              fetchTimeoutMs
             );
 
             requestTotal += enriched.requestCount || 0;
-            pricedParsedCandidates = dedupeById(enriched.candidates || [])
-              .map(normalizeProductCandidate)
-              .filter(Boolean)
+            pricedParsedCandidates = normalizeAndHydrateCandidates(enriched.candidates || [])
               .filter(hasMeaningfulPrice);
           }
 
@@ -1507,31 +1999,38 @@
           }
         }
 
-        var normalized = dedupeById(merged)
-          .slice(0, Math.max(1, limit));
+        var normalized = dedupeById(merged);
+        if (limit != null) {
+          normalized = normalized.slice(0, limit);
+        }
 
         if (!normalized.length) {
-          if (sawNoResults && queries.length) {
+          if (sawNoResults && queries.length && requestTotal < maxRequests) {
             var broadQuery = buildBroadFallbackQuery(queries[0]);
             if (broadQuery && broadQuery !== normalizeString(queries[0], "").toLowerCase()) {
               var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
-              var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage);
+              var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
               requestTotal += 1;
+
+              if (!broadFetched.ok && broadFetched.status === 0) {
+                sawNetworkError = true;
+              }
 
               if (broadFetched.ok && broadFetched.text) {
                 var broadParsed = parseCandidates(broadFetched.text);
-                var broadCandidates = dedupeById(broadParsed.candidates || [])
-                  .map(normalizeProductCandidate)
-                  .filter(Boolean)
+                var broadCandidates = normalizeAndHydrateCandidates(broadParsed.candidates || [])
                   .filter(function (candidate: any) {
                     var price = normalizeNumber(candidate && candidate.price);
                     return price == null || price > 0;
                   });
 
                 if (broadCandidates.length) {
+                  if (limit != null) {
+                    broadCandidates = broadCandidates.slice(0, limit);
+                  }
                   return {
                     ok: true,
-                    candidates: broadCandidates.slice(0, Math.max(1, limit)),
+                    candidates: broadCandidates,
                     fetchedAt: Date.now(),
                     partial: true,
                     sourceType: sourceType,
@@ -1553,6 +2052,19 @@
               parserVersion: PARSER_VERSION,
               errorCode: "NO_RESULTS",
               retryAfterMs: 0
+            };
+          }
+
+          if (sawNetworkError) {
+            return {
+              ok: false,
+              candidates: [],
+              fetchedAt: Date.now(),
+              partial: partial,
+              sourceType: "html",
+              parserVersion: PARSER_VERSION,
+              errorCode: "NETWORK_ERROR",
+              retryAfterMs: 1500
             };
           }
 

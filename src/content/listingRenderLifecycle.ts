@@ -26,6 +26,7 @@ interface CListingRenderOptions {
   listing: any;
   metrics: any;
   mountTarget?: CListingRenderMountTarget | null;
+  marketCompareResultsLimit?: number;
   resolveCurrencyContext?: () => Promise<CListingRenderCurrencyContext | null>;
   createUsdCurrencyContext?: () => CListingRenderCurrencyContext;
   renderPanelWithMarketCompare?: (options: {
@@ -35,6 +36,7 @@ interface CListingRenderOptions {
     mountPosition: "beforebegin" | "afterend";
     rawListing: any;
     currencyContext: CListingRenderCurrencyContext | null;
+    marketCompareResultsLimit: number;
   }) => void;
   applySidebarCurrency?: (currencyContext: CListingRenderCurrencyContext | null) => void;
   applyCardCurrency?: (currencyContext: CListingRenderCurrencyContext | null) => void;
@@ -121,7 +123,12 @@ interface CListingRenderGlobal {
           mountNode: mountTarget ? mountTarget.mountNode : null,
           mountPosition: mountTarget ? mountTarget.mountPosition || "afterend" : "afterend",
           rawListing: listing && listing.rawListing ? listing.rawListing : null,
-          currencyContext: currencyContext
+          currencyContext: currencyContext,
+          marketCompareResultsLimit:
+            Number.isFinite(Number(config.marketCompareResultsLimit)) &&
+            Number(config.marketCompareResultsLimit) > 0
+              ? Math.floor(Number(config.marketCompareResultsLimit))
+              : 5
         });
         applySidebarCurrency(currencyContext);
         applyCardCurrency(currencyContext);
@@ -150,7 +157,12 @@ interface CListingRenderGlobal {
           mountNode: mountTarget ? mountTarget.mountNode : null,
           mountPosition: mountTarget ? mountTarget.mountPosition || "afterend" : "afterend",
           rawListing: listing && listing.rawListing ? listing.rawListing : null,
-          currencyContext: fallbackCurrency
+          currencyContext: fallbackCurrency,
+          marketCompareResultsLimit:
+            Number.isFinite(Number(config.marketCompareResultsLimit)) &&
+            Number(config.marketCompareResultsLimit) > 0
+              ? Math.floor(Number(config.marketCompareResultsLimit))
+              : 5
         });
         applySidebarCurrency(fallbackCurrency);
         applyCardCurrency(fallbackCurrency);

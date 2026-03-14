@@ -188,7 +188,9 @@ async function run() {
 
     let compareButton = page.getByRole("button", { name: /compare on depop/i });
     if ((await compareButton.count()) < 1) {
-      compareButton = page.locator(".grailed-plus__button--market-compare");
+      compareButton = page.locator(
+        '[data-grailed-plus-panel="1"] .grailed-plus__market-actions .gp-button'
+      );
     }
     if ((await compareButton.count()) < 1) {
       const panelPreview = await page.locator('[data-grailed-plus-panel="1"]').first().innerText();
@@ -198,12 +200,17 @@ async function run() {
       );
     }
 
-    await page.waitForSelector(".grailed-plus__button--market-compare", {
+    await page.waitForSelector(
+      '[data-grailed-plus-panel="1"] .grailed-plus__market-actions .gp-button',
+      {
       state: "attached",
       timeout: timeoutMs
-    });
+      }
+    );
 
-    compareButton = page.locator(".grailed-plus__button--market-compare").first();
+    compareButton = page
+      .locator('[data-grailed-plus-panel="1"] .grailed-plus__market-actions .gp-button')
+      .first();
 
     await dismissLoginModal(page);
     await dismissConsentOverlays(page);
@@ -219,7 +226,9 @@ async function run() {
     const chipAfterClick = await page.locator(".grailed-plus__market-chip").first().textContent();
     if (String(chipAfterClick || "").trim().toLowerCase() === "ready") {
       await page.evaluate(() => {
-        const button = document.querySelector(".grailed-plus__button--market-compare");
+        const button = document.querySelector(
+          '[data-grailed-plus-panel="1"] .grailed-plus__market-actions .gp-button'
+        );
         if (button && typeof button.click === "function") {
           button.click();
         }

@@ -39,6 +39,46 @@ test("market compare controller starts in idle state", () => {
   assert.deepEqual(state.results, []);
 });
 
+test("market compare controller forwards result limit to provider search", async () => {
+  const observedPayloads = [];
+  const registry = createRegistry();
+  registry.register({
+    market: "depop",
+    search: async function (payload) {
+      observedPayloads.push(payload);
+      return {
+        ok: true,
+        candidates: [
+          {
+            id: "c-limit-1",
+            market: "depop",
+            title: "Vintage Jacket Similar",
+            url: "https://depop.test/item/limit-1",
+            price: 120,
+            currency: "USD",
+            score: 72,
+            deltaPercent: -14.3
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock"
+      };
+    }
+  });
+
+  const controller = createController({ providerRegistry: registry });
+  await controller.compare({
+    listing: sampleListing(),
+    currency: "USD",
+    minScore: 0,
+    limit: 10
+  });
+
+  assert.equal(observedPayloads.length, 1);
+  assert.equal(observedPayloads[0].limit, 10);
+});
+
 test("market compare controller transitions loading -> results", async () => {
   const registry = createRegistry();
   registry.register({
@@ -385,7 +425,7 @@ test("market compare controller prefers positive-price candidates over zero-pric
   assert.ok(finalState.results.every((entry) => Number(entry.price) > 0));
 });
 
-test("market compare controller hides non-positive score entries from display", async () => {
+test("market compare controller keeps zero-score entries in display results", async () => {
   const registry = createRegistry();
   registry.register({
     market: "depop",
@@ -462,6 +502,7 @@ test("market compare controller hides non-positive score entries from display", 
   });
 
   assert.equal(finalState.status, "results");
-  assert.equal(finalState.results.length, 1);
+  assert.equal(finalState.results.length, 2);
   assert.equal(finalState.results[0].id, "candidate-1");
+  assert.equal(finalState.results[1].id, "candidate-2");
 });

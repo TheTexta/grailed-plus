@@ -37,6 +37,7 @@ interface URenderUnavailableOptions {
   documentObj?: Document | null;
   resolveMountTarget?: ((documentObj?: Document | null) => UMountTarget | null) | null;
   resolveCurrencyContext?: (() => Promise<any>) | null;
+  resolveMarketCompareResultsLimit?: (() => Promise<number>) | null;
   renderPanelWithMarketCompare?:
     | ((options: {
         listing: UUnavailableListing;
@@ -46,6 +47,7 @@ interface URenderUnavailableOptions {
         rawListing: null;
         statusMessage: string;
         currencyContext: any;
+        marketCompareResultsLimit: number;
       }) => void)
     | null;
   applySidebarCurrency?: ((currencyContext: any) => void) | null;
@@ -116,6 +118,12 @@ interface UUnavailableGlobal {
       typeof config.renderPanelWithMarketCompare === "function"
         ? config.renderPanelWithMarketCompare
         : function () {};
+    var resolveMarketCompareResultsLimit =
+      typeof config.resolveMarketCompareResultsLimit === "function"
+        ? config.resolveMarketCompareResultsLimit
+        : function () {
+            return Promise.resolve(5);
+          };
     var applySidebarCurrency =
       typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
     var applyCardCurrency =
@@ -151,7 +159,10 @@ interface UUnavailableGlobal {
       return;
     }
 
-    resolveCurrencyContext().then(function (currencyContext) {
+    Promise.all([resolveCurrencyContext(), resolveMarketCompareResultsLimit()]).then(function (values) {
+      var currencyContext = values[0];
+      var marketCompareResultsLimit =
+        Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
       var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
       if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
         return;
@@ -164,7 +175,8 @@ interface UUnavailableGlobal {
         mountPosition: resolvedMountTarget.mountPosition,
         rawListing: null,
         statusMessage: statusMessage,
-        currencyContext: currencyContext
+        currencyContext: currencyContext,
+        marketCompareResultsLimit: marketCompareResultsLimit
       });
       applySidebarCurrency(currencyContext);
       applyCardCurrency(currencyContext);

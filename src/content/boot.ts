@@ -238,6 +238,7 @@
           rawListing: context.rawListing,
           statusMessage: context.statusMessage,
           currencyContext: context.currencyContext,
+          marketCompareResultsLimit: context.marketCompareResultsLimit,
           marketCompare: nextState,
           onMarketCompareClick: triggerMarketCompare
         });
@@ -316,6 +317,26 @@
       return Promise.resolve(true);
     }
     return ListingInsightsLifecycle.resolveListingInsightsEnabled(Settings);
+  }
+
+  function resolveMarketCompareResultsLimit(): Promise<number> {
+    var defaultExpanded =
+      Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
+        ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
+        : false;
+    var defaultLimit = defaultExpanded ? 10 : 5;
+
+    if (!Settings || typeof Settings.getMarketCompareExpandedAmountEnabled !== "function") {
+      return Promise.resolve(defaultLimit);
+    }
+
+    return Settings.getMarketCompareExpandedAmountEnabled()
+      .then(function (enabled: any) {
+        return Boolean(enabled) ? 10 : 5;
+      })
+      .catch(function () {
+        return defaultLimit;
+      });
   }
 
   function applySidebarCurrency(currencyContext: any): boolean {
@@ -532,7 +553,8 @@
       applySidebarCurrency: applySidebarCurrency,
       applyCardCurrency: applyCardCurrency,
       syncCardCurrencyObserver: syncCardCurrencyObserver,
-      statusMessage: statusMessage
+      statusMessage: statusMessage,
+      resolveMarketCompareResultsLimit: resolveMarketCompareResultsLimit
     });
   }
 
@@ -585,7 +607,11 @@
 
     syncCardCurrencyObserver(null);
 
-    resolveListingInsightsEnabled().then(function (listingInsightsEnabled: boolean) {
+    Promise.all([resolveListingInsightsEnabled(), resolveMarketCompareResultsLimit()]).then(function (values: any[]) {
+      var listingInsightsEnabled = Boolean(values[0]);
+      var marketCompareResultsLimit =
+        Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
+
       if (!Url.isListingPath(location.pathname)) {
         return;
       }
@@ -654,6 +680,7 @@
         listing: preparedContext.listing,
         metrics: preparedContext.metrics,
         mountTarget: preparedContext.mountTarget,
+        marketCompareResultsLimit: marketCompareResultsLimit,
         resolveCurrencyContext: resolveCurrencyContext,
         createUsdCurrencyContext: createUsdCurrencyContext,
         renderPanelWithMarketCompare: renderPanelWithMarketCompare,

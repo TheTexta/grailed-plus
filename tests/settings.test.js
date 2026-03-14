@@ -7,12 +7,14 @@ const {
   DEFAULT_CURRENCY,
   DEFAULT_CONVERSION_ENABLED,
   DEFAULT_LISTING_INSIGHTS_ENABLED,
+  DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
   DEFAULT_DARK_MODE_ENABLED,
   DEFAULT_DARK_MODE_BEHAVIOR,
   DEFAULT_DARK_MODE_PRIMARY_COLOR,
   CURRENCY_STORAGE_KEY,
   CONVERSION_ENABLED_STORAGE_KEY,
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+  MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
   DARK_MODE_ENABLED_STORAGE_KEY,
   DARK_MODE_BEHAVIOR_STORAGE_KEY,
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -25,6 +27,8 @@ const {
   setCurrencyConversionEnabled,
   getListingInsightsEnabled,
   setListingInsightsEnabled,
+  getMarketCompareExpandedAmountEnabled,
+  setMarketCompareExpandedAmountEnabled,
   getDarkModeEnabled,
   setDarkModeEnabled,
   getDarkModeBehavior,
@@ -237,6 +241,48 @@ test("setListingInsightsEnabled persists boolean values", async () => {
     assert.deepEqual(onResult, { ok: true });
     assert.equal(chromeMock.__state[LISTING_INSIGHTS_ENABLED_STORAGE_KEY], true);
     assert.equal(await getListingInsightsEnabled(), true);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getMarketCompareExpandedAmountEnabled defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getMarketCompareExpandedAmountEnabled();
+    assert.equal(enabled, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareExpandedAmountEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setMarketCompareExpandedAmountEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY], true);
+    assert.equal(await getMarketCompareExpandedAmountEnabled(), true);
+
+    const offResult = await setMarketCompareExpandedAmountEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY], false);
+    assert.equal(await getMarketCompareExpandedAmountEnabled(), false);
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;

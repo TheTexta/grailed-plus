@@ -12,6 +12,7 @@ interface SSettingsModule {
   DEFAULT_CURRENCY: string;
   DEFAULT_CONVERSION_ENABLED: boolean;
   DEFAULT_LISTING_INSIGHTS_ENABLED: boolean;
+  DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: boolean;
   DEFAULT_DARK_MODE_ENABLED: boolean;
   DEFAULT_DARK_MODE_BEHAVIOR: "system" | "permanent";
   DEFAULT_DARK_MODE_PRIMARY_COLOR: string;
@@ -19,6 +20,7 @@ interface SSettingsModule {
   CURRENCY_STORAGE_KEY: string;
   CONVERSION_ENABLED_STORAGE_KEY: string;
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY: string;
+  MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY: string;
   DARK_MODE_ENABLED_STORAGE_KEY: string;
   DARK_MODE_BEHAVIOR_STORAGE_KEY: string;
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: string;
@@ -32,6 +34,8 @@ interface SSettingsModule {
   setCurrencyConversionEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getListingInsightsEnabled: () => Promise<boolean>;
   setListingInsightsEnabled: (enabled: unknown) => Promise<SStorageResult>;
+  getMarketCompareExpandedAmountEnabled: () => Promise<boolean>;
+  setMarketCompareExpandedAmountEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getDarkModeEnabled: () => Promise<boolean>;
   setDarkModeEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getDarkModeBehavior: () => Promise<"system" | "permanent">;
@@ -58,6 +62,7 @@ interface SGlobalRoot {
     const DEFAULT_CURRENCY = "USD";
     const DEFAULT_CONVERSION_ENABLED = false;
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR: "system" | "permanent" = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
@@ -65,6 +70,8 @@ interface SGlobalRoot {
     const CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
+    const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY =
+      "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
@@ -346,6 +353,32 @@ interface SGlobalRoot {
       );
     }
 
+    function getMarketCompareExpandedAmountEnabled(): Promise<boolean> {
+      const storage = getStorageLocal();
+      if (!storage) {
+        return Promise.resolve(DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED);
+      }
+
+      return storageGet(storage, MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY)
+        .then(function (data) {
+          const storedValue = data && data[MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY];
+          return typeof storedValue === "boolean"
+            ? storedValue
+            : DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED;
+        })
+        .catch(function () {
+          return DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED;
+        });
+    }
+
+    function setMarketCompareExpandedAmountEnabled(enabled: unknown): Promise<SStorageResult> {
+      return _persistBooleanSetting(
+        MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
+        enabled,
+        "market compare expanded amount status"
+      );
+    }
+
     function getDarkModeEnabled(): Promise<boolean> {
       const storage = getStorageLocal();
       if (!storage) {
@@ -482,6 +515,7 @@ interface SGlobalRoot {
       DEFAULT_CURRENCY,
       DEFAULT_CONVERSION_ENABLED,
       DEFAULT_LISTING_INSIGHTS_ENABLED,
+      DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
       DEFAULT_DARK_MODE_ENABLED,
       DEFAULT_DARK_MODE_BEHAVIOR,
       DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -489,6 +523,7 @@ interface SGlobalRoot {
       CURRENCY_STORAGE_KEY,
       CONVERSION_ENABLED_STORAGE_KEY,
       LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+      MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
       DARK_MODE_ENABLED_STORAGE_KEY,
       DARK_MODE_BEHAVIOR_STORAGE_KEY,
       DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -502,6 +537,8 @@ interface SGlobalRoot {
       setCurrencyConversionEnabled,
       getListingInsightsEnabled,
       setListingInsightsEnabled,
+      getMarketCompareExpandedAmountEnabled,
+      setMarketCompareExpandedAmountEnabled,
       getDarkModeEnabled,
       setDarkModeEnabled,
       getDarkModeBehavior,
