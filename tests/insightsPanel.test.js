@@ -385,6 +385,123 @@ test("renderInsightsPanel inserts panel after mount node by default", () => {
   assert.equal(panel.getAttribute("data-grailed-plus-panel"), "1");
   assert.ok(panel.querySelector(".grailed-plus__trend-chart"));
   assert.match(flattenText(panel), /Listing Metadata/);
+  assert.match(flattenText(panel), /Compare on Depop/);
+});
+
+test("renderInsightsPanel renders market compare result rows", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      message: "",
+      lastCheckedAt: Date.now(),
+      results: [
+        {
+          id: "r1",
+          title: "Sample listing alt",
+          url: "https://depop.test/item/1",
+          price: 88,
+          currency: "USD",
+          score: 71,
+          deltaLabel: "-12.0% cheaper"
+        }
+      ]
+    }
+  });
+
+  assert.ok(panel.querySelector(".grailed-plus__market"));
+  assert.match(flattenText(panel), /Other Markets/);
+  assert.match(flattenText(panel), /Sample listing alt/);
+  assert.match(flattenText(panel), /score 71/);
+});
+
+test("renderInsightsPanel shows loading market compare state with disabled action", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "loading",
+      provider: "Depop",
+      message: "Fetching similar listings...",
+      results: []
+    }
+  });
+
+  const chip = panel.querySelector(".grailed-plus__market-chip");
+  const button = panel.querySelector(".grailed-plus__button--market-compare");
+  assert.ok(chip);
+  assert.ok(button);
+  assert.equal(chip.textContent, "Searching");
+  assert.equal(button.textContent, "Searching...");
+  assert.equal(button.disabled, true);
+  assert.match(flattenText(panel), /Fetching similar listings/);
+});
+
+test("renderInsightsPanel shows no-results market state and keeps action enabled", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "no-results",
+      provider: "Depop",
+      message: "No matching listings found.",
+      results: []
+    }
+  });
+
+  const chip = panel.querySelector(".grailed-plus__market-chip");
+  const button = panel.querySelector(".grailed-plus__button--market-compare");
+  assert.ok(chip);
+  assert.ok(button);
+  assert.equal(chip.textContent, "No Results");
+  assert.equal(button.textContent, "Compare on Depop");
+  assert.equal(button.disabled, false);
+  assert.match(flattenText(panel), /No matching listings found/);
+});
+
+test("renderInsightsPanel omits score fragment when score is not finite", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r1",
+          title: "Sample listing alt",
+          url: "https://depop.test/item/1",
+          price: 88,
+          currency: "USD",
+          score: Number.NaN,
+          deltaLabel: "-12.0% cheaper"
+        }
+      ]
+    }
+  });
+
+  const metaNode = panel.querySelector(".grailed-plus__market-meta");
+  assert.ok(metaNode);
+  assert.doesNotMatch(metaNode.textContent, /score\s+/i);
+  assert.match(metaNode.textContent, /\$88/);
 });
 
 test("renderInsightsPanel inserts panel before mount node when mountPosition is beforebegin", () => {

@@ -135,6 +135,33 @@ test("applyDarkModeToDocument clears root state when disabled", () => {
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_SAFE_RGB_VAR), "");
 });
 
+test("applyDarkModeToDocument removes next-root attribute when __next disappears", () => {
+  const root = createRootNode();
+  let hasNextRoot = true;
+  const doc = {
+    documentElement: root,
+    getElementById(id) {
+      if (id !== "__next") {
+        return null;
+      }
+      return hasNextRoot ? {} : null;
+    }
+  };
+
+  applyDarkModeToDocument(doc, {
+    enabled: true,
+    primaryColor: "#123456"
+  });
+  assert.equal(root.getAttribute(NEXT_ROOT_ATTR), NEXT_ROOT_ATTR_VALUE);
+
+  hasNextRoot = false;
+  applyDarkModeToDocument(doc, {
+    enabled: true,
+    primaryColor: "#123456"
+  });
+  assert.equal(root.getAttribute(NEXT_ROOT_ATTR), undefined);
+});
+
 test("applyDarkModeToDocument returns false when no root node exists", () => {
   const applied = applyDarkModeToDocument({}, { enabled: true, primaryColor: "#000000" });
   assert.equal(applied, false);

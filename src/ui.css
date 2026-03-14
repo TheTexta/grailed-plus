@@ -30,8 +30,7 @@ body.gp-ui-body {
   margin: 0 0 8px;
 }
 
-.gp-popup__button,
-.gp-options__button {
+.gp-button {
   appearance: none;
   border: 1px solid var(--gp-ui-border-strong);
   background: transparent;
@@ -45,30 +44,15 @@ body.gp-ui-body {
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
-.gp-popup__button:hover,
-.gp-options__button:hover {
+.gp-button:hover {
   border-color: #ffffff;
 }
 
-.gp-popup__button:focus-visible,
-.gp-popup__button:active,
-.gp-options__button:focus-visible,
-.gp-options__button:active {
+.gp-button:focus-visible,
+.gp-button:active {
   color: var(--gp-ui-text);
 }
 
-.gp-options__button--primary {
-  border-color: var(--gp-ui-accent);
-  background: var(--gp-ui-accent);
-  color: #ffffff;
-}
-
-.gp-options__button--primary:hover,
-.gp-options__button--primary:focus-visible,
-.gp-options__button--primary:active {
-  border-color: var(--gp-ui-accent);
-  color: #ffffff;
-}
 
 .gp-popup {
   margin: 10px;
@@ -92,7 +76,7 @@ body.gp-ui-body {
   line-height: 1.35;
 }
 
-.gp-popup__button {
+.gp-popup .gp-button {
   width: 100%;
 }
 

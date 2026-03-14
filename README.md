@@ -20,11 +20,11 @@ Enhance Grailed pages with a streamlined insights sidebar surfacing average and 
 - Depop/ebay autocomparison with like / matching listings (Possible ML image checking for like listings)
 - ~Dark mode integration~ *Completed*
 - ~Improved UI integration~ *Completed*
-- Price trend graph view
+- Price trend graph view *Partially Completed*
 - ~Updated logo and screenshots~ *Completed*
 - ~Automatic currency conversion~ *Completed*
 - Better inspect (hover inspect without clicking)
-- ~better settings ui~ *Completed*
+- ~Improved settings ui~ *Completed*
 
 ### Project Layout
 - `src/manifest.json`: Chrome MV3 manifest
@@ -87,3 +87,4 @@ Notes:
 - Images and media are counter-filtered to stay visually intact.
 - Defaults: dark mode enabled + behavior set to `Match device theme`.
 - Refresh open tabs after changing dark-mode settings.
+- Grailed Enhanced:Pricing Insights, Seller Data, Custom Currency & Dark Mode

@@ -30,6 +30,8 @@
     bottom: 14,
     left: 8
   };
+  var TREND_CLIP_ID_PREFIX = "grailed-plus__trend-clip-";
+  var trendClipIdCounter = 0;
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -293,6 +295,30 @@
       .attr("class", "grailed-plus__trend-root")
       .attr("transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
 
+    var clipPathId = TREND_CLIP_ID_PREFIX + String(trendClipIdCounter);
+    trendClipIdCounter += 1;
+
+    svg
+      .append("defs")
+      .append("clipPath")
+      .attr("id", clipPathId)
+      .attr("clipPathUnits", "userSpaceOnUse")
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", innerWidth)
+      .attr("height", innerHeight);
+
+    var trendLineLayer = root
+      .append("g")
+      .attr("class", "grailed-plus__trend-line-layer")
+      .attr("clip-path", "url(#" + clipPathId + ")");
+
+    var trendPointLayer = root
+      .append("g")
+      .attr("class", "grailed-plus__trend-point-layer")
+      .attr("clip-path", "url(#" + clipPathId + ")");
+
     var x = d3
       .scaleTime()
       .domain(d3.extent(points, function (d) {
@@ -317,6 +343,7 @@
       .defined(function (d) {
         return Number.isFinite(d.priceUsd) && d.date instanceof Date;
       })
+      .curve(d3.curveMonotoneX)
       .x(function (d) {
         return x(d.date);
       })
@@ -324,7 +351,7 @@
         return y(d.priceUsd);
       });
 
-    root
+    trendLineLayer
       .selectAll("path.grailed-plus__trend-line")
       .data([points])
       .join("path")
@@ -366,7 +393,7 @@
       tooltip.style("opacity", "0").attr("aria-hidden", "true");
     }
 
-    var pointNodes = root
+    var pointNodes = trendPointLayer
       .selectAll("circle.grailed-plus__trend-point")
       .data(points, function (d) {
         return d.key;
@@ -1369,6 +1396,151 @@
     return "Not enough data to estimate";
   }
 
+  function formatRelativeTimestamp(timestampMs) {
+    if (!Number.isFinite(Number(timestampMs))) {
+      return "";
+    }
+
+    var deltaMs = Date.now() - Number(timestampMs);
+    if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+      return "";
+    }
+
+    var seconds = Math.floor(deltaMs / 1000);
+    if (seconds < 60) {
+      return "just now";
+    }
+
+    var minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return String(minutes) + "m ago";
+    }
+
+    var hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return String(hours) + "h ago";
+    }
+
+    var days = Math.floor(hours / 24);
+    return String(days) + "d ago";
+  }
+
+  function createMarketCompareSection(doc, marketCompare, onCompareClick) {
+    var state = marketCompare && typeof marketCompare === "object" ? marketCompare : {};
+    var status = typeof state.status === "string" ? state.status : "idle";
+    var provider = typeof state.provider === "string" ? state.provider : "Depop";
+    var message = typeof state.message === "string" ? state.message : "";
+    var results = Array.isArray(state.results) ? state.results : [];
+
+    var section = doc.createElement("div");
+    section.className = "grailed-plus__market";
+
+    var header = doc.createElement("div");
+    header.className = "grailed-plus__market-header";
+
+    var title = doc.createElement("span");
+    title.className = "grailed-plus__market-title";
+    title.textContent = "Other Markets";
+
+    var chip = doc.createElement("span");
+    chip.className = "grailed-plus__market-chip";
+
+    if (status === "loading") {
+      chip.textContent = "Searching";
+    } else if (status === "results") {
+      chip.textContent = "Results";
+    } else if (status === "no-results") {
+      chip.textContent = "No Results";
+    } else if (status === "error") {
+      chip.textContent = "Error";
+    } else {
+      chip.textContent = "Ready";
+    }
+
+    header.appendChild(title);
+    header.appendChild(chip);
+    section.appendChild(header);
+
+    var providerLabel = doc.createElement("div");
+    providerLabel.className = "grailed-plus__market-provider";
+    providerLabel.textContent = provider;
+    section.appendChild(providerLabel);
+
+    if (message) {
+      var messageNode = doc.createElement("div");
+      messageNode.className = "grailed-plus__market-message";
+      messageNode.textContent = message;
+      section.appendChild(messageNode);
+    }
+
+    if (status === "results" && results.length > 0) {
+      var list = doc.createElement("div");
+      list.className = "grailed-plus__market-list";
+
+      results.forEach(function (entry) {
+        var row = doc.createElement("div");
+        row.className = "grailed-plus__market-row";
+
+        var link = doc.createElement("a");
+        link.className = "grailed-plus__market-link";
+        link.href = entry.url || "#";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = entry.title || "Listing";
+
+        var meta = doc.createElement("span");
+        meta.className = "grailed-plus__market-meta";
+        var parts = [];
+
+        if (Number.isFinite(entry.price)) {
+          parts.push(formatCurrencyByCode(entry.price, entry.currency || "USD"));
+        }
+        if (Number.isFinite(entry.score)) {
+          parts.push("score " + String(Math.round(entry.score)));
+        }
+        if (entry.deltaLabel) {
+          parts.push(entry.deltaLabel);
+        }
+
+        meta.textContent = parts.join(" | ");
+
+        row.appendChild(link);
+        row.appendChild(meta);
+        list.appendChild(row);
+      });
+
+      section.appendChild(list);
+    }
+
+    if (Number.isFinite(state.lastCheckedAt)) {
+      var stamp = doc.createElement("div");
+      stamp.className = "grailed-plus__market-stamp";
+      stamp.textContent = "Last checked " + formatRelativeTimestamp(state.lastCheckedAt);
+      section.appendChild(stamp);
+    }
+
+    var actions = doc.createElement("div");
+    actions.className = "grailed-plus__market-actions";
+
+    var compareButton = doc.createElement("button");
+    compareButton.type = "button";
+    compareButton.className = "grailed-plus__button gp-button grailed-plus__button--market-compare";
+    compareButton.textContent = status === "loading" ? "Searching..." : "Compare on Depop";
+    compareButton.disabled = status === "loading";
+    if (typeof compareButton.addEventListener === "function") {
+      compareButton.addEventListener("click", function () {
+        if (typeof onCompareClick === "function") {
+          onCompareClick();
+        }
+      });
+    }
+
+    actions.appendChild(compareButton);
+    section.appendChild(actions);
+
+    return section;
+  }
+
   function renderInsightsPanel(options) {
     var listing = options && options.listing ? options.listing : {};
     var metrics = options && options.metrics ? options.metrics : {};
@@ -1378,6 +1550,11 @@
     var rawListing = options && options.rawListing ? options.rawListing : null;
     var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
     var currencyContext = options && options.currencyContext ? options.currencyContext : null;
+    var marketCompare = options && options.marketCompare ? options.marketCompare : null;
+    var onMarketCompareClick =
+      options && typeof options.onMarketCompareClick === "function"
+        ? options.onMarketCompareClick
+        : null;
     var doc = (mountNode && mountNode.ownerDocument) || document;
 
     if (!mountNode || !doc || typeof doc.createElement !== "function") {
@@ -1423,13 +1600,14 @@
     panel.appendChild(
       createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt))
     );
+    panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick));
 
     var actions = doc.createElement("div");
     actions.className = "grailed-plus__actions";
 
     var metadataButton = doc.createElement("button");
     metadataButton.type = "button";
-    metadataButton.className = "grailed-plus__button";
+    metadataButton.className = "grailed-plus__button gp-button";
     metadataButton.textContent = "Listing Metadata";
     if (typeof metadataButton.addEventListener === "function") {
       metadataButton.addEventListener("click", function () {

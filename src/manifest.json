@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Grailed Plus",
-  "version": "2.1.2.1",
+  "version": "2.2.0",
   "description": "Listing insights, currency conversion, and dark mode for grailed.com.",
   "icons": {
     "64": "icons/Logo0.5x.png",
@@ -12,8 +12,13 @@
   "permissions": [
     "storage"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
-    "https://api.frankfurter.app/latest*"
+    "https://api.frankfurter.app/latest*",
+    "https://www.depop.com/search/*",
+    "https://www.depop.com/api/v3/search/*"
   ],
   "action": {
     "default_title": "Grailed Plus",

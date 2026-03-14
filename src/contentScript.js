@@ -1334,6 +1334,3172 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory();
   } else {
+    root.GrailedPlusQuerySynthesis = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Shared clothing taxonomy terms commonly present across Grailed and Depop listing metadata.
+  var DEFAULT_CATEGORY_KEYWORDS = [
+    "outerwear",
+    "jacket",
+    "coat",
+    "hoodie",
+    "fleece",
+    "parka",
+    "bomber",
+    "anorak",
+    "sweater",
+    "knitwear",
+    "cardigan",
+    "crewneck",
+    "sweatshirt",
+    "shirt",
+    "flannel",
+    "polo",
+    "tee",
+    "t-shirt",
+    "long sleeve",
+    "longsleeve",
+    "denim",
+    "jeans",
+    "pants",
+    "trousers",
+    "cargo",
+    "shorts",
+    "sneakers",
+    "shoes",
+    "boots",
+    "loafers",
+    "sandals",
+    "bags",
+    "bag",
+    "backpack",
+    "wallet",
+    "accessories",
+    "accessory",
+    "belt",
+    "hat",
+    "beanie",
+    "cap",
+    "scarf",
+    "jewelry",
+    "watch",
+    "sunglasses"
+  ];
+  var STOPWORDS = {
+    the: true,
+    and: true,
+    with: true,
+    for: true,
+    from: true,
+    this: true,
+    that: true,
+    grailed: true,
+    depop: true,
+    listing: true,
+    item: true,
+    size: true
+  };
+
+  function normalizeString(value) {
+    if (typeof value !== "string") {
+      return "";
+    }
+    return value.trim();
+  }
+
+  function normalizeToken(value) {
+    return normalizeString(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function tokenize(value, maxTokens) {
+    var normalized = normalizeToken(value);
+    if (!normalized) {
+      return [];
+    }
+
+    var tokens = normalized.split(" ").filter(function (token) {
+      return token && !STOPWORDS[token] && token.length <= 24;
+    });
+
+    tokens = collapseRepeatedTokenSequences(tokens);
+
+    if (!Number.isFinite(maxTokens) || maxTokens <= 0 || tokens.length <= maxTokens) {
+      return tokens;
+    }
+
+    return tokens.slice(0, maxTokens);
+  }
+
+  function collapseRepeatedTokenSequences(tokens) {
+    var output = Array.isArray(tokens) ? tokens.slice() : [];
+    if (!output.length) {
+      return output;
+    }
+
+    // First collapse immediate repeated words (for example: "tee tee").
+    output = output.filter(function (token, index) {
+      return index === 0 || token !== output[index - 1];
+    });
+
+    // Then collapse adjacent repeated phrases (for example: "drain gang drain gang").
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (var size = Math.min(4, Math.floor(output.length / 2)); size >= 1; size -= 1) {
+        for (var start = 0; start + size * 2 <= output.length; start += 1) {
+          var isRepeat = true;
+          for (var i = 0; i < size; i += 1) {
+            if (output[start + i] !== output[start + size + i]) {
+              isRepeat = false;
+              break;
+            }
+          }
+
+          if (isRepeat) {
+            output.splice(start + size, size);
+            changed = true;
+            break;
+          }
+        }
+        if (changed) {
+          break;
+        }
+      }
+    }
+
+    return output;
+  }
+
+  function normalizeQueryPhrase(value) {
+    var normalized = normalizeToken(value);
+    if (!normalized) {
+      return "";
+    }
+
+    var tokens = normalized.split(" ").filter(Boolean);
+    return collapseRepeatedTokenSequences(tokens).join(" ");
+  }
+
+  function uniqueStrings(values) {
+    var seen = Object.create(null);
+    var output = [];
+    values.forEach(function (value) {
+      var normalized = normalizeQueryPhrase(value);
+      if (!normalized || seen[normalized]) {
+        return;
+      }
+      seen[normalized] = true;
+      output.push(normalized);
+    });
+    return output;
+  }
+
+  function toSignalFragment(value) {
+    if (typeof value === "string") {
+      return normalizeString(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map(toSignalFragment)
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    if (value && typeof value === "object") {
+      var label = normalizeString(value.name || value.label || value.slug || value.title || "");
+      if (label) {
+        return label;
+      }
+    }
+
+    return "";
+  }
+
+  function getFirstNonEmpty(values) {
+    var i;
+    var value;
+    for (i = 0; i < values.length; i += 1) {
+      value = toSignalFragment(values[i]);
+      if (value) {
+        return value;
+      }
+    }
+    return "";
+  }
+
+  function collectCategorySignals(listing) {
+    var raw = listing && listing.rawListing && typeof listing.rawListing === "object"
+      ? listing.rawListing
+      : null;
+
+    return [
+      listing && listing.category,
+      listing && listing.subcategory,
+      raw && raw.category,
+      raw && raw.subcategory,
+      raw && raw.department,
+      raw && raw.productType,
+      raw && raw.product_type,
+      raw && raw.categoryPath,
+      raw && raw.category_path,
+      raw && raw.taxonomy,
+      raw && raw.breadcrumbs,
+      raw && raw.style,
+      raw && raw.tags,
+      listing && listing.title
+    ]
+      .map(toSignalFragment)
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function containsKeyword(signal, keyword) {
+    var normalizedSignal = normalizeToken(signal);
+    var normalizedKeyword = normalizeToken(keyword);
+    if (!normalizedSignal || !normalizedKeyword) {
+      return false;
+    }
+
+    var signalTokens = normalizedSignal.split(" ").filter(Boolean);
+    var keywordTokens = normalizedKeyword.split(" ").filter(Boolean);
+    if (!signalTokens.length || !keywordTokens.length) {
+      return false;
+    }
+
+    if (keywordTokens.length === 1) {
+      return signalTokens.indexOf(keywordTokens[0]) !== -1;
+    }
+
+    return normalizedSignal.indexOf(normalizedKeyword) !== -1;
+  }
+
+  function inferCategorySignal(listing) {
+    return normalizeToken(collectCategorySignals(listing));
+  }
+
+  function isAllowedCategory(listing, allowedKeywords) {
+    var signal = inferCategorySignal(listing);
+    if (!signal) {
+      return false;
+    }
+
+    var list = Array.isArray(allowedKeywords) && allowedKeywords.length
+      ? allowedKeywords
+      : DEFAULT_CATEGORY_KEYWORDS;
+
+    return list.some(function (keyword) {
+      return containsKeyword(signal, keyword);
+    });
+  }
+
+  function buildQueries(listing, options) {
+    var settings = options && typeof options === "object" ? options : {};
+    var maxQueries = Number.isFinite(Number(settings.maxQueries)) ? Number(settings.maxQueries) : 4;
+    var maxTokens = Number.isFinite(Number(settings.maxTokens)) ? Number(settings.maxTokens) : 6;
+
+    var allowCategoryFallback = settings.allowCategoryFallback !== false;
+    var categoryAllowed = isAllowedCategory(listing, settings.allowedCategoryKeywords);
+    if (!categoryAllowed && !allowCategoryFallback) {
+      return {
+        ok: false,
+        errorCode: "MISSING_LISTING_DATA",
+        reason: "unsupported_category",
+        queries: []
+      };
+    }
+
+    var raw = listing && listing.rawListing && typeof listing.rawListing === "object"
+      ? listing.rawListing
+      : null;
+
+    var brand = normalizeString(listing && listing.brand) ||
+      normalizeString(listing && listing.rawListing && listing.rawListing.designers && listing.rawListing.designers[0] && listing.rawListing.designers[0].name);
+    var size = normalizeString(listing && listing.size) ||
+      normalizeString(listing && listing.rawListing && listing.rawListing.size);
+    var category = getFirstNonEmpty([
+      listing && listing.category,
+      listing && listing.subcategory,
+      raw && raw.category,
+      raw && raw.subcategory,
+      raw && raw.department,
+      raw && raw.productType,
+      raw && raw.product_type,
+      raw && raw.categoryPath,
+      raw && raw.category_path
+    ]);
+    var title = normalizeString(listing && listing.title);
+
+    var titleTokens = tokenize(title, maxTokens);
+    var descriptor = titleTokens.slice(0, 3).join(" ");
+    var coreTitle = titleTokens.slice(0, Math.min(titleTokens.length, 5)).join(" ");
+
+    var candidates = [
+      [brand, descriptor].filter(Boolean).join(" "),
+      [brand, coreTitle].filter(Boolean).join(" "),
+      [coreTitle, size].filter(Boolean).join(" "),
+      [brand, size, category].filter(Boolean).join(" ")
+    ];
+
+    if (!categoryAllowed) {
+      // Safe fallback: keep searching without category constraints when mapping is incomplete.
+      candidates = [
+        [brand, coreTitle].filter(Boolean).join(" "),
+        [coreTitle, size].filter(Boolean).join(" "),
+        [brand, descriptor].filter(Boolean).join(" "),
+        coreTitle || title
+      ];
+    }
+
+    if (!brand && title) {
+      candidates.unshift(coreTitle || title);
+    }
+
+    var queries = uniqueStrings(candidates).slice(0, Math.max(1, maxQueries));
+
+    if (!queries.length) {
+      return {
+        ok: false,
+        errorCode: "MISSING_LISTING_DATA",
+        reason: "no_queries",
+        queries: []
+      };
+    }
+
+    return {
+      ok: true,
+      queries: queries,
+      reason: categoryAllowed ? "ok" : "category_fallback"
+    };
+  }
+
+  return {
+    DEFAULT_CATEGORY_KEYWORDS: DEFAULT_CATEGORY_KEYWORDS,
+    tokenize: tokenize,
+    isAllowedCategory: isAllowedCategory,
+    buildQueries: buildQueries
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusProviderFilters = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function normalizeString(value) {
+    if (typeof value !== "string") {
+      return "";
+    }
+    return value.trim();
+  }
+
+  function normalizeList(values) {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+
+    return values
+      .map(function (value) {
+        return normalizeString(value).toLowerCase();
+      })
+      .filter(Boolean);
+  }
+
+  function applyCandidateFilters(candidates, filters) {
+    var list = Array.isArray(candidates) ? candidates.slice() : [];
+    var rules = filters && typeof filters === "object" ? filters : {};
+    var blockedTerms = normalizeList(rules.blockedTerms);
+    var blockedSellers = normalizeList(rules.blockedSellers);
+    var allowSizes = normalizeList(rules.allowSizes);
+    var minPrice = Number(rules.minPrice);
+    var maxPrice = Number(rules.maxPrice);
+
+    return list.filter(function (candidate) {
+      var title = normalizeString(candidate && candidate.title).toLowerCase();
+      var description = normalizeString(candidate && candidate.description).toLowerCase();
+      var seller = normalizeString(candidate && candidate.seller).toLowerCase();
+      var size = normalizeString(candidate && candidate.size).toLowerCase();
+      var price = Number(candidate && candidate.price);
+
+      if (blockedTerms.some(function (term) { return title.indexOf(term) !== -1 || description.indexOf(term) !== -1; })) {
+        return false;
+      }
+
+      if (blockedSellers.length && seller && blockedSellers.indexOf(seller) !== -1) {
+        return false;
+      }
+
+      if (allowSizes.length && size && allowSizes.indexOf(size) === -1) {
+        return false;
+      }
+
+      if (Number.isFinite(minPrice) && Number.isFinite(price) && price < minPrice) {
+        return false;
+      }
+
+      if (Number.isFinite(maxPrice) && Number.isFinite(price) && price > maxPrice) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  return {
+    applyCandidateFilters: applyCandidateFilters
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusDepopProvider = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  var PARSER_VERSION = "depop-hybrid-v2";
+
+  var KNOWN_CURRENCY_CODES = {
+    USD: true,
+    EUR: true,
+    GBP: true,
+    CAD: true,
+    AUD: true,
+    JPY: true,
+    SEK: true,
+    NOK: true,
+    DKK: true,
+    CHF: true,
+    PLN: true
+  };
+
+  var CURRENCY_SYMBOL_MAP = {
+    "$": "USD",
+    "€": "EUR",
+    "£": "GBP",
+    "¥": "JPY",
+    "A$": "AUD",
+    "C$": "CAD"
+  };
+  var RUNTIME_FETCH_MESSAGE_TYPE = "grailed-plus:depop-search-fetch";
+
+  function normalizeString(value, fallback) {
+    if (typeof value === "string") {
+      var trimmed = value.trim();
+      return trimmed || fallback;
+    }
+    return fallback;
+  }
+
+  function normalizeNumber(value) {
+    if (value == null) {
+      return null;
+    }
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value !== "string") {
+      return null;
+    }
+    if (value.trim() === "") {
+      return null;
+    }
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function normalizeCurrencyCode(value) {
+    if (typeof value !== "string") {
+      return null;
+    }
+
+    var upper = value.trim().toUpperCase();
+    if (!upper || !KNOWN_CURRENCY_CODES[upper]) {
+      return null;
+    }
+    return upper;
+  }
+
+  function inferCurrencyFromLabel(label) {
+    var text = normalizeString(label, "");
+    if (!text) {
+      return null;
+    }
+
+    var codeMatch = text.match(/\b([A-Z]{3})\b/);
+    if (codeMatch && codeMatch[1]) {
+      var byCode = normalizeCurrencyCode(codeMatch[1]);
+      if (byCode) {
+        return byCode;
+      }
+    }
+
+    var symbolCandidates = ["A$", "C$", "€", "£", "¥", "$"];
+    for (var i = 0; i < symbolCandidates.length; i += 1) {
+      if (text.indexOf(symbolCandidates[i]) !== -1 && CURRENCY_SYMBOL_MAP[symbolCandidates[i]]) {
+        return CURRENCY_SYMBOL_MAP[symbolCandidates[i]];
+      }
+    }
+
+    return null;
+  }
+
+  function parseAmountFromLabel(label) {
+    var text = normalizeString(label, "");
+    if (!text) {
+      return null;
+    }
+
+    var cleaned = text.replace(/,/g, "");
+    var amountMatch = cleaned.match(/-?\d+(?:\.\d+)?/);
+    if (!amountMatch) {
+      return null;
+    }
+
+    var parsed = Number(amountMatch[0]);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function tryParseJsonLenient(text) {
+    var raw = normalizeString(text, "");
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      // Continue with lenient parsing.
+    }
+
+    var cleaned = raw.replace(/^\uFEFF/, "").trim();
+
+    // Handle common XSSI prefixes like )]}', and for(;;);
+    cleaned = cleaned.replace(/^\)\]\}',?\s*/, "");
+    cleaned = cleaned.replace(/^for\s*\(\s*;\s*;\s*\)\s*;?\s*/, "");
+
+    var firstBrace = cleaned.indexOf("{");
+    var firstBracket = cleaned.indexOf("[");
+    var start = -1;
+    if (firstBrace !== -1 && firstBracket !== -1) {
+      start = Math.min(firstBrace, firstBracket);
+    } else if (firstBrace !== -1) {
+      start = firstBrace;
+    } else if (firstBracket !== -1) {
+      start = firstBracket;
+    }
+
+    if (start > 0) {
+      cleaned = cleaned.slice(start);
+    }
+
+    try {
+      return JSON.parse(cleaned);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, Math.max(0, Number(ms) || 0));
+    });
+  }
+
+  function normalizeBoolean(value) {
+    if (typeof value === "boolean") {
+      return value;
+    }
+    if (typeof value === "string") {
+      var text = value.trim().toLowerCase();
+      if (text === "true") {
+        return true;
+      }
+      if (text === "false") {
+        return false;
+      }
+    }
+    return null;
+  }
+
+  function withJitter(ms) {
+    var base = Math.max(0, Number(ms) || 0);
+    var variance = base * 0.1;
+    var delta = (Math.random() * variance * 2) - variance;
+    return Math.max(0, Math.round(base + delta));
+  }
+
+  function mapHttpError(status) {
+    if (status === 403 || status === 401) {
+      return { errorCode: "FORBIDDEN_OR_BLOCKED", retryAfterMs: 120000 };
+    }
+    if (status === 429) {
+      return { errorCode: "RATE_LIMITED", retryAfterMs: 2000 };
+    }
+    if (status >= 500) {
+      return { errorCode: "NETWORK_ERROR", retryAfterMs: 1500 };
+    }
+    return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
+  }
+
+  function normalizeProductCandidate(candidate) {
+    var input = candidate && typeof candidate === "object" ? candidate : {};
+    var isHrefFallback = Boolean(input && input.raw && input.raw.source === "href_fallback");
+    var id = normalizeString(input.id, null);
+    var title = normalizeString(input.title, "Untitled");
+    var url = normalizeString(input.url, "");
+    var imageUrl = normalizeString(input.imageUrl, "");
+    var inferredAmount = parseAmountFromLabel(input.priceLabel);
+    var price = normalizeNumber(input.price);
+    if (price == null) {
+      price = inferredAmount;
+    }
+
+    if (price != null && price <= 0) {
+      price = null;
+    }
+
+    var currency =
+      normalizeCurrencyCode(input.currency) ||
+      inferCurrencyFromLabel(input.priceLabel) ||
+      "USD";
+
+    if (!id || !url || (price == null && !isHrefFallback)) {
+      return null;
+    }
+
+    return {
+      market: "depop",
+      id: id,
+      title: title,
+      url: url,
+      imageUrl: imageUrl,
+      price: price,
+      currency: currency,
+      raw: input.raw || null
+    };
+  }
+
+  function extractFromJsonLd(html) {
+    var matches = [];
+    var scriptRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    var scriptMatch = scriptRegex.exec(html);
+
+    while (scriptMatch) {
+      try {
+        var payload = JSON.parse(scriptMatch[1]);
+        var queue = Array.isArray(payload) ? payload.slice() : [payload];
+
+        while (queue.length) {
+          var node = queue.shift();
+          if (!node || typeof node !== "object") {
+            continue;
+          }
+
+          if (Array.isArray(node)) {
+            node.forEach(function (entry) {
+              queue.push(entry);
+            });
+            continue;
+          }
+
+          if (node["@type"] === "Product") {
+            var offer = node.offers && typeof node.offers === "object" ? node.offers : {};
+            var candidate = normalizeProductCandidate({
+              id: normalizeString(node.sku, null) || normalizeString(node.productID, null) || normalizeString(node.url, "").split("/").filter(Boolean).pop(),
+              title: normalizeString(node.name, "Untitled"),
+              url: normalizeString(node.url, ""),
+              imageUrl: Array.isArray(node.image) ? normalizeString(node.image[0], "") : normalizeString(node.image, ""),
+              price: normalizeNumber(offer.price),
+              currency: normalizeCurrencyCode(normalizeString(offer.priceCurrency, "")) || "USD",
+              priceLabel: normalizeString(offer.priceCurrency, "") + " " + normalizeString(offer.price, ""),
+              raw: node
+            });
+            if (candidate) {
+              matches.push(candidate);
+            }
+          }
+
+          Object.keys(node).forEach(function (key) {
+            if (node[key] && typeof node[key] === "object") {
+              queue.push(node[key]);
+            }
+          });
+        }
+      } catch (_) {
+        // Ignore malformed JSON-LD blocks.
+      }
+
+      scriptMatch = scriptRegex.exec(html);
+    }
+
+    return matches;
+  }
+
+  function getNestedValue(source, paths) {
+    var i;
+    var j;
+    var path;
+    var current;
+    for (i = 0; i < paths.length; i += 1) {
+      path = paths[i];
+      current = source;
+      for (j = 0; j < path.length; j += 1) {
+        if (!current || typeof current !== "object" || !(path[j] in current)) {
+          current = null;
+          break;
+        }
+        current = current[path[j]];
+      }
+      if (current != null) {
+        return current;
+      }
+    }
+    return null;
+  }
+
+  function readBalancedJsonArray(text, startIndex) {
+    var inString = false;
+    var escaped = false;
+    var depth = 0;
+    var i;
+    var ch;
+    for (i = startIndex; i < text.length; i += 1) {
+      ch = text[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (ch === "[") {
+        depth += 1;
+        continue;
+      }
+
+      if (ch === "]") {
+        depth -= 1;
+        if (depth === 0) {
+          return text.slice(startIndex, i + 1);
+        }
+      }
+    }
+
+    return "";
+  }
+
+  function normalizeFlightText(raw) {
+    if (!raw) {
+      return "";
+    }
+    return raw
+      .replace(/\\\"/g, '"')
+      .replace(/\\n/g, " ")
+      .replace(/\\t/g, " ");
+  }
+
+  function mapFlightProduct(product) {
+    var input = product && typeof product === "object" ? product : {};
+    var slug = normalizeString(getNestedValue(input, [["slug"], ["seo", "slug"]]), "");
+    var url =
+      normalizeString(getNestedValue(input, [["url"], ["path"], ["route"]]), "") ||
+      normalizeString(getNestedValue(input, [["permalink"]]), "");
+
+    if (!url && slug) {
+      url = "https://www.depop.com/products/" + slug + "/";
+    }
+
+    if (url && url.indexOf("/") === 0) {
+      url = "https://www.depop.com" + url;
+    }
+
+    var id =
+      normalizeString(getNestedValue(input, [["id"], ["productId"], ["product_id"], ["slug"]]), null) ||
+      (url ? normalizeString(url.split("/").filter(Boolean).pop(), null) : null);
+
+    var imageUrl =
+      normalizeString(
+        getNestedValue(input, [
+          ["imageUrl"],
+          ["image", "url"],
+          ["pictures", 0, "url"],
+          ["photos", 0, "url"]
+        ]),
+        ""
+      ) || "";
+
+    var amount = normalizeNumber(input.price);
+    if (amount == null) {
+      amount =
+        normalizeNumber(
+          getNestedValue(input, [
+            ["priceAmount"],
+            ["price_amount"],
+            ["price", "amount"],
+            ["priceInfo", "amount"],
+            ["price_info", "amount"],
+            ["pricing", "amount"],
+            ["pricing", "priceAmount"],
+            ["pricing", "price", "amount"],
+            ["pricing", "price", "display_amount"],
+            ["pricing", "display_price", "amount"],
+            ["pricing", "discounted_price", "amount"],
+            ["pricing", "discountedPrice", "amount"]
+          ])
+        );
+    }
+
+    var cents = normalizeNumber(
+      getNestedValue(input, [
+        ["priceCents"],
+        ["price_cents"],
+        ["price", "amountCents"],
+        ["price", "amount_cents"],
+        ["pricing", "price", "amount_cents"],
+        ["pricing", "discounted_price", "amount_cents"],
+        ["pricing", "discountedPrice", "amount_cents"]
+      ])
+    );
+
+    if (amount == null && cents != null) {
+      amount = cents / 100;
+    }
+
+    return normalizeProductCandidate({
+      id: id,
+      title: normalizeString(getNestedValue(input, [["title"], ["name"], ["description"]]), "Untitled"),
+      url: url,
+      imageUrl: imageUrl,
+      price: amount,
+      currency: normalizeString(
+        getNestedValue(input, [
+          ["currency"],
+          ["price", "currency"],
+          ["priceInfo", "currency"],
+          ["pricing", "currency"],
+          ["pricing", "price", "currency"],
+          ["pricing", "discounted_price", "currency"],
+          ["pricing", "discountedPrice", "currency"]
+        ]),
+        "USD"
+      ),
+      raw: input
+    });
+  }
+
+  function walkJsonTree(node, visitor) {
+    if (node == null) {
+      return;
+    }
+    visitor(node);
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i += 1) {
+        walkJsonTree(node[i], visitor);
+      }
+      return;
+    }
+    if (typeof node === "object") {
+      var keys = Object.keys(node);
+      for (var k = 0; k < keys.length; k += 1) {
+        walkJsonTree(node[keys[k]], visitor);
+      }
+    }
+  }
+
+  function parseCandidatesFromApiPayload(payload) {
+    var candidates = [];
+    var seen = Object.create(null);
+
+    walkJsonTree(payload, function (node) {
+      if (!node || typeof node !== "object" || Array.isArray(node)) {
+        return;
+      }
+
+      var maybeId = getNestedValue(node, [["id"], ["product_id"], ["productId"], ["slug"]]);
+      var maybeUrl = getNestedValue(node, [["url"], ["path"], ["permalink"], ["route"]]);
+      var maybePrice = getNestedValue(node, [["price"], ["price_amount"], ["priceAmount"], ["price", "amount"]]);
+
+      if (maybeId == null && maybeUrl == null && maybePrice == null) {
+        return;
+      }
+
+      var normalized = mapFlightProduct(node);
+      if (!normalized || !normalized.id || seen[normalized.id]) {
+        return;
+      }
+
+      seen[normalized.id] = true;
+      candidates.push(normalized);
+    });
+
+    return candidates;
+  }
+
+  function hasNoResultsInApiPayload(payload) {
+    var foundZero = false;
+
+    walkJsonTree(payload, function (node) {
+      if (!node || typeof node !== "object" || Array.isArray(node)) {
+        return;
+      }
+
+      var totalCount = normalizeNumber(node.total_count);
+      var resultCount = normalizeNumber(node.result_count);
+      var total = normalizeNumber(node.total);
+      var count = normalizeNumber(node.count);
+
+      if (totalCount === 0 || resultCount === 0 || total === 0 || count === 0) {
+        foundZero = true;
+      }
+    });
+
+    return foundZero;
+  }
+
+  function extractFromNextFlightPayload(html) {
+    var scripts = [];
+    var scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+    var scriptMatch = scriptRegex.exec(html);
+    while (scriptMatch) {
+      if (scriptMatch[1] && scriptMatch[1].indexOf("self.__next_f.push") !== -1) {
+        scripts.push(scriptMatch[1]);
+      }
+      scriptMatch = scriptRegex.exec(html);
+    }
+
+    if (!scripts.length) {
+      return [];
+    }
+
+    var decodedChunks = [];
+    var pushRegex = /self\.__next_f\.push\(\[1,\s*"((?:\\.|[^"\\])*)"\]\)/g;
+    var i;
+    var pushMatch;
+    for (i = 0; i < scripts.length; i += 1) {
+      pushMatch = pushRegex.exec(scripts[i]);
+      while (pushMatch) {
+        try {
+          decodedChunks.push(JSON.parse('"' + pushMatch[1] + '"'));
+        } catch (_) {
+          decodedChunks.push(pushMatch[1]);
+        }
+        pushMatch = pushRegex.exec(scripts[i]);
+      }
+      pushRegex.lastIndex = 0;
+    }
+
+    var allText = normalizeFlightText(decodedChunks.join("\n"));
+    if (!allText) {
+      return [];
+    }
+
+    var candidates = [];
+    var searchToken = '"products":[';
+    var offset = allText.indexOf(searchToken);
+    while (offset !== -1) {
+      var arrayStart = offset + searchToken.length - 1;
+      var jsonArray = readBalancedJsonArray(allText, arrayStart);
+      if (jsonArray) {
+        try {
+          var products = JSON.parse(jsonArray);
+          if (Array.isArray(products)) {
+            products.forEach(function (product) {
+              var normalized = mapFlightProduct(product);
+              if (normalized) {
+                candidates.push(normalized);
+              }
+            });
+          }
+        } catch (_) {
+          // Ignore malformed slices and continue scanning.
+        }
+      }
+
+      offset = allText.indexOf(searchToken, offset + searchToken.length);
+    }
+
+    return candidates;
+  }
+
+  function extractFromNextDataPayload(html) {
+    var match = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+    if (!match || !match[1]) {
+      return [];
+    }
+
+    var parsed = tryParseJsonLenient(match[1]);
+    if (!parsed || typeof parsed !== "object") {
+      return [];
+    }
+
+    return parseCandidatesFromApiPayload(parsed)
+      .map(normalizeProductCandidate)
+      .filter(Boolean);
+  }
+
+  function extractFromHrefFallback(html) {
+    var output = [];
+    var seen = Object.create(null);
+    var hrefRegex = /href=["'](\/products\/[^"'#?]+)["']/gi;
+    var match = hrefRegex.exec(html);
+
+    while (match) {
+      var path = normalizeString(match[1], "");
+      if (path && !seen[path]) {
+        seen[path] = true;
+        var slug = path.split("/").filter(Boolean).pop() || "item";
+        var start = Math.max(0, (match.index || 0) - 500);
+        var end = Math.min(html.length, (match.index || 0) + 900);
+        var snippet = html.slice(start, end);
+
+        var titleMatch = snippet.match(/aria-label=["']([^"']+)["']/i);
+        if (!titleMatch) {
+          titleMatch = snippet.match(/alt=["']([^"']+)["']/i);
+        }
+
+        var amountMatch = snippet.match(/(?:\$|€|£|¥|USD\s+|EUR\s+|GBP\s+|CAD\s+|AUD\s+)(\d+(?:\.\d+)?)/i);
+        var inferredPrice = amountMatch ? normalizeNumber(amountMatch[1]) : null;
+        if (inferredPrice != null && inferredPrice <= 0) {
+          inferredPrice = null;
+        }
+        var inferredCurrency = inferCurrencyFromLabel(snippet) || "USD";
+
+        output.push({
+          market: "depop",
+          id: slug,
+          title: normalizeString(titleMatch && titleMatch[1], slug.replace(/-/g, " ")),
+          url: "https://www.depop.com" + path,
+          imageUrl: "",
+          price: inferredPrice,
+          currency: inferredCurrency,
+          raw: {
+            source: "href_fallback"
+          }
+        });
+      }
+      match = hrefRegex.exec(html);
+    }
+
+    return output;
+  }
+
+  function parseCandidates(html) {
+    if (typeof html !== "string" || !html.trim()) {
+      return {
+        candidates: [],
+        parserMismatchLikely: true
+      };
+    }
+
+    var jsonCandidates = extractFromJsonLd(html);
+    if (jsonCandidates.length) {
+      return {
+        candidates: jsonCandidates,
+        parserMismatchLikely: false
+      };
+    }
+
+    var nextFlightCandidates = extractFromNextFlightPayload(html);
+    if (nextFlightCandidates.length) {
+      return {
+        candidates: nextFlightCandidates,
+        parserMismatchLikely: false
+      };
+    }
+
+    var nextDataCandidates = extractFromNextDataPayload(html);
+    if (nextDataCandidates.length) {
+      return {
+        candidates: nextDataCandidates,
+        parserMismatchLikely: false
+      };
+    }
+
+    // Keep href-derived candidates even when price is unavailable.
+    // Search fallback pages can still provide valid listing URLs.
+    var hrefCandidates = extractFromHrefFallback(html);
+
+    return {
+      candidates: hrefCandidates,
+      parserMismatchLikely: true
+    };
+  }
+
+  function hasProductResultsMarker(html) {
+    var text = normalizeString(html, "").toLowerCase();
+    if (!text) {
+      return false;
+    }
+
+    return (
+      text.indexOf("styles_productgrid__") !== -1 ||
+      text.indexOf("styles_productcardroot__") !== -1 ||
+      text.indexOf("/products/") !== -1
+    );
+  }
+
+  function isBlockedHtml(html) {
+    var text = normalizeString(html, "").toLowerCase();
+    if (!text) {
+      return false;
+    }
+
+    var blockedMarkers = [
+      "attention required! | cloudflare",
+      "sorry, you have been blocked",
+      "cloudflare ray id",
+      "cf-error-details",
+      "captcha"
+    ];
+
+    for (var i = 0; i < blockedMarkers.length; i += 1) {
+      if (text.indexOf(blockedMarkers[i]) !== -1) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function isLikelyLoadingShellHtml(html) {
+    var text = normalizeString(html, "").toLowerCase();
+    if (!text) {
+      return false;
+    }
+
+    var loadingMarkers = [
+      "loading results",
+      "styles_shimmerstyles",
+      "_outerbounce_"
+    ];
+
+    for (var i = 0; i < loadingMarkers.length; i += 1) {
+      if (text.indexOf(loadingMarkers[i]) !== -1) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function hasNoResultsMarker(html) {
+    var text = normalizeString(html, "");
+    if (!text) {
+      return false;
+    }
+
+    // Depop Next.js flight payload often embeds backend search totals.
+    return (
+      text.indexOf('"total_count":0') !== -1 ||
+      text.indexOf('"result_count":0') !== -1 ||
+      text.indexOf('\\"total_count\\":0') !== -1 ||
+      text.indexOf('\\"result_count\\":0') !== -1 ||
+      text.indexOf('"NoMatchingResults"') !== -1
+    );
+  }
+
+  function shouldReturnNoResults(html) {
+    var text = normalizeString(html, "");
+    if (!text) {
+      return false;
+    }
+
+    // Depop can show a local no-results banner while still rendering
+    // valid cross-border listings in the product grid.
+    if (hasProductResultsMarker(text)) {
+      return false;
+    }
+
+    // Some Next.js search shells include loading placeholders while also
+    // embedding definitive dehydrated empty search state.
+    var hasEmbeddedEmptySearch =
+      text.indexOf("product_search") !== -1 &&
+      (text.indexOf('"products":[]') !== -1 || text.indexOf('\\"products\\":[]') !== -1);
+
+    if (hasEmbeddedEmptySearch && hasNoResultsMarker(text)) {
+      return true;
+    }
+
+    // Next.js flight payloads can carry transient zero-count markers while
+    // the page is still in a loading shell state.
+    return hasNoResultsMarker(text) && !isLikelyLoadingShellHtml(text);
+  }
+
+  function dedupeById(candidates) {
+    var seen = Object.create(null);
+    return candidates.filter(function (candidate) {
+      var id = normalizeString(candidate && candidate.id, "");
+      if (!id || seen[id]) {
+        return false;
+      }
+      seen[id] = true;
+      return true;
+    });
+  }
+
+  function hasMeaningfulPrice(candidate) {
+    var price = normalizeNumber(candidate && candidate.price);
+    return price != null && price > 0;
+  }
+
+  function hasAnyUsableCandidate(candidates) {
+    return Array.isArray(candidates) && candidates.some(function (candidate) {
+      return Boolean(candidate && normalizeString(candidate.id, "") && normalizeString(candidate.url, ""));
+    });
+  }
+
+  function buildBroadFallbackQuery(query) {
+    var text = normalizeString(query, "").toLowerCase();
+    if (!text) {
+      return "";
+    }
+
+    var tokens = text
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(function (token) {
+        return token && token.length > 1;
+      });
+
+    if (!tokens.length) {
+      return "";
+    }
+
+    return tokens.slice(0, 2).join(" ");
+  }
+
+  function resolveRuntimeSendMessage() {
+    if (typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function") {
+      return function (payload) {
+        return new Promise(function (resolve) {
+          try {
+            chrome.runtime.sendMessage(payload, function (response) {
+              resolve(response || null);
+            });
+          } catch (_) {
+            resolve(null);
+          }
+        });
+      };
+    }
+
+    if (typeof browser !== "undefined" && browser.runtime && typeof browser.runtime.sendMessage === "function") {
+      return function (payload) {
+        return Promise.resolve(browser.runtime.sendMessage(payload)).catch(function () {
+          return null;
+        });
+      };
+    }
+
+    return null;
+  }
+
+  function buildApiSearchUrl(query, payload) {
+    var input = payload && typeof payload === "object" ? payload : {};
+    var params = new URLSearchParams();
+    params.set("what", normalizeString(query, ""));
+
+    var country = normalizeString(input.country, "");
+    if (country) {
+      params.set("country", country.toLowerCase());
+    }
+
+    var currency = normalizeCurrencyCode(input.currency || "") || "USD";
+    params.set("currency", currency);
+
+    var searchFrom = normalizeString(input.from, "");
+    if (searchFrom) {
+      params.set("from", searchFrom);
+    }
+
+    var gender = normalizeString(input.gender, "");
+    if (gender) {
+      params.set("gender", gender);
+    }
+
+    var group = normalizeString(input.group, "");
+    if (group) {
+      params.set("groups", group);
+    }
+
+    var productTypes = Array.isArray(input.productTypes) ? input.productTypes.filter(Boolean) : [];
+    if (productTypes.length) {
+      params.set("product_types", productTypes.join(","));
+    }
+
+    var isKids = normalizeBoolean(input.isKids);
+    if (isKids != null) {
+      params.set("is_kids", String(isKids));
+    }
+
+    return "https://www.depop.com/api/v3/search/products/?" + params.toString();
+  }
+
+  async function fetchSearchPage(url, fetchImpl, runtimeSendMessage, acceptHeader) {
+    var accept = normalizeString(acceptHeader, "") || "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+
+    if (typeof runtimeSendMessage === "function") {
+      var runtimeResponse = await runtimeSendMessage({
+        type: RUNTIME_FETCH_MESSAGE_TYPE,
+        url: url,
+        accept: accept
+      });
+
+      if (runtimeResponse && typeof runtimeResponse === "object") {
+        return {
+          ok: Boolean(runtimeResponse.ok),
+          status: Number(runtimeResponse.status) || 0,
+          text: normalizeString(runtimeResponse.text, ""),
+          source: "runtime"
+        };
+      }
+    }
+
+    if (typeof fetchImpl !== "function") {
+      return {
+        ok: false,
+        status: 0,
+        text: "",
+        source: "none"
+      };
+    }
+
+    try {
+      var response = await fetchImpl(url, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          Accept: accept
+        }
+      });
+      var text = "";
+      try {
+        text = await response.text();
+      } catch (_) {
+        text = "";
+      }
+
+      return {
+        ok: Boolean(response && response.ok),
+        status: response ? Number(response.status) : 0,
+        text: text,
+        source: "fetch"
+      };
+    } catch (_) {
+      return {
+        ok: false,
+        status: 0,
+        text: "",
+        source: "fetch"
+      };
+    }
+  }
+
+  async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage) {
+    var apiUrl = buildApiSearchUrl(query, payload);
+    var fetched = await fetchSearchPage(
+      apiUrl,
+      fetchImpl,
+      runtimeSendMessage,
+      "application/json,text/plain,*/*"
+    );
+
+    if (!fetched.ok) {
+      if (fetched.status === 0) {
+        return {
+          ok: false,
+          requestCount: 1,
+          errorCode: "NETWORK_ERROR",
+          retryAfterMs: 1500
+        };
+      }
+
+      var mappedError = mapHttpError(fetched.status);
+      return {
+        ok: false,
+        requestCount: 1,
+        errorCode: mappedError.errorCode,
+        retryAfterMs: mappedError.retryAfterMs
+      };
+    }
+
+    var text = normalizeString(fetched.text, "");
+    if (!text) {
+      return {
+        ok: false,
+        requestCount: 1,
+        errorCode: "PARSE_ERROR",
+        retryAfterMs: 0
+      };
+    }
+
+    var parsed = tryParseJsonLenient(text);
+    if (!parsed) {
+      // Some edge responses are HTML/challenge content even on API routes.
+      // Reuse HTML parser before treating it as a hard parse failure.
+      var htmlParsed = parseCandidates(text);
+      var htmlCandidates = dedupeById(htmlParsed.candidates || [])
+        .map(normalizeProductCandidate)
+        .filter(Boolean);
+
+      if (htmlCandidates.length) {
+        return {
+          ok: true,
+          requestCount: 1,
+          candidates: htmlCandidates
+        };
+      }
+
+      return {
+        ok: false,
+        requestCount: 1,
+        errorCode: "PARSE_ERROR",
+        retryAfterMs: 0
+      };
+    }
+
+    var candidates = dedupeById(parseCandidatesFromApiPayload(parsed) || [])
+      .map(normalizeProductCandidate)
+      .filter(Boolean);
+
+    if (candidates.length) {
+      return {
+        ok: true,
+        requestCount: 1,
+        candidates: candidates
+      };
+    }
+
+    if (hasNoResultsInApiPayload(parsed)) {
+      return {
+        ok: false,
+        requestCount: 1,
+        errorCode: "NO_RESULTS",
+        retryAfterMs: 0
+      };
+    }
+
+    return {
+      ok: false,
+      requestCount: 1,
+      errorCode: "PARSE_ERROR",
+      retryAfterMs: 0
+    };
+  }
+
+  async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches) {
+    var list = Array.isArray(candidates) ? candidates : [];
+    var fetchBudget = Math.max(0, Number(maxFetches) || 0);
+    if (!list.length || fetchBudget < 1) {
+      return {
+        candidates: [],
+        requestCount: 0
+      };
+    }
+
+    var output = [];
+    var seenIds = Object.create(null);
+    var requestCount = 0;
+
+    for (var i = 0; i < list.length && requestCount < fetchBudget; i += 1) {
+      var candidate = list[i];
+      var url = normalizeString(candidate && candidate.url, "");
+      if (!url) {
+        continue;
+      }
+
+      var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+      requestCount += 1;
+      if (!fetched.ok || !fetched.text) {
+        continue;
+      }
+
+      var parsed = parseCandidates(fetched.text);
+      var normalized = dedupeById(parsed.candidates || [])
+        .map(normalizeProductCandidate)
+        .filter(Boolean)
+        .filter(hasMeaningfulPrice);
+
+      if (!normalized.length) {
+        continue;
+      }
+
+      var best = normalized[0];
+      var id = normalizeString(best && best.id, "");
+      if (!id || seenIds[id]) {
+        continue;
+      }
+
+      seenIds[id] = true;
+      output.push(best);
+    }
+
+    return {
+      candidates: output,
+      requestCount: requestCount
+    };
+  }
+
+  async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs) {
+    var fallbackQuery = normalizeString(query, "");
+    if (!fallbackQuery) {
+      return {
+        ok: false,
+        candidates: [],
+        requestCount: 0,
+        errorCode: "FORBIDDEN_OR_BLOCKED",
+        retryAfterMs: 120000,
+        partial: true
+      };
+    }
+
+    await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
+
+    var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
+    var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
+
+    if (!fetched.ok && fetched.status === 0) {
+      return {
+        ok: false,
+        candidates: [],
+        requestCount: 0,
+        errorCode: "NETWORK_ERROR",
+        retryAfterMs: 2000,
+        partial: true
+      };
+    }
+
+    if (!fetched.ok) {
+      var mapped = mapHttpError(fetched.status);
+      return {
+        ok: false,
+        candidates: [],
+        requestCount: 1,
+        errorCode: mapped.errorCode,
+        retryAfterMs: mapped.retryAfterMs,
+        partial: true
+      };
+    }
+
+    var html = fetched.text;
+    if (!html) {
+      return {
+        ok: false,
+        candidates: [],
+        requestCount: 1,
+        errorCode: "PARSE_ERROR",
+        retryAfterMs: 0,
+        partial: true
+      };
+    }
+
+    var parsed = parseCandidates(html);
+    var normalized = dedupeById(parsed.candidates || [])
+      .map(normalizeProductCandidate)
+      .filter(Boolean);
+    var normalizedWithPrice = normalized.filter(hasMeaningfulPrice);
+
+    var latestHtml = html;
+    if (!normalizedWithPrice.length && isLikelyLoadingShellHtml(latestHtml)) {
+      var loadingAttempts = 0;
+      var maxLoadingRetries = 2;
+
+      while (!normalizedWithPrice.length && loadingAttempts < maxLoadingRetries) {
+        await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
+        var retryFetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
+        if (!retryFetched.ok || !retryFetched.text) {
+          break;
+        }
+
+        latestHtml = retryFetched.text;
+        var retryParsed = parseCandidates(latestHtml);
+        normalized = dedupeById(retryParsed.candidates || [])
+          .map(normalizeProductCandidate)
+          .filter(Boolean);
+        normalizedWithPrice = normalized.filter(hasMeaningfulPrice);
+
+        if (!isLikelyLoadingShellHtml(latestHtml)) {
+          break;
+        }
+
+        loadingAttempts += 1;
+      }
+    }
+
+    if (!normalizedWithPrice.length) {
+      if (shouldReturnNoResults(latestHtml)) {
+        return {
+          ok: false,
+          candidates: [],
+          requestCount: 1,
+          errorCode: "NO_RESULTS",
+          retryAfterMs: 0,
+          partial: true
+        };
+      }
+
+      return {
+        ok: false,
+        candidates: [],
+        requestCount: 1,
+        errorCode: "PARSE_ERROR",
+        retryAfterMs: 0,
+        partial: true
+      };
+    }
+
+    return {
+      ok: true,
+      candidates: normalizedWithPrice,
+      requestCount: 1,
+      partial: true
+    };
+  }
+
+  function createDepopProvider(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var fetchImpl = typeof config.fetchImpl === "function" ? config.fetchImpl : (typeof fetch === "function" ? fetch : null);
+    var runtimeSendMessage =
+      typeof config.runtimeSendMessage === "function"
+        ? config.runtimeSendMessage
+        : resolveRuntimeSendMessage();
+    var maxRequests = Number.isFinite(Number(config.maxRequests)) ? Number(config.maxRequests) : 3;
+    var cooldownMs = Number.isFinite(Number(config.cooldownMs)) ? Number(config.cooldownMs) : 1200;
+
+    return {
+      market: "depop",
+      search: async function (input) {
+        if (!fetchImpl && !runtimeSendMessage) {
+          return {
+            ok: false,
+            candidates: [],
+            fetchedAt: Date.now(),
+            partial: false,
+            sourceType: "html",
+            parserVersion: PARSER_VERSION,
+            errorCode: "NETWORK_ERROR",
+            retryAfterMs: 1500
+          };
+        }
+
+        var payload = input && typeof input === "object" ? input : {};
+        var queries = Array.isArray(payload.queries) ? payload.queries.filter(Boolean) : [];
+        var limit = Number.isFinite(Number(payload.limit)) ? Number(payload.limit) : 12;
+        var requestTotal = 0;
+        var partial = false;
+        var merged = [];
+        var blockedFallbackAttempted = false;
+        var sourceType = "html";
+        var sawNoResults = false;
+
+        if (!queries.length) {
+          return {
+            ok: false,
+            candidates: [],
+            fetchedAt: Date.now(),
+            partial: false,
+            sourceType: "html",
+            parserVersion: PARSER_VERSION,
+            errorCode: "MISSING_LISTING_DATA",
+            retryAfterMs: 0
+          };
+        }
+
+        for (var i = 0; i < queries.length && requestTotal < maxRequests; i += 1) {
+          var query = queries[i];
+          var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
+
+          var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+          if (!fetched.ok && fetched.status === 0) {
+            partial = true;
+            continue;
+          }
+
+          requestTotal += 1;
+
+          if (!fetched.ok) {
+            if (requestTotal < maxRequests) {
+              var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
+              requestTotal += apiOnHttpError.requestCount || 0;
+
+              if (apiOnHttpError.ok) {
+                merged = merged.concat(apiOnHttpError.candidates || []);
+                partial = true;
+                sourceType = "json";
+                continue;
+              }
+
+              if (apiOnHttpError.errorCode === "NO_RESULTS") {
+                sawNoResults = true;
+                continue;
+              }
+            }
+
+            var mapped = mapHttpError(fetched.status);
+            if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !blockedFallbackAttempted) {
+              blockedFallbackAttempted = true;
+              var fallbackAttempt = await trySingleQueryFallback(
+                fetchImpl,
+                runtimeSendMessage,
+                queries[0],
+                cooldownMs
+              );
+              requestTotal += fallbackAttempt.requestCount || 0;
+
+              if (fallbackAttempt.ok) {
+                merged = merged.concat(fallbackAttempt.candidates || []);
+                partial = true;
+                break;
+              }
+
+              return {
+                ok: false,
+                candidates: [],
+                fetchedAt: Date.now(),
+                partial: true,
+                sourceType: "html",
+                parserVersion: PARSER_VERSION,
+                errorCode: fallbackAttempt.errorCode || mapped.errorCode,
+                retryAfterMs: normalizeNumber(fallbackAttempt.retryAfterMs) || mapped.retryAfterMs
+              };
+            }
+
+            if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+              return {
+                ok: false,
+                candidates: [],
+                fetchedAt: Date.now(),
+                partial: partial,
+                sourceType: "html",
+                parserVersion: PARSER_VERSION,
+                errorCode: mapped.errorCode,
+                retryAfterMs: mapped.retryAfterMs
+              };
+            }
+            partial = true;
+            continue;
+          }
+
+          var html = fetched.text;
+          if (!html) {
+            partial = true;
+            continue;
+          }
+
+          var latestHtml = html;
+
+          var parsed = parseCandidates(html);
+          if (isBlockedHtml(html)) {
+            return {
+              ok: false,
+              candidates: [],
+              fetchedAt: Date.now(),
+              partial: partial,
+              sourceType: "html",
+              parserVersion: PARSER_VERSION,
+              errorCode: "FORBIDDEN_OR_BLOCKED",
+              retryAfterMs: 120000
+            };
+          }
+
+          var parsedCandidates = dedupeById(parsed.candidates || [])
+            .map(normalizeProductCandidate)
+            .filter(Boolean);
+          var pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
+
+          if (
+            !pricedParsedCandidates.length &&
+            isLikelyLoadingShellHtml(latestHtml) &&
+            requestTotal + 1 < maxRequests
+          ) {
+            var loadingAttempts = 0;
+            var maxLoadingRetries = 2;
+
+            while (
+              !pricedParsedCandidates.length &&
+              loadingAttempts < maxLoadingRetries &&
+              requestTotal + 1 < maxRequests
+            ) {
+              await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
+              var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+              requestTotal += 1;
+
+              if (!retryFetched.ok || !retryFetched.text) {
+                partial = true;
+                break;
+              }
+
+              latestHtml = retryFetched.text;
+              if (isBlockedHtml(latestHtml)) {
+                return {
+                  ok: false,
+                  candidates: [],
+                  fetchedAt: Date.now(),
+                  partial: partial,
+                  sourceType: "html",
+                  parserVersion: PARSER_VERSION,
+                  errorCode: "FORBIDDEN_OR_BLOCKED",
+                  retryAfterMs: 120000
+                };
+              }
+
+              var retryParsed = parseCandidates(latestHtml);
+              parsedCandidates = dedupeById(retryParsed.candidates || [])
+                .map(normalizeProductCandidate)
+                .filter(Boolean);
+              pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
+
+              if (!isLikelyLoadingShellHtml(latestHtml)) {
+                break;
+              }
+
+              loadingAttempts += 1;
+            }
+          }
+
+          if (!pricedParsedCandidates.length && requestTotal < maxRequests) {
+            var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
+            requestTotal += apiFallback.requestCount || 0;
+
+            if (apiFallback.ok) {
+              parsedCandidates = dedupeById(apiFallback.candidates || [])
+                .map(normalizeProductCandidate)
+                .filter(Boolean);
+              pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
+              sourceType = sourceType === "html" ? "hybrid" : sourceType;
+            } else if (apiFallback.errorCode === "NO_RESULTS") {
+              sawNoResults = true;
+              continue;
+            }
+          }
+
+          if (!pricedParsedCandidates.length && parsedCandidates.length && requestTotal < maxRequests) {
+            var remainingBudget = Math.max(0, maxRequests - requestTotal);
+            var enriched = await enrichHrefFallbackCandidates(
+              parsedCandidates,
+              fetchImpl,
+              runtimeSendMessage,
+              remainingBudget
+            );
+
+            requestTotal += enriched.requestCount || 0;
+            pricedParsedCandidates = dedupeById(enriched.candidates || [])
+              .map(normalizeProductCandidate)
+              .filter(Boolean)
+              .filter(hasMeaningfulPrice);
+          }
+
+          if (!pricedParsedCandidates.length && !hasAnyUsableCandidate(parsedCandidates) && shouldReturnNoResults(latestHtml)) {
+            sawNoResults = true;
+            continue;
+          }
+
+          if (!pricedParsedCandidates.length && hasAnyUsableCandidate(parsedCandidates)) {
+            // Prefer priced candidates when available, but keep unpriced matches as a
+            // better fallback than a false NO_RESULTS state.
+            pricedParsedCandidates = parsedCandidates.filter(function (candidate) {
+              var price = normalizeNumber(candidate && candidate.price);
+              return price == null || price > 0;
+            });
+          }
+
+          merged = merged.concat(pricedParsedCandidates);
+
+          if (requestTotal < maxRequests && i < queries.length - 1) {
+            await sleep(withJitter(cooldownMs));
+          }
+        }
+
+        var normalized = dedupeById(merged)
+          .slice(0, Math.max(1, limit));
+
+        if (!normalized.length) {
+          if (sawNoResults && queries.length) {
+            var broadQuery = buildBroadFallbackQuery(queries[0]);
+            if (broadQuery && broadQuery !== normalizeString(queries[0], "").toLowerCase()) {
+              var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
+              var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage);
+              requestTotal += 1;
+
+              if (broadFetched.ok && broadFetched.text) {
+                var broadParsed = parseCandidates(broadFetched.text);
+                var broadCandidates = dedupeById(broadParsed.candidates || [])
+                  .map(normalizeProductCandidate)
+                  .filter(Boolean)
+                  .filter(function (candidate) {
+                    var price = normalizeNumber(candidate && candidate.price);
+                    return price == null || price > 0;
+                  });
+
+                if (broadCandidates.length) {
+                  return {
+                    ok: true,
+                    candidates: broadCandidates.slice(0, Math.max(1, limit)),
+                    fetchedAt: Date.now(),
+                    partial: true,
+                    sourceType: sourceType,
+                    parserVersion: PARSER_VERSION,
+                    requestCount: requestTotal
+                  };
+                }
+              }
+            }
+          }
+
+          if (sawNoResults) {
+            return {
+              ok: false,
+              candidates: [],
+              fetchedAt: Date.now(),
+              partial: partial,
+              sourceType: "html",
+              parserVersion: PARSER_VERSION,
+              errorCode: "NO_RESULTS",
+              retryAfterMs: 0
+            };
+          }
+
+          return {
+            ok: false,
+            candidates: [],
+            fetchedAt: Date.now(),
+            partial: partial,
+            sourceType: "html",
+            parserVersion: PARSER_VERSION,
+            errorCode: "PARSE_ERROR",
+            retryAfterMs: 0
+          };
+        }
+
+        return {
+          ok: true,
+          candidates: normalized,
+          fetchedAt: Date.now(),
+          partial: partial,
+          sourceType: sourceType,
+          parserVersion: PARSER_VERSION,
+          requestCount: requestTotal
+        };
+      }
+    };
+  }
+
+  return {
+    PARSER_VERSION: PARSER_VERSION,
+    parseCandidates: parseCandidates,
+    createDepopProvider: createDepopProvider,
+    mapHttpError: mapHttpError
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusMarketProviders = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function normalizeString(value, fallback) {
+    if (typeof value === "string") {
+      var trimmed = value.trim();
+      return trimmed || fallback;
+    }
+
+    return fallback;
+  }
+
+  function normalizeNumber(value) {
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function normalizeCandidate(candidate, market) {
+    var input = candidate && typeof candidate === "object" ? candidate : {};
+    var normalizedMarket = normalizeString(input.market, market || "unknown");
+    var normalizedCurrency = normalizeString(input.currency, "USD");
+    var normalizedId = normalizeString(input.id, null);
+    var normalizedTitle = normalizeString(input.title, "Untitled");
+    var normalizedUrl = normalizeString(input.url, "");
+    var normalizedPrice = normalizeNumber(input.price);
+
+    if (!normalizedId || !normalizedUrl || normalizedPrice == null || normalizedPrice < 0) {
+      return null;
+    }
+
+    return {
+      market: normalizedMarket,
+      id: normalizedId,
+      title: normalizedTitle,
+      url: normalizedUrl,
+      imageUrl: normalizeString(input.imageUrl, ""),
+      price: normalizedPrice,
+      currency: normalizedCurrency,
+      score: normalizeNumber(input.score),
+      deltaAbsolute: normalizeNumber(input.deltaAbsolute),
+      deltaPercent: normalizeNumber(input.deltaPercent),
+      raw: input.raw || null
+    };
+  }
+
+  function normalizeProviderResult(result, market) {
+    var input = result && typeof result === "object" ? result : {};
+    var rawCandidates = Array.isArray(input.candidates) ? input.candidates : [];
+    var candidates = rawCandidates
+      .map(function (candidate) {
+        return normalizeCandidate(candidate, market);
+      })
+      .filter(Boolean);
+
+    return {
+      ok: Boolean(input.ok),
+      candidates: candidates,
+      fetchedAt: Number.isFinite(Number(input.fetchedAt)) ? Number(input.fetchedAt) : Date.now(),
+      partial: Boolean(input.partial),
+      sourceType: normalizeString(input.sourceType, "mock"),
+      parserVersion: normalizeString(input.parserVersion, ""),
+      parserMismatchLikely: Boolean(input.parserMismatchLikely),
+      requestCount: Number.isFinite(Number(input.requestCount)) ? Number(input.requestCount) : 0,
+      errorCode: normalizeString(input.errorCode, ""),
+      retryAfterMs: normalizeNumber(input.retryAfterMs)
+    };
+  }
+
+  function createRegistry() {
+    var providersByMarket = Object.create(null);
+
+    function register(provider) {
+      if (!provider || typeof provider !== "object") {
+        throw new Error("Provider must be an object.");
+      }
+
+      var market = normalizeString(provider.market, "");
+      if (!market) {
+        throw new Error("Provider must include a non-empty market.");
+      }
+
+      if (typeof provider.search !== "function") {
+        throw new Error("Provider must implement search(input).");
+      }
+
+      providersByMarket[market] = {
+        market: market,
+        search: provider.search
+      };
+
+      return providersByMarket[market];
+    }
+
+    function get(market) {
+      var key = normalizeString(market, "");
+      return key ? providersByMarket[key] || null : null;
+    }
+
+    function search(market, input) {
+      var provider = get(market);
+      if (!provider) {
+        return Promise.resolve({
+          ok: false,
+          candidates: [],
+          fetchedAt: Date.now(),
+          partial: false,
+          sourceType: "mock",
+          errorCode: "PROVIDER_NOT_FOUND"
+        });
+      }
+
+      return Promise.resolve(provider.search(input)).then(function (result) {
+        return normalizeProviderResult(result, provider.market);
+      });
+    }
+
+    function listMarkets() {
+      return Object.keys(providersByMarket);
+    }
+
+    return {
+      register: register,
+      get: get,
+      search: search,
+      listMarkets: listMarkets
+    };
+  }
+
+  function createMockDepopProvider() {
+    return {
+      market: "depop",
+      search: function (input) {
+        var payload = input && typeof input === "object" ? input : {};
+        var title = normalizeString(payload.title, "");
+        var listingPrice = normalizeNumber(payload.listingPrice);
+
+        if (!title) {
+          return {
+            ok: true,
+            candidates: [],
+            fetchedAt: Date.now(),
+            partial: false,
+            sourceType: "mock"
+          };
+        }
+
+        var basePrice = listingPrice == null ? 120 : listingPrice;
+        var candidateOnePrice = Math.max(1, basePrice * 0.88);
+        var candidateTwoPrice = Math.max(1, basePrice * 1.07);
+
+        return {
+          ok: true,
+          candidates: [
+            {
+              market: "depop",
+              id: "mock-depop-1",
+              title: title + " (similar)",
+              url: "https://www.depop.com/search/?q=" + encodeURIComponent(title),
+              imageUrl: "",
+              price: candidateOnePrice,
+              currency: normalizeString(payload.currency, "USD"),
+              score: 78,
+              deltaAbsolute: candidateOnePrice - basePrice,
+              deltaPercent: ((candidateOnePrice - basePrice) / basePrice) * 100
+            },
+            {
+              market: "depop",
+              id: "mock-depop-2",
+              title: title + " (alt)",
+              url: "https://www.depop.com/search/?q=" + encodeURIComponent(title + " used"),
+              imageUrl: "",
+              price: candidateTwoPrice,
+              currency: normalizeString(payload.currency, "USD"),
+              score: 64,
+              deltaAbsolute: candidateTwoPrice - basePrice,
+              deltaPercent: ((candidateTwoPrice - basePrice) / basePrice) * 100
+            }
+          ],
+          fetchedAt: Date.now(),
+          partial: false,
+          sourceType: "mock"
+        };
+      }
+    };
+  }
+
+  return {
+    normalizeCandidate: normalizeCandidate,
+    normalizeProviderResult: normalizeProviderResult,
+    createRegistry: createRegistry,
+    createMockDepopProvider: createMockDepopProvider
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusMatchScoring = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function normalizeString(value, fallback) {
+    if (typeof value === "string") {
+      var trimmed = value.trim();
+      return trimmed || fallback;
+    }
+    return fallback;
+  }
+
+  function normalizeNumber(value) {
+    if (value == null) {
+      return null;
+    }
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value !== "string") {
+      return null;
+    }
+    if (value.trim() === "") {
+      return null;
+    }
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function normalizeCurrencyCode(value, fallback) {
+    if (typeof value !== "string") {
+      return fallback;
+    }
+
+    var upper = value.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(upper)) {
+      return fallback;
+    }
+    return upper;
+  }
+
+  function tokenize(value) {
+    var normalized = normalizeString(value, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!normalized) {
+      return [];
+    }
+
+    return normalized.split(" ").filter(Boolean);
+  }
+
+  function overlapScore(leftValue, rightValue) {
+    var leftTokens = tokenize(leftValue);
+    var rightTokens = tokenize(rightValue);
+    if (!leftTokens.length || !rightTokens.length) {
+      return 0;
+    }
+
+    var rightSet = Object.create(null);
+    rightTokens.forEach(function (token) {
+      rightSet[token] = true;
+    });
+
+    var overlap = 0;
+    leftTokens.forEach(function (token) {
+      if (rightSet[token]) {
+        overlap += 1;
+      }
+    });
+
+    var denom = Math.max(leftTokens.length, rightTokens.length);
+    if (!denom) {
+      return 0;
+    }
+
+    return (overlap / denom) * 100;
+  }
+
+  function getUrlTitleHint(url) {
+    var raw = normalizeString(url, "");
+    if (!raw) {
+      return "";
+    }
+
+    var withoutHash = raw.split("#")[0] || "";
+    var withoutQuery = withoutHash.split("?")[0] || "";
+    var segments = withoutQuery.split("/").filter(Boolean);
+    if (!segments.length) {
+      return "";
+    }
+
+    var last = segments[segments.length - 1] || "";
+    var prev = segments.length > 1 ? segments[segments.length - 2] : "";
+    var slug = last.toLowerCase() === "products" ? "" : last;
+
+    if (!slug && prev.toLowerCase() !== "products") {
+      slug = prev;
+    }
+
+    return String(slug)
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function imageHeuristicScore(listingImageUrl, candidateImageUrl) {
+    var left = normalizeString(listingImageUrl, "");
+    var right = normalizeString(candidateImageUrl, "");
+
+    if (!left || !right) {
+      return {
+        score: null,
+        usedImage: false,
+        reason: "missing_url"
+      };
+    }
+
+    var score = overlapScore(left, right);
+    return {
+      score: Math.max(0, Math.min(100, Math.round(score))),
+      usedImage: true,
+      reason: "ok"
+    };
+  }
+
+  function scoreBrand(listing, candidate) {
+    var left = normalizeString(listing && (listing.brand || (listing.rawListing && listing.rawListing.brand)), "").toLowerCase();
+    var right = normalizeString(candidate && candidate.brand, "").toLowerCase();
+
+    if (!left || !right) {
+      return 0;
+    }
+
+    return left === right ? 100 : 0;
+  }
+
+  function scoreSize(listing, candidate) {
+    var left = normalizeString(listing && (listing.size || (listing.rawListing && listing.rawListing.size)), "").toLowerCase();
+    var right = normalizeString(candidate && candidate.size, "").toLowerCase();
+
+    if (!left || !right) {
+      return 0;
+    }
+
+    return left === right ? 100 : 0;
+  }
+
+  function scoreCondition(listing, candidate) {
+    var left = normalizeString(
+      listing && listing.rawListing && listing.rawListing.condition,
+      ""
+    ).toLowerCase();
+    var right = normalizeString(candidate && candidate.condition, "").toLowerCase();
+
+    if (!left || !right) {
+      return 0;
+    }
+
+    return left === right ? 100 : overlapScore(left, right);
+  }
+
+  function getRateForCurrency(currencyCode, ratesByUsd) {
+    if (!ratesByUsd || typeof ratesByUsd !== "object") {
+      return null;
+    }
+
+    if (currencyCode === "USD") {
+      return 1;
+    }
+
+    var value = normalizeNumber(ratesByUsd[currencyCode]);
+    return value != null && value > 0 ? value : null;
+  }
+
+  function convertBetweenCurrencies(amount, fromCurrency, toCurrency, ratesByUsd) {
+    var amountValue = normalizeNumber(amount);
+    if (amountValue == null) {
+      return null;
+    }
+
+    var from = normalizeCurrencyCode(fromCurrency, "USD");
+    var to = normalizeCurrencyCode(toCurrency, "USD");
+
+    if (from === to) {
+      return amountValue;
+    }
+
+    var fromRate = getRateForCurrency(from, ratesByUsd);
+    var toRate = getRateForCurrency(to, ratesByUsd);
+    if (fromRate == null || toRate == null || fromRate <= 0 || toRate <= 0) {
+      return null;
+    }
+
+    var amountUsd = from === "USD" ? amountValue : amountValue / fromRate;
+    if (!Number.isFinite(amountUsd)) {
+      return null;
+    }
+
+    return to === "USD" ? amountUsd : amountUsd * toRate;
+  }
+
+  function convertUsdPrice(amountUsd, selectedCurrency, rate) {
+    var amount = normalizeNumber(amountUsd);
+    if (amount == null) {
+      return null;
+    }
+
+    var currency = normalizeCurrencyCode(selectedCurrency, "USD");
+    if (currency === "USD") {
+      return amount;
+    }
+
+    var normalizedRate = normalizeNumber(rate);
+    if (normalizedRate == null || normalizedRate <= 0) {
+      return amount;
+    }
+
+    return amount * normalizedRate;
+  }
+
+  function scoreCandidate(listing, candidate, options) {
+    var config = options && typeof options === "object" ? options : {};
+    var listingTitle = normalizeString(listing && listing.title, "");
+    var candidateTitle = normalizeString(candidate && candidate.title, "");
+    var candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
+    var candidateTitleForScore = [candidateTitle, candidateTitleHint]
+      .filter(Boolean)
+      .join(" ");
+    var listingImageUrl =
+      normalizeString(listing && listing.imageUrl, "") ||
+      normalizeString(
+        listing && listing.rawListing && listing.rawListing.coverPhoto && listing.rawListing.coverPhoto.url,
+        ""
+      ) ||
+      normalizeString(
+        listing && listing.rawListing && listing.rawListing.photo && listing.rawListing.photo.url,
+        ""
+      );
+
+    var imageResult = imageHeuristicScore(listingImageUrl, candidate && candidate.imageUrl);
+    var imageScore = imageResult.score;
+    var titleScore = Math.max(
+      overlapScore(listingTitle, candidateTitle),
+      overlapScore(listingTitle, candidateTitleForScore)
+    );
+    var brandScore = scoreBrand(listing, candidate);
+    var sizeScore = scoreSize(listing, candidate);
+    var conditionScore = scoreCondition(listing, candidate);
+
+    var weightedScore;
+    if (imageScore == null) {
+      weightedScore = titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09;
+      weightedScore = weightedScore * 0.95;
+    } else {
+      weightedScore =
+        imageScore * 0.45 +
+        titleScore * 0.25 +
+        brandScore * 0.15 +
+        sizeScore * 0.1 +
+        conditionScore * 0.05;
+    }
+
+    var finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
+
+    var listingPriceUsd = normalizeNumber(config.listingPriceUsd);
+    var candidateAmount = normalizeNumber(candidate && candidate.price);
+    var candidateCurrency = normalizeCurrencyCode(candidate && candidate.currency, "USD");
+    var selectedCurrency = normalizeCurrencyCode(config.selectedCurrency, "USD");
+    var rate = normalizeNumber(config.rate);
+    var ratesByUsd = config && config.ratesByUsd && typeof config.ratesByUsd === "object"
+      ? config.ratesByUsd
+      : null;
+
+    var listingComparable = convertUsdPrice(listingPriceUsd, selectedCurrency, rate);
+    var candidateComparable = convertBetweenCurrencies(
+      candidateAmount,
+      candidateCurrency,
+      selectedCurrency,
+      ratesByUsd
+    );
+
+    if (candidateComparable == null) {
+      candidateComparable = convertUsdPrice(candidateAmount, selectedCurrency, rate);
+    }
+
+    var deltaAbsolute = null;
+    var deltaPercent = null;
+    if (listingComparable != null && candidateComparable != null && listingComparable !== 0) {
+      deltaAbsolute = candidateComparable - listingComparable;
+      deltaPercent = (deltaAbsolute / listingComparable) * 100;
+    }
+
+    return {
+      id: candidate.id,
+      title: candidate.title,
+      url: candidate.url,
+      imageUrl: candidate.imageUrl || "",
+      market: candidate.market || "depop",
+      currency: selectedCurrency,
+      price: candidateComparable != null ? candidateComparable : candidateAmount,
+      originalCurrency: candidateCurrency,
+      originalPrice: candidateAmount,
+      score: finalScore,
+      usedImage: imageResult.usedImage,
+      imageUnavailableReason: imageResult.usedImage ? "" : imageResult.reason,
+      components: {
+        imageScore: imageScore,
+        titleScore: Math.round(titleScore),
+        brandScore: Math.round(brandScore),
+        sizeScore: Math.round(sizeScore),
+        conditionScore: Math.round(conditionScore)
+      },
+      deltaAbsolute: deltaAbsolute,
+      deltaPercent: deltaPercent,
+      raw: candidate.raw || null
+    };
+  }
+
+  function rankCandidates(listing, candidates, options) {
+    var list = Array.isArray(candidates) ? candidates : [];
+    var config = options && typeof options === "object" ? options : {};
+    var minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 40;
+
+    var scored = list
+      .map(function (candidate) {
+        return scoreCandidate(listing, candidate, config);
+      })
+      .filter(function (entry) {
+        return Number.isFinite(entry.score) && entry.score >= minScore;
+      })
+      .sort(function (a, b) {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        if (Number.isFinite(a.price) && Number.isFinite(b.price) && a.price !== b.price) {
+          return a.price - b.price;
+        }
+
+        return String(a.id).localeCompare(String(b.id));
+      });
+
+    return scored;
+  }
+
+  return {
+    rankCandidates: rankCandidates,
+    scoreCandidate: scoreCandidate,
+    overlapScore: overlapScore,
+    convertBetweenCurrencies: convertBetweenCurrencies
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusMarketCompareController = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  var MarketProviders = null;
+  var QuerySynthesis = null;
+  var ProviderFilters = null;
+  var MatchScoring = null;
+  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusMarketProviders) {
+    MarketProviders = globalThis.GrailedPlusMarketProviders;
+  }
+  if (!MarketProviders && typeof require === "function") {
+    try {
+      MarketProviders = require("./marketProviders.js");
+    } catch (_) {
+      MarketProviders = null;
+    }
+  }
+  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusQuerySynthesis) {
+    QuerySynthesis = globalThis.GrailedPlusQuerySynthesis;
+  }
+  if (!QuerySynthesis && typeof require === "function") {
+    try {
+      QuerySynthesis = require("./querySynthesis.js");
+    } catch (_) {
+      QuerySynthesis = null;
+    }
+  }
+  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusProviderFilters) {
+    ProviderFilters = globalThis.GrailedPlusProviderFilters;
+  }
+  if (!ProviderFilters && typeof require === "function") {
+    try {
+      ProviderFilters = require("./providerFilters.js");
+    } catch (_) {
+      ProviderFilters = null;
+    }
+  }
+  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusMatchScoring) {
+    MatchScoring = globalThis.GrailedPlusMatchScoring;
+  }
+  if (!MatchScoring && typeof require === "function") {
+    try {
+      MatchScoring = require("./matchScoring.js");
+    } catch (_) {
+      MatchScoring = null;
+    }
+  }
+
+  function normalizeString(value, fallback) {
+    if (typeof value === "string") {
+      var trimmed = value.trim();
+      return trimmed || fallback;
+    }
+    return fallback;
+  }
+
+  function normalizeNumber(value) {
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function roundTo(value, decimals) {
+    var factor = Math.pow(10, decimals);
+    return Math.round(value * factor) / factor;
+  }
+
+  function formatDeltaLabel(candidate) {
+    var deltaPercent = normalizeNumber(candidate && candidate.deltaPercent);
+    if (deltaPercent == null) {
+      return "";
+    }
+
+    var rounded = roundTo(Math.abs(deltaPercent), 1);
+    if (deltaPercent < 0) {
+      return "-" + String(rounded) + "% cheaper";
+    }
+
+    if (deltaPercent > 0) {
+      return "+" + String(rounded) + "% higher";
+    }
+
+    return "same price";
+  }
+
+  function createInitialState() {
+    return {
+      status: "idle",
+      provider: "Depop",
+      listingId: null,
+      lastCheckedAt: null,
+      errorCode: "",
+      retryable: false,
+      cooldownMs: null,
+      message: "",
+      sourceType: "",
+      results: []
+    };
+  }
+
+  function getSearchModeHint(queryReason) {
+    if (queryReason === "category_fallback") {
+      return "Using broad search due to unknown category mapping.";
+    }
+    return "";
+  }
+
+  function toErrorModel(errorCode, retryAfterMs, parserMismatchLikely) {
+    var code = normalizeString(errorCode, "NETWORK_ERROR");
+    var retryMs = normalizeNumber(retryAfterMs);
+
+    if (code === "MISSING_LISTING_DATA") {
+      return {
+        status: "error",
+        errorCode: code,
+        retryable: false,
+        cooldownMs: 0,
+        message: "Listing does not match the currently supported category subset."
+      };
+    }
+
+    if (code === "NO_RESULTS") {
+      return {
+        status: "no-results",
+        errorCode: code,
+        retryable: true,
+        cooldownMs: 0,
+        message: "No similar Depop listings found."
+      };
+    }
+
+    if (code === "RATE_LIMITED") {
+      return {
+        status: "error",
+        errorCode: code,
+        retryable: true,
+        cooldownMs: retryMs == null ? 2000 : retryMs,
+        message: "Rate limited by Depop. Wait and try again."
+      };
+    }
+
+    if (code === "FORBIDDEN_OR_BLOCKED") {
+      return {
+        status: "error",
+        errorCode: code,
+        retryable: true,
+        cooldownMs: retryMs == null ? 120000 : retryMs,
+        message: "Depop temporarily blocked automated search. Try again in a couple of minutes."
+      };
+    }
+
+    if (code === "PARSE_ERROR") {
+      return {
+        status: "error",
+        errorCode: code,
+        retryable: true,
+        cooldownMs: 0,
+        message: parserMismatchLikely
+          ? "Depop page format changed. Try again later."
+          : "Depop results could not be parsed."
+      };
+    }
+
+    return {
+      status: "error",
+      errorCode: code,
+      retryable: true,
+      cooldownMs: retryMs == null ? 1500 : retryMs,
+      message: "Depop search failed. Try again."
+    };
+  }
+
+  function pickListingPrice(listing) {
+    var history =
+      listing && listing.pricing && Array.isArray(listing.pricing.history)
+        ? listing.pricing.history
+        : [];
+
+    if (!history.length) {
+      return null;
+    }
+
+    var latest = Number(history[history.length - 1]);
+    return Number.isFinite(latest) ? latest : null;
+  }
+
+  function createController(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var hasExternalRegistry = Boolean(
+      config.providerRegistry && typeof config.providerRegistry.search === "function"
+    );
+    var providerRegistry =
+      hasExternalRegistry
+        ? config.providerRegistry
+        : MarketProviders && typeof MarketProviders.createRegistry === "function"
+        ? MarketProviders.createRegistry()
+        : null;
+
+    var listeners = [];
+    var state = createInitialState();
+    var currentListingKey = null;
+    var activeRequestToken = 0;
+    var inFlightPromise = null;
+    var synthesizeQueries =
+      typeof config.synthesizeQueries === "function"
+        ? config.synthesizeQueries
+        : QuerySynthesis && typeof QuerySynthesis.buildQueries === "function"
+        ? QuerySynthesis.buildQueries
+        : null;
+    var candidateFilterFn =
+      typeof config.applyCandidateFilters === "function"
+        ? config.applyCandidateFilters
+        : ProviderFilters && typeof ProviderFilters.applyCandidateFilters === "function"
+        ? ProviderFilters.applyCandidateFilters
+        : null;
+    var rankCandidates =
+      typeof config.rankCandidates === "function"
+        ? config.rankCandidates
+        : MatchScoring && typeof MatchScoring.rankCandidates === "function"
+        ? MatchScoring.rankCandidates
+        : null;
+
+    if (
+      providerRegistry &&
+      typeof providerRegistry.register === "function" &&
+      config.provider &&
+      typeof config.provider.search === "function"
+    ) {
+      providerRegistry.register(config.provider);
+    }
+
+    if (
+      !hasExternalRegistry &&
+      providerRegistry &&
+      typeof providerRegistry.register === "function" &&
+      (!config.provider || typeof config.provider.search !== "function") &&
+      MarketProviders &&
+      typeof MarketProviders.createMockDepopProvider === "function"
+    ) {
+      providerRegistry.register(MarketProviders.createMockDepopProvider());
+    }
+
+    function notify() {
+      listeners.forEach(function (listener) {
+        try {
+          listener(getState());
+        } catch (_) {
+          // Listener failures should not break controller flow.
+        }
+      });
+    }
+
+    function updateState(patch) {
+      state = Object.assign({}, state, patch || {});
+      notify();
+    }
+
+    function toListingKey(listing) {
+      if (!listing || typeof listing !== "object") {
+        return null;
+      }
+
+      if (listing.id != null) {
+        return String(listing.id);
+      }
+
+      return normalizeString(listing.title, "") || null;
+    }
+
+    function resetForListing(listing) {
+      var listingKey = toListingKey(listing);
+      if (listingKey === currentListingKey) {
+        return;
+      }
+
+      currentListingKey = listingKey;
+      activeRequestToken += 1;
+      inFlightPromise = null;
+      state = createInitialState();
+      state.listingId = listingKey;
+      notify();
+    }
+
+    function getState() {
+      return {
+        status: state.status,
+        provider: state.provider,
+        listingId: state.listingId,
+        lastCheckedAt: state.lastCheckedAt,
+        errorCode: state.errorCode,
+        retryable: state.retryable,
+        cooldownMs: state.cooldownMs,
+        message: state.message,
+        sourceType: state.sourceType,
+        results: state.results.slice()
+      };
+    }
+
+    function subscribe(listener) {
+      if (typeof listener !== "function") {
+        return function () {};
+      }
+
+      listeners.push(listener);
+      return function () {
+        var index = listeners.indexOf(listener);
+        if (index >= 0) {
+          listeners.splice(index, 1);
+        }
+      };
+    }
+
+    function compare(input) {
+      var payload = input && typeof input === "object" ? input : {};
+      var listing = payload.listing && typeof payload.listing === "object" ? payload.listing : null;
+      resetForListing(listing);
+
+      if (!currentListingKey) {
+        var missingContext = toErrorModel("MISSING_LISTING_DATA");
+        updateState({
+          status: missingContext.status,
+          errorCode: missingContext.errorCode,
+          retryable: missingContext.retryable,
+          cooldownMs: missingContext.cooldownMs,
+          message: missingContext.message,
+          results: [],
+          lastCheckedAt: Date.now()
+        });
+        return Promise.resolve(getState());
+      }
+
+      if (!providerRegistry || typeof providerRegistry.search !== "function") {
+        var missingProvider = toErrorModel("NETWORK_ERROR");
+        updateState({
+          status: missingProvider.status,
+          errorCode: missingProvider.errorCode,
+          retryable: missingProvider.retryable,
+          cooldownMs: missingProvider.cooldownMs,
+          message: missingProvider.message,
+          results: [],
+          lastCheckedAt: Date.now()
+        });
+        return Promise.resolve(getState());
+      }
+
+      if (state.status === "loading" && inFlightPromise) {
+        return inFlightPromise;
+      }
+
+      var requestToken = activeRequestToken + 1;
+      activeRequestToken = requestToken;
+      var listingPrice = pickListingPrice(listing);
+      var queryResult =
+        synthesizeQueries && listing
+          ? synthesizeQueries(listing, {
+              maxQueries: 4,
+              maxTokens: 6
+            })
+          : {
+              ok: true,
+              queries: [normalizeString(listing && listing.title, "")]
+            };
+          var searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
+
+      if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
+        var queryError = toErrorModel(
+          queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA"
+        );
+        updateState({
+          status: queryError.status,
+          errorCode: queryError.errorCode,
+          retryable: queryError.retryable,
+          cooldownMs: queryError.cooldownMs,
+          message: queryError.message,
+          results: [],
+          lastCheckedAt: Date.now()
+        });
+        return Promise.resolve(getState());
+      }
+
+      updateState({
+        status: "loading",
+        errorCode: "",
+        retryable: false,
+        cooldownMs: null,
+        message: "Searching Depop...",
+        sourceType: "",
+        results: []
+      });
+
+      inFlightPromise = providerRegistry
+        .search("depop", {
+          listingId: currentListingKey,
+          title: normalizeString(listing && listing.title, ""),
+          brand: normalizeString(listing && listing.brand, ""),
+          size: normalizeString(listing && listing.size, ""),
+          category: normalizeString(listing && listing.category, ""),
+          queries: queryResult.queries,
+          limit: 12,
+          listingPrice: listingPrice,
+          currency: normalizeString(payload.currency, "USD")
+        })
+        .then(function (result) {
+          if (requestToken !== activeRequestToken) {
+            return getState();
+          }
+
+          if (!result.ok) {
+            var mappedError = toErrorModel(
+              result.errorCode || "NETWORK_ERROR",
+              result.retryAfterMs,
+              Boolean(result.parserMismatchLikely)
+            );
+            updateState({
+              status: mappedError.status,
+              errorCode: mappedError.errorCode,
+              retryable: mappedError.retryable,
+              cooldownMs: mappedError.cooldownMs,
+              message: mappedError.message,
+              sourceType: normalizeString(result && result.sourceType, "html"),
+              results: [],
+              lastCheckedAt: Date.now()
+            });
+            return getState();
+          }
+
+          var filteredCandidates = Array.isArray(result.candidates) ? result.candidates.slice() : [];
+          if (candidateFilterFn) {
+            filteredCandidates = candidateFilterFn(filteredCandidates, payload.filters || {});
+          }
+
+          var pricedCandidates = filteredCandidates.filter(function (candidate) {
+            var price = normalizeNumber(candidate && candidate.price);
+            return price != null && price > 0;
+          });
+          if (pricedCandidates.length) {
+            filteredCandidates = pricedCandidates;
+          }
+
+          if (!Array.isArray(filteredCandidates) || filteredCandidates.length === 0) {
+            var noResults = toErrorModel("NO_RESULTS");
+            updateState({
+              status: noResults.status,
+              errorCode: noResults.errorCode,
+              retryable: noResults.retryable,
+              cooldownMs: noResults.cooldownMs,
+              message: searchModeHint ? noResults.message + " " + searchModeHint : noResults.message,
+              sourceType: normalizeString(result && result.sourceType, "html"),
+              results: [],
+              lastCheckedAt: Date.now()
+            });
+            return getState();
+          }
+
+          var selectedCurrency = normalizeString(payload.currency, "USD");
+          var ratesByUsd =
+            payload && payload.currencyRates && typeof payload.currencyRates === "object"
+              ? payload.currencyRates
+              : null;
+          var strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
+
+          var rankedCandidates = rankCandidates
+            ? rankCandidates(listing, filteredCandidates, {
+                listingPriceUsd: listingPrice,
+                selectedCurrency: selectedCurrency,
+                rate: normalizeNumber(payload.currencyRate),
+                ratesByUsd: ratesByUsd,
+                minScore: strictMinScore
+              })
+            : filteredCandidates;
+
+          if (
+            rankCandidates &&
+            (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) &&
+            Array.isArray(filteredCandidates) &&
+            filteredCandidates.length > 0
+          ) {
+            var depopOnlyCandidates = filteredCandidates.every(function (candidate) {
+              return normalizeString(candidate && candidate.market, "depop") === "depop";
+            });
+
+            if (depopOnlyCandidates) {
+              // Depop can return valid cross-border fallback listings that score
+              // below strict similarity thresholds.
+              rankedCandidates = rankCandidates(listing, filteredCandidates, {
+                listingPriceUsd: listingPrice,
+                selectedCurrency: selectedCurrency,
+                rate: normalizeNumber(payload.currencyRate),
+                ratesByUsd: ratesByUsd,
+                minScore: 0
+              });
+            }
+          }
+
+          if (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) {
+            var noRankedResults = toErrorModel("NO_RESULTS");
+            updateState({
+              status: noRankedResults.status,
+              errorCode: noRankedResults.errorCode,
+              retryable: noRankedResults.retryable,
+              cooldownMs: noRankedResults.cooldownMs,
+              message: searchModeHint
+                ? noRankedResults.message + " " + searchModeHint
+                : noRankedResults.message,
+              sourceType: normalizeString(result && result.sourceType, "html"),
+              results: [],
+              lastCheckedAt: Date.now()
+            });
+            return getState();
+          }
+
+          var normalizedResults = rankedCandidates.map(function (candidate) {
+            var normalizedPrice = normalizeNumber(candidate && candidate.price);
+            if (normalizedPrice != null && normalizedPrice <= 0) {
+              normalizedPrice = null;
+            }
+
+            var deltaLabel = normalizeString(candidate && candidate.deltaLabel, "");
+            if (normalizedPrice == null) {
+              deltaLabel = "";
+            }
+
+            return {
+              id: candidate.id,
+              title: candidate.title,
+              url: candidate.url,
+              imageUrl: candidate.imageUrl || "",
+              price: normalizedPrice,
+              currency: candidate.currency || "USD",
+              originalCurrency: candidate.originalCurrency || candidate.currency || "USD",
+              originalPrice: normalizeNumber(candidate.originalPrice),
+              score: normalizeNumber(candidate.score),
+              usedImage: Boolean(candidate.usedImage),
+              imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
+              deltaLabel: deltaLabel || formatDeltaLabel(candidate)
+            };
+          }).filter(function (entry) {
+            return normalizeNumber(entry && entry.score) > 0;
+          }).slice(0, 5);
+
+          if (!normalizedResults.length) {
+            var noDisplayableResults = toErrorModel("NO_RESULTS");
+            updateState({
+              status: noDisplayableResults.status,
+              errorCode: noDisplayableResults.errorCode,
+              retryable: noDisplayableResults.retryable,
+              cooldownMs: noDisplayableResults.cooldownMs,
+              message: searchModeHint
+                ? noDisplayableResults.message + " " + searchModeHint
+                : noDisplayableResults.message,
+              sourceType: normalizeString(result && result.sourceType, "html"),
+              results: [],
+              lastCheckedAt: Date.now()
+            });
+            return getState();
+          }
+
+          updateState({
+            status: "results",
+            errorCode: "",
+            retryable: false,
+            cooldownMs: null,
+            message: searchModeHint,
+            sourceType: normalizeString(result && result.sourceType, "html"),
+            results: normalizedResults,
+            lastCheckedAt: Date.now()
+          });
+
+          return getState();
+        })
+        .catch(function () {
+          if (requestToken !== activeRequestToken) {
+            return getState();
+          }
+
+          var fallbackError = toErrorModel("NETWORK_ERROR");
+
+          updateState({
+            status: fallbackError.status,
+            errorCode: fallbackError.errorCode,
+            retryable: fallbackError.retryable,
+            cooldownMs: fallbackError.cooldownMs,
+            message: fallbackError.message,
+            sourceType: "",
+            results: [],
+            lastCheckedAt: Date.now()
+          });
+          return getState();
+        })
+        .finally(function () {
+          if (requestToken === activeRequestToken) {
+            inFlightPromise = null;
+          }
+        });
+
+      return inFlightPromise;
+    }
+
+    return {
+      getState: getState,
+      subscribe: subscribe,
+      resetForListing: resetForListing,
+      compare: compare
+    };
+  }
+
+  return {
+    createController: createController,
+    createInitialState: createInitialState
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
     root.GrailedPlusInsightsPanel = factory();
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
@@ -1362,6 +4528,8 @@
     bottom: 14,
     left: 8
   };
+  var TREND_CLIP_ID_PREFIX = "grailed-plus__trend-clip-";
+  var trendClipIdCounter = 0;
 
   function normalizeCurrencyCode(input) {
     if (typeof input !== "string") {
@@ -1625,6 +4793,30 @@
       .attr("class", "grailed-plus__trend-root")
       .attr("transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
 
+    var clipPathId = TREND_CLIP_ID_PREFIX + String(trendClipIdCounter);
+    trendClipIdCounter += 1;
+
+    svg
+      .append("defs")
+      .append("clipPath")
+      .attr("id", clipPathId)
+      .attr("clipPathUnits", "userSpaceOnUse")
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", innerWidth)
+      .attr("height", innerHeight);
+
+    var trendLineLayer = root
+      .append("g")
+      .attr("class", "grailed-plus__trend-line-layer")
+      .attr("clip-path", "url(#" + clipPathId + ")");
+
+    var trendPointLayer = root
+      .append("g")
+      .attr("class", "grailed-plus__trend-point-layer")
+      .attr("clip-path", "url(#" + clipPathId + ")");
+
     var x = d3
       .scaleTime()
       .domain(d3.extent(points, function (d) {
@@ -1649,6 +4841,7 @@
       .defined(function (d) {
         return Number.isFinite(d.priceUsd) && d.date instanceof Date;
       })
+      .curve(d3.curveMonotoneX)
       .x(function (d) {
         return x(d.date);
       })
@@ -1656,7 +4849,7 @@
         return y(d.priceUsd);
       });
 
-    root
+    trendLineLayer
       .selectAll("path.grailed-plus__trend-line")
       .data([points])
       .join("path")
@@ -1698,7 +4891,7 @@
       tooltip.style("opacity", "0").attr("aria-hidden", "true");
     }
 
-    var pointNodes = root
+    var pointNodes = trendPointLayer
       .selectAll("circle.grailed-plus__trend-point")
       .data(points, function (d) {
         return d.key;
@@ -2701,6 +5894,151 @@
     return "Not enough data to estimate";
   }
 
+  function formatRelativeTimestamp(timestampMs) {
+    if (!Number.isFinite(Number(timestampMs))) {
+      return "";
+    }
+
+    var deltaMs = Date.now() - Number(timestampMs);
+    if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+      return "";
+    }
+
+    var seconds = Math.floor(deltaMs / 1000);
+    if (seconds < 60) {
+      return "just now";
+    }
+
+    var minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return String(minutes) + "m ago";
+    }
+
+    var hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return String(hours) + "h ago";
+    }
+
+    var days = Math.floor(hours / 24);
+    return String(days) + "d ago";
+  }
+
+  function createMarketCompareSection(doc, marketCompare, onCompareClick) {
+    var state = marketCompare && typeof marketCompare === "object" ? marketCompare : {};
+    var status = typeof state.status === "string" ? state.status : "idle";
+    var provider = typeof state.provider === "string" ? state.provider : "Depop";
+    var message = typeof state.message === "string" ? state.message : "";
+    var results = Array.isArray(state.results) ? state.results : [];
+
+    var section = doc.createElement("div");
+    section.className = "grailed-plus__market";
+
+    var header = doc.createElement("div");
+    header.className = "grailed-plus__market-header";
+
+    var title = doc.createElement("span");
+    title.className = "grailed-plus__market-title";
+    title.textContent = "Other Markets";
+
+    var chip = doc.createElement("span");
+    chip.className = "grailed-plus__market-chip";
+
+    if (status === "loading") {
+      chip.textContent = "Searching";
+    } else if (status === "results") {
+      chip.textContent = "Results";
+    } else if (status === "no-results") {
+      chip.textContent = "No Results";
+    } else if (status === "error") {
+      chip.textContent = "Error";
+    } else {
+      chip.textContent = "Ready";
+    }
+
+    header.appendChild(title);
+    header.appendChild(chip);
+    section.appendChild(header);
+
+    var providerLabel = doc.createElement("div");
+    providerLabel.className = "grailed-plus__market-provider";
+    providerLabel.textContent = provider;
+    section.appendChild(providerLabel);
+
+    if (message) {
+      var messageNode = doc.createElement("div");
+      messageNode.className = "grailed-plus__market-message";
+      messageNode.textContent = message;
+      section.appendChild(messageNode);
+    }
+
+    if (status === "results" && results.length > 0) {
+      var list = doc.createElement("div");
+      list.className = "grailed-plus__market-list";
+
+      results.forEach(function (entry) {
+        var row = doc.createElement("div");
+        row.className = "grailed-plus__market-row";
+
+        var link = doc.createElement("a");
+        link.className = "grailed-plus__market-link";
+        link.href = entry.url || "#";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = entry.title || "Listing";
+
+        var meta = doc.createElement("span");
+        meta.className = "grailed-plus__market-meta";
+        var parts = [];
+
+        if (Number.isFinite(entry.price)) {
+          parts.push(formatCurrencyByCode(entry.price, entry.currency || "USD"));
+        }
+        if (Number.isFinite(entry.score)) {
+          parts.push("score " + String(Math.round(entry.score)));
+        }
+        if (entry.deltaLabel) {
+          parts.push(entry.deltaLabel);
+        }
+
+        meta.textContent = parts.join(" | ");
+
+        row.appendChild(link);
+        row.appendChild(meta);
+        list.appendChild(row);
+      });
+
+      section.appendChild(list);
+    }
+
+    if (Number.isFinite(state.lastCheckedAt)) {
+      var stamp = doc.createElement("div");
+      stamp.className = "grailed-plus__market-stamp";
+      stamp.textContent = "Last checked " + formatRelativeTimestamp(state.lastCheckedAt);
+      section.appendChild(stamp);
+    }
+
+    var actions = doc.createElement("div");
+    actions.className = "grailed-plus__market-actions";
+
+    var compareButton = doc.createElement("button");
+    compareButton.type = "button";
+    compareButton.className = "grailed-plus__button gp-button grailed-plus__button--market-compare";
+    compareButton.textContent = status === "loading" ? "Searching..." : "Compare on Depop";
+    compareButton.disabled = status === "loading";
+    if (typeof compareButton.addEventListener === "function") {
+      compareButton.addEventListener("click", function () {
+        if (typeof onCompareClick === "function") {
+          onCompareClick();
+        }
+      });
+    }
+
+    actions.appendChild(compareButton);
+    section.appendChild(actions);
+
+    return section;
+  }
+
   function renderInsightsPanel(options) {
     var listing = options && options.listing ? options.listing : {};
     var metrics = options && options.metrics ? options.metrics : {};
@@ -2710,6 +6048,11 @@
     var rawListing = options && options.rawListing ? options.rawListing : null;
     var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
     var currencyContext = options && options.currencyContext ? options.currencyContext : null;
+    var marketCompare = options && options.marketCompare ? options.marketCompare : null;
+    var onMarketCompareClick =
+      options && typeof options.onMarketCompareClick === "function"
+        ? options.onMarketCompareClick
+        : null;
     var doc = (mountNode && mountNode.ownerDocument) || document;
 
     if (!mountNode || !doc || typeof doc.createElement !== "function") {
@@ -2755,13 +6098,14 @@
     panel.appendChild(
       createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt))
     );
+    panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick));
 
     var actions = doc.createElement("div");
     actions.className = "grailed-plus__actions";
 
     var metadataButton = doc.createElement("button");
     metadataButton.type = "button";
-    metadataButton.className = "grailed-plus__button";
+    metadataButton.className = "grailed-plus__button gp-button";
     metadataButton.textContent = "Listing Metadata";
     if (typeof metadataButton.addEventListener === "function") {
       metadataButton.addEventListener("click", function () {
@@ -3156,6 +6500,2149 @@
   };
 });
 
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusContentRuntime = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function createRuntimeState() {
+    return {
+      // Start empty so first navigation pass always applies theme state on initial load.
+      lastUrl: "",
+      retryTimer: null,
+      urlPollTimer: null,
+      retryStartedAtMs: null,
+      mutationObserver: null,
+      renderToken: 0,
+      darkModeToken: 0,
+      darkModeMediaQuery: null,
+      darkModeMediaListener: null,
+      filterScopeTick: null,
+      filterScopeDelayTimers: [],
+      filterScopeObserver: null,
+      cardCurrencyObserver: null,
+      cardCurrencyTick: null,
+      cardCurrencyTickUsesAnimationFrame: false,
+      cardCurrencyContext: null,
+      marketCompareController: null,
+      marketCompareUnsubscribe: null,
+      latestPanelContext: null
+    };
+  }
+
+  function clearRetryTimer(state, resetWindow) {
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (state.retryTimer) {
+      clearTimeout(state.retryTimer);
+      state.retryTimer = null;
+    }
+
+    if (resetWindow) {
+      state.retryStartedAtMs = null;
+    }
+  }
+
+  function shouldStopRetryWindow(state, maxRetryWindowMs) {
+    if (!state || typeof state !== "object") {
+      return true;
+    }
+
+    if (state.retryStartedAtMs == null) {
+      state.retryStartedAtMs = Date.now();
+      return false;
+    }
+
+    return Date.now() - state.retryStartedAtMs > maxRetryWindowMs;
+  }
+
+  function scheduleHydrationObserver(options) {
+    if (!options || typeof options !== "object") {
+      return;
+    }
+
+    var state = options.state;
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (typeof MutationObserver !== "function") {
+      return;
+    }
+
+    if (state.mutationObserver) {
+      return;
+    }
+
+    var isListingPath =
+      typeof options.isListingPath === "function" ? options.isListingPath : function () {
+        return false;
+      };
+    var getPathname =
+      typeof options.getPathname === "function" ? options.getPathname : function () {
+        return "";
+      };
+    var getNextDataNode =
+      typeof options.getNextDataNode === "function"
+        ? options.getNextDataNode
+        : function () {
+            return null;
+          };
+    var onHydrated =
+      typeof options.onHydrated === "function"
+        ? options.onHydrated
+        : function () {};
+    var log = typeof options.log === "function" ? options.log : null;
+
+    var obs = new MutationObserver(function () {
+      if (!isListingPath(getPathname())) {
+        return;
+      }
+
+      var nextDataNode = getNextDataNode();
+      if (nextDataNode && nextDataNode.textContent) {
+        if (log) {
+          log("hydration observer detected next data");
+        }
+        onHydrated();
+      }
+    });
+
+    obs.observe(document.documentElement || document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    state.mutationObserver = obs;
+  }
+
+  function disconnectHydrationObserver(state) {
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (state.mutationObserver && typeof state.mutationObserver.disconnect === "function") {
+      state.mutationObserver.disconnect();
+    }
+    state.mutationObserver = null;
+  }
+
+  return {
+    createRuntimeState: createRuntimeState,
+    clearRetryTimer: clearRetryTimer,
+    shouldStopRetryWindow: shouldStopRetryWindow,
+    scheduleHydrationObserver: scheduleHydrationObserver,
+    disconnectHydrationObserver: disconnectHydrationObserver
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusNavigationLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function patchHistoryMethod(historyApi, methodName, dispatchNavigationEvent) {
+    if (!historyApi || typeof historyApi[methodName] !== "function") {
+      return;
+    }
+
+    var original = historyApi[methodName];
+    historyApi[methodName] = function () {
+      var result = original.apply(this, arguments);
+      dispatchNavigationEvent();
+      return result;
+    };
+  }
+
+  function setupNavigationListeners(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var onNavigation =
+      typeof config.onNavigation === "function" ? config.onNavigation : function () {};
+    var pollIntervalMs = Number(config.pollIntervalMs);
+    var historyApi = config.history || history;
+    var windowApi = config.window || window;
+    var locationApi = config.location || location;
+    var eventName =
+      typeof config.eventName === "string" && config.eventName.trim()
+        ? config.eventName.trim()
+        : "grailed-plus:navigation";
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0) {
+      pollIntervalMs = 1000;
+    }
+
+    var dispatchNavigationEvent = function () {
+      if (!windowApi || typeof windowApi.dispatchEvent !== "function") {
+        return;
+      }
+
+      try {
+        windowApi.dispatchEvent(new Event(eventName));
+      } catch (_) {
+        // Ignore environments that cannot construct Event directly.
+      }
+    };
+
+    patchHistoryMethod(historyApi, "pushState", dispatchNavigationEvent);
+    patchHistoryMethod(historyApi, "replaceState", dispatchNavigationEvent);
+
+    windowApi.addEventListener(eventName, function () {
+      onNavigation("history");
+    });
+
+    windowApi.addEventListener("popstate", function () {
+      onNavigation("popstate");
+    });
+
+    state.urlPollTimer = setInterval(function () {
+      if (locationApi.href !== state.lastUrl) {
+        onNavigation("url_poll");
+      }
+    }, pollIntervalMs);
+  }
+
+  return {
+    patchHistoryMethod: patchHistoryMethod,
+    setupNavigationListeners: setupNavigationListeners
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusDarkModeLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function normalizeHexColor(input, settings) {
+    if (settings && typeof settings.normalizeHexColor === "function") {
+      return settings.normalizeHexColor(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch && shortMatch[1]) {
+      var shortHex = shortMatch[1].toUpperCase();
+      return (
+        "#" +
+        shortHex.charAt(0) +
+        shortHex.charAt(0) +
+        shortHex.charAt(1) +
+        shortHex.charAt(1) +
+        shortHex.charAt(2) +
+        shortHex.charAt(2)
+      );
+    }
+
+    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (longMatch && longMatch[1]) {
+      return "#" + longMatch[1].toUpperCase();
+    }
+
+    return null;
+  }
+
+  function normalizeDarkModeBehavior(input, settings) {
+    if (settings && typeof settings.normalizeDarkModeBehavior === "function") {
+      return settings.normalizeDarkModeBehavior(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toLowerCase();
+    if (trimmed !== "system" && trimmed !== "permanent") {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  function getSystemDarkModeQuery() {
+    if (typeof globalThis.matchMedia !== "function") {
+      return null;
+    }
+
+    try {
+      return globalThis.matchMedia("(prefers-color-scheme: dark)");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function getSystemPrefersDark() {
+    var query = getSystemDarkModeQuery();
+    return Boolean(query && query.matches);
+  }
+
+  function createDefaultDarkModeContext() {
+    return {
+      enabled: getSystemPrefersDark(),
+      behavior: "system",
+      primaryColor: "#000000"
+    };
+  }
+
+  function resolveDarkModeContext(settings) {
+    var defaultContext = createDefaultDarkModeContext();
+    if (!settings) {
+      return Promise.resolve(defaultContext);
+    }
+
+    var enabledPromise =
+      typeof settings.getDarkModeEnabled === "function"
+        ? settings.getDarkModeEnabled()
+        : Promise.resolve(defaultContext.enabled);
+    var behaviorPromise =
+      typeof settings.getDarkModeBehavior === "function"
+        ? settings.getDarkModeBehavior()
+        : Promise.resolve(defaultContext.behavior);
+    var colorPromise =
+      typeof settings.getDarkModePrimaryColor === "function"
+        ? settings.getDarkModePrimaryColor()
+        : Promise.resolve(defaultContext.primaryColor);
+
+    return Promise.all([enabledPromise, behaviorPromise, colorPromise])
+      .then(function (values) {
+        var configuredEnabled = Boolean(values[0]);
+        var behavior = normalizeDarkModeBehavior(values[1], settings) || defaultContext.behavior;
+        var primaryColor = normalizeHexColor(values[2], settings) || defaultContext.primaryColor;
+        var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
+        return {
+          enabled: enabled,
+          behavior: behavior,
+          primaryColor: primaryColor
+        };
+      })
+      .catch(function () {
+        return defaultContext;
+      });
+  }
+
+  function refreshDarkMode(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var settings = config.settings || null;
+    var onApply = typeof config.onApply === "function" ? config.onApply : function () {};
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    var darkModeToken = state.darkModeToken + 1;
+    state.darkModeToken = darkModeToken;
+
+    resolveDarkModeContext(settings).then(function (darkModeContext) {
+      if (darkModeToken !== state.darkModeToken) {
+        return;
+      }
+      onApply(darkModeContext);
+    });
+  }
+
+  function setupDarkModeMediaListener(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var onChange = typeof config.onChange === "function" ? config.onChange : function () {};
+
+    if (!state || typeof state !== "object" || state.darkModeMediaQuery) {
+      return;
+    }
+
+    var query = getSystemDarkModeQuery();
+    if (!query) {
+      return;
+    }
+
+    var listener = function () {
+      onChange();
+    };
+
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", listener);
+    } else if (typeof query.addListener === "function") {
+      query.addListener(listener);
+    } else {
+      return;
+    }
+
+    state.darkModeMediaQuery = query;
+    state.darkModeMediaListener = listener;
+  }
+
+  return {
+    normalizeHexColor: normalizeHexColor,
+    normalizeDarkModeBehavior: normalizeDarkModeBehavior,
+    getSystemDarkModeQuery: getSystemDarkModeQuery,
+    getSystemPrefersDark: getSystemPrefersDark,
+    createDefaultDarkModeContext: createDefaultDarkModeContext,
+    resolveDarkModeContext: resolveDarkModeContext,
+    refreshDarkMode: refreshDarkMode,
+    setupDarkModeMediaListener: setupDarkModeMediaListener
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusFilterScopeLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function getThemeAttrOrFallback(theme, key, fallback) {
+    if (!theme || typeof theme !== "object") {
+      return fallback;
+    }
+    return theme[key] || fallback;
+  }
+
+  function clearFilterTargets(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var documentObj = config.documentObj;
+    var filterTargetAttr = config.filterTargetAttr;
+    var filterScopeSkipAttr = config.filterScopeSkipAttr;
+
+    if (!documentObj || typeof documentObj.querySelectorAll !== "function") {
+      return;
+    }
+
+    var nodes = documentObj.querySelectorAll(
+      "[" + filterTargetAttr + "],[" + filterScopeSkipAttr + "]"
+    );
+    var i;
+    var node;
+
+    for (i = 0; i < nodes.length; i += 1) {
+      node = nodes[i];
+      if (typeof node.removeAttribute === "function") {
+        node.removeAttribute(filterTargetAttr);
+        node.removeAttribute(filterScopeSkipAttr);
+      }
+    }
+  }
+
+  function getDarkModeRootState(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var documentObj = config.documentObj;
+    var theme = config.theme;
+
+    var rootNode = documentObj.documentElement || null;
+    var bodyNode = documentObj.body || null;
+    var nextRoot =
+      typeof documentObj.getElementById === "function"
+        ? documentObj.getElementById("__next")
+        : null;
+    var rootAttr = getThemeAttrOrFallback(theme, "ROOT_ATTR", "data-grailed-plus-dark-mode");
+    var nextRootAttr = getThemeAttrOrFallback(
+      theme,
+      "NEXT_ROOT_ATTR",
+      "data-grailed-plus-next-root"
+    );
+    var rootEnabled = Boolean(rootNode && rootNode.getAttribute(rootAttr) === "1");
+    var nextRootEnabled = Boolean(rootNode && rootNode.getAttribute(nextRootAttr) === "1");
+    var filterRoot = null;
+    var mode = "none";
+
+    if (rootEnabled && nextRootEnabled && nextRoot) {
+      filterRoot = nextRoot;
+      mode = "next";
+    } else if (rootEnabled && bodyNode) {
+      filterRoot = bodyNode;
+      mode = "legacy";
+    }
+
+    return {
+      rootNode: rootNode,
+      bodyNode: bodyNode,
+      nextRoot: nextRoot,
+      enabled: Boolean(filterRoot),
+      mode: mode,
+      filterRoot: filterRoot
+    };
+  }
+
+  function containsHeaderBoundary(node, headerRoot, headerSelector, menuSelector) {
+    if (!node) {
+      return false;
+    }
+
+    if (headerRoot && node === headerRoot) {
+      return true;
+    }
+
+    if (typeof node.matches === "function") {
+      if (node.matches(headerSelector) || node.matches(menuSelector)) {
+        return true;
+      }
+    }
+
+    if (typeof node.querySelector === "function") {
+      return Boolean(node.querySelector(headerSelector + ", " + menuSelector));
+    }
+
+    return false;
+  }
+
+  function isDirectHeaderBoundary(node, headerRoot, headerSelector, menuSelector) {
+    if (!node) {
+      return false;
+    }
+
+    if (headerRoot && node === headerRoot) {
+      return true;
+    }
+
+    if (typeof node.matches !== "function") {
+      return false;
+    }
+
+    return Boolean(node.matches(headerSelector) || node.matches(menuSelector));
+  }
+
+  function markFilterTargetsWithin(boundaryNode, headerRoot, depth, options) {
+    var config = options && typeof options === "object" ? options : {};
+    var headerSelector = config.headerSelector;
+    var menuSelector = config.menuSelector;
+    var filterTargetAttr = config.filterTargetAttr;
+    var filterTargetAttrValue = config.filterTargetAttrValue;
+    var filterScopeSkipAttr = config.filterScopeSkipAttr;
+    var filterScopeSkipAttrValue = config.filterScopeSkipAttrValue;
+
+    if (!boundaryNode || !boundaryNode.children || depth > 6) {
+      return;
+    }
+
+    var children = boundaryNode.children;
+    var i;
+    var child;
+    var hasBoundary;
+    var isDirectBoundary;
+
+    for (i = 0; i < children.length; i += 1) {
+      child = children[i];
+      isDirectBoundary = isDirectHeaderBoundary(child, headerRoot, headerSelector, menuSelector);
+
+      if (isDirectBoundary) {
+        if (typeof child.setAttribute === "function") {
+          child.setAttribute(filterScopeSkipAttr, filterScopeSkipAttrValue);
+        }
+        continue;
+      }
+
+      hasBoundary = containsHeaderBoundary(child, headerRoot, headerSelector, menuSelector);
+
+      if (hasBoundary) {
+        if (typeof child.setAttribute === "function") {
+          child.setAttribute(filterScopeSkipAttr, filterScopeSkipAttrValue);
+        }
+        markFilterTargetsWithin(child, headerRoot, depth + 1, options);
+        continue;
+      }
+
+      if (typeof child.setAttribute === "function") {
+        child.setAttribute(filterTargetAttr, filterTargetAttrValue);
+      }
+    }
+  }
+
+  function refreshFilterTargets(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var documentObj = config.documentObj;
+    var headerSelector = config.headerSelector;
+    var menuSelector = config.menuSelector;
+
+    clearFilterTargets(config);
+
+    var modeState = getDarkModeRootState({
+      documentObj: documentObj,
+      theme: config.theme
+    });
+
+    if (!modeState.enabled) {
+      return;
+    }
+
+    var filterRoot = modeState.filterRoot;
+    if (!filterRoot || !filterRoot.children) {
+      return;
+    }
+
+    var headerRoot =
+      typeof filterRoot.querySelector === "function"
+        ? filterRoot.querySelector(headerSelector)
+        : null;
+    var topChildren = filterRoot.children;
+    var i;
+    var topChild;
+    var hasBoundary;
+
+    for (i = 0; i < topChildren.length; i += 1) {
+      topChild = topChildren[i];
+      hasBoundary = containsHeaderBoundary(topChild, headerRoot, headerSelector, menuSelector);
+
+      if (hasBoundary) {
+        if (typeof topChild.setAttribute === "function") {
+          topChild.setAttribute(config.filterScopeSkipAttr, config.filterScopeSkipAttrValue);
+        }
+        markFilterTargetsWithin(topChild, headerRoot, 0, config);
+        continue;
+      }
+
+      if (typeof topChild.setAttribute === "function") {
+        topChild.setAttribute(config.filterTargetAttr, config.filterTargetAttrValue);
+      }
+    }
+  }
+
+  function scheduleFilterTargetsRefresh(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var onRefresh = typeof config.onRefresh === "function" ? config.onRefresh : function () {};
+
+    if (!state || typeof state !== "object" || state.filterScopeTick != null) {
+      return;
+    }
+
+    var run = function () {
+      state.filterScopeTick = null;
+      onRefresh();
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      state.filterScopeTick = globalThis.requestAnimationFrame(run);
+      return;
+    }
+
+    state.filterScopeTick = globalThis.setTimeout(run, 16);
+  }
+
+  function clearFilterTargetsRefreshDelayTimers(state) {
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    var timers = state.filterScopeDelayTimers || [];
+    var i;
+    for (i = 0; i < timers.length; i += 1) {
+      clearTimeout(timers[i]);
+    }
+    state.filterScopeDelayTimers = [];
+  }
+
+  function scheduleFilterTargetsRefreshBurst(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var delays = Array.isArray(config.delays) ? config.delays : [];
+    var onScheduleRefresh =
+      typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () {};
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    var timers = [];
+    var i;
+    var delayMs;
+
+    clearFilterTargetsRefreshDelayTimers(state);
+    onScheduleRefresh();
+
+    for (i = 0; i < delays.length; i += 1) {
+      delayMs = delays[i];
+      timers.push(globalThis.setTimeout(onScheduleRefresh, delayMs));
+    }
+
+    state.filterScopeDelayTimers = timers;
+  }
+
+  function setupFilterScopeObserver(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var documentObj = config.documentObj;
+    var onScheduleRefresh =
+      typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () {};
+
+    if (!state || typeof state !== "object" || state.filterScopeObserver || typeof MutationObserver !== "function") {
+      return;
+    }
+
+    var root = documentObj.body || documentObj.documentElement;
+    if (!root) {
+      return;
+    }
+
+    var observer = new MutationObserver(function (mutations) {
+      var i;
+      var mutation;
+      var shouldRefresh = false;
+
+      for (i = 0; i < mutations.length; i += 1) {
+        mutation = mutations[i];
+        if (!mutation) {
+          continue;
+        }
+
+        if (mutation.type === "childList") {
+          if (
+            (mutation.addedNodes && mutation.addedNodes.length > 0) ||
+            (mutation.removedNodes && mutation.removedNodes.length > 0)
+          ) {
+            shouldRefresh = true;
+            break;
+          }
+          continue;
+        }
+
+        if (mutation.type === "attributes") {
+          shouldRefresh = true;
+          break;
+        }
+      }
+
+      if (shouldRefresh) {
+        onScheduleRefresh();
+      }
+    });
+
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "id"]
+    });
+
+    state.filterScopeObserver = observer;
+  }
+
+  function disconnectFilterScopeObserver(state) {
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (state.filterScopeObserver && typeof state.filterScopeObserver.disconnect === "function") {
+      state.filterScopeObserver.disconnect();
+    }
+    state.filterScopeObserver = null;
+  }
+
+  function syncFilterScopeObserver(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var enabled = Boolean(config.enabled);
+    var onSetup = typeof config.onSetup === "function" ? config.onSetup : function () {};
+    var onDisconnect =
+      typeof config.onDisconnect === "function" ? config.onDisconnect : function () {};
+
+    if (!enabled) {
+      onDisconnect();
+      return;
+    }
+
+    onSetup();
+  }
+
+  return {
+    getThemeAttrOrFallback: getThemeAttrOrFallback,
+    clearFilterTargets: clearFilterTargets,
+    getDarkModeRootState: getDarkModeRootState,
+    refreshFilterTargets: refreshFilterTargets,
+    scheduleFilterTargetsRefresh: scheduleFilterTargetsRefresh,
+    clearFilterTargetsRefreshDelayTimers: clearFilterTargetsRefreshDelayTimers,
+    scheduleFilterTargetsRefreshBurst: scheduleFilterTargetsRefreshBurst,
+    setupFilterScopeObserver: setupFilterScopeObserver,
+    disconnectFilterScopeObserver: disconnectFilterScopeObserver,
+    syncFilterScopeObserver: syncFilterScopeObserver
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusCardCurrencyLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function isConversionContextEnabled(currencyContext, normalizeCurrencyCode) {
+    var selectedCurrency =
+      typeof normalizeCurrencyCode === "function"
+        ? normalizeCurrencyCode(currencyContext && currencyContext.selectedCurrency)
+        : null;
+    var rate = Number(currencyContext && currencyContext.rate);
+    return Boolean(selectedCurrency && selectedCurrency !== "USD" && Number.isFinite(rate) && rate > 0);
+  }
+
+  function isElementNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    if (node.nodeType === 1) {
+      return true;
+    }
+
+    return typeof node.querySelector === "function";
+  }
+
+  function nodeContainsCardPriceTarget(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var node = config.node;
+    var insightsPanel = config.insightsPanel;
+    var selector = config.selector;
+
+    if (!isElementNode(node)) {
+      return false;
+    }
+
+    if (insightsPanel && typeof insightsPanel.nodeContainsCardPriceTarget === "function") {
+      try {
+        return Boolean(insightsPanel.nodeContainsCardPriceTarget(node));
+      } catch (_) {
+        // Fall through to local selector checks.
+      }
+    }
+
+    if (typeof node.matches === "function") {
+      if (node.matches(selector)) {
+        return true;
+      }
+    }
+
+    if (typeof node.querySelector === "function") {
+      return Boolean(node.querySelector(selector));
+    }
+
+    return false;
+  }
+
+  function clearCardCurrencyTick(state) {
+    if (!state || typeof state !== "object" || state.cardCurrencyTick == null) {
+      return;
+    }
+
+    if (
+      state.cardCurrencyTickUsesAnimationFrame &&
+      typeof globalThis.cancelAnimationFrame === "function"
+    ) {
+      globalThis.cancelAnimationFrame(state.cardCurrencyTick);
+    } else {
+      clearTimeout(state.cardCurrencyTick);
+    }
+
+    state.cardCurrencyTick = null;
+    state.cardCurrencyTickUsesAnimationFrame = false;
+  }
+
+  function disconnectCardCurrencyObserver(state) {
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (state.cardCurrencyObserver && typeof state.cardCurrencyObserver.disconnect === "function") {
+      state.cardCurrencyObserver.disconnect();
+    }
+    state.cardCurrencyObserver = null;
+    state.cardCurrencyContext = null;
+    clearCardCurrencyTick(state);
+  }
+
+  function scheduleCardCurrencyRefresh(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var onRefresh = typeof config.onRefresh === "function" ? config.onRefresh : function () {};
+
+    if (!state || typeof state !== "object" || state.cardCurrencyTick != null) {
+      return;
+    }
+
+    var run = function () {
+      state.cardCurrencyTick = null;
+      state.cardCurrencyTickUsesAnimationFrame = false;
+      onRefresh();
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      state.cardCurrencyTickUsesAnimationFrame = true;
+      state.cardCurrencyTick = globalThis.requestAnimationFrame(run);
+      return;
+    }
+
+    state.cardCurrencyTickUsesAnimationFrame = false;
+    state.cardCurrencyTick = globalThis.setTimeout(run, 16);
+  }
+
+  function setupCardCurrencyObserver(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var documentObj = config.documentObj;
+    var selector = config.selector;
+    var insightsPanel = config.insightsPanel;
+    var onScheduleRefresh =
+      typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () {};
+
+    if (!state || typeof state !== "object" || state.cardCurrencyObserver || typeof MutationObserver !== "function") {
+      return;
+    }
+
+    var root = documentObj.body || documentObj.documentElement;
+    if (!root) {
+      return;
+    }
+
+    var observer = new MutationObserver(function (mutations) {
+      var i;
+      var j;
+      var mutation;
+      var addedNode;
+      var shouldRefresh = false;
+      var mutationTarget;
+
+      for (i = 0; i < mutations.length; i += 1) {
+        mutation = mutations[i];
+        if (!mutation) {
+          continue;
+        }
+
+        mutationTarget = mutation.target || null;
+
+        if (mutation.type === "characterData") {
+          if (
+            nodeContainsCardPriceTarget({
+              node: mutationTarget && mutationTarget.parentNode,
+              insightsPanel: insightsPanel,
+              selector: selector
+            })
+          ) {
+            shouldRefresh = true;
+            break;
+          }
+          continue;
+        }
+
+        if (mutation.type !== "childList") {
+          continue;
+        }
+
+        if (
+          nodeContainsCardPriceTarget({
+            node: mutationTarget,
+            insightsPanel: insightsPanel,
+            selector: selector
+          })
+        ) {
+          shouldRefresh = true;
+          break;
+        }
+
+        if (!mutation.addedNodes) {
+          continue;
+        }
+
+        for (j = 0; j < mutation.addedNodes.length; j += 1) {
+          addedNode = mutation.addedNodes[j];
+          if (addedNode && addedNode.nodeType === 3) {
+            if (
+              nodeContainsCardPriceTarget({
+                node: addedNode.parentNode,
+                insightsPanel: insightsPanel,
+                selector: selector
+              })
+            ) {
+              shouldRefresh = true;
+              break;
+            }
+            continue;
+          }
+
+          if (
+            nodeContainsCardPriceTarget({
+              node: addedNode,
+              insightsPanel: insightsPanel,
+              selector: selector
+            })
+          ) {
+            shouldRefresh = true;
+            break;
+          }
+        }
+
+        if (shouldRefresh) {
+          break;
+        }
+      }
+
+      if (shouldRefresh) {
+        onScheduleRefresh();
+      }
+    });
+
+    observer.observe(root, {
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-testid"],
+      characterData: true,
+      subtree: true
+    });
+
+    state.cardCurrencyObserver = observer;
+  }
+
+  function syncCardCurrencyObserver(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var currencyContext = config.currencyContext;
+    var createUsdCurrencyContext = config.createUsdCurrencyContext;
+    var normalizeCurrencyCode = config.normalizeCurrencyCode;
+    var onSetup = typeof config.onSetup === "function" ? config.onSetup : function () {};
+    var onDisconnect =
+      typeof config.onDisconnect === "function" ? config.onDisconnect : function () {};
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    state.cardCurrencyContext =
+      currencyContext ||
+      (typeof createUsdCurrencyContext === "function" ? createUsdCurrencyContext() : null);
+
+    if (!isConversionContextEnabled(state.cardCurrencyContext, normalizeCurrencyCode)) {
+      onDisconnect();
+      return;
+    }
+
+    onSetup();
+  }
+
+  return {
+    isConversionContextEnabled: isConversionContextEnabled,
+    nodeContainsCardPriceTarget: nodeContainsCardPriceTarget,
+    clearCardCurrencyTick: clearCardCurrencyTick,
+    disconnectCardCurrencyObserver: disconnectCardCurrencyObserver,
+    scheduleCardCurrencyRefresh: scheduleCardCurrencyRefresh,
+    setupCardCurrencyObserver: setupCardCurrencyObserver,
+    syncCardCurrencyObserver: syncCardCurrencyObserver
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusMarketCompareLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function ensureMarketCompareController(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var marketCompareControllerApi = config.marketCompareControllerApi;
+    var marketProviders = config.marketProviders;
+    var depopProviderFactory = config.depopProviderFactory;
+    var onStateUpdate =
+      typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () {};
+
+    if (!state || typeof state !== "object") {
+      return null;
+    }
+
+    if (state.marketCompareController) {
+      return state.marketCompareController;
+    }
+
+    if (
+      !marketCompareControllerApi ||
+      typeof marketCompareControllerApi.createController !== "function"
+    ) {
+      return null;
+    }
+
+    var registry =
+      marketProviders && typeof marketProviders.createRegistry === "function"
+        ? marketProviders.createRegistry()
+        : null;
+    var depopProvider =
+      depopProviderFactory && typeof depopProviderFactory.createDepopProvider === "function"
+        ? depopProviderFactory.createDepopProvider({
+            maxRequests: 5,
+            cooldownMs: 1200
+          })
+        : null;
+    var mockProvider =
+      !depopProvider &&
+      marketProviders &&
+      typeof marketProviders.createMockDepopProvider === "function"
+        ? marketProviders.createMockDepopProvider()
+        : null;
+
+    if (registry && typeof registry.register === "function") {
+      if (depopProvider) {
+        registry.register(depopProvider);
+      } else if (mockProvider) {
+        registry.register(mockProvider);
+      }
+    }
+
+    state.marketCompareController = marketCompareControllerApi.createController({
+      providerRegistry: registry,
+      provider: depopProvider || mockProvider
+    });
+
+    if (
+      state.marketCompareController &&
+      typeof state.marketCompareController.subscribe === "function"
+    ) {
+      state.marketCompareUnsubscribe = state.marketCompareController.subscribe(function (nextState) {
+        onStateUpdate(nextState);
+      });
+    }
+
+    return state.marketCompareController;
+  }
+
+  function triggerMarketCompare(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var ensureController =
+      typeof config.ensureController === "function" ? config.ensureController : function () {
+        return null;
+      };
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    var controller = ensureController();
+    var context = state.latestPanelContext;
+    if (!controller || !context || typeof controller.compare !== "function") {
+      return;
+    }
+
+    controller.compare({
+      listing: context.listing,
+      currency:
+        context.currencyContext && context.currencyContext.selectedCurrency
+          ? context.currencyContext.selectedCurrency
+          : "USD",
+      currencyRate:
+        context.currencyContext && Number.isFinite(Number(context.currencyContext.rate))
+          ? Number(context.currencyContext.rate)
+          : null,
+      currencyRates:
+        context.currencyContext &&
+        context.currencyContext.usdRates &&
+        typeof context.currencyContext.usdRates === "object"
+          ? context.currencyContext.usdRates
+          : null
+    });
+  }
+
+  function renderPanelWithMarketCompare(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var ensureController =
+      typeof config.ensureController === "function" ? config.ensureController : function () {
+        return null;
+      };
+    var renderListingInsightsPanel =
+      typeof config.renderListingInsightsPanel === "function"
+        ? config.renderListingInsightsPanel
+        : function () {
+            return null;
+          };
+    var onMarketCompareClick =
+      typeof config.onMarketCompareClick === "function" ? config.onMarketCompareClick : function () {};
+    var panelOptions = config.panelOptions && typeof config.panelOptions === "object" ? config.panelOptions : {};
+
+    if (!state || typeof state !== "object") {
+      return null;
+    }
+
+    var controller = ensureController();
+    if (controller && typeof controller.resetForListing === "function") {
+      controller.resetForListing(panelOptions.listing || null);
+    }
+
+    var marketCompareState =
+      controller && typeof controller.getState === "function" ? controller.getState() : null;
+
+    state.latestPanelContext = {
+      listing: panelOptions.listing || null,
+      metrics: panelOptions.metrics || null,
+      mountNode: panelOptions.mountNode || null,
+      mountPosition: panelOptions.mountPosition || "afterend",
+      rawListing: panelOptions.rawListing || null,
+      statusMessage: panelOptions.statusMessage || "",
+      currencyContext: panelOptions.currencyContext || null,
+      renderToken: state.renderToken
+    };
+
+    return renderListingInsightsPanel({
+      listing: state.latestPanelContext.listing,
+      metrics: state.latestPanelContext.metrics,
+      mountNode: state.latestPanelContext.mountNode,
+      mountPosition: state.latestPanelContext.mountPosition,
+      rawListing: state.latestPanelContext.rawListing,
+      statusMessage: state.latestPanelContext.statusMessage,
+      currencyContext: state.latestPanelContext.currencyContext,
+      marketCompare: marketCompareState,
+      onMarketCompareClick: onMarketCompareClick
+    });
+  }
+
+  return {
+    ensureMarketCompareController: ensureMarketCompareController,
+    triggerMarketCompare: triggerMarketCompare,
+    renderPanelWithMarketCompare: renderPanelWithMarketCompare
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusCurrencyLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function createUsdCurrencyContext() {
+    return {
+      selectedCurrency: "USD",
+      rate: null,
+      mode: "dual"
+    };
+  }
+
+  function normalizeCurrencyCode(input, settings) {
+    if (settings && typeof settings.normalizeCurrencyCode === "function") {
+      return settings.normalizeCurrencyCode(input);
+    }
+
+    if (typeof input !== "string") {
+      return null;
+    }
+
+    var trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  function resolveCurrencyContext(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var settings = config.settings || null;
+    var currencyApi = config.currencyApi || null;
+    var normalizeCurrencyCodeFn =
+      typeof config.normalizeCurrencyCode === "function"
+        ? config.normalizeCurrencyCode
+        : function (value) {
+            return normalizeCurrencyCode(value, settings);
+          };
+
+    var defaultContext = createUsdCurrencyContext();
+
+    if (!settings || typeof settings.getSelectedCurrency !== "function") {
+      return Promise.resolve(defaultContext);
+    }
+
+    var enabledPromise =
+      typeof settings.getCurrencyConversionEnabled === "function"
+        ? settings.getCurrencyConversionEnabled()
+        : Promise.resolve(false);
+
+    return enabledPromise
+      .then(function (enabled) {
+        if (!enabled) {
+          return defaultContext;
+        }
+        return settings.getSelectedCurrency();
+      })
+      .then(function (savedCurrency) {
+        if (typeof savedCurrency !== "string") {
+          return defaultContext;
+        }
+
+        var selectedCurrency = normalizeCurrencyCodeFn(savedCurrency) || defaultContext.selectedCurrency;
+        var context = {
+          selectedCurrency: selectedCurrency,
+          rate: null,
+          mode: "dual"
+        };
+
+        if (selectedCurrency === "USD") {
+          return context;
+        }
+
+        if (!currencyApi || typeof currencyApi.getRates !== "function") {
+          return context;
+        }
+
+        return currencyApi
+          .getRates("USD")
+          .then(function (result) {
+            var rates = result && result.rates && typeof result.rates === "object" ? result.rates : {};
+            var rate = Number(rates[selectedCurrency]);
+            if (Number.isFinite(rate) && rate > 0) {
+              context.rate = rate;
+            }
+            context.usdRates = rates;
+            return context;
+          })
+          .catch(function () {
+            return context;
+          });
+      })
+      .catch(function () {
+        return defaultContext;
+      });
+  }
+
+  function applySidebarCurrency(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var insightsPanel = config.insightsPanel;
+    var documentObj = config.documentObj;
+    var currencyContext = config.currencyContext;
+
+    if (!insightsPanel || typeof insightsPanel.applySidebarCurrency !== "function") {
+      return false;
+    }
+
+    try {
+      return insightsPanel.applySidebarCurrency(
+        documentObj,
+        currencyContext || createUsdCurrencyContext()
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function applyCardCurrency(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var insightsPanel = config.insightsPanel;
+    var documentObj = config.documentObj;
+    var currencyContext = config.currencyContext;
+
+    if (!insightsPanel || typeof insightsPanel.applyCardCurrency !== "function") {
+      return false;
+    }
+
+    try {
+      return insightsPanel.applyCardCurrency(documentObj, currencyContext || createUsdCurrencyContext());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  return {
+    createUsdCurrencyContext: createUsdCurrencyContext,
+    normalizeCurrencyCode: normalizeCurrencyCode,
+    resolveCurrencyContext: resolveCurrencyContext,
+    applySidebarCurrency: applySidebarCurrency,
+    applyCardCurrency: applyCardCurrency
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusListingInsightsLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function createDefaultListingModel() {
+    return {
+      id: null,
+      title: "",
+      createdAt: null,
+      pricing: {
+        history: [],
+        updatedAt: null
+      },
+      seller: {
+        createdAt: null
+      },
+      prettyPath: null,
+      sold: false,
+      rawListing: null,
+      sourceStatus: "missing_listing"
+    };
+  }
+
+  function resolveMountTarget(insightsPanel, doc) {
+    if (!insightsPanel) {
+      return null;
+    }
+
+    if (typeof insightsPanel.findMountTarget === "function") {
+      return insightsPanel.findMountTarget(doc);
+    }
+
+    if (typeof insightsPanel.findMountNode === "function") {
+      var legacyMountNode = insightsPanel.findMountNode(doc);
+      if (!legacyMountNode) {
+        return null;
+      }
+      return {
+        mountNode: legacyMountNode,
+        mountPosition: "afterend",
+        strategy: "legacy_mount_node"
+      };
+    }
+
+    return null;
+  }
+
+  function normalizeListingModel(listing) {
+    if (!listing || typeof listing !== "object") {
+      return createDefaultListingModel();
+    }
+
+    var existingPricing = listing.pricing && typeof listing.pricing === "object" ? listing.pricing : {};
+    var history = Array.isArray(existingPricing.history)
+      ? existingPricing.history
+      : Array.isArray(listing.priceDrops)
+      ? listing.priceDrops
+      : [];
+    var updatedAt =
+      typeof existingPricing.updatedAt === "string" || existingPricing.updatedAt === null
+        ? existingPricing.updatedAt
+        : listing.priceUpdatedAt || null;
+
+    return {
+      id: listing.id || null,
+      title: typeof listing.title === "string" ? listing.title : "",
+      createdAt: listing.createdAt || null,
+      pricing: {
+        history: history,
+        updatedAt: updatedAt
+      },
+      seller:
+        listing.seller && typeof listing.seller === "object"
+          ? {
+              createdAt: listing.seller.createdAt || null
+            }
+          : {
+              createdAt: null
+            },
+      prettyPath: listing.prettyPath || null,
+      sold: Boolean(listing.sold),
+      rawListing: listing.rawListing || null,
+      sourceStatus: listing.sourceStatus || "ok"
+    };
+  }
+
+  function computeListingInsights(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var listing = config.listing;
+    var pricingInsights = config.pricingInsights;
+
+    if (pricingInsights && typeof pricingInsights.computePricingInsights === "function") {
+      return pricingInsights.computePricingInsights(listing);
+    }
+
+    if (pricingInsights && typeof pricingInsights.computeMetrics === "function") {
+      var legacy = pricingInsights.computeMetrics({
+        priceDrops: listing && listing.pricing ? listing.pricing.history : [],
+        createdAt: listing ? listing.createdAt : null,
+        priceUpdatedAt: listing && listing.pricing ? listing.pricing.updatedAt : null
+      });
+      return {
+        averageDropAmountUsd: legacy && Number.isFinite(legacy.avgDropAmount) ? legacy.avgDropAmount : null,
+        averageDropPercent: legacy && Number.isFinite(legacy.avgDropPercent) ? legacy.avgDropPercent : null,
+        expectedNextDropDays:
+          legacy && Number.isFinite(legacy.expectedDropDays) ? legacy.expectedDropDays : null,
+        expectedDropState:
+          legacy && typeof legacy.expectedDropState === "string"
+            ? legacy.expectedDropState
+            : "insufficient_data",
+        totalDrops: legacy && Number.isFinite(legacy.totalDrops) ? legacy.totalDrops : 0
+      };
+    }
+
+    return {
+      averageDropAmountUsd: null,
+      averageDropPercent: null,
+      expectedNextDropDays: null,
+      expectedDropState: "insufficient_data",
+      totalDrops: 0
+    };
+  }
+
+  function renderListingInsightsPanel(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var insightsPanel = config.insightsPanel;
+
+    if (insightsPanel && typeof insightsPanel.renderInsightsPanel === "function") {
+      return insightsPanel.renderInsightsPanel(config.panelOptions || {});
+    }
+
+    if (insightsPanel && typeof insightsPanel.renderPanel === "function") {
+      var panelOptions =
+        config.panelOptions && typeof config.panelOptions === "object" ? config.panelOptions : {};
+      var listing = normalizeListingModel(panelOptions.listing || null);
+      var metrics = panelOptions.metrics && typeof panelOptions.metrics === "object" ? panelOptions.metrics : {};
+      var legacyMetrics = {
+        avgDropAmount:
+          Number.isFinite(metrics.averageDropAmountUsd) ? metrics.averageDropAmountUsd : null,
+        avgDropPercent:
+          Number.isFinite(metrics.averageDropPercent) ? metrics.averageDropPercent : null,
+        expectedDropDays:
+          Number.isFinite(metrics.expectedNextDropDays) ? metrics.expectedNextDropDays : null,
+        expectedDropState:
+          typeof metrics.expectedDropState === "string"
+            ? metrics.expectedDropState
+            : "insufficient_data",
+        totalDrops: Number.isFinite(metrics.totalDrops) ? metrics.totalDrops : 0
+      };
+
+      return insightsPanel.renderPanel({
+        listing: {
+          id: listing.id,
+          title: listing.title,
+          priceDrops: listing.pricing.history,
+          createdAt: listing.createdAt,
+          priceUpdatedAt: listing.pricing.updatedAt,
+          seller: listing.seller,
+          prettyPath: listing.prettyPath,
+          sold: listing.sold,
+          rawListing: listing.rawListing
+        },
+        metrics: legacyMetrics,
+        mountNode: panelOptions.mountNode || null,
+        mountPosition: panelOptions.mountPosition || "afterend",
+        rawListing: panelOptions.rawListing || null,
+        statusMessage: panelOptions.statusMessage || "",
+        currencyContext: panelOptions.currencyContext || null,
+        marketCompare: panelOptions.marketCompare || null,
+        onMarketCompareClick:
+          typeof panelOptions.onMarketCompareClick === "function"
+            ? panelOptions.onMarketCompareClick
+            : function () {}
+      });
+    }
+
+    return null;
+  }
+
+  function resolveListingInsightsEnabled(settings) {
+    var defaultEnabled =
+      settings && typeof settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
+        ? settings.DEFAULT_LISTING_INSIGHTS_ENABLED
+        : true;
+
+    if (!settings || typeof settings.getListingInsightsEnabled !== "function") {
+      return Promise.resolve(defaultEnabled);
+    }
+
+    return settings
+      .getListingInsightsEnabled()
+      .then(function (enabled) {
+        return typeof enabled === "boolean" ? enabled : defaultEnabled;
+      })
+      .catch(function () {
+        return defaultEnabled;
+      });
+  }
+
+  return {
+    createDefaultListingModel: createDefaultListingModel,
+    resolveMountTarget: resolveMountTarget,
+    normalizeListingModel: normalizeListingModel,
+    computeListingInsights: computeListingInsights,
+    renderListingInsightsPanel: renderListingInsightsPanel,
+    resolveListingInsightsEnabled: resolveListingInsightsEnabled
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusUnavailableLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function createUnavailableListing() {
+    return {
+      id: "unknown",
+      title: "",
+      createdAt: null,
+      pricing: {
+        history: [],
+        updatedAt: null
+      },
+      seller: {
+        createdAt: null
+      },
+      rawListing: null
+    };
+  }
+
+  function createUnavailableMetrics() {
+    return {
+      averageDropAmountUsd: null,
+      averageDropPercent: null,
+      expectedNextDropDays: null,
+      expectedDropState: "insufficient_data"
+    };
+  }
+
+  function renderUnavailable(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var urlApi = config.urlApi;
+    var locationObj = config.locationObj;
+    var documentObj = config.documentObj;
+    var resolveMountTarget =
+      typeof config.resolveMountTarget === "function" ? config.resolveMountTarget : function () {
+        return null;
+      };
+    var resolveCurrencyContext =
+      typeof config.resolveCurrencyContext === "function"
+        ? config.resolveCurrencyContext
+        : function () {
+            return Promise.resolve(null);
+          };
+    var renderPanelWithMarketCompare =
+      typeof config.renderPanelWithMarketCompare === "function"
+        ? config.renderPanelWithMarketCompare
+        : function () {};
+    var applySidebarCurrency =
+      typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
+    var applyCardCurrency =
+      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
+    var syncCardCurrencyObserver =
+      typeof config.syncCardCurrencyObserver === "function"
+        ? config.syncCardCurrencyObserver
+        : function () {};
+    var statusMessage = typeof config.statusMessage === "string" ? config.statusMessage : "";
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+    if (!urlApi || typeof urlApi.isListingPath !== "function" || !urlApi.isListingPath(pathname)) {
+      return;
+    }
+
+    var renderToken = state.renderToken + 1;
+    state.renderToken = renderToken;
+
+    var mountTarget = resolveMountTarget(documentObj);
+    if (!mountTarget || !mountTarget.mountNode) {
+      return;
+    }
+
+    resolveCurrencyContext().then(function (currencyContext) {
+      var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+      if (renderToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
+        return;
+      }
+
+      renderPanelWithMarketCompare({
+        listing: createUnavailableListing(),
+        metrics: createUnavailableMetrics(),
+        mountNode: mountTarget.mountNode,
+        mountPosition: mountTarget.mountPosition,
+        rawListing: null,
+        statusMessage: statusMessage,
+        currencyContext: currencyContext
+      });
+      applySidebarCurrency(currencyContext);
+      applyCardCurrency(currencyContext);
+      syncCardCurrencyObserver(currencyContext);
+    });
+  }
+
+  return {
+    renderUnavailable: renderUnavailable
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusRunLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function handleNonListingRoute(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var urlApi = config.urlApi;
+    var locationObj = config.locationObj;
+    var documentObj = config.documentObj;
+    var clearRetryTimer =
+      typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () {};
+    var disconnectHydrationObserver =
+      typeof config.disconnectHydrationObserver === "function"
+        ? config.disconnectHydrationObserver
+        : function () {};
+    var insightsPanel = config.insightsPanel;
+    var resolveCurrencyContext =
+      typeof config.resolveCurrencyContext === "function"
+        ? config.resolveCurrencyContext
+        : function () {
+            return Promise.resolve(null);
+          };
+    var createUsdCurrencyContext =
+      typeof config.createUsdCurrencyContext === "function"
+        ? config.createUsdCurrencyContext
+        : function () {
+            return { selectedCurrency: "USD", rate: null, mode: "dual" };
+          };
+    var applyCardCurrency =
+      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
+    var syncCardCurrencyObserver =
+      typeof config.syncCardCurrencyObserver === "function"
+        ? config.syncCardCurrencyObserver
+        : function () {};
+
+    if (!state || typeof state !== "object") {
+      return false;
+    }
+
+    var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+    if (!urlApi || typeof urlApi.isListingPath !== "function" || urlApi.isListingPath(pathname)) {
+      return false;
+    }
+
+    var nonListingToken = state.renderToken + 1;
+    state.renderToken = nonListingToken;
+    clearRetryTimer(true);
+    disconnectHydrationObserver();
+
+    if (insightsPanel && typeof insightsPanel.removeExistingPanels === "function") {
+      insightsPanel.removeExistingPanels(documentObj);
+    }
+    state.latestPanelContext = null;
+
+    resolveCurrencyContext()
+      .then(function (currencyContext) {
+        var latestPathname =
+          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (nonListingToken !== state.renderToken || urlApi.isListingPath(latestPathname)) {
+          return;
+        }
+
+        applyCardCurrency(currencyContext);
+        syncCardCurrencyObserver(currencyContext);
+      })
+      .catch(function () {
+        var latestPathname =
+          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (nonListingToken !== state.renderToken || urlApi.isListingPath(latestPathname)) {
+          return;
+        }
+
+        var fallbackCurrency = createUsdCurrencyContext();
+        applyCardCurrency(fallbackCurrency);
+        syncCardCurrencyObserver(fallbackCurrency);
+      });
+
+    return true;
+  }
+
+  function handleListingInsightsDisabled(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var listingInsightsEnabled = Boolean(config.listingInsightsEnabled);
+    var urlApi = config.urlApi;
+    var locationObj = config.locationObj;
+    var documentObj = config.documentObj;
+    var clearRetryTimer =
+      typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () {};
+    var disconnectHydrationObserver =
+      typeof config.disconnectHydrationObserver === "function"
+        ? config.disconnectHydrationObserver
+        : function () {};
+    var insightsPanel = config.insightsPanel;
+    var resolveCurrencyContext =
+      typeof config.resolveCurrencyContext === "function"
+        ? config.resolveCurrencyContext
+        : function () {
+            return Promise.resolve(null);
+          };
+    var createUsdCurrencyContext =
+      typeof config.createUsdCurrencyContext === "function"
+        ? config.createUsdCurrencyContext
+        : function () {
+            return { selectedCurrency: "USD", rate: null, mode: "dual" };
+          };
+    var applySidebarCurrency =
+      typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
+    var applyCardCurrency =
+      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
+    var syncCardCurrencyObserver =
+      typeof config.syncCardCurrencyObserver === "function"
+        ? config.syncCardCurrencyObserver
+        : function () {};
+    var log = typeof config.log === "function" ? config.log : function () {};
+    var reason = typeof config.reason === "string" ? config.reason : "";
+    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+
+    if (!state || typeof state !== "object" || listingInsightsEnabled) {
+      return false;
+    }
+
+    var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+    if (!urlApi || typeof urlApi.isListingPath !== "function" || !urlApi.isListingPath(pathname)) {
+      return false;
+    }
+
+    var disabledToken = state.renderToken + 1;
+    state.renderToken = disabledToken;
+    clearRetryTimer(true);
+    disconnectHydrationObserver();
+
+    if (insightsPanel && typeof insightsPanel.removeExistingPanels === "function") {
+      insightsPanel.removeExistingPanels(documentObj);
+    }
+    state.latestPanelContext = null;
+
+    resolveCurrencyContext()
+      .then(function (currencyContext) {
+        var latestPathname =
+          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (disabledToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
+          return;
+        }
+
+        applySidebarCurrency(currencyContext);
+        applyCardCurrency(currencyContext);
+        syncCardCurrencyObserver(currencyContext);
+
+        log("skipped_listing_insights_panel", {
+          reason: reason,
+          attempt: attempt,
+          currency: currencyContext && currencyContext.selectedCurrency
+        });
+      })
+      .catch(function () {
+        var latestPathname =
+          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (disabledToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
+          return;
+        }
+
+        var fallbackCurrency = createUsdCurrencyContext();
+        applySidebarCurrency(fallbackCurrency);
+        applyCardCurrency(fallbackCurrency);
+        syncCardCurrencyObserver(fallbackCurrency);
+      });
+
+    return true;
+  }
+
+  return {
+    handleNonListingRoute: handleNonListingRoute,
+    handleListingInsightsDisabled: handleListingInsightsDisabled
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusRetryLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function scheduleRetry(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+    var reason = typeof config.reason === "string" ? config.reason : "unknown";
+    var maxRetries = Number.isFinite(Number(config.maxRetries)) ? Number(config.maxRetries) : 0;
+    var retryDelayMs = Number.isFinite(Number(config.retryDelayMs)) ? Number(config.retryDelayMs) : 0;
+    var shouldStopRetryWindow =
+      typeof config.shouldStopRetryWindow === "function"
+        ? config.shouldStopRetryWindow
+        : function () {
+            return false;
+          };
+    var log = typeof config.log === "function" ? config.log : function () {};
+    var disconnectHydrationObserver =
+      typeof config.disconnectHydrationObserver === "function"
+        ? config.disconnectHydrationObserver
+        : function () {};
+    var renderUnavailable =
+      typeof config.renderUnavailable === "function" ? config.renderUnavailable : function () {};
+    var scheduleHydrationObserver =
+      typeof config.scheduleHydrationObserver === "function"
+        ? config.scheduleHydrationObserver
+        : function () {};
+    var clearRetryTimer =
+      typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () {};
+    var run = typeof config.run === "function" ? config.run : function () {};
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    if (attempt >= maxRetries || shouldStopRetryWindow()) {
+      log("retry limit reached", {
+        reason: reason,
+        attempt: attempt
+      });
+      disconnectHydrationObserver();
+      renderUnavailable("Feature unavailable: unable to read listing data.");
+      return;
+    }
+
+    scheduleHydrationObserver();
+
+    clearRetryTimer(false);
+    state.retryTimer = setTimeout(function () {
+      run("retry:" + reason, attempt + 1);
+    }, retryDelayMs);
+
+    log("scheduled retry", {
+      reason: reason,
+      attempt: attempt
+    });
+  }
+
+  return {
+    scheduleRetry: scheduleRetry
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusListingRenderLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function renderListingWithCurrency(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var urlApi = config.urlApi;
+    var locationObj = config.locationObj;
+    var renderToken = Number(config.renderToken);
+    var listing = config.listing;
+    var metrics = config.metrics;
+    var mountTarget = config.mountTarget && typeof config.mountTarget === "object" ? config.mountTarget : null;
+    var resolveCurrencyContext =
+      typeof config.resolveCurrencyContext === "function"
+        ? config.resolveCurrencyContext
+        : function () {
+            return Promise.resolve(null);
+          };
+    var createUsdCurrencyContext =
+      typeof config.createUsdCurrencyContext === "function"
+        ? config.createUsdCurrencyContext
+        : function () {
+            return { selectedCurrency: "USD", rate: null, mode: "dual" };
+          };
+    var renderPanelWithMarketCompare =
+      typeof config.renderPanelWithMarketCompare === "function"
+        ? config.renderPanelWithMarketCompare
+        : function () {};
+    var applySidebarCurrency =
+      typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
+    var applyCardCurrency =
+      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
+    var syncCardCurrencyObserver =
+      typeof config.syncCardCurrencyObserver === "function"
+        ? config.syncCardCurrencyObserver
+        : function () {};
+    var disconnectHydrationObserver =
+      typeof config.disconnectHydrationObserver === "function"
+        ? config.disconnectHydrationObserver
+        : function () {};
+    var log = typeof config.log === "function" ? config.log : function () {};
+    var reason = typeof config.reason === "string" ? config.reason : "";
+    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+
+    if (!state || typeof state !== "object") {
+      return;
+    }
+
+    resolveCurrencyContext()
+      .then(function (currencyContext) {
+        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (renderToken !== state.renderToken || !urlApi.isListingPath(pathname)) {
+          return;
+        }
+
+        renderPanelWithMarketCompare({
+          listing: listing,
+          metrics: metrics,
+          mountNode: mountTarget ? mountTarget.mountNode : null,
+          mountPosition: mountTarget ? mountTarget.mountPosition : "afterend",
+          rawListing: listing && listing.rawListing ? listing.rawListing : null,
+          currencyContext: currencyContext
+        });
+        applySidebarCurrency(currencyContext);
+        applyCardCurrency(currencyContext);
+        syncCardCurrencyObserver(currencyContext);
+
+        disconnectHydrationObserver();
+        state.retryStartedAtMs = null;
+
+        log("rendered", {
+          reason: reason,
+          attempt: attempt,
+          listingId: listing && listing.id,
+          currency: currencyContext && currencyContext.selectedCurrency
+        });
+      })
+      .catch(function () {
+        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (renderToken !== state.renderToken || !urlApi.isListingPath(pathname)) {
+          return;
+        }
+
+        var fallbackCurrency = createUsdCurrencyContext();
+        renderPanelWithMarketCompare({
+          listing: listing,
+          metrics: metrics,
+          mountNode: mountTarget ? mountTarget.mountNode : null,
+          mountPosition: mountTarget ? mountTarget.mountPosition : "afterend",
+          rawListing: listing && listing.rawListing ? listing.rawListing : null,
+          currencyContext: fallbackCurrency
+        });
+        applySidebarCurrency(fallbackCurrency);
+        applyCardCurrency(fallbackCurrency);
+        syncCardCurrencyObserver(fallbackCurrency);
+
+        disconnectHydrationObserver();
+        state.retryStartedAtMs = null;
+
+        log("rendered_with_currency_fallback", {
+          reason: reason,
+          attempt: attempt,
+          listingId: listing && listing.id
+        });
+      });
+  }
+
+  return {
+    renderListingWithCurrency: renderListingWithCurrency
+  };
+});
+
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.GrailedPlusListingPipelineLifecycle = factory();
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  function prepareListingRenderContext(options) {
+    var config = options && typeof options === "object" ? options : {};
+    var state = config.state;
+    var listingExtractor = config.listingExtractor;
+    var documentObj = config.documentObj;
+    var normalizeListingModel =
+      typeof config.normalizeListingModel === "function"
+        ? config.normalizeListingModel
+        : function (value) {
+            return value;
+          };
+    var resolveMountTarget =
+      typeof config.resolveMountTarget === "function"
+        ? config.resolveMountTarget
+        : function () {
+            return null;
+          };
+    var computeListingInsights =
+      typeof config.computeListingInsights === "function"
+        ? config.computeListingInsights
+        : function () {
+            return null;
+          };
+    var scheduleRetry =
+      typeof config.scheduleRetry === "function" ? config.scheduleRetry : function () {};
+    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+
+    if (!state || typeof state !== "object") {
+      return null;
+    }
+
+    if (!listingExtractor || typeof listingExtractor.readNextDataFromDocument !== "function") {
+      return null;
+    }
+
+    var nextData = listingExtractor.readNextDataFromDocument(documentObj);
+    if (!nextData) {
+      scheduleRetry("missing_next_data", attempt);
+      return null;
+    }
+
+    var listing = normalizeListingModel(listingExtractor.extractListing(nextData));
+    if (!listing || !listing.id) {
+      scheduleRetry("missing_listing", attempt);
+      return null;
+    }
+
+    var mountTarget = resolveMountTarget(documentObj);
+    if (!mountTarget || !mountTarget.mountNode) {
+      scheduleRetry("missing_mount", attempt);
+      return null;
+    }
+
+    var metrics = computeListingInsights(listing);
+    var renderToken = state.renderToken + 1;
+    state.renderToken = renderToken;
+
+    return {
+      listing: listing,
+      metrics: metrics,
+      mountTarget: mountTarget,
+      renderToken: renderToken
+    };
+  }
+
+  return {
+    prepareListingRenderContext: prepareListingRenderContext
+  };
+});
+
 (function () {
   "use strict";
 
@@ -3171,9 +8658,25 @@
     globalThis.GrailedPlusPricingInsights || globalThis.GrailedPlusMetrics;
   var Settings = globalThis.GrailedPlusSettings;
   var Currency = globalThis.GrailedPlusCurrency;
+  var DepopProviderFactory = globalThis.GrailedPlusDepopProvider;
+  var MarketProviders = globalThis.GrailedPlusMarketProviders;
+  var MarketCompareController = globalThis.GrailedPlusMarketCompareController;
   var InsightsPanel =
     globalThis.GrailedPlusInsightsPanel || globalThis.GrailedPlusRender;
   var Theme = globalThis.GrailedPlusTheme;
+  var Runtime = globalThis.GrailedPlusContentRuntime;
+  var NavigationLifecycle = globalThis.GrailedPlusNavigationLifecycle;
+  var DarkModeLifecycle = globalThis.GrailedPlusDarkModeLifecycle;
+  var FilterScopeLifecycle = globalThis.GrailedPlusFilterScopeLifecycle;
+  var CardCurrencyLifecycle = globalThis.GrailedPlusCardCurrencyLifecycle;
+  var MarketCompareLifecycle = globalThis.GrailedPlusMarketCompareLifecycle;
+  var CurrencyLifecycle = globalThis.GrailedPlusCurrencyLifecycle;
+  var ListingInsightsLifecycle = globalThis.GrailedPlusListingInsightsLifecycle;
+  var UnavailableLifecycle = globalThis.GrailedPlusUnavailableLifecycle;
+  var RunLifecycle = globalThis.GrailedPlusRunLifecycle;
+  var RetryLifecycle = globalThis.GrailedPlusRetryLifecycle;
+  var ListingRenderLifecycle = globalThis.GrailedPlusListingRenderLifecycle;
+  var ListingPipelineLifecycle = globalThis.GrailedPlusListingPipelineLifecycle;
 
   if (!Url || !ListingExtractor || !PricingInsights || !InsightsPanel) {
     console.error("[Grailed+] Failed to initialize: missing modules");
@@ -3217,25 +8720,31 @@
     "[class*='MerchandisingMenu']:is([class*='_viewportContainer__'], [class*='__viewportContainer__'])";
   var FILTER_TARGET_REFRESH_DELAYS_MS = [120, 400, 1200, 2500, 5000];
 
-  var state = {
-    // Start empty so first navigation pass always applies theme state on initial load.
-    lastUrl: "",
-    retryTimer: null,
-    urlPollTimer: null,
-    retryStartedAtMs: null,
-    mutationObserver: null,
-    renderToken: 0,
-    darkModeToken: 0,
-    darkModeMediaQuery: null,
-    darkModeMediaListener: null,
-    filterScopeTick: null,
-    filterScopeDelayTimers: [],
-    filterScopeObserver: null,
-    cardCurrencyObserver: null,
-    cardCurrencyTick: null,
-    cardCurrencyTickUsesAnimationFrame: false,
-    cardCurrencyContext: null
-  };
+  var state =
+    Runtime && typeof Runtime.createRuntimeState === "function"
+      ? Runtime.createRuntimeState()
+      : {
+          // Start empty so first navigation pass always applies theme state on initial load.
+          lastUrl: "",
+          retryTimer: null,
+          urlPollTimer: null,
+          retryStartedAtMs: null,
+          mutationObserver: null,
+          renderToken: 0,
+          darkModeToken: 0,
+          darkModeMediaQuery: null,
+          darkModeMediaListener: null,
+          filterScopeTick: null,
+          filterScopeDelayTimers: [],
+          filterScopeObserver: null,
+          cardCurrencyObserver: null,
+          cardCurrencyTick: null,
+          cardCurrencyTickUsesAnimationFrame: false,
+          cardCurrencyContext: null,
+          marketCompareController: null,
+          marketCompareUnsubscribe: null,
+          latestPanelContext: null
+        };
 
   function isDebugEnabled() {
     var enabled = false;
@@ -3272,608 +8781,267 @@
   }
 
   function clearRetryTimer(resetWindow) {
-    if (state.retryTimer) {
-      clearTimeout(state.retryTimer);
-      state.retryTimer = null;
+    if (!Runtime || typeof Runtime.clearRetryTimer !== "function") {
+      return;
     }
-    if (resetWindow) {
-      state.retryStartedAtMs = null;
-    }
+    Runtime.clearRetryTimer(state, resetWindow);
   }
 
   function shouldStopRetryWindow() {
-    if (state.retryStartedAtMs == null) {
-      state.retryStartedAtMs = Date.now();
-      return false;
+    if (!Runtime || typeof Runtime.shouldStopRetryWindow !== "function") {
+      return true;
     }
-
-    return Date.now() - state.retryStartedAtMs > MAX_RETRY_WINDOW_MS;
+    return Runtime.shouldStopRetryWindow(state, MAX_RETRY_WINDOW_MS);
   }
 
   function scheduleHydrationObserver() {
-    if (typeof MutationObserver !== "function") {
+    if (!Runtime || typeof Runtime.scheduleHydrationObserver !== "function") {
       return;
     }
-    if (state.mutationObserver) {
-      return;
-    }
-
-    var obs = new MutationObserver(function () {
-      if (!Url.isListingPath(location.pathname)) {
-        return;
-      }
-
-      var nextDataNode = document.getElementById("__NEXT_DATA__");
-      if (nextDataNode && nextDataNode.textContent) {
-        log("hydration observer detected next data");
+    Runtime.scheduleHydrationObserver({
+      state: state,
+      isListingPath: Url.isListingPath,
+      getPathname: function () {
+        return location.pathname;
+      },
+      getNextDataNode: function () {
+        return document.getElementById("__NEXT_DATA__");
+      },
+      onHydrated: function () {
         refresh("mutation_observer");
-      }
+      },
+      log: log
     });
-
-    obs.observe(document.documentElement || document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    state.mutationObserver = obs;
   }
 
   function disconnectHydrationObserver() {
-    if (state.mutationObserver && typeof state.mutationObserver.disconnect === "function") {
-      state.mutationObserver.disconnect();
+    if (!Runtime || typeof Runtime.disconnectHydrationObserver !== "function") {
+      return;
     }
-    state.mutationObserver = null;
+    Runtime.disconnectHydrationObserver(state);
   }
 
   function resolveMountTarget(doc) {
-    if (!InsightsPanel) {
+    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.resolveMountTarget !== "function") {
       return null;
     }
-
-    if (typeof InsightsPanel.findMountTarget === "function") {
-      return InsightsPanel.findMountTarget(doc);
-    }
-
-    if (typeof InsightsPanel.findMountNode === "function") {
-      var legacyMountNode = InsightsPanel.findMountNode(doc);
-      if (!legacyMountNode) {
-        return null;
-      }
-      return {
-        mountNode: legacyMountNode,
-        mountPosition: "afterend",
-        strategy: "legacy_mount_node"
-      };
-    }
-
-    return null;
+    return ListingInsightsLifecycle.resolveMountTarget(InsightsPanel, doc);
   }
 
   function normalizeListingModel(listing) {
-    if (!listing || typeof listing !== "object") {
-      return {
-        id: null,
-        title: "",
-        createdAt: null,
-        pricing: {
-          history: [],
-          updatedAt: null
-        },
-        seller: {
-          createdAt: null
-        },
-        prettyPath: null,
-        sold: false,
-        rawListing: null,
-        sourceStatus: "missing_listing"
-      };
+    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.normalizeListingModel !== "function") {
+      return null;
     }
-
-    var existingPricing = listing.pricing && typeof listing.pricing === "object" ? listing.pricing : {};
-    var history = Array.isArray(existingPricing.history)
-      ? existingPricing.history
-      : Array.isArray(listing.priceDrops)
-      ? listing.priceDrops
-      : [];
-    var updatedAt =
-      typeof existingPricing.updatedAt === "string" || existingPricing.updatedAt === null
-        ? existingPricing.updatedAt
-        : listing.priceUpdatedAt || null;
-
-    return {
-      id: listing.id || null,
-      title: typeof listing.title === "string" ? listing.title : "",
-      createdAt: listing.createdAt || null,
-      pricing: {
-        history: history,
-        updatedAt: updatedAt
-      },
-      seller:
-        listing.seller && typeof listing.seller === "object"
-          ? {
-              createdAt: listing.seller.createdAt || null
-            }
-          : {
-              createdAt: null
-            },
-      prettyPath: listing.prettyPath || null,
-      sold: Boolean(listing.sold),
-      rawListing: listing.rawListing || null,
-      sourceStatus: listing.sourceStatus || "ok"
-    };
+    return ListingInsightsLifecycle.normalizeListingModel(listing);
   }
 
   function computeListingInsights(listing) {
-    if (PricingInsights && typeof PricingInsights.computePricingInsights === "function") {
-      return PricingInsights.computePricingInsights(listing);
+    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.computeListingInsights !== "function") {
+      return null;
     }
-
-    if (PricingInsights && typeof PricingInsights.computeMetrics === "function") {
-      var legacy = PricingInsights.computeMetrics({
-        priceDrops: listing && listing.pricing ? listing.pricing.history : [],
-        createdAt: listing ? listing.createdAt : null,
-        priceUpdatedAt: listing && listing.pricing ? listing.pricing.updatedAt : null
-      });
-      return {
-        averageDropAmountUsd: legacy && Number.isFinite(legacy.avgDropAmount) ? legacy.avgDropAmount : null,
-        averageDropPercent: legacy && Number.isFinite(legacy.avgDropPercent) ? legacy.avgDropPercent : null,
-        expectedNextDropDays:
-          legacy && Number.isFinite(legacy.expectedDropDays) ? legacy.expectedDropDays : null,
-        expectedDropState:
-          legacy && typeof legacy.expectedDropState === "string"
-            ? legacy.expectedDropState
-            : "insufficient_data",
-        totalDrops: legacy && Number.isFinite(legacy.totalDrops) ? legacy.totalDrops : 0
-      };
-    }
-
-    return {
-      averageDropAmountUsd: null,
-      averageDropPercent: null,
-      expectedNextDropDays: null,
-      expectedDropState: "insufficient_data",
-      totalDrops: 0
-    };
+    return ListingInsightsLifecycle.computeListingInsights({
+      listing: listing,
+      pricingInsights: PricingInsights
+    });
   }
 
   function renderListingInsightsPanel(options) {
-    if (InsightsPanel && typeof InsightsPanel.renderInsightsPanel === "function") {
-      return InsightsPanel.renderInsightsPanel(options);
+    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.renderListingInsightsPanel !== "function") {
+      return null;
     }
+    return ListingInsightsLifecycle.renderListingInsightsPanel({
+      insightsPanel: InsightsPanel,
+      panelOptions: options
+    });
+  }
 
-    if (InsightsPanel && typeof InsightsPanel.renderPanel === "function") {
-      var listing = normalizeListingModel(options && options.listing ? options.listing : null);
-      var metrics = options && options.metrics ? options.metrics : {};
-      var legacyMetrics = {
-        avgDropAmount:
-          Number.isFinite(metrics.averageDropAmountUsd) ? metrics.averageDropAmountUsd : null,
-        avgDropPercent:
-          Number.isFinite(metrics.averageDropPercent) ? metrics.averageDropPercent : null,
-        expectedDropDays:
-          Number.isFinite(metrics.expectedNextDropDays) ? metrics.expectedNextDropDays : null,
-        expectedDropState:
-          typeof metrics.expectedDropState === "string"
-            ? metrics.expectedDropState
-            : "insufficient_data",
-        totalDrops: Number.isFinite(metrics.totalDrops) ? metrics.totalDrops : 0
-      };
-
-      return InsightsPanel.renderPanel({
-        listing: {
-          id: listing.id,
-          title: listing.title,
-          priceDrops: listing.pricing.history,
-          createdAt: listing.createdAt,
-          priceUpdatedAt: listing.pricing.updatedAt,
-          seller: listing.seller,
-          prettyPath: listing.prettyPath,
-          sold: listing.sold,
-          rawListing: listing.rawListing
-        },
-        metrics: legacyMetrics,
-        mountNode: options && options.mountNode ? options.mountNode : null,
-        mountPosition: options && options.mountPosition ? options.mountPosition : "afterend",
-        rawListing: options && options.rawListing ? options.rawListing : null,
-        statusMessage: options && options.statusMessage ? options.statusMessage : "",
-        currencyContext: options && options.currencyContext ? options.currencyContext : null
-      });
+  function ensureMarketCompareController() {
+    if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.ensureMarketCompareController !== "function") {
+      return null;
     }
+    return MarketCompareLifecycle.ensureMarketCompareController({
+      state: state,
+      marketCompareControllerApi: MarketCompareController,
+      marketProviders: MarketProviders,
+      depopProviderFactory: DepopProviderFactory,
+      onStateUpdate: function (nextState) {
+        var context = state.latestPanelContext;
+        if (!context) {
+          return;
+        }
+        if (!Url.isListingPath(location.pathname)) {
+          return;
+        }
+        if (context.renderToken !== state.renderToken) {
+          return;
+        }
 
-    return null;
+        renderListingInsightsPanel({
+          listing: context.listing,
+          metrics: context.metrics,
+          mountNode: context.mountNode,
+          mountPosition: context.mountPosition,
+          rawListing: context.rawListing,
+          statusMessage: context.statusMessage,
+          currencyContext: context.currencyContext,
+          marketCompare: nextState,
+          onMarketCompareClick: triggerMarketCompare
+        });
+      }
+    });
+  }
+
+  function triggerMarketCompare() {
+    if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.triggerMarketCompare !== "function") {
+      return;
+    }
+    MarketCompareLifecycle.triggerMarketCompare({
+      state: state,
+      ensureController: ensureMarketCompareController
+    });
+  }
+
+  function renderPanelWithMarketCompare(options) {
+    if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.renderPanelWithMarketCompare !== "function") {
+      return null;
+    }
+    return MarketCompareLifecycle.renderPanelWithMarketCompare({
+      state: state,
+      ensureController: ensureMarketCompareController,
+      renderListingInsightsPanel: renderListingInsightsPanel,
+      onMarketCompareClick: triggerMarketCompare,
+      panelOptions: options
+    });
   }
 
   function createUsdCurrencyContext() {
-    return {
-      selectedCurrency: "USD",
-      rate: null,
-      mode: "dual"
-    };
+    if (!CurrencyLifecycle || typeof CurrencyLifecycle.createUsdCurrencyContext !== "function") {
+      return {
+        selectedCurrency: "USD",
+        rate: null,
+        mode: "dual"
+      };
+    }
+    return CurrencyLifecycle.createUsdCurrencyContext();
   }
 
   function normalizeCurrencyCode(input) {
-    if (Settings && typeof Settings.normalizeCurrencyCode === "function") {
-      return Settings.normalizeCurrencyCode(input);
-    }
-
-    if (typeof input !== "string") {
+    if (!CurrencyLifecycle || typeof CurrencyLifecycle.normalizeCurrencyCode !== "function") {
       return null;
     }
-
-    var trimmed = input.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(trimmed)) {
-      return null;
-    }
-    return trimmed;
-  }
-
-  function normalizeHexColor(input) {
-    if (Settings && typeof Settings.normalizeHexColor === "function") {
-      return Settings.normalizeHexColor(input);
-    }
-
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
-    if (shortMatch && shortMatch[1]) {
-      var shortHex = shortMatch[1].toUpperCase();
-      return (
-        "#" +
-        shortHex.charAt(0) +
-        shortHex.charAt(0) +
-        shortHex.charAt(1) +
-        shortHex.charAt(1) +
-        shortHex.charAt(2) +
-        shortHex.charAt(2)
-      );
-    }
-
-    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
-    if (longMatch && longMatch[1]) {
-      return "#" + longMatch[1].toUpperCase();
-    }
-
-    return null;
-  }
-
-  function normalizeDarkModeBehavior(input) {
-    if (Settings && typeof Settings.normalizeDarkModeBehavior === "function") {
-      return Settings.normalizeDarkModeBehavior(input);
-    }
-
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim().toLowerCase();
-    if (trimmed !== "system" && trimmed !== "permanent") {
-      return null;
-    }
-
-    return trimmed;
-  }
-
-  function getSystemDarkModeQuery() {
-    if (typeof globalThis.matchMedia !== "function") {
-      return null;
-    }
-
-    try {
-      return globalThis.matchMedia("(prefers-color-scheme: dark)");
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function getSystemPrefersDark() {
-    var query = getSystemDarkModeQuery();
-    return Boolean(query && query.matches);
+    return CurrencyLifecycle.normalizeCurrencyCode(input, Settings);
   }
 
   function createDefaultDarkModeContext() {
-    return {
-      enabled: getSystemPrefersDark(),
-      behavior: "system",
-      primaryColor: "#000000"
-    };
-  }
-
-  function resolveDarkModeContext() {
-    var defaultContext = createDefaultDarkModeContext();
-    if (!Settings) {
-      return Promise.resolve(defaultContext);
+    if (
+      !DarkModeLifecycle ||
+      typeof DarkModeLifecycle.createDefaultDarkModeContext !== "function"
+    ) {
+      return {
+        enabled: false,
+        behavior: "system",
+        primaryColor: "#000000"
+      };
     }
-
-    var enabledPromise =
-      typeof Settings.getDarkModeEnabled === "function"
-        ? Settings.getDarkModeEnabled()
-        : Promise.resolve(defaultContext.enabled);
-    var behaviorPromise =
-      typeof Settings.getDarkModeBehavior === "function"
-        ? Settings.getDarkModeBehavior()
-        : Promise.resolve(defaultContext.behavior);
-    var colorPromise =
-      typeof Settings.getDarkModePrimaryColor === "function"
-        ? Settings.getDarkModePrimaryColor()
-        : Promise.resolve(defaultContext.primaryColor);
-
-    return Promise.all([enabledPromise, behaviorPromise, colorPromise])
-      .then(function (values) {
-        var configuredEnabled = Boolean(values[0]);
-        var behavior = normalizeDarkModeBehavior(values[1]) || defaultContext.behavior;
-        var primaryColor = normalizeHexColor(values[2]) || defaultContext.primaryColor;
-        var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
-        return {
-          enabled: enabled,
-          behavior: behavior,
-          primaryColor: primaryColor
-        };
-      })
-      .catch(function () {
-        return defaultContext;
-      });
+    return DarkModeLifecycle.createDefaultDarkModeContext();
   }
 
   function resolveCurrencyContext() {
-    var defaultContext = createUsdCurrencyContext();
-
-    if (!Settings || typeof Settings.getSelectedCurrency !== "function") {
-      return Promise.resolve(defaultContext);
+    if (!CurrencyLifecycle || typeof CurrencyLifecycle.resolveCurrencyContext !== "function") {
+      return Promise.resolve(createUsdCurrencyContext());
     }
-
-    var enabledPromise =
-      typeof Settings.getCurrencyConversionEnabled === "function"
-        ? Settings.getCurrencyConversionEnabled()
-        : Promise.resolve(false);
-
-    return enabledPromise
-      .then(function (enabled) {
-        if (!enabled) {
-          return defaultContext;
-        }
-        return Settings.getSelectedCurrency();
-      })
-      .then(function (savedCurrency) {
-        if (typeof savedCurrency !== "string") {
-          return defaultContext;
-        }
-
-        var selectedCurrency = normalizeCurrencyCode(savedCurrency) || defaultContext.selectedCurrency;
-        var context = {
-          selectedCurrency: selectedCurrency,
-          rate: null,
-          mode: "dual"
-        };
-
-        if (selectedCurrency === "USD") {
-          return context;
-        }
-
-        if (!Currency || typeof Currency.getRates !== "function") {
-          return context;
-        }
-
-        return Currency.getRates("USD")
-          .then(function (result) {
-            var rates = result && result.rates && typeof result.rates === "object" ? result.rates : {};
-            var rate = Number(rates[selectedCurrency]);
-            if (Number.isFinite(rate) && rate > 0) {
-              context.rate = rate;
-            }
-            return context;
-          })
-          .catch(function () {
-            return context;
-          });
-      })
-      .catch(function () {
-        return defaultContext;
-      });
+    return CurrencyLifecycle.resolveCurrencyContext({
+      settings: Settings,
+      currencyApi: Currency,
+      normalizeCurrencyCode: normalizeCurrencyCode
+    });
   }
 
   function resolveListingInsightsEnabled() {
-    var defaultEnabled =
-      Settings && typeof Settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
-        ? Settings.DEFAULT_LISTING_INSIGHTS_ENABLED
-        : true;
-
-    if (!Settings || typeof Settings.getListingInsightsEnabled !== "function") {
-      return Promise.resolve(defaultEnabled);
+    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.resolveListingInsightsEnabled !== "function") {
+      return Promise.resolve(true);
     }
-
-    return Settings.getListingInsightsEnabled()
-      .then(function (enabled) {
-        return typeof enabled === "boolean" ? enabled : defaultEnabled;
-      })
-      .catch(function () {
-        return defaultEnabled;
-      });
+    return ListingInsightsLifecycle.resolveListingInsightsEnabled(Settings);
   }
 
   function applySidebarCurrency(currencyContext) {
-    if (!InsightsPanel || typeof InsightsPanel.applySidebarCurrency !== "function") {
+    if (!CurrencyLifecycle || typeof CurrencyLifecycle.applySidebarCurrency !== "function") {
       return false;
     }
-
-    try {
-      return InsightsPanel.applySidebarCurrency(document, currencyContext || createUsdCurrencyContext());
-    } catch (_) {
-      // Sidebar rewrite should never block panel rendering.
-      return false;
-    }
+    return CurrencyLifecycle.applySidebarCurrency({
+      insightsPanel: InsightsPanel,
+      documentObj: document,
+      currencyContext: currencyContext
+    });
   }
 
   function applyCardCurrency(currencyContext) {
-    if (!InsightsPanel || typeof InsightsPanel.applyCardCurrency !== "function") {
+    if (!CurrencyLifecycle || typeof CurrencyLifecycle.applyCardCurrency !== "function") {
       return false;
     }
-
-    try {
-      return InsightsPanel.applyCardCurrency(document, currencyContext || createUsdCurrencyContext());
-    } catch (_) {
-      // Card rewrite should never block the rest of the extension.
-      return false;
-    }
-  }
-
-  function isConversionContextEnabled(currencyContext) {
-    var selectedCurrency = normalizeCurrencyCode(currencyContext && currencyContext.selectedCurrency);
-    var rate = Number(currencyContext && currencyContext.rate);
-    return Boolean(selectedCurrency && selectedCurrency !== "USD" && Number.isFinite(rate) && rate > 0);
-  }
-
-  function isElementNode(node) {
-    if (!node) {
-      return false;
-    }
-
-    if (node.nodeType === 1) {
-      return true;
-    }
-
-    return typeof node.querySelector === "function";
-  }
-
-  function nodeContainsCardPriceTarget(node) {
-    if (!isElementNode(node)) {
-      return false;
-    }
-
-    if (
-      InsightsPanel &&
-      typeof InsightsPanel.nodeContainsCardPriceTarget === "function"
-    ) {
-      try {
-        return Boolean(InsightsPanel.nodeContainsCardPriceTarget(node));
-      } catch (_) {
-        // Fall through to local selector checks.
-      }
-    }
-
-    if (typeof node.matches === "function") {
-      if (node.matches(CARD_PRICE_TARGET_SELECTOR)) {
-        return true;
-      }
-    }
-
-    if (typeof node.querySelector === "function") {
-      return Boolean(node.querySelector(CARD_PRICE_TARGET_SELECTOR));
-    }
-
-    return false;
-  }
-
-  function clearCardCurrencyTick() {
-    if (state.cardCurrencyTick == null) {
-      return;
-    }
-
-    if (
-      state.cardCurrencyTickUsesAnimationFrame &&
-      typeof globalThis.cancelAnimationFrame === "function"
-    ) {
-      globalThis.cancelAnimationFrame(state.cardCurrencyTick);
-    } else {
-      clearTimeout(state.cardCurrencyTick);
-    }
-
-    state.cardCurrencyTick = null;
-    state.cardCurrencyTickUsesAnimationFrame = false;
+    return CurrencyLifecycle.applyCardCurrency({
+      insightsPanel: InsightsPanel,
+      documentObj: document,
+      currencyContext: currencyContext
+    });
   }
 
   function disconnectCardCurrencyObserver() {
-    if (state.cardCurrencyObserver && typeof state.cardCurrencyObserver.disconnect === "function") {
-      state.cardCurrencyObserver.disconnect();
+    if (
+      !CardCurrencyLifecycle ||
+      typeof CardCurrencyLifecycle.disconnectCardCurrencyObserver !== "function"
+    ) {
+      return;
     }
-    state.cardCurrencyObserver = null;
-    state.cardCurrencyContext = null;
-    clearCardCurrencyTick();
+    CardCurrencyLifecycle.disconnectCardCurrencyObserver(state);
   }
 
   function scheduleCardCurrencyRefresh() {
-    if (state.cardCurrencyTick != null) {
+    if (
+      !CardCurrencyLifecycle ||
+      typeof CardCurrencyLifecycle.scheduleCardCurrencyRefresh !== "function"
+    ) {
       return;
     }
-
-    var run = function () {
-      state.cardCurrencyTick = null;
-      state.cardCurrencyTickUsesAnimationFrame = false;
-      applyCardCurrency(state.cardCurrencyContext || createUsdCurrencyContext());
-    };
-
-    if (typeof globalThis.requestAnimationFrame === "function") {
-      state.cardCurrencyTickUsesAnimationFrame = true;
-      state.cardCurrencyTick = globalThis.requestAnimationFrame(run);
-      return;
-    }
-
-    state.cardCurrencyTickUsesAnimationFrame = false;
-    state.cardCurrencyTick = globalThis.setTimeout(run, 16);
+    CardCurrencyLifecycle.scheduleCardCurrencyRefresh({
+      state: state,
+      onRefresh: function () {
+        applyCardCurrency(state.cardCurrencyContext || createUsdCurrencyContext());
+      }
+    });
   }
 
   function setupCardCurrencyObserver() {
-    if (state.cardCurrencyObserver || typeof MutationObserver !== "function") {
+    if (
+      !CardCurrencyLifecycle ||
+      typeof CardCurrencyLifecycle.setupCardCurrencyObserver !== "function"
+    ) {
       return;
     }
-
-    var root = document.body || document.documentElement;
-    if (!root) {
-      return;
-    }
-
-    var observer = new MutationObserver(function (mutations) {
-      var i;
-      var j;
-      var mutation;
-      var addedNode;
-      var shouldRefresh = false;
-
-      for (i = 0; i < mutations.length; i += 1) {
-        mutation = mutations[i];
-        if (!mutation || mutation.type !== "childList" || !mutation.addedNodes) {
-          continue;
-        }
-
-        for (j = 0; j < mutation.addedNodes.length; j += 1) {
-          addedNode = mutation.addedNodes[j];
-          if (nodeContainsCardPriceTarget(addedNode)) {
-            shouldRefresh = true;
-            break;
-          }
-        }
-
-        if (shouldRefresh) {
-          break;
-        }
-      }
-
-      if (shouldRefresh) {
-        scheduleCardCurrencyRefresh();
-      }
+    CardCurrencyLifecycle.setupCardCurrencyObserver({
+      state: state,
+      documentObj: document,
+      selector: CARD_PRICE_TARGET_SELECTOR,
+      insightsPanel: InsightsPanel,
+      onScheduleRefresh: scheduleCardCurrencyRefresh
     });
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true
-    });
-
-    state.cardCurrencyObserver = observer;
   }
 
   function syncCardCurrencyObserver(currencyContext) {
-    state.cardCurrencyContext = currencyContext || createUsdCurrencyContext();
-    if (!isConversionContextEnabled(state.cardCurrencyContext)) {
-      disconnectCardCurrencyObserver();
+    if (
+      !CardCurrencyLifecycle ||
+      typeof CardCurrencyLifecycle.syncCardCurrencyObserver !== "function"
+    ) {
       return;
     }
-
-    setupCardCurrencyObserver();
+    CardCurrencyLifecycle.syncCardCurrencyObserver({
+      state: state,
+      currencyContext: currencyContext,
+      createUsdCurrencyContext: createUsdCurrencyContext,
+      normalizeCurrencyCode: normalizeCurrencyCode,
+      onSetup: setupCardCurrencyObserver,
+      onDisconnect: disconnectCardCurrencyObserver
+    });
   }
 
   function applyDarkMode(darkModeContext) {
@@ -3891,429 +9059,173 @@
   }
 
   function refreshDarkMode() {
-    var darkModeToken = state.darkModeToken + 1;
-    state.darkModeToken = darkModeToken;
-
-    resolveDarkModeContext().then(function (darkModeContext) {
-      if (darkModeToken !== state.darkModeToken) {
-        return;
-      }
-      applyDarkMode(darkModeContext);
+    if (!DarkModeLifecycle || typeof DarkModeLifecycle.refreshDarkMode !== "function") {
+      return;
+    }
+    DarkModeLifecycle.refreshDarkMode({
+      state: state,
+      settings: Settings,
+      onApply: applyDarkMode
     });
   }
 
   function setupDarkModeMediaListener() {
-    if (state.darkModeMediaQuery) {
+    if (
+      !DarkModeLifecycle ||
+      typeof DarkModeLifecycle.setupDarkModeMediaListener !== "function"
+    ) {
       return;
     }
-
-    var query = getSystemDarkModeQuery();
-    if (!query) {
-      return;
-    }
-
-    var onChange = function () {
-      refreshDarkMode();
-    };
-
-    if (typeof query.addEventListener === "function") {
-      query.addEventListener("change", onChange);
-    } else if (typeof query.addListener === "function") {
-      query.addListener(onChange);
-    } else {
-      return;
-    }
-
-    state.darkModeMediaQuery = query;
-    state.darkModeMediaListener = onChange;
-  }
-
-  function getThemeAttrOrFallback(key, fallback) {
-    if (!Theme || typeof Theme !== "object") {
-      return fallback;
-    }
-    return Theme[key] || fallback;
-  }
-
-  function clearFilterTargets() {
-    if (typeof document.querySelectorAll !== "function") {
-      return;
-    }
-
-    var nodes = document.querySelectorAll(
-      "[" + FILTER_TARGET_ATTR + "],[" + FILTER_SCOPE_SKIP_ATTR + "]"
-    );
-    var i;
-    var node;
-
-    for (i = 0; i < nodes.length; i += 1) {
-      node = nodes[i];
-      if (typeof node.removeAttribute === "function") {
-        node.removeAttribute(FILTER_TARGET_ATTR);
-        node.removeAttribute(FILTER_SCOPE_SKIP_ATTR);
-      }
-    }
-  }
-
-  function getDarkModeRootState() {
-    var rootNode = document.documentElement || null;
-    var bodyNode = document.body || null;
-    var nextRoot =
-      typeof document.getElementById === "function"
-        ? document.getElementById("__next")
-        : null;
-    var rootAttr = getThemeAttrOrFallback("ROOT_ATTR", "data-grailed-plus-dark-mode");
-    var nextRootAttr = getThemeAttrOrFallback("NEXT_ROOT_ATTR", "data-grailed-plus-next-root");
-    var rootEnabled = Boolean(rootNode && rootNode.getAttribute(rootAttr) === "1");
-    var nextRootEnabled = Boolean(rootNode && rootNode.getAttribute(nextRootAttr) === "1");
-    var filterRoot = null;
-    var mode = "none";
-
-    if (rootEnabled && nextRootEnabled && nextRoot) {
-      filterRoot = nextRoot;
-      mode = "next";
-    } else if (rootEnabled && bodyNode) {
-      filterRoot = bodyNode;
-      mode = "legacy";
-    }
-
-    return {
-      rootNode: rootNode,
-      bodyNode: bodyNode,
-      nextRoot: nextRoot,
-      enabled: Boolean(filterRoot),
-      mode: mode,
-      filterRoot: filterRoot
-    };
-  }
-
-  function containsHeaderBoundary(node, headerRoot) {
-    if (!node) {
-      return false;
-    }
-
-    if (headerRoot && node === headerRoot) {
-      return true;
-    }
-
-    if (typeof node.matches === "function") {
-      if (node.matches(HEADER_ROOT_SELECTOR) || node.matches(MENU_ROOT_SELECTOR)) {
-        return true;
-      }
-    }
-
-    if (typeof node.querySelector === "function") {
-      return Boolean(node.querySelector(HEADER_ROOT_SELECTOR + ", " + MENU_ROOT_SELECTOR));
-    }
-
-    return false;
-  }
-
-  function isDirectHeaderBoundary(node, headerRoot) {
-    if (!node) {
-      return false;
-    }
-
-    if (headerRoot && node === headerRoot) {
-      return true;
-    }
-
-    if (typeof node.matches !== "function") {
-      return false;
-    }
-
-    return Boolean(node.matches(HEADER_ROOT_SELECTOR) || node.matches(MENU_ROOT_SELECTOR));
-  }
-
-  function markFilterTargetsWithin(boundaryNode, headerRoot, depth) {
-    if (!boundaryNode || !boundaryNode.children || depth > 6) {
-      return;
-    }
-
-    var children = boundaryNode.children;
-    var i;
-    var child;
-    var hasBoundary;
-    var isDirectBoundary;
-
-    for (i = 0; i < children.length; i += 1) {
-      child = children[i];
-      isDirectBoundary = isDirectHeaderBoundary(child, headerRoot);
-
-      if (isDirectBoundary) {
-        if (typeof child.setAttribute === "function") {
-          child.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
-        }
-        continue;
-      }
-
-      hasBoundary = containsHeaderBoundary(child, headerRoot);
-
-      if (hasBoundary) {
-        if (typeof child.setAttribute === "function") {
-          child.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
-        }
-        markFilterTargetsWithin(child, headerRoot, depth + 1);
-        continue;
-      }
-
-      if (typeof child.setAttribute === "function") {
-        child.setAttribute(FILTER_TARGET_ATTR, FILTER_TARGET_ATTR_VALUE);
-      }
-    }
+    DarkModeLifecycle.setupDarkModeMediaListener({
+      state: state,
+      onChange: refreshDarkMode
+    });
   }
 
   function refreshFilterTargets() {
-    clearFilterTargets();
-
-    var modeState = getDarkModeRootState();
-    if (!modeState.enabled) {
+    if (!FilterScopeLifecycle || typeof FilterScopeLifecycle.refreshFilterTargets !== "function") {
       return;
     }
-
-    var filterRoot = modeState.filterRoot;
-    if (!filterRoot || !filterRoot.children) {
-      return;
-    }
-
-    var headerRoot =
-      typeof filterRoot.querySelector === "function"
-        ? filterRoot.querySelector(HEADER_ROOT_SELECTOR)
-        : null;
-    var topChildren = filterRoot.children;
-    var i;
-    var topChild;
-    var hasBoundary;
-
-    for (i = 0; i < topChildren.length; i += 1) {
-      topChild = topChildren[i];
-      hasBoundary = containsHeaderBoundary(topChild, headerRoot);
-
-      if (hasBoundary) {
-        if (typeof topChild.setAttribute === "function") {
-          topChild.setAttribute(FILTER_SCOPE_SKIP_ATTR, FILTER_SCOPE_SKIP_ATTR_VALUE);
-        }
-        markFilterTargetsWithin(topChild, headerRoot, 0);
-        continue;
-      }
-
-      if (typeof topChild.setAttribute === "function") {
-        topChild.setAttribute(FILTER_TARGET_ATTR, FILTER_TARGET_ATTR_VALUE);
-      }
-    }
+    FilterScopeLifecycle.refreshFilterTargets({
+      documentObj: document,
+      theme: Theme,
+      headerSelector: HEADER_ROOT_SELECTOR,
+      menuSelector: MENU_ROOT_SELECTOR,
+      filterTargetAttr: FILTER_TARGET_ATTR,
+      filterTargetAttrValue: FILTER_TARGET_ATTR_VALUE,
+      filterScopeSkipAttr: FILTER_SCOPE_SKIP_ATTR,
+      filterScopeSkipAttrValue: FILTER_SCOPE_SKIP_ATTR_VALUE
+    });
   }
 
   function scheduleFilterTargetsRefresh() {
-    if (state.filterScopeTick != null) {
+    if (
+      !FilterScopeLifecycle ||
+      typeof FilterScopeLifecycle.scheduleFilterTargetsRefresh !== "function"
+    ) {
       return;
     }
-
-    var run = function () {
-      state.filterScopeTick = null;
-      refreshFilterTargets();
-    };
-
-    if (typeof globalThis.requestAnimationFrame === "function") {
-      state.filterScopeTick = globalThis.requestAnimationFrame(run);
-      return;
-    }
-
-    state.filterScopeTick = globalThis.setTimeout(run, 16);
-  }
-
-  function clearFilterTargetsRefreshDelayTimers() {
-    var timers = state.filterScopeDelayTimers || [];
-    var i;
-    for (i = 0; i < timers.length; i += 1) {
-      clearTimeout(timers[i]);
-    }
-    state.filterScopeDelayTimers = [];
+    FilterScopeLifecycle.scheduleFilterTargetsRefresh({
+      state: state,
+      onRefresh: refreshFilterTargets
+    });
   }
 
   function scheduleFilterTargetsRefreshBurst() {
-    var timers = [];
-    var i;
-    var delayMs;
-
-    clearFilterTargetsRefreshDelayTimers();
-    scheduleFilterTargetsRefresh();
-
-    for (i = 0; i < FILTER_TARGET_REFRESH_DELAYS_MS.length; i += 1) {
-      delayMs = FILTER_TARGET_REFRESH_DELAYS_MS[i];
-      timers.push(globalThis.setTimeout(scheduleFilterTargetsRefresh, delayMs));
+    if (
+      !FilterScopeLifecycle ||
+      typeof FilterScopeLifecycle.scheduleFilterTargetsRefreshBurst !== "function"
+    ) {
+      return;
     }
-
-    state.filterScopeDelayTimers = timers;
+    FilterScopeLifecycle.scheduleFilterTargetsRefreshBurst({
+      state: state,
+      delays: FILTER_TARGET_REFRESH_DELAYS_MS,
+      onScheduleRefresh: scheduleFilterTargetsRefresh
+    });
   }
 
   function setupFilterScopeObserver() {
-    if (state.filterScopeObserver || typeof MutationObserver !== "function") {
+    if (
+      !FilterScopeLifecycle ||
+      typeof FilterScopeLifecycle.setupFilterScopeObserver !== "function"
+    ) {
       return;
     }
-
-    var root = document.body || document.documentElement;
-    if (!root) {
-      return;
-    }
-
-    var observer = new MutationObserver(function (mutations) {
-      var i;
-      var mutation;
-      var shouldRefresh = false;
-
-      for (i = 0; i < mutations.length; i += 1) {
-        mutation = mutations[i];
-        if (!mutation) {
-          continue;
-        }
-
-        if (mutation.type === "childList") {
-          if (
-            (mutation.addedNodes && mutation.addedNodes.length > 0) ||
-            (mutation.removedNodes && mutation.removedNodes.length > 0)
-          ) {
-            shouldRefresh = true;
-            break;
-          }
-          continue;
-        }
-
-        if (mutation.type === "attributes") {
-          shouldRefresh = true;
-          break;
-        }
-      }
-
-      if (shouldRefresh) {
-        scheduleFilterTargetsRefresh();
-      }
+    FilterScopeLifecycle.setupFilterScopeObserver({
+      state: state,
+      documentObj: document,
+      onScheduleRefresh: scheduleFilterTargetsRefresh
     });
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class", "style", "id"]
-    });
-
-    state.filterScopeObserver = observer;
   }
 
   function disconnectFilterScopeObserver() {
-    if (state.filterScopeObserver && typeof state.filterScopeObserver.disconnect === "function") {
-      state.filterScopeObserver.disconnect();
+    if (
+      !FilterScopeLifecycle ||
+      typeof FilterScopeLifecycle.disconnectFilterScopeObserver !== "function"
+    ) {
+      return;
     }
-    state.filterScopeObserver = null;
+    FilterScopeLifecycle.disconnectFilterScopeObserver(state);
   }
 
   function syncFilterScopeObserver(enabled) {
-    if (!enabled) {
-      disconnectFilterScopeObserver();
+    if (
+      !FilterScopeLifecycle ||
+      typeof FilterScopeLifecycle.syncFilterScopeObserver !== "function"
+    ) {
       return;
     }
-
-    setupFilterScopeObserver();
+    FilterScopeLifecycle.syncFilterScopeObserver({
+      enabled: enabled,
+      onSetup: setupFilterScopeObserver,
+      onDisconnect: disconnectFilterScopeObserver
+    });
   }
 
   function renderUnavailable(statusMessage) {
-    if (!Url.isListingPath(location.pathname)) {
+    if (!UnavailableLifecycle || typeof UnavailableLifecycle.renderUnavailable !== "function") {
       return;
     }
-
-    var renderToken = state.renderToken + 1;
-    state.renderToken = renderToken;
-
-    var mountTarget = resolveMountTarget(document);
-    if (!mountTarget || !mountTarget.mountNode) {
-      return;
-    }
-
-    resolveCurrencyContext().then(function (currencyContext) {
-      if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-        return;
-      }
-
-      renderListingInsightsPanel({
-        listing: {
-          id: "unknown",
-          title: "",
-          createdAt: null,
-          pricing: {
-            history: [],
-            updatedAt: null
-          },
-          seller: {
-            createdAt: null
-          },
-          rawListing: null
-        },
-        metrics: {
-          averageDropAmountUsd: null,
-          averageDropPercent: null,
-          expectedNextDropDays: null,
-          expectedDropState: "insufficient_data"
-        },
-        mountNode: mountTarget.mountNode,
-        mountPosition: mountTarget.mountPosition,
-        rawListing: null,
-        statusMessage: statusMessage,
-        currencyContext: currencyContext
-      });
-      applySidebarCurrency(currencyContext);
-      applyCardCurrency(currencyContext);
-      syncCardCurrencyObserver(null);
+    UnavailableLifecycle.renderUnavailable({
+      state: state,
+      urlApi: Url,
+      locationObj: location,
+      documentObj: document,
+      resolveMountTarget: resolveMountTarget,
+      resolveCurrencyContext: resolveCurrencyContext,
+      renderPanelWithMarketCompare: renderPanelWithMarketCompare,
+      applySidebarCurrency: applySidebarCurrency,
+      applyCardCurrency: applyCardCurrency,
+      syncCardCurrencyObserver: syncCardCurrencyObserver,
+      statusMessage: statusMessage
     });
   }
 
   function scheduleRetry(reason, attempt) {
-    if (attempt >= MAX_RETRIES || shouldStopRetryWindow()) {
-      log("retry limit reached", {
-        reason: reason,
-        attempt: attempt
-      });
-      disconnectHydrationObserver();
-      renderUnavailable("Feature unavailable: unable to read listing data.");
+    if (!RetryLifecycle || typeof RetryLifecycle.scheduleRetry !== "function") {
       return;
     }
-
-    scheduleHydrationObserver();
-
-    clearRetryTimer(false);
-    state.retryTimer = setTimeout(function () {
-      run("retry:" + reason, attempt + 1);
-    }, RETRY_DELAY_MS);
-
-    log("scheduled retry", {
+    RetryLifecycle.scheduleRetry({
+      state: state,
       reason: reason,
-      attempt: attempt
+      attempt: attempt,
+      maxRetries: MAX_RETRIES,
+      retryDelayMs: RETRY_DELAY_MS,
+      shouldStopRetryWindow: shouldStopRetryWindow,
+      log: log,
+      disconnectHydrationObserver: disconnectHydrationObserver,
+      renderUnavailable: renderUnavailable,
+      scheduleHydrationObserver: scheduleHydrationObserver,
+      clearRetryTimer: clearRetryTimer,
+      run: run
     });
   }
 
   function run(reason, attempt) {
+    if (!RunLifecycle || typeof RunLifecycle.handleNonListingRoute !== "function") {
+      return;
+    }
+
+    if (
+      RunLifecycle.handleNonListingRoute({
+        state: state,
+        urlApi: Url,
+        locationObj: location,
+        documentObj: document,
+        clearRetryTimer: clearRetryTimer,
+        disconnectHydrationObserver: disconnectHydrationObserver,
+        insightsPanel: InsightsPanel,
+        resolveCurrencyContext: resolveCurrencyContext,
+        createUsdCurrencyContext: createUsdCurrencyContext,
+        applyCardCurrency: applyCardCurrency,
+        syncCardCurrencyObserver: syncCardCurrencyObserver
+      })
+    ) {
+      return;
+    }
+
     if (!Url.isListingPath(location.pathname)) {
-      var nonListingToken = state.renderToken + 1;
-      state.renderToken = nonListingToken;
-      clearRetryTimer(true);
-      disconnectHydrationObserver();
-      InsightsPanel.removeExistingPanels(document);
-      resolveCurrencyContext()
-        .then(function (currencyContext) {
-          if (nonListingToken !== state.renderToken || Url.isListingPath(location.pathname)) {
-            return;
-          }
-
-          applyCardCurrency(currencyContext);
-          syncCardCurrencyObserver(currencyContext);
-        })
-        .catch(function () {
-          if (nonListingToken !== state.renderToken || Url.isListingPath(location.pathname)) {
-            return;
-          }
-
-          var fallbackCurrency = createUsdCurrencyContext();
-          applyCardCurrency(fallbackCurrency);
-          syncCardCurrencyObserver(fallbackCurrency);
-        });
       return;
     }
 
@@ -4324,119 +9236,91 @@
         return;
       }
 
-      if (!listingInsightsEnabled) {
-        var disabledToken = state.renderToken + 1;
-        state.renderToken = disabledToken;
-        clearRetryTimer(true);
-        disconnectHydrationObserver();
-        InsightsPanel.removeExistingPanels(document);
-
-        resolveCurrencyContext()
-          .then(function (currencyContext) {
-            if (disabledToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-              return;
-            }
-
-            applySidebarCurrency(currencyContext);
-            applyCardCurrency(currencyContext);
-            syncCardCurrencyObserver(null);
-
-            log("skipped_listing_insights_panel", {
-              reason: reason,
-              attempt: attempt,
-              currency: currencyContext.selectedCurrency
-            });
-          })
-          .catch(function () {
-            if (disabledToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-              return;
-            }
-
-            var fallbackCurrency = createUsdCurrencyContext();
-            applySidebarCurrency(fallbackCurrency);
-            applyCardCurrency(fallbackCurrency);
-            syncCardCurrencyObserver(null);
-          });
+      if (typeof RunLifecycle.handleListingInsightsDisabled !== "function") {
         return;
       }
 
-      var nextData = ListingExtractor.readNextDataFromDocument(document);
-      if (!nextData) {
-        scheduleRetry("missing_next_data", attempt);
-        return;
-      }
-
-      var listing = normalizeListingModel(ListingExtractor.extractListing(nextData));
-      if (!listing || !listing.id) {
-        scheduleRetry("missing_listing", attempt);
-        return;
-      }
-
-      var mountTarget = resolveMountTarget(document);
-      if (!mountTarget || !mountTarget.mountNode) {
-        scheduleRetry("missing_mount", attempt);
-        return;
-      }
-
-      var metrics = computeListingInsights(listing);
-      var renderToken = state.renderToken + 1;
-      state.renderToken = renderToken;
-
-      resolveCurrencyContext()
-        .then(function (currencyContext) {
-          if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-            return;
-          }
-
-          renderListingInsightsPanel({
-            listing: listing,
-            metrics: metrics,
-            mountNode: mountTarget.mountNode,
-            mountPosition: mountTarget.mountPosition,
-            rawListing: listing.rawListing,
-            currencyContext: currencyContext
-          });
-          applySidebarCurrency(currencyContext);
-          applyCardCurrency(currencyContext);
-          syncCardCurrencyObserver(null);
-
-          disconnectHydrationObserver();
-          state.retryStartedAtMs = null;
-
-          log("rendered", {
-            reason: reason,
-            attempt: attempt,
-            listingId: listing.id,
-            currency: currencyContext.selectedCurrency
-          });
+      if (
+        RunLifecycle.handleListingInsightsDisabled({
+          state: state,
+          listingInsightsEnabled: listingInsightsEnabled,
+          urlApi: Url,
+          locationObj: location,
+          documentObj: document,
+          clearRetryTimer: clearRetryTimer,
+          disconnectHydrationObserver: disconnectHydrationObserver,
+          insightsPanel: InsightsPanel,
+          resolveCurrencyContext: resolveCurrencyContext,
+          createUsdCurrencyContext: createUsdCurrencyContext,
+          applySidebarCurrency: applySidebarCurrency,
+          applyCardCurrency: applyCardCurrency,
+          syncCardCurrencyObserver: syncCardCurrencyObserver,
+          log: log,
+          reason: reason,
+          attempt: attempt
         })
-        .catch(function () {
-          if (renderToken !== state.renderToken || !Url.isListingPath(location.pathname)) {
-            return;
-          }
+      ) {
+        return;
+      }
 
-          var fallbackCurrency = createUsdCurrencyContext();
-          renderListingInsightsPanel({
-            listing: listing,
-            metrics: metrics,
-            mountNode: mountTarget.mountNode,
-            mountPosition: mountTarget.mountPosition,
-            rawListing: listing.rawListing,
-            currencyContext: fallbackCurrency
-          });
-          applySidebarCurrency(fallbackCurrency);
-          applyCardCurrency(fallbackCurrency);
-          syncCardCurrencyObserver(null);
+      if (!listingInsightsEnabled) {
+        return;
+      }
 
-          disconnectHydrationObserver();
-          state.retryStartedAtMs = null;
+      var listing = null;
+      var metrics = null;
+      var mountTarget = null;
+      var renderToken = null;
 
-          log("rendered_with_currency_fallback", {
-            reason: reason,
-            attempt: attempt,
-            listingId: listing.id
-          });
-        });
+      if (
+        !ListingPipelineLifecycle ||
+        typeof ListingPipelineLifecycle.prepareListingRenderContext !== "function"
+      ) {
+        return;
+      }
+
+      var preparedContext = ListingPipelineLifecycle.prepareListingRenderContext({
+        state: state,
+        listingExtractor: ListingExtractor,
+        documentObj: document,
+        normalizeListingModel: normalizeListingModel,
+        resolveMountTarget: resolveMountTarget,
+        computeListingInsights: computeListingInsights,
+        scheduleRetry: scheduleRetry,
+        attempt: attempt
+      });
+      if (!preparedContext) {
+        return;
+      }
+
+      listing = preparedContext.listing;
+      metrics = preparedContext.metrics;
+      mountTarget = preparedContext.mountTarget;
+      renderToken = preparedContext.renderToken;
+
+      if (!ListingRenderLifecycle || typeof ListingRenderLifecycle.renderListingWithCurrency !== "function") {
+        return;
+      }
+
+      ListingRenderLifecycle.renderListingWithCurrency({
+        state: state,
+        urlApi: Url,
+        locationObj: location,
+        renderToken: renderToken,
+        listing: listing,
+        metrics: metrics,
+        mountTarget: mountTarget,
+        resolveCurrencyContext: resolveCurrencyContext,
+        createUsdCurrencyContext: createUsdCurrencyContext,
+        renderPanelWithMarketCompare: renderPanelWithMarketCompare,
+        applySidebarCurrency: applySidebarCurrency,
+        applyCardCurrency: applyCardCurrency,
+        syncCardCurrencyObserver: syncCardCurrencyObserver,
+        disconnectHydrationObserver: disconnectHydrationObserver,
+        log: log,
+        reason: reason,
+        attempt: attempt
+      });
     });
   }
 
@@ -4455,36 +9339,19 @@
     refresh(reason);
   }
 
-  function patchHistoryMethod(methodName) {
-    var original = history[methodName];
-    if (typeof original !== "function") {
+  function setupNavigationListeners() {
+    if (!NavigationLifecycle || typeof NavigationLifecycle.setupNavigationListeners !== "function") {
       return;
     }
 
-    history[methodName] = function () {
-      var result = original.apply(this, arguments);
-      window.dispatchEvent(new Event("grailed-plus:navigation"));
-      return result;
-    };
-  }
-
-  function setupNavigationListeners() {
-    patchHistoryMethod("pushState");
-    patchHistoryMethod("replaceState");
-
-    window.addEventListener("grailed-plus:navigation", function () {
-      onNavigation("history");
+    NavigationLifecycle.setupNavigationListeners({
+      state: state,
+      onNavigation: onNavigation,
+      pollIntervalMs: URL_POLL_INTERVAL_MS,
+      history: history,
+      window: window,
+      location: location
     });
-
-    window.addEventListener("popstate", function () {
-      onNavigation("popstate");
-    });
-
-    state.urlPollTimer = setInterval(function () {
-      if (location.href !== state.lastUrl) {
-        onNavigation("url_poll");
-      }
-    }, URL_POLL_INTERVAL_MS);
   }
 
   setupNavigationListeners();

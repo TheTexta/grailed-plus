@@ -30,7 +30,10 @@ const result = spawnSync(
     "ui.css",
     "domain/settings.js",
     "domain/currency.js",
-    "icons"
+    "icons",
+    "-x",
+    "*.DS_Store",
+    "__MACOSX/*"
   ],
   {
     cwd: path.join(rootDir, "src"),

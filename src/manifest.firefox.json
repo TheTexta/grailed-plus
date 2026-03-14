@@ -17,8 +17,13 @@
   "permissions": [
     "storage"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
-    "https://api.frankfurter.app/latest*"
+    "https://api.frankfurter.app/latest*",
+    "https://www.depop.com/search/*",
+    "https://www.depop.com/api/v3/search/*"
   ],
   "action": {
     "default_title": "Grailed Plus",
