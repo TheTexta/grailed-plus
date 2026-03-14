@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { extractListing } = require("../src/data/listingExtractor.js");
+const { extractListing } = require("../.tmp/ts-build/src/data/listingExtractor");
 
 function loadFixture(name) {
   const fixturePath = path.join(__dirname, "fixtures", name);

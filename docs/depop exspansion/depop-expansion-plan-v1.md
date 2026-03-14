@@ -1,356 +1,243 @@
-## Depop Expansion Plan and V1 Technical Spec
+## Depop Expansion: What Was Actually Implemented (v1 Retrospective)
 
-This document defines a quality-first, implementation-streamlined plan for adding a SIH-inspired cross-market comparison module to Grailed Plus, with Depop as the first provider.
+This document replaces the original v1 plan with what was eventually shipped in code, plus a clear list of work that still needs implementation.
 
-## Product Decisions (Locked)
-- `Use a hybrid fetch strategy in v1:` content-context parsing first, with controlled background bridge fallback for network/API retrieval when needed.
-- `Best match quality is prioritized over speed-to-ship.`
-- `v1 starts with a single category subset first` (to tune quality before generalization).
+Date: 2026-03-14
 
-## Goals
-- Let users compare a Grailed listing against likely matching Depop items.
-- Keep v1 conservative: manual trigger, low request volume, local-only matching.
-- Keep architecture provider-agnostic for future marketplaces.
+## Outcome Summary
 
-## Non-Goals (v1)
-- Autonomous crawling.
-- Backend ML inference.
-- Multi-market enablement at launch.
-- Advanced results UI (drawer/sorting/filtering popover) in initial release.
+Status: Partially shipped.
 
-## Delivery Model
+Implemented:
+- A real Depop comparison flow exists and is user-triggered from the listing panel.
+- Hybrid retrieval works (HTML parse first, API fallback, and runtime background bridge path).
+- Ranking, score display, and price-delta output are live.
+- Strict single-flight behavior per listing is implemented.
+- Core error mapping and retry messaging are implemented.
+- Host permissions and background fetch guardrails are implemented.
 
-### v1-core (ship first)
-1. Manual `Compare on Depop` trigger in listing panel.
-2. Compact result list (top matches only).
-3. Local score (`0-100`) + price delta.
-4. Strict throttling, deterministic caching, clear errors.
-5. Category-limited rollout.
+Not yet fully implemented:
+- No dedicated market-compare settings keys in settings/options UI.
+- No standalone market cache module with planned schema-version keying.
+- No disabled-by-default rollout kill switch dedicated to market compare.
+- v1.1 UX items (sorting/filtering/why-this-match popover) remain unimplemented.
 
-### v1.1 (after metrics)
-1. Expanded UI (sorting/filtering/why-this-match).
-2. Broader category support.
-3. Optional advanced controls surfaced in settings.
+## Implemented Architecture (Actual)
 
-## Reference Findings (Depop Snapshot + Legacy Ref Audit)
+### Shipped modules
 
-### Snapshot-backed observations
-1. Archived Depop API response under `ref/www.depop.com (1)/www.depop.com/api/v3/search/products/index.html` contains stable listing primitives needed by our adapter:
-  - `meta.total_count`, `meta.result_count`, `meta.has_more`
-  - `products[].id`, `products[].slug`, `products[].status`
-  - `products[].pricing.*`, `products[].preview`, `products[].pictures`, `products[].sizes`, `products[].brand_name`
-2. Archived search HTML under `ref/www.depop.com (1)/www.depop.com/search/index.html` is a Next.js shell (heavy `__next_f` hydration and hashed chunk assets), confirming that static selector scraping is brittle over time.
-3. Practical implication: maintain dual-path extraction where possible:
-  - Parse HTML signals when available and cheap.
-  - Fall back to API retrieval when HTML extraction is incomplete or unstable.
+Implemented:
+- src/domain/marketProviders.ts
+  - Provider registry, provider normalization, search cache, and in-flight de-duplication.
+- src/domain/depopProvider.ts
+  - Depop hybrid adapter, parser/versioning, HTML + API fallback, runtime bridge support.
+- src/domain/providerFilters.ts
+  - Candidate filtering by blocked terms/sellers, size allow-list, and min/max price.
+- src/domain/querySynthesis.ts
+  - Deterministic query synthesis, token normalization, category-aware fallback path.
+- src/domain/matchScoring.ts
+  - Weighted score, metadata fallback behavior, currency-aware delta calculations.
+- src/domain/marketCompareController.ts
+  - Single-flight orchestration, state transitions, error mapping, and result shaping.
+- src/content/marketCompareLifecycle.ts
+  - Controller lifecycle integration and panel-trigger wiring.
+- src/ui/renderInsightsPanel.ts
+  - Other Markets section with Depop trigger and compact result list.
+- src/background.ts
+  - Controlled bridge fetch endpoint for Depop search URLs/API URLs.
 
-### Legacy scraper reference status
-1. `ref/Steam Inventory Helper/` is deprecated for this project and not an authoritative implementation source.
-2. Any old scraping-extension patterns from that folder should be treated as historical context only, not as current architecture guidance.
+Partially implemented:
+- src/domain/settings.ts
+  - General settings exist, but market-compare-specific keys from the original plan were not added.
 
-## Implementation Sequence (Quality-First Vertical Slices)
+Not implemented:
+- src/domain/marketCache.js
+  - This planned module does not exist as a dedicated file.
 
-### Slice A: Skeleton + Contracts
-1. Add provider interfaces and normalized models.
-2. Add panel states with mock provider (`idle`, `loading`, `results`, `no-results`, `error`).
-3. Add strict controller state machine for one active request per listing.
+## How the Implemented Flow Works
 
-Exit criteria:
-- Stable UI state transitions with no duplicate panel mounts across SPA navigation.
+1. The listing panel renders an Other Markets section.
+2. User clicks Compare on Depop (manual trigger only).
+3. Controller synthesizes deterministic queries from listing data.
+4. Provider runs Depop search with hybrid strategy:
+   - HTML parse path first.
+   - API v3 fallback when HTML is empty/unstable.
+   - Runtime message bridge path available through background fetch.
+5. Candidate list is filtered, scored, and ranked.
+6. Top results return with score and delta labels.
+7. Controller updates panel state: loading, results, no-results, or error.
 
-### Slice B: Real Fetch Path (Depop)
-1. Implement Depop hybrid adapter (HTML parse path + API fallback path).
-2. Implement deterministic query synthesis and category gating.
-3. Add error mapping + retryability classification.
-4. Add parser selector fallbacks and parser-version tagging so markup changes fail gracefully.
+## Original Plan vs Implemented Behavior
 
-Exit criteria:
-- Adapter returns normalized candidates and stable errors from fixtures.
+### 1) Product model and trigger
 
-### Slice C: Ranking + Delta
-1. Implement scoring with image+metadata and metadata-only fallback.
-2. Add ranking and threshold filter.
-3. Add converted price delta output.
+Implemented:
+- Manual trigger exists in panel.
+- Compact result list exists.
+- Score + price delta are shown.
+- Conservative request behavior is present.
 
-Exit criteria:
-- Golden test fixtures produce stable ranked output.
+Still needs code:
+- Dedicated feature-flag setting for market compare default-off launch behavior.
 
-### Slice D: Hardening + Rollout Controls
-1. Add minimal settings controls.
-2. Add cache invalidation and schema versioning.
-3. Add rollout gates and launch disabled-by-default.
+### 2) Provider contract and result shape
 
-Exit criteria:
-- Passes lint/test matrix and meets rollout metrics.
+Implemented:
+- Provider responses include:
+  - ok, candidates, fetchedAt, partial, sourceType, parserVersion, errorCode, retryAfterMs, requestCount.
+- Candidate normalization includes market, id, title, url, imageUrl, price, currency, raw.
 
-## V1 Technical Spec
+Partially implemented:
+- nextCursor/cursor pagination support is not wired through as a first-class result flow.
 
-### 1) Architecture
+### 3) Query synthesis and category strategy
 
-#### 1.1 Core modules (new)
-- `src/domain/marketProviders.js`
-  - Provider registry + strict interface validation.
-- `src/domain/depopProvider.js`
-  - Depop search adapter and normalization.
-- `src/domain/providerFilters.js`
-  - Query-level and global exclusion filters (desc terms, seller blacklist, size gating).
-- `src/domain/querySynthesis.js`
-  - Deterministic tokenization and query construction.
-- `src/domain/matchScoring.js`
-  - Score components + weighted rank output.
-- `src/domain/marketCache.js`
-  - Cache keying, TTL, stale handling, schema invalidation.
-- `src/domain/marketCompareController.js`
-  - Single-flight request orchestration and UI-state reducer.
+Implemented:
+- Deterministic tokenization and stable dedupe are implemented.
+- Query variants are generated in stable order.
+- Category signals are inspected.
+- Category fallback path is explicitly surfaced with reason category_fallback.
 
-#### 1.2 Existing modules to extend
-- `src/ui/renderInsightsPanel.js`
-  - Add compact `Other Markets` section and v1-core states.
-- `src/content/boot.js`
-  - Attach manual trigger wiring with token-safe cancellation.
-- `src/domain/settings.js`
-  - Minimal v1 settings keys.
-- `src/options.html`, `src/options.js`
-  - Minimal settings controls.
-- `src/manifest.json`, `src/manifest.firefox.json`
-  - Least-privilege Depop host permissions.
-- `scripts/build.mjs`
-  - Include new modules in deterministic order.
+Partially implemented:
+- Category gating is not strict-by-default in runtime behavior.
+  - Current behavior can fall back to broad queries instead of hard-stop in many cases.
 
-### 2) Provider Contract
+Still needs code:
+- Enforce strict subset-only behavior behind a dedicated rollout flag when required.
 
-#### 2.1 Interface
-- `search(input) -> Promise<ProviderResult>`
+### 4) Similarity scoring and thresholding
 
-#### 2.2 Search input
-- `listingId: string`
-- `title: string`
-- `brand?: string`
-- `size?: string`
-- `category?: string`
-- `primaryImageUrl?: string`
-- `queries: string[]`
-- `limit: number`
-- `currency: string`
-- `cursor?: string`
+Implemented:
+- Weighted final scoring exists.
+- Metadata-only fallback path exists when image scoring cannot be used.
+- usedImage and imageUnavailableReason are surfaced.
+- Thresholding is enforced in ranking.
 
-#### 2.3 Provider result
-- `ok: boolean`
-- `candidates: Candidate[]`
-- `fetchedAt: number`
-- `nextCursor?: string`
-- `requestCount: number`
-- `partial: boolean`
-- `sourceType: "json" | "html"`
-- `parserVersion?: string`
-- `errorCode?: "NETWORK_ERROR" | "RATE_LIMITED" | "FORBIDDEN_OR_BLOCKED" | "PARSE_ERROR"`
-- `retryAfterMs?: number`
+Partially implemented:
+- Image score is heuristic URL/token overlap, not true pHash distance.
 
-#### 2.4 Candidate schema
-- `market: "depop"`
-- `id: string`
-- `title: string`
-- `url: string`
-- `imageUrl?: string`
-- `price: number`
-- `currency: string`
-- `size?: string`
-- `brand?: string`
-- `condition?: string`
-- `postedAt?: string`
-- `location?: string`
-- `raw?: object`
+Still needs code:
+- Replace heuristic image scoring with actual perceptual hash pipeline if that level of precision is required.
 
-### 3) Query Synthesis (Deterministic)
+### 5) Price delta
 
-#### 3.1 Canonical normalization
-1. Lowercase.
-2. Remove punctuation and duplicate whitespace.
-3. Remove stopwords and platform noise terms.
-4. Cap token length and query token count.
-5. Stable dedupe and stable ordering.
+Implemented:
+- Currency conversion-aware deltaAbsolute and deltaPercent logic exists.
+- Output labels such as cheaper/higher are shown.
 
-#### 3.2 Query order
-1. `brand + model + key descriptor`
-2. `brand + title core tokens`
-3. `title core tokens + size`
-4. `brand + size + category`
+Partially implemented:
+- Display policy is applied, but not all formatting rules from the original spec are centralized in one shared policy module.
 
-#### 3.3 Category-first rollout
-- Only produce queries for approved v1 category subset.
-- Return `MISSING_LISTING_DATA` if listing lacks required category signals.
+### 6) Request policy and resilience
 
-#### 3.4 Query-level filtering
-- Apply per-query constraints before scoring:
-  - size allow-list
-  - min/max price prefilter
-  - description blocked terms
-  - seller blacklist
-- Support global filters plus optional query-specific filters for later v1.1 controls.
-
-### 4) Similarity Scoring
-
-#### 4.1 Components
-- `imageScore` (0-100): pHash distance normalized.
-- `titleScore` (0-100): token overlap + important token bonus.
-- `brandScore` (0 or 100): exact/alias match.
-- `sizeScore` (0-100): exact/compatible mapping.
-- `conditionScore` (0-100): condition distance.
-
-#### 4.2 Default weighting
-- `finalScore = 0.45*imageScore + 0.25*titleScore + 0.15*brandScore + 0.10*sizeScore + 0.05*conditionScore`
-
-#### 4.3 Missing image fallback
-- If image cannot be fetched/decoded, switch to metadata-only scoring.
-- Include:
-  - `usedImage: false`
-  - `imageUnavailableReason: "missing_url" | "fetch_failed" | "decode_failed" | "cross_origin_blocked"`
-  - confidence penalty before thresholding.
-
-#### 4.4 Threshold policy
-- Initial exclusion threshold is configurable (`default 40`).
-- Final threshold can be adjusted after fixture calibration in category subset.
-
-### 5) Price Delta Logic
-1. Convert both prices into selected currency.
-2. Compute:
-  - `deltaAbsolute = depopConverted - grailedConverted`
-  - `deltaPercent = (deltaAbsolute / grailedConverted) * 100`
-3. Apply consistent display rounding policy:
-  - currency: 2 decimals max
-  - percent: 1 decimal
-
-### 6) Caching and Request Policy
-
-#### 6.1 Cache keys
-- `market_compare_v1:{schemaVersion}:{providerVersion}:{market}:{listingId}:{queryHash}:{currency}`
-
-#### 6.2 TTL
-- Fresh: 10 minutes.
-- Stale-while-revalidate: +20 minutes.
-- Keep a short-lived `seenCandidateIds` set per listing session to avoid duplicate resurfacing on repeated manual triggers.
-
-#### 6.3 Invalidation
-- Invalidate when:
-  - `schemaVersion` changes.
-  - scoring or query synthesis version changes.
-  - category rollout set changes.
-
-#### 6.4 Request policy
+Implemented:
 - Manual trigger only.
-- Primary path: content-context/HTML extraction.
-- Fallback path: controlled background bridge request for Depop search API when needed.
-- Max requests per trigger: `3`.
-- Cooldown: `1200ms`.
-- Backoff: `1.5x` capped at `8000ms`.
-- Stop on forbidden/anti-bot signatures and surface actionable UI state.
-- Add small jitter (`+/-10%`) to cooldown to avoid deterministic request cadence.
-- Add an optional fast-path check: fetch lightweight first-page marker/fingerprint before deep parsing to skip unnecessary work when results are unchanged.
+- Cooldown and jitter are used.
+- Retry/backoff-style waits are present.
+- Forbidden/block/rate-limit mapping is implemented.
+- Runtime bridge is URL-restricted to Depop search/API prefixes.
+- Host permissions for Depop search/API are present in both manifests.
 
-### 7) UI Specification (v1-core)
+Partially implemented:
+- Lifecycle wiring currently instantiates provider with maxRequests: 5, while the original v1 target was max 3 per trigger.
 
-#### 7.1 Panel section
-- Header: `Other Markets`.
-- Provider row: `Depop`.
-- Status chip: `Ready`, `Searching`, `Error`, `Last checked ...`.
-- Button: `Compare on Depop`.
+Still needs code:
+- Align configured request budget with spec decision, or update policy docs and telemetry to formalize the new value.
 
-#### 7.2 Result row fields
-- Thumbnail.
-- Title link.
-- Converted price.
-- Confidence score (`0-100`).
-- Delta badge (`cheaper` or `higher`).
+### 7) UI v1-core
 
-#### 7.3 Deferred to v1.1
-- Expanded mini-window.
-- Sort/filter controls.
-- Full `Why this match` popover.
+Implemented:
+- Other Markets section with provider label Depop.
+- Status chip states: Ready/Searching/Results/No Results/Error.
+- Last checked timestamp.
+- Compare on Depop action.
+- Compact result rows with title link, price, score, delta label.
 
-### 8) Settings Specification (Minimal v1)
+Partially implemented:
+- Result rows currently do not render thumbnail images.
 
-Expose only:
-- `grailed_plus_market_compare_enabled_v1` (boolean, default `false`)
-- `grailed_plus_market_compare_min_score_v1` (number, default `40`)
-- `grailed_plus_market_compare_strict_mode_v1` (boolean, default `true`)
+Still needs code:
+- Add thumbnail rendering to match original v1-core row spec.
 
-Keep internal constants (not user-exposed in v1):
-- max requests
-- cooldown ms
-- max candidates
-- filter defaults (blocked terms/seller blacklist) seeded in code
+### 8) Minimal settings spec
 
-### 9) Boot Lifecycle Integration
-1. Initialize on listing pages only.
-2. One in-flight request per listing route.
-3. Cancel/ignore stale async completions by render token.
-4. No auto-fetch.
-5. Re-render only on explicit user trigger or route change.
+Still needs code:
+- Add and wire these keys end-to-end:
+  - grailed_plus_market_compare_enabled_v1
+  - grailed_plus_market_compare_min_score_v1
+  - grailed_plus_market_compare_strict_mode_v1
+- Expose controls in options page and consume values in market compare lifecycle/controller.
 
-### 10) Error Model
+### 9) Boot lifecycle and SPA safety
 
-Error codes:
-- `NO_RESULTS`
-- `NETWORK_ERROR`
-- `RATE_LIMITED`
-- `FORBIDDEN_OR_BLOCKED`
-- `PARSE_ERROR`
-- `MISSING_LISTING_DATA`
+Implemented:
+- Listing-page scoped integration.
+- One active in-flight request per listing.
+- Stale async completion protection via request token/render token logic.
+- No auto-fetch behavior.
+- Renders on explicit trigger and lifecycle refresh paths.
 
-Each code must map to:
-- `retryable: boolean`
-- `cooldownMs?: number`
-- user message
-- UI action (`retry` | `wait` | `adjust listing filters`)
-- parser health signal (`parserMismatchLikely: boolean`) for diagnostics when markup drift breaks extraction.
+### 10) Error model
 
-### 11) Privacy and Compliance Guardrails
-- Publicly accessible Depop content only.
-- No account/session scraping.
-- No personal data persistence beyond comparison artifacts.
-- Low-volume, user-triggered requests only.
-- Runtime kill switch through settings.
-- Maintain least-privilege extension permissions; avoid broad host scopes (`<all_urls>`) and unnecessary high-risk permissions.
+Implemented:
+- NO_RESULTS
+- NETWORK_ERROR
+- RATE_LIMITED
+- FORBIDDEN_OR_BLOCKED
+- PARSE_ERROR
+- MISSING_LISTING_DATA
 
-### 12) Testing Plan (Quality-Focused)
+Implemented:
+- Error-to-UX mapping for retryable state, cooldown, and user-facing messaging.
+- Parser mismatch signaling supported and surfaced for parse errors.
 
-#### 12.1 Unit tests
-- query determinism
-- scoring math
-- fallback scoring
-- cache lifecycle
-- price delta math
+### 11) Privacy/compliance guardrails
 
-#### 12.2 Adapter tests
-- success fixtures
-- empty responses
-- malformed payloads
-- blocked/rate-limited responses
-- selector drift fixtures (same listing shape across multiple DOM variants)
+Implemented:
+- User-triggered low-volume flow.
+- Restricted background URL allowlist.
+- No broad all-urls host scope.
 
-#### 12.3 Golden ranking fixtures
-- fixed listing + fixed candidate set -> fixed ranked output snapshot.
+Still needs code:
+- Explicit runtime kill-switch tied to market-compare feature key.
 
-#### 12.4 UI tests
-- state transitions
-- no duplicate sections across SPA navigation
-- trigger debouncing / single-flight behavior
-- duplicate suppression checks for repeated manual searches
+## Testing Status (What Is Covered)
 
-#### 12.5 Manual checks
-- CORS and host permissions
-- request cadence
-- no jank before trigger
+Implemented:
+- Unit and behavior tests for:
+  - query synthesis determinism and fallback behavior.
+  - scoring/threshold and metadata fallback behavior.
+  - provider parsing and fallback branches.
+  - controller state transitions and single-flight logic.
+- Depop provider tests cover:
+  - JSON-LD and Next flight parsing.
+  - API fallback.
+  - blocked/rate/no-results behavior.
+  - loading-shell retry behavior.
+  - bridge/fetch behavior and credentials include.
 
-## Rollout Gates
-1. Disabled-by-default launch.
-2. Quality gate: acceptable precision on category subset manual review.
-3. Stability gate: acceptable error rate and median response time.
-4. Expand categories only after gate pass.
+Still needs code:
+- Golden ranking fixture set for fixed listing+candidate snapshots across category subsets.
+- UI tests for thumbnail rendering (after thumbnails are added).
+- Dedicated rollout-gate metrics instrumentation docs/code path.
 
-## Delivery Sequence Recommendation
-1. Contracts + mock provider + UI state skeleton.
-2. Real Depop adapter (hybrid HTML parse + API fallback via background bridge).
-3. Ranking + price delta + fixture calibration.
-4. Minimal settings + rollout gates.
-5. v1.1 UX enhancements after metric validation.
+## What Still Requires Implementation (Consolidated Checklist)
+
+Still needs code:
+- Dedicated market compare settings model + options UI integration.
+- Dedicated feature kill switch and disabled-by-default rollout control.
+- Standalone market cache module matching original schemaVersion/providerVersion key strategy.
+- Thumbnail rendering in market result rows.
+- True image pHash scoring pipeline (if kept as a quality requirement).
+- Final decision and alignment on request budget (3 vs current 5 from lifecycle wiring).
+- Golden ranking fixture calibration for the launch category subset.
+- v1.1 UX: sorting/filtering/why-this-match popover.
+
+## Recommended Next Slice Order
+
+1. Add market-compare settings keys and wire runtime gating.
+2. Add rollout kill switch and disabled-by-default launch path.
+3. Add thumbnail rendering and UI tests.
+4. Add dedicated cache module or formally ratify current registry cache design.
+5. Add golden ranking fixtures and subset calibration pass.
+6. Implement v1.1 UX enhancements.

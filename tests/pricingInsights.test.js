@@ -7,7 +7,7 @@ const {
   computeAverageDropPercent,
   computeExpectedDrop,
   computePricingInsights
-} = require("../src/domain/pricingInsights.js");
+} = require("../.tmp/ts-build/src/domain/pricingInsights");
 
 test("computeAverageDropAmount returns average delta", () => {
   assert.equal(computeAverageDropAmount([1000, 900, 700]), 150);

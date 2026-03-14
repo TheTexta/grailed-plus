@@ -5,9367 +5,8198 @@
 // https://d3js.org v7.9.0 Copyright 2010-2023 Mike Bostock
 !function(t,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n((t="undefined"!=typeof globalThis?globalThis:t||self).d3=t.d3||{})}(this,(function(t){"use strict";function n(t,n){return null==t||null==n?NaN:t<n?-1:t>n?1:t>=n?0:NaN}function e(t,n){return null==t||null==n?NaN:n<t?-1:n>t?1:n>=t?0:NaN}function r(t){let r,o,a;function u(t,n,e=0,i=t.length){if(e<i){if(0!==r(n,n))return i;do{const r=e+i>>>1;o(t[r],n)<0?e=r+1:i=r}while(e<i)}return e}return 2!==t.length?(r=n,o=(e,r)=>n(t(e),r),a=(n,e)=>t(n)-e):(r=t===n||t===e?t:i,o=t,a=t),{left:u,center:function(t,n,e=0,r=t.length){const i=u(t,n,e,r-1);return i>e&&a(t[i-1],n)>-a(t[i],n)?i-1:i},right:function(t,n,e=0,i=t.length){if(e<i){if(0!==r(n,n))return i;do{const r=e+i>>>1;o(t[r],n)<=0?e=r+1:i=r}while(e<i)}return e}}}function i(){return 0}function o(t){return null===t?NaN:+t}const a=r(n),u=a.right,c=a.left,f=r(o).center;var s=u;const l=d(y),h=d((function(t){const n=y(t);return(t,e,r,i,o)=>{n(t,e,(r<<=2)+0,(i<<=2)+0,o<<=2),n(t,e,r+1,i+1,o),n(t,e,r+2,i+2,o),n(t,e,r+3,i+3,o)}}));function d(t){return function(n,e,r=e){if(!((e=+e)>=0))throw new RangeError("invalid rx");if(!((r=+r)>=0))throw new RangeError("invalid ry");let{data:i,width:o,height:a}=n;if(!((o=Math.floor(o))>=0))throw new RangeError("invalid width");if(!((a=Math.floor(void 0!==a?a:i.length/o))>=0))throw new RangeError("invalid height");if(!o||!a||!e&&!r)return n;const u=e&&t(e),c=r&&t(r),f=i.slice();return u&&c?(p(u,f,i,o,a),p(u,i,f,o,a),p(u,f,i,o,a),g(c,i,f,o,a),g(c,f,i,o,a),g(c,i,f,o,a)):u?(p(u,i,f,o,a),p(u,f,i,o,a),p(u,i,f,o,a)):c&&(g(c,i,f,o,a),g(c,f,i,o,a),g(c,i,f,o,a)),n}}function p(t,n,e,r,i){for(let o=0,a=r*i;o<a;)t(n,e,o,o+=r,1)}function g(t,n,e,r,i){for(let o=0,a=r*i;o<r;++o)t(n,e,o,o+a,r)}function y(t){const n=Math.floor(t);if(n===t)return function(t){const n=2*t+1;return(e,r,i,o,a)=>{if(!((o-=a)>=i))return;let u=t*r[i];const c=a*t;for(let t=i,n=i+c;t<n;t+=a)u+=r[Math.min(o,t)];for(let t=i,f=o;t<=f;t+=a)u+=r[Math.min(o,t+c)],e[t]=u/n,u-=r[Math.max(i,t-c)]}}(t);const e=t-n,r=2*t+1;return(t,i,o,a,u)=>{if(!((a-=u)>=o))return;let c=n*i[o];const f=u*n,s=f+u;for(let t=o,n=o+f;t<n;t+=u)c+=i[Math.min(a,t)];for(let n=o,l=a;n<=l;n+=u)c+=i[Math.min(a,n+f)],t[n]=(c+e*(i[Math.max(o,n-s)]+i[Math.min(a,n+s)]))/r,c-=i[Math.max(o,n-f)]}}function v(t,n){let e=0;if(void 0===n)for(let n of t)null!=n&&(n=+n)>=n&&++e;else{let r=-1;for(let i of t)null!=(i=n(i,++r,t))&&(i=+i)>=i&&++e}return e}function _(t){return 0|t.length}function b(t){return!(t>0)}function m(t){return"object"!=typeof t||"length"in t?t:Array.from(t)}function x(t,n){let e,r=0,i=0,o=0;if(void 0===n)for(let n of t)null!=n&&(n=+n)>=n&&(e=n-i,i+=e/++r,o+=e*(n-i));else{let a=-1;for(let u of t)null!=(u=n(u,++a,t))&&(u=+u)>=u&&(e=u-i,i+=e/++r,o+=e*(u-i))}if(r>1)return o/(r-1)}function w(t,n){const e=x(t,n);return e?Math.sqrt(e):e}function M(t,n){let e,r;if(void 0===n)for(const n of t)null!=n&&(void 0===e?n>=n&&(e=r=n):(e>n&&(e=n),r<n&&(r=n)));else{let i=-1;for(let o of t)null!=(o=n(o,++i,t))&&(void 0===e?o>=o&&(e=r=o):(e>o&&(e=o),r<o&&(r=o)))}return[e,r]}class T{constructor(){this._partials=new Float64Array(32),this._n=0}add(t){const n=this._partials;let e=0;for(let r=0;r<this._n&&r<32;r++){const i=n[r],o=t+i,a=Math.abs(t)<Math.abs(i)?t-(o-i):i-(o-t);a&&(n[e++]=a),t=o}return n[e]=t,this._n=e+1,this}valueOf(){const t=this._partials;let n,e,r,i=this._n,o=0;if(i>0){for(o=t[--i];i>0&&(n=o,e=t[--i],o=n+e,r=e-(o-n),!r););i>0&&(r<0&&t[i-1]<0||r>0&&t[i-1]>0)&&(e=2*r,n=o+e,e==n-o&&(o=n))}return o}}class InternMap extends Map{constructor(t,n=N){if(super(),Object.defineProperties(this,{_intern:{value:new Map},_key:{value:n}}),null!=t)for(const[n,e]of t)this.set(n,e)}get(t){return super.get(A(this,t))}has(t){return super.has(A(this,t))}set(t,n){return super.set(S(this,t),n)}delete(t){return super.delete(E(this,t))}}class InternSet extends Set{constructor(t,n=N){if(super(),Object.defineProperties(this,{_intern:{value:new Map},_key:{value:n}}),null!=t)for(const n of t)this.add(n)}has(t){return super.has(A(this,t))}add(t){return super.add(S(this,t))}delete(t){return super.delete(E(this,t))}}function A({_intern:t,_key:n},e){const r=n(e);return t.has(r)?t.get(r):e}function S({_intern:t,_key:n},e){const r=n(e);return t.has(r)?t.get(r):(t.set(r,e),e)}function E({_intern:t,_key:n},e){const r=n(e);return t.has(r)&&(e=t.get(r),t.delete(r)),e}function N(t){return null!==t&&"object"==typeof t?t.valueOf():t}function k(t){return t}function C(t,...n){return F(t,k,k,n)}function P(t,...n){return F(t,Array.from,k,n)}function z(t,n){for(let e=1,r=n.length;e<r;++e)t=t.flatMap((t=>t.pop().map((([n,e])=>[...t,n,e]))));return t}function $(t,n,...e){return F(t,k,n,e)}function D(t,n,...e){return F(t,Array.from,n,e)}function R(t){if(1!==t.length)throw new Error("duplicate key");return t[0]}function F(t,n,e,r){return function t(i,o){if(o>=r.length)return e(i);const a=new InternMap,u=r[o++];let c=-1;for(const t of i){const n=u(t,++c,i),e=a.get(n);e?e.push(t):a.set(n,[t])}for(const[n,e]of a)a.set(n,t(e,o));return n(a)}(t,0)}function q(t,n){return Array.from(n,(n=>t[n]))}function U(t,...n){if("function"!=typeof t[Symbol.iterator])throw new TypeError("values is not iterable");t=Array.from(t);let[e]=n;if(e&&2!==e.length||n.length>1){const r=Uint32Array.from(t,((t,n)=>n));return n.length>1?(n=n.map((n=>t.map(n))),r.sort(((t,e)=>{for(const r of n){const n=O(r[t],r[e]);if(n)return n}}))):(e=t.map(e),r.sort(((t,n)=>O(e[t],e[n])))),q(t,r)}return t.sort(I(e))}function I(t=n){if(t===n)return O;if("function"!=typeof t)throw new TypeError("compare is not a function");return(n,e)=>{const r=t(n,e);return r||0===r?r:(0===t(e,e))-(0===t(n,n))}}function O(t,n){return(null==t||!(t>=t))-(null==n||!(n>=n))||(t<n?-1:t>n?1:0)}var B=Array.prototype.slice;function Y(t){return()=>t}const L=Math.sqrt(50),j=Math.sqrt(10),H=Math.sqrt(2);function X(t,n,e){const r=(n-t)/Math.max(0,e),i=Math.floor(Math.log10(r)),o=r/Math.pow(10,i),a=o>=L?10:o>=j?5:o>=H?2:1;let u,c,f;return i<0?(f=Math.pow(10,-i)/a,u=Math.round(t*f),c=Math.round(n*f),u/f<t&&++u,c/f>n&&--c,f=-f):(f=Math.pow(10,i)*a,u=Math.round(t/f),c=Math.round(n/f),u*f<t&&++u,c*f>n&&--c),c<u&&.5<=e&&e<2?X(t,n,2*e):[u,c,f]}function G(t,n,e){if(!((e=+e)>0))return[];if((t=+t)===(n=+n))return[t];const r=n<t,[i,o,a]=r?X(n,t,e):X(t,n,e);if(!(o>=i))return[];const u=o-i+1,c=new Array(u);if(r)if(a<0)for(let t=0;t<u;++t)c[t]=(o-t)/-a;else for(let t=0;t<u;++t)c[t]=(o-t)*a;else if(a<0)for(let t=0;t<u;++t)c[t]=(i+t)/-a;else for(let t=0;t<u;++t)c[t]=(i+t)*a;return c}function V(t,n,e){return X(t=+t,n=+n,e=+e)[2]}function W(t,n,e){e=+e;const r=(n=+n)<(t=+t),i=r?V(n,t,e):V(t,n,e);return(r?-1:1)*(i<0?1/-i:i)}function Z(t,n,e){let r;for(;;){const i=V(t,n,e);if(i===r||0===i||!isFinite(i))return[t,n];i>0?(t=Math.floor(t/i)*i,n=Math.ceil(n/i)*i):i<0&&(t=Math.ceil(t*i)/i,n=Math.floor(n*i)/i),r=i}}function K(t){return Math.max(1,Math.ceil(Math.log(v(t))/Math.LN2)+1)}function Q(){var t=k,n=M,e=K;function r(r){Array.isArray(r)||(r=Array.from(r));var i,o,a,u=r.length,c=new Array(u);for(i=0;i<u;++i)c[i]=t(r[i],i,r);var f=n(c),l=f[0],h=f[1],d=e(c,l,h);if(!Array.isArray(d)){const t=h,e=+d;if(n===M&&([l,h]=Z(l,h,e)),(d=G(l,h,e))[0]<=l&&(a=V(l,h,e)),d[d.length-1]>=h)if(t>=h&&n===M){const t=V(l,h,e);isFinite(t)&&(t>0?h=(Math.floor(h/t)+1)*t:t<0&&(h=(Math.ceil(h*-t)+1)/-t))}else d.pop()}for(var p=d.length,g=0,y=p;d[g]<=l;)++g;for(;d[y-1]>h;)--y;(g||y<p)&&(d=d.slice(g,y),p=y-g);var v,_=new Array(p+1);for(i=0;i<=p;++i)(v=_[i]=[]).x0=i>0?d[i-1]:l,v.x1=i<p?d[i]:h;if(isFinite(a)){if(a>0)for(i=0;i<u;++i)null!=(o=c[i])&&l<=o&&o<=h&&_[Math.min(p,Math.floor((o-l)/a))].push(r[i]);else if(a<0)for(i=0;i<u;++i)if(null!=(o=c[i])&&l<=o&&o<=h){const t=Math.floor((l-o)*a);_[Math.min(p,t+(d[t]<=o))].push(r[i])}}else for(i=0;i<u;++i)null!=(o=c[i])&&l<=o&&o<=h&&_[s(d,o,0,p)].push(r[i]);return _}return r.value=function(n){return arguments.length?(t="function"==typeof n?n:Y(n),r):t},r.domain=function(t){return arguments.length?(n="function"==typeof t?t:Y([t[0],t[1]]),r):n},r.thresholds=function(t){return arguments.length?(e="function"==typeof t?t:Y(Array.isArray(t)?B.call(t):t),r):e},r}function J(t,n){let e;if(void 0===n)for(const n of t)null!=n&&(e<n||void 0===e&&n>=n)&&(e=n);else{let r=-1;for(let i of t)null!=(i=n(i,++r,t))&&(e<i||void 0===e&&i>=i)&&(e=i)}return e}function tt(t,n){let e,r=-1,i=-1;if(void 0===n)for(const n of t)++i,null!=n&&(e<n||void 0===e&&n>=n)&&(e=n,r=i);else for(let o of t)null!=(o=n(o,++i,t))&&(e<o||void 0===e&&o>=o)&&(e=o,r=i);return r}function nt(t,n){let e;if(void 0===n)for(const n of t)null!=n&&(e>n||void 0===e&&n>=n)&&(e=n);else{let r=-1;for(let i of t)null!=(i=n(i,++r,t))&&(e>i||void 0===e&&i>=i)&&(e=i)}return e}function et(t,n){let e,r=-1,i=-1;if(void 0===n)for(const n of t)++i,null!=n&&(e>n||void 0===e&&n>=n)&&(e=n,r=i);else for(let o of t)null!=(o=n(o,++i,t))&&(e>o||void 0===e&&o>=o)&&(e=o,r=i);return r}function rt(t,n,e=0,r=1/0,i){if(n=Math.floor(n),e=Math.floor(Math.max(0,e)),r=Math.floor(Math.min(t.length-1,r)),!(e<=n&&n<=r))return t;for(i=void 0===i?O:I(i);r>e;){if(r-e>600){const o=r-e+1,a=n-e+1,u=Math.log(o),c=.5*Math.exp(2*u/3),f=.5*Math.sqrt(u*c*(o-c)/o)*(a-o/2<0?-1:1);rt(t,n,Math.max(e,Math.floor(n-a*c/o+f)),Math.min(r,Math.floor(n+(o-a)*c/o+f)),i)}const o=t[n];let a=e,u=r;for(it(t,e,n),i(t[r],o)>0&&it(t,e,r);a<u;){for(it(t,a,u),++a,--u;i(t[a],o)<0;)++a;for(;i(t[u],o)>0;)--u}0===i(t[e],o)?it(t,e,u):(++u,it(t,u,r)),u<=n&&(e=u+1),n<=u&&(r=u-1)}return t}function it(t,n,e){const r=t[n];t[n]=t[e],t[e]=r}function ot(t,e=n){let r,i=!1;if(1===e.length){let o;for(const a of t){const t=e(a);(i?n(t,o)>0:0===n(t,t))&&(r=a,o=t,i=!0)}}else for(const n of t)(i?e(n,r)>0:0===e(n,n))&&(r=n,i=!0);return r}function at(t,n,e){if(t=Float64Array.from(function*(t,n){if(void 0===n)for(let n of t)null!=n&&(n=+n)>=n&&(yield n);else{let e=-1;for(let r of t)null!=(r=n(r,++e,t))&&(r=+r)>=r&&(yield r)}}(t,e)),(r=t.length)&&!isNaN(n=+n)){if(n<=0||r<2)return nt(t);if(n>=1)return J(t);var r,i=(r-1)*n,o=Math.floor(i),a=J(rt(t,o).subarray(0,o+1));return a+(nt(t.subarray(o+1))-a)*(i-o)}}function ut(t,n,e=o){if((r=t.length)&&!isNaN(n=+n)){if(n<=0||r<2)return+e(t[0],0,t);if(n>=1)return+e(t[r-1],r-1,t);var r,i=(r-1)*n,a=Math.floor(i),u=+e(t[a],a,t);return u+(+e(t[a+1],a+1,t)-u)*(i-a)}}function ct(t,n,e=o){if(!isNaN(n=+n)){if(r=Float64Array.from(t,((n,r)=>o(e(t[r],r,t)))),n<=0)return et(r);if(n>=1)return tt(r);var r,i=Uint32Array.from(t,((t,n)=>n)),a=r.length-1,u=Math.floor(a*n);return rt(i,u,0,a,((t,n)=>O(r[t],r[n]))),(u=ot(i.subarray(0,u+1),(t=>r[t])))>=0?u:-1}}function ft(t){return Array.from(function*(t){for(const n of t)yield*n}(t))}function st(t,n){return[t,n]}function lt(t,n,e){t=+t,n=+n,e=(i=arguments.length)<2?(n=t,t=0,1):i<3?1:+e;for(var r=-1,i=0|Math.max(0,Math.ceil((n-t)/e)),o=new Array(i);++r<i;)o[r]=t+r*e;return o}function ht(t,e=n){if(1===e.length)return et(t,e);let r,i=-1,o=-1;for(const n of t)++o,(i<0?0===e(n,n):e(n,r)<0)&&(r=n,i=o);return i}var dt=pt(Math.random);function pt(t){return function(n,e=0,r=n.length){let i=r-(e=+e);for(;i;){const r=t()*i--|0,o=n[i+e];n[i+e]=n[r+e],n[r+e]=o}return n}}function gt(t){if(!(i=t.length))return[];for(var n=-1,e=nt(t,yt),r=new Array(e);++n<e;)for(var i,o=-1,a=r[n]=new Array(i);++o<i;)a[o]=t[o][n];return r}function yt(t){return t.length}function vt(t){return t instanceof InternSet?t:new InternSet(t)}function _t(t,n){const e=t[Symbol.iterator](),r=new Set;for(const t of n){const n=bt(t);if(r.has(n))continue;let i,o;for(;({value:i,done:o}=e.next());){if(o)return!1;const t=bt(i);if(r.add(t),Object.is(n,t))break}}return!0}function bt(t){return null!==t&&"object"==typeof t?t.valueOf():t}function mt(t){return t}var xt=1,wt=2,Mt=3,Tt=4,At=1e-6;function St(t){return"translate("+t+",0)"}function Et(t){return"translate(0,"+t+")"}function Nt(t){return n=>+t(n)}function kt(t,n){return n=Math.max(0,t.bandwidth()-2*n)/2,t.round()&&(n=Math.round(n)),e=>+t(e)+n}function Ct(){return!this.__axis}function Pt(t,n){var e=[],r=null,i=null,o=6,a=6,u=3,c="undefined"!=typeof window&&window.devicePixelRatio>1?0:.5,f=t===xt||t===Tt?-1:1,s=t===Tt||t===wt?"x":"y",l=t===xt||t===Mt?St:Et;function h(h){var d=null==r?n.ticks?n.ticks.apply(n,e):n.domain():r,p=null==i?n.tickFormat?n.tickFormat.apply(n,e):mt:i,g=Math.max(o,0)+u,y=n.range(),v=+y[0]+c,_=+y[y.length-1]+c,b=(n.bandwidth?kt:Nt)(n.copy(),c),m=h.selection?h.selection():h,x=m.selectAll(".domain").data([null]),w=m.selectAll(".tick").data(d,n).order(),M=w.exit(),T=w.enter().append("g").attr("class","tick"),A=w.select("line"),S=w.select("text");x=x.merge(x.enter().insert("path",".tick").attr("class","domain").attr("stroke","currentColor")),w=w.merge(T),A=A.merge(T.append("line").attr("stroke","currentColor").attr(s+"2",f*o)),S=S.merge(T.append("text").attr("fill","currentColor").attr(s,f*g).attr("dy",t===xt?"0em":t===Mt?"0.71em":"0.32em")),h!==m&&(x=x.transition(h),w=w.transition(h),A=A.transition(h),S=S.transition(h),M=M.transition(h).attr("opacity",At).attr("transform",(function(t){return isFinite(t=b(t))?l(t+c):this.getAttribute("transform")})),T.attr("opacity",At).attr("transform",(function(t){var n=this.parentNode.__axis;return l((n&&isFinite(n=n(t))?n:b(t))+c)}))),M.remove(),x.attr("d",t===Tt||t===wt?a?"M"+f*a+","+v+"H"+c+"V"+_+"H"+f*a:"M"+c+","+v+"V"+_:a?"M"+v+","+f*a+"V"+c+"H"+_+"V"+f*a:"M"+v+","+c+"H"+_),w.attr("opacity",1).attr("transform",(function(t){return l(b(t)+c)})),A.attr(s+"2",f*o),S.attr(s,f*g).text(p),m.filter(Ct).attr("fill","none").attr("font-size",10).attr("font-family","sans-serif").attr("text-anchor",t===wt?"start":t===Tt?"end":"middle"),m.each((function(){this.__axis=b}))}return h.scale=function(t){return arguments.length?(n=t,h):n},h.ticks=function(){return e=Array.from(arguments),h},h.tickArguments=function(t){return arguments.length?(e=null==t?[]:Array.from(t),h):e.slice()},h.tickValues=function(t){return arguments.length?(r=null==t?null:Array.from(t),h):r&&r.slice()},h.tickFormat=function(t){return arguments.length?(i=t,h):i},h.tickSize=function(t){return arguments.length?(o=a=+t,h):o},h.tickSizeInner=function(t){return arguments.length?(o=+t,h):o},h.tickSizeOuter=function(t){return arguments.length?(a=+t,h):a},h.tickPadding=function(t){return arguments.length?(u=+t,h):u},h.offset=function(t){return arguments.length?(c=+t,h):c},h}var zt={value:()=>{}};function $t(){for(var t,n=0,e=arguments.length,r={};n<e;++n){if(!(t=arguments[n]+"")||t in r||/[\s.]/.test(t))throw new Error("illegal type: "+t);r[t]=[]}return new Dt(r)}function Dt(t){this._=t}function Rt(t,n){for(var e,r=0,i=t.length;r<i;++r)if((e=t[r]).name===n)return e.value}function Ft(t,n,e){for(var r=0,i=t.length;r<i;++r)if(t[r].name===n){t[r]=zt,t=t.slice(0,r).concat(t.slice(r+1));break}return null!=e&&t.push({name:n,value:e}),t}Dt.prototype=$t.prototype={constructor:Dt,on:function(t,n){var e,r,i=this._,o=(r=i,(t+"").trim().split(/^|\s+/).map((function(t){var n="",e=t.indexOf(".");if(e>=0&&(n=t.slice(e+1),t=t.slice(0,e)),t&&!r.hasOwnProperty(t))throw new Error("unknown type: "+t);return{type:t,name:n}}))),a=-1,u=o.length;if(!(arguments.length<2)){if(null!=n&&"function"!=typeof n)throw new Error("invalid callback: "+n);for(;++a<u;)if(e=(t=o[a]).type)i[e]=Ft(i[e],t.name,n);else if(null==n)for(e in i)i[e]=Ft(i[e],t.name,null);return this}for(;++a<u;)if((e=(t=o[a]).type)&&(e=Rt(i[e],t.name)))return e},copy:function(){var t={},n=this._;for(var e in n)t[e]=n[e].slice();return new Dt(t)},call:function(t,n){if((e=arguments.length-2)>0)for(var e,r,i=new Array(e),o=0;o<e;++o)i[o]=arguments[o+2];if(!this._.hasOwnProperty(t))throw new Error("unknown type: "+t);for(o=0,e=(r=this._[t]).length;o<e;++o)r[o].value.apply(n,i)},apply:function(t,n,e){if(!this._.hasOwnProperty(t))throw new Error("unknown type: "+t);for(var r=this._[t],i=0,o=r.length;i<o;++i)r[i].value.apply(n,e)}};var qt="http://www.w3.org/1999/xhtml",Ut={svg:"http://www.w3.org/2000/svg",xhtml:qt,xlink:"http://www.w3.org/1999/xlink",xml:"http://www.w3.org/XML/1998/namespace",xmlns:"http://www.w3.org/2000/xmlns/"};function It(t){var n=t+="",e=n.indexOf(":");return e>=0&&"xmlns"!==(n=t.slice(0,e))&&(t=t.slice(e+1)),Ut.hasOwnProperty(n)?{space:Ut[n],local:t}:t}function Ot(t){return function(){var n=this.ownerDocument,e=this.namespaceURI;return e===qt&&n.documentElement.namespaceURI===qt?n.createElement(t):n.createElementNS(e,t)}}function Bt(t){return function(){return this.ownerDocument.createElementNS(t.space,t.local)}}function Yt(t){var n=It(t);return(n.local?Bt:Ot)(n)}function Lt(){}function jt(t){return null==t?Lt:function(){return this.querySelector(t)}}function Ht(t){return null==t?[]:Array.isArray(t)?t:Array.from(t)}function Xt(){return[]}function Gt(t){return null==t?Xt:function(){return this.querySelectorAll(t)}}function Vt(t){return function(){return this.matches(t)}}function Wt(t){return function(n){return n.matches(t)}}var Zt=Array.prototype.find;function Kt(){return this.firstElementChild}var Qt=Array.prototype.filter;function Jt(){return Array.from(this.children)}function tn(t){return new Array(t.length)}function nn(t,n){this.ownerDocument=t.ownerDocument,this.namespaceURI=t.namespaceURI,this._next=null,this._parent=t,this.__data__=n}function en(t,n,e,r,i,o){for(var a,u=0,c=n.length,f=o.length;u<f;++u)(a=n[u])?(a.__data__=o[u],r[u]=a):e[u]=new nn(t,o[u]);for(;u<c;++u)(a=n[u])&&(i[u]=a)}function rn(t,n,e,r,i,o,a){var u,c,f,s=new Map,l=n.length,h=o.length,d=new Array(l);for(u=0;u<l;++u)(c=n[u])&&(d[u]=f=a.call(c,c.__data__,u,n)+"",s.has(f)?i[u]=c:s.set(f,c));for(u=0;u<h;++u)f=a.call(t,o[u],u,o)+"",(c=s.get(f))?(r[u]=c,c.__data__=o[u],s.delete(f)):e[u]=new nn(t,o[u]);for(u=0;u<l;++u)(c=n[u])&&s.get(d[u])===c&&(i[u]=c)}function on(t){return t.__data__}function an(t){return"object"==typeof t&&"length"in t?t:Array.from(t)}function un(t,n){return t<n?-1:t>n?1:t>=n?0:NaN}function cn(t){return function(){this.removeAttribute(t)}}function fn(t){return function(){this.removeAttributeNS(t.space,t.local)}}function sn(t,n){return function(){this.setAttribute(t,n)}}function ln(t,n){return function(){this.setAttributeNS(t.space,t.local,n)}}function hn(t,n){return function(){var e=n.apply(this,arguments);null==e?this.removeAttribute(t):this.setAttribute(t,e)}}function dn(t,n){return function(){var e=n.apply(this,arguments);null==e?this.removeAttributeNS(t.space,t.local):this.setAttributeNS(t.space,t.local,e)}}function pn(t){return t.ownerDocument&&t.ownerDocument.defaultView||t.document&&t||t.defaultView}function gn(t){return function(){this.style.removeProperty(t)}}function yn(t,n,e){return function(){this.style.setProperty(t,n,e)}}function vn(t,n,e){return function(){var r=n.apply(this,arguments);null==r?this.style.removeProperty(t):this.style.setProperty(t,r,e)}}function _n(t,n){return t.style.getPropertyValue(n)||pn(t).getComputedStyle(t,null).getPropertyValue(n)}function bn(t){return function(){delete this[t]}}function mn(t,n){return function(){this[t]=n}}function xn(t,n){return function(){var e=n.apply(this,arguments);null==e?delete this[t]:this[t]=e}}function wn(t){return t.trim().split(/^|\s+/)}function Mn(t){return t.classList||new Tn(t)}function Tn(t){this._node=t,this._names=wn(t.getAttribute("class")||"")}function An(t,n){for(var e=Mn(t),r=-1,i=n.length;++r<i;)e.add(n[r])}function Sn(t,n){for(var e=Mn(t),r=-1,i=n.length;++r<i;)e.remove(n[r])}function En(t){return function(){An(this,t)}}function Nn(t){return function(){Sn(this,t)}}function kn(t,n){return function(){(n.apply(this,arguments)?An:Sn)(this,t)}}function Cn(){this.textContent=""}function Pn(t){return function(){this.textContent=t}}function zn(t){return function(){var n=t.apply(this,arguments);this.textContent=null==n?"":n}}function $n(){this.innerHTML=""}function Dn(t){return function(){this.innerHTML=t}}function Rn(t){return function(){var n=t.apply(this,arguments);this.innerHTML=null==n?"":n}}function Fn(){this.nextSibling&&this.parentNode.appendChild(this)}function qn(){this.previousSibling&&this.parentNode.insertBefore(this,this.parentNode.firstChild)}function Un(){return null}function In(){var t=this.parentNode;t&&t.removeChild(this)}function On(){var t=this.cloneNode(!1),n=this.parentNode;return n?n.insertBefore(t,this.nextSibling):t}function Bn(){var t=this.cloneNode(!0),n=this.parentNode;return n?n.insertBefore(t,this.nextSibling):t}function Yn(t){return function(){var n=this.__on;if(n){for(var e,r=0,i=-1,o=n.length;r<o;++r)e=n[r],t.type&&e.type!==t.type||e.name!==t.name?n[++i]=e:this.removeEventListener(e.type,e.listener,e.options);++i?n.length=i:delete this.__on}}}function Ln(t,n,e){return function(){var r,i=this.__on,o=function(t){return function(n){t.call(this,n,this.__data__)}}(n);if(i)for(var a=0,u=i.length;a<u;++a)if((r=i[a]).type===t.type&&r.name===t.name)return this.removeEventListener(r.type,r.listener,r.options),this.addEventListener(r.type,r.listener=o,r.options=e),void(r.value=n);this.addEventListener(t.type,o,e),r={type:t.type,name:t.name,value:n,listener:o,options:e},i?i.push(r):this.__on=[r]}}function jn(t,n,e){var r=pn(t),i=r.CustomEvent;"function"==typeof i?i=new i(n,e):(i=r.document.createEvent("Event"),e?(i.initEvent(n,e.bubbles,e.cancelable),i.detail=e.detail):i.initEvent(n,!1,!1)),t.dispatchEvent(i)}function Hn(t,n){return function(){return jn(this,t,n)}}function Xn(t,n){return function(){return jn(this,t,n.apply(this,arguments))}}nn.prototype={constructor:nn,appendChild:function(t){return this._parent.insertBefore(t,this._next)},insertBefore:function(t,n){return this._parent.insertBefore(t,n)},querySelector:function(t){return this._parent.querySelector(t)},querySelectorAll:function(t){return this._parent.querySelectorAll(t)}},Tn.prototype={add:function(t){this._names.indexOf(t)<0&&(this._names.push(t),this._node.setAttribute("class",this._names.join(" ")))},remove:function(t){var n=this._names.indexOf(t);n>=0&&(this._names.splice(n,1),this._node.setAttribute("class",this._names.join(" ")))},contains:function(t){return this._names.indexOf(t)>=0}};var Gn=[null];function Vn(t,n){this._groups=t,this._parents=n}function Wn(){return new Vn([[document.documentElement]],Gn)}function Zn(t){return"string"==typeof t?new Vn([[document.querySelector(t)]],[document.documentElement]):new Vn([[t]],Gn)}Vn.prototype=Wn.prototype={constructor:Vn,select:function(t){"function"!=typeof t&&(t=jt(t));for(var n=this._groups,e=n.length,r=new Array(e),i=0;i<e;++i)for(var o,a,u=n[i],c=u.length,f=r[i]=new Array(c),s=0;s<c;++s)(o=u[s])&&(a=t.call(o,o.__data__,s,u))&&("__data__"in o&&(a.__data__=o.__data__),f[s]=a);return new Vn(r,this._parents)},selectAll:function(t){t="function"==typeof t?function(t){return function(){return Ht(t.apply(this,arguments))}}(t):Gt(t);for(var n=this._groups,e=n.length,r=[],i=[],o=0;o<e;++o)for(var a,u=n[o],c=u.length,f=0;f<c;++f)(a=u[f])&&(r.push(t.call(a,a.__data__,f,u)),i.push(a));return new Vn(r,i)},selectChild:function(t){return this.select(null==t?Kt:function(t){return function(){return Zt.call(this.children,t)}}("function"==typeof t?t:Wt(t)))},selectChildren:function(t){return this.selectAll(null==t?Jt:function(t){return function(){return Qt.call(this.children,t)}}("function"==typeof t?t:Wt(t)))},filter:function(t){"function"!=typeof t&&(t=Vt(t));for(var n=this._groups,e=n.length,r=new Array(e),i=0;i<e;++i)for(var o,a=n[i],u=a.length,c=r[i]=[],f=0;f<u;++f)(o=a[f])&&t.call(o,o.__data__,f,a)&&c.push(o);return new Vn(r,this._parents)},data:function(t,n){if(!arguments.length)return Array.from(this,on);var e=n?rn:en,r=this._parents,i=this._groups;"function"!=typeof t&&(t=function(t){return function(){return t}}(t));for(var o=i.length,a=new Array(o),u=new Array(o),c=new Array(o),f=0;f<o;++f){var s=r[f],l=i[f],h=l.length,d=an(t.call(s,s&&s.__data__,f,r)),p=d.length,g=u[f]=new Array(p),y=a[f]=new Array(p);e(s,l,g,y,c[f]=new Array(h),d,n);for(var v,_,b=0,m=0;b<p;++b)if(v=g[b]){for(b>=m&&(m=b+1);!(_=y[m])&&++m<p;);v._next=_||null}}return(a=new Vn(a,r))._enter=u,a._exit=c,a},enter:function(){return new Vn(this._enter||this._groups.map(tn),this._parents)},exit:function(){return new Vn(this._exit||this._groups.map(tn),this._parents)},join:function(t,n,e){var r=this.enter(),i=this,o=this.exit();return"function"==typeof t?(r=t(r))&&(r=r.selection()):r=r.append(t+""),null!=n&&(i=n(i))&&(i=i.selection()),null==e?o.remove():e(o),r&&i?r.merge(i).order():i},merge:function(t){for(var n=t.selection?t.selection():t,e=this._groups,r=n._groups,i=e.length,o=r.length,a=Math.min(i,o),u=new Array(i),c=0;c<a;++c)for(var f,s=e[c],l=r[c],h=s.length,d=u[c]=new Array(h),p=0;p<h;++p)(f=s[p]||l[p])&&(d[p]=f);for(;c<i;++c)u[c]=e[c];return new Vn(u,this._parents)},selection:function(){return this},order:function(){for(var t=this._groups,n=-1,e=t.length;++n<e;)for(var r,i=t[n],o=i.length-1,a=i[o];--o>=0;)(r=i[o])&&(a&&4^r.compareDocumentPosition(a)&&a.parentNode.insertBefore(r,a),a=r);return this},sort:function(t){function n(n,e){return n&&e?t(n.__data__,e.__data__):!n-!e}t||(t=un);for(var e=this._groups,r=e.length,i=new Array(r),o=0;o<r;++o){for(var a,u=e[o],c=u.length,f=i[o]=new Array(c),s=0;s<c;++s)(a=u[s])&&(f[s]=a);f.sort(n)}return new Vn(i,this._parents).order()},call:function(){var t=arguments[0];return arguments[0]=this,t.apply(null,arguments),this},nodes:function(){return Array.from(this)},node:function(){for(var t=this._groups,n=0,e=t.length;n<e;++n)for(var r=t[n],i=0,o=r.length;i<o;++i){var a=r[i];if(a)return a}return null},size:function(){let t=0;for(const n of this)++t;return t},empty:function(){return!this.node()},each:function(t){for(var n=this._groups,e=0,r=n.length;e<r;++e)for(var i,o=n[e],a=0,u=o.length;a<u;++a)(i=o[a])&&t.call(i,i.__data__,a,o);return this},attr:function(t,n){var e=It(t);if(arguments.length<2){var r=this.node();return e.local?r.getAttributeNS(e.space,e.local):r.getAttribute(e)}return this.each((null==n?e.local?fn:cn:"function"==typeof n?e.local?dn:hn:e.local?ln:sn)(e,n))},style:function(t,n,e){return arguments.length>1?this.each((null==n?gn:"function"==typeof n?vn:yn)(t,n,null==e?"":e)):_n(this.node(),t)},property:function(t,n){return arguments.length>1?this.each((null==n?bn:"function"==typeof n?xn:mn)(t,n)):this.node()[t]},classed:function(t,n){var e=wn(t+"");if(arguments.length<2){for(var r=Mn(this.node()),i=-1,o=e.length;++i<o;)if(!r.contains(e[i]))return!1;return!0}return this.each(("function"==typeof n?kn:n?En:Nn)(e,n))},text:function(t){return arguments.length?this.each(null==t?Cn:("function"==typeof t?zn:Pn)(t)):this.node().textContent},html:function(t){return arguments.length?this.each(null==t?$n:("function"==typeof t?Rn:Dn)(t)):this.node().innerHTML},raise:function(){return this.each(Fn)},lower:function(){return this.each(qn)},append:function(t){var n="function"==typeof t?t:Yt(t);return this.select((function(){return this.appendChild(n.apply(this,arguments))}))},insert:function(t,n){var e="function"==typeof t?t:Yt(t),r=null==n?Un:"function"==typeof n?n:jt(n);return this.select((function(){return this.insertBefore(e.apply(this,arguments),r.apply(this,arguments)||null)}))},remove:function(){return this.each(In)},clone:function(t){return this.select(t?Bn:On)},datum:function(t){return arguments.length?this.property("__data__",t):this.node().__data__},on:function(t,n,e){var r,i,o=function(t){return t.trim().split(/^|\s+/).map((function(t){var n="",e=t.indexOf(".");return e>=0&&(n=t.slice(e+1),t=t.slice(0,e)),{type:t,name:n}}))}(t+""),a=o.length;if(!(arguments.length<2)){for(u=n?Ln:Yn,r=0;r<a;++r)this.each(u(o[r],n,e));return this}var u=this.node().__on;if(u)for(var c,f=0,s=u.length;f<s;++f)for(r=0,c=u[f];r<a;++r)if((i=o[r]).type===c.type&&i.name===c.name)return c.value},dispatch:function(t,n){return this.each(("function"==typeof n?Xn:Hn)(t,n))},[Symbol.iterator]:function*(){for(var t=this._groups,n=0,e=t.length;n<e;++n)for(var r,i=t[n],o=0,a=i.length;o<a;++o)(r=i[o])&&(yield r)}};var Kn=0;function Qn(){return new Jn}function Jn(){this._="@"+(++Kn).toString(36)}function te(t){let n;for(;n=t.sourceEvent;)t=n;return t}function ne(t,n){if(t=te(t),void 0===n&&(n=t.currentTarget),n){var e=n.ownerSVGElement||n;if(e.createSVGPoint){var r=e.createSVGPoint();return r.x=t.clientX,r.y=t.clientY,[(r=r.matrixTransform(n.getScreenCTM().inverse())).x,r.y]}if(n.getBoundingClientRect){var i=n.getBoundingClientRect();return[t.clientX-i.left-n.clientLeft,t.clientY-i.top-n.clientTop]}}return[t.pageX,t.pageY]}Jn.prototype=Qn.prototype={constructor:Jn,get:function(t){for(var n=this._;!(n in t);)if(!(t=t.parentNode))return;return t[n]},set:function(t,n){return t[this._]=n},remove:function(t){return this._ in t&&delete t[this._]},toString:function(){return this._}};const ee={passive:!1},re={capture:!0,passive:!1};function ie(t){t.stopImmediatePropagation()}function oe(t){t.preventDefault(),t.stopImmediatePropagation()}function ae(t){var n=t.document.documentElement,e=Zn(t).on("dragstart.drag",oe,re);"onselectstart"in n?e.on("selectstart.drag",oe,re):(n.__noselect=n.style.MozUserSelect,n.style.MozUserSelect="none")}function ue(t,n){var e=t.document.documentElement,r=Zn(t).on("dragstart.drag",null);n&&(r.on("click.drag",oe,re),setTimeout((function(){r.on("click.drag",null)}),0)),"onselectstart"in e?r.on("selectstart.drag",null):(e.style.MozUserSelect=e.__noselect,delete e.__noselect)}var ce=t=>()=>t;function fe(t,{sourceEvent:n,subject:e,target:r,identifier:i,active:o,x:a,y:u,dx:c,dy:f,dispatch:s}){Object.defineProperties(this,{type:{value:t,enumerable:!0,configurable:!0},sourceEvent:{value:n,enumerable:!0,configurable:!0},subject:{value:e,enumerable:!0,configurable:!0},target:{value:r,enumerable:!0,configurable:!0},identifier:{value:i,enumerable:!0,configurable:!0},active:{value:o,enumerable:!0,configurable:!0},x:{value:a,enumerable:!0,configurable:!0},y:{value:u,enumerable:!0,configurable:!0},dx:{value:c,enumerable:!0,configurable:!0},dy:{value:f,enumerable:!0,configurable:!0},_:{value:s}})}function se(t){return!t.ctrlKey&&!t.button}function le(){return this.parentNode}function he(t,n){return null==n?{x:t.x,y:t.y}:n}function de(){return navigator.maxTouchPoints||"ontouchstart"in this}function pe(t,n,e){t.prototype=n.prototype=e,e.constructor=t}function ge(t,n){var e=Object.create(t.prototype);for(var r in n)e[r]=n[r];return e}function ye(){}fe.prototype.on=function(){var t=this._.on.apply(this._,arguments);return t===this._?this:t};var ve=.7,_e=1/ve,be="\\s*([+-]?\\d+)\\s*",me="\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)\\s*",xe="\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)%\\s*",we=/^#([0-9a-f]{3,8})$/,Me=new RegExp(`^rgb\\(${be},${be},${be}\\)$`),Te=new RegExp(`^rgb\\(${xe},${xe},${xe}\\)$`),Ae=new RegExp(`^rgba\\(${be},${be},${be},${me}\\)$`),Se=new RegExp(`^rgba\\(${xe},${xe},${xe},${me}\\)$`),Ee=new RegExp(`^hsl\\(${me},${xe},${xe}\\)$`),Ne=new RegExp(`^hsla\\(${me},${xe},${xe},${me}\\)$`),ke={aliceblue:15792383,antiquewhite:16444375,aqua:65535,aquamarine:8388564,azure:15794175,beige:16119260,bisque:16770244,black:0,blanchedalmond:16772045,blue:255,blueviolet:9055202,brown:10824234,burlywood:14596231,cadetblue:6266528,chartreuse:8388352,chocolate:13789470,coral:16744272,cornflowerblue:6591981,cornsilk:16775388,crimson:14423100,cyan:65535,darkblue:139,darkcyan:35723,darkgoldenrod:12092939,darkgray:11119017,darkgreen:25600,darkgrey:11119017,darkkhaki:12433259,darkmagenta:9109643,darkolivegreen:5597999,darkorange:16747520,darkorchid:10040012,darkred:9109504,darksalmon:15308410,darkseagreen:9419919,darkslateblue:4734347,darkslategray:3100495,darkslategrey:3100495,darkturquoise:52945,darkviolet:9699539,deeppink:16716947,deepskyblue:49151,dimgray:6908265,dimgrey:6908265,dodgerblue:2003199,firebrick:11674146,floralwhite:16775920,forestgreen:2263842,fuchsia:16711935,gainsboro:14474460,ghostwhite:16316671,gold:16766720,goldenrod:14329120,gray:8421504,green:32768,greenyellow:11403055,grey:8421504,honeydew:15794160,hotpink:16738740,indianred:13458524,indigo:4915330,ivory:16777200,khaki:15787660,lavender:15132410,lavenderblush:16773365,lawngreen:8190976,lemonchiffon:16775885,lightblue:11393254,lightcoral:15761536,lightcyan:14745599,lightgoldenrodyellow:16448210,lightgray:13882323,lightgreen:9498256,lightgrey:13882323,lightpink:16758465,lightsalmon:16752762,lightseagreen:2142890,lightskyblue:8900346,lightslategray:7833753,lightslategrey:7833753,lightsteelblue:11584734,lightyellow:16777184,lime:65280,limegreen:3329330,linen:16445670,magenta:16711935,maroon:8388608,mediumaquamarine:6737322,mediumblue:205,mediumorchid:12211667,mediumpurple:9662683,mediumseagreen:3978097,mediumslateblue:8087790,mediumspringgreen:64154,mediumturquoise:4772300,mediumvioletred:13047173,midnightblue:1644912,mintcream:16121850,mistyrose:16770273,moccasin:16770229,navajowhite:16768685,navy:128,oldlace:16643558,olive:8421376,olivedrab:7048739,orange:16753920,orangered:16729344,orchid:14315734,palegoldenrod:15657130,palegreen:10025880,paleturquoise:11529966,palevioletred:14381203,papayawhip:16773077,peachpuff:16767673,peru:13468991,pink:16761035,plum:14524637,powderblue:11591910,purple:8388736,rebeccapurple:6697881,red:16711680,rosybrown:12357519,royalblue:4286945,saddlebrown:9127187,salmon:16416882,sandybrown:16032864,seagreen:3050327,seashell:16774638,sienna:10506797,silver:12632256,skyblue:8900331,slateblue:6970061,slategray:7372944,slategrey:7372944,snow:16775930,springgreen:65407,steelblue:4620980,tan:13808780,teal:32896,thistle:14204888,tomato:16737095,turquoise:4251856,violet:15631086,wheat:16113331,white:16777215,whitesmoke:16119285,yellow:16776960,yellowgreen:10145074};function Ce(){return this.rgb().formatHex()}function Pe(){return this.rgb().formatRgb()}function ze(t){var n,e;return t=(t+"").trim().toLowerCase(),(n=we.exec(t))?(e=n[1].length,n=parseInt(n[1],16),6===e?$e(n):3===e?new qe(n>>8&15|n>>4&240,n>>4&15|240&n,(15&n)<<4|15&n,1):8===e?De(n>>24&255,n>>16&255,n>>8&255,(255&n)/255):4===e?De(n>>12&15|n>>8&240,n>>8&15|n>>4&240,n>>4&15|240&n,((15&n)<<4|15&n)/255):null):(n=Me.exec(t))?new qe(n[1],n[2],n[3],1):(n=Te.exec(t))?new qe(255*n[1]/100,255*n[2]/100,255*n[3]/100,1):(n=Ae.exec(t))?De(n[1],n[2],n[3],n[4]):(n=Se.exec(t))?De(255*n[1]/100,255*n[2]/100,255*n[3]/100,n[4]):(n=Ee.exec(t))?Le(n[1],n[2]/100,n[3]/100,1):(n=Ne.exec(t))?Le(n[1],n[2]/100,n[3]/100,n[4]):ke.hasOwnProperty(t)?$e(ke[t]):"transparent"===t?new qe(NaN,NaN,NaN,0):null}function $e(t){return new qe(t>>16&255,t>>8&255,255&t,1)}function De(t,n,e,r){return r<=0&&(t=n=e=NaN),new qe(t,n,e,r)}function Re(t){return t instanceof ye||(t=ze(t)),t?new qe((t=t.rgb()).r,t.g,t.b,t.opacity):new qe}function Fe(t,n,e,r){return 1===arguments.length?Re(t):new qe(t,n,e,null==r?1:r)}function qe(t,n,e,r){this.r=+t,this.g=+n,this.b=+e,this.opacity=+r}function Ue(){return`#${Ye(this.r)}${Ye(this.g)}${Ye(this.b)}`}function Ie(){const t=Oe(this.opacity);return`${1===t?"rgb(":"rgba("}${Be(this.r)}, ${Be(this.g)}, ${Be(this.b)}${1===t?")":`, ${t})`}`}function Oe(t){return isNaN(t)?1:Math.max(0,Math.min(1,t))}function Be(t){return Math.max(0,Math.min(255,Math.round(t)||0))}function Ye(t){return((t=Be(t))<16?"0":"")+t.toString(16)}function Le(t,n,e,r){return r<=0?t=n=e=NaN:e<=0||e>=1?t=n=NaN:n<=0&&(t=NaN),new Xe(t,n,e,r)}function je(t){if(t instanceof Xe)return new Xe(t.h,t.s,t.l,t.opacity);if(t instanceof ye||(t=ze(t)),!t)return new Xe;if(t instanceof Xe)return t;var n=(t=t.rgb()).r/255,e=t.g/255,r=t.b/255,i=Math.min(n,e,r),o=Math.max(n,e,r),a=NaN,u=o-i,c=(o+i)/2;return u?(a=n===o?(e-r)/u+6*(e<r):e===o?(r-n)/u+2:(n-e)/u+4,u/=c<.5?o+i:2-o-i,a*=60):u=c>0&&c<1?0:a,new Xe(a,u,c,t.opacity)}function He(t,n,e,r){return 1===arguments.length?je(t):new Xe(t,n,e,null==r?1:r)}function Xe(t,n,e,r){this.h=+t,this.s=+n,this.l=+e,this.opacity=+r}function Ge(t){return(t=(t||0)%360)<0?t+360:t}function Ve(t){return Math.max(0,Math.min(1,t||0))}function We(t,n,e){return 255*(t<60?n+(e-n)*t/60:t<180?e:t<240?n+(e-n)*(240-t)/60:n)}pe(ye,ze,{copy(t){return Object.assign(new this.constructor,this,t)},displayable(){return this.rgb().displayable()},hex:Ce,formatHex:Ce,formatHex8:function(){return this.rgb().formatHex8()},formatHsl:function(){return je(this).formatHsl()},formatRgb:Pe,toString:Pe}),pe(qe,Fe,ge(ye,{brighter(t){return t=null==t?_e:Math.pow(_e,t),new qe(this.r*t,this.g*t,this.b*t,this.opacity)},darker(t){return t=null==t?ve:Math.pow(ve,t),new qe(this.r*t,this.g*t,this.b*t,this.opacity)},rgb(){return this},clamp(){return new qe(Be(this.r),Be(this.g),Be(this.b),Oe(this.opacity))},displayable(){return-.5<=this.r&&this.r<255.5&&-.5<=this.g&&this.g<255.5&&-.5<=this.b&&this.b<255.5&&0<=this.opacity&&this.opacity<=1},hex:Ue,formatHex:Ue,formatHex8:function(){return`#${Ye(this.r)}${Ye(this.g)}${Ye(this.b)}${Ye(255*(isNaN(this.opacity)?1:this.opacity))}`},formatRgb:Ie,toString:Ie})),pe(Xe,He,ge(ye,{brighter(t){return t=null==t?_e:Math.pow(_e,t),new Xe(this.h,this.s,this.l*t,this.opacity)},darker(t){return t=null==t?ve:Math.pow(ve,t),new Xe(this.h,this.s,this.l*t,this.opacity)},rgb(){var t=this.h%360+360*(this.h<0),n=isNaN(t)||isNaN(this.s)?0:this.s,e=this.l,r=e+(e<.5?e:1-e)*n,i=2*e-r;return new qe(We(t>=240?t-240:t+120,i,r),We(t,i,r),We(t<120?t+240:t-120,i,r),this.opacity)},clamp(){return new Xe(Ge(this.h),Ve(this.s),Ve(this.l),Oe(this.opacity))},displayable(){return(0<=this.s&&this.s<=1||isNaN(this.s))&&0<=this.l&&this.l<=1&&0<=this.opacity&&this.opacity<=1},formatHsl(){const t=Oe(this.opacity);return`${1===t?"hsl(":"hsla("}${Ge(this.h)}, ${100*Ve(this.s)}%, ${100*Ve(this.l)}%${1===t?")":`, ${t})`}`}}));const Ze=Math.PI/180,Ke=180/Math.PI,Qe=.96422,Je=1,tr=.82521,nr=4/29,er=6/29,rr=3*er*er,ir=er*er*er;function or(t){if(t instanceof ur)return new ur(t.l,t.a,t.b,t.opacity);if(t instanceof pr)return gr(t);t instanceof qe||(t=Re(t));var n,e,r=lr(t.r),i=lr(t.g),o=lr(t.b),a=cr((.2225045*r+.7168786*i+.0606169*o)/Je);return r===i&&i===o?n=e=a:(n=cr((.4360747*r+.3850649*i+.1430804*o)/Qe),e=cr((.0139322*r+.0971045*i+.7141733*o)/tr)),new ur(116*a-16,500*(n-a),200*(a-e),t.opacity)}function ar(t,n,e,r){return 1===arguments.length?or(t):new ur(t,n,e,null==r?1:r)}function ur(t,n,e,r){this.l=+t,this.a=+n,this.b=+e,this.opacity=+r}function cr(t){return t>ir?Math.pow(t,1/3):t/rr+nr}function fr(t){return t>er?t*t*t:rr*(t-nr)}function sr(t){return 255*(t<=.0031308?12.92*t:1.055*Math.pow(t,1/2.4)-.055)}function lr(t){return(t/=255)<=.04045?t/12.92:Math.pow((t+.055)/1.055,2.4)}function hr(t){if(t instanceof pr)return new pr(t.h,t.c,t.l,t.opacity);if(t instanceof ur||(t=or(t)),0===t.a&&0===t.b)return new pr(NaN,0<t.l&&t.l<100?0:NaN,t.l,t.opacity);var n=Math.atan2(t.b,t.a)*Ke;return new pr(n<0?n+360:n,Math.sqrt(t.a*t.a+t.b*t.b),t.l,t.opacity)}function dr(t,n,e,r){return 1===arguments.length?hr(t):new pr(t,n,e,null==r?1:r)}function pr(t,n,e,r){this.h=+t,this.c=+n,this.l=+e,this.opacity=+r}function gr(t){if(isNaN(t.h))return new ur(t.l,0,0,t.opacity);var n=t.h*Ze;return new ur(t.l,Math.cos(n)*t.c,Math.sin(n)*t.c,t.opacity)}pe(ur,ar,ge(ye,{brighter(t){return new ur(this.l+18*(null==t?1:t),this.a,this.b,this.opacity)},darker(t){return new ur(this.l-18*(null==t?1:t),this.a,this.b,this.opacity)},rgb(){var t=(this.l+16)/116,n=isNaN(this.a)?t:t+this.a/500,e=isNaN(this.b)?t:t-this.b/200;return new qe(sr(3.1338561*(n=Qe*fr(n))-1.6168667*(t=Je*fr(t))-.4906146*(e=tr*fr(e))),sr(-.9787684*n+1.9161415*t+.033454*e),sr(.0719453*n-.2289914*t+1.4052427*e),this.opacity)}})),pe(pr,dr,ge(ye,{brighter(t){return new pr(this.h,this.c,this.l+18*(null==t?1:t),this.opacity)},darker(t){return new pr(this.h,this.c,this.l-18*(null==t?1:t),this.opacity)},rgb(){return gr(this).rgb()}}));var yr=-.14861,vr=1.78277,_r=-.29227,br=-.90649,mr=1.97294,xr=mr*br,wr=mr*vr,Mr=vr*_r-br*yr;function Tr(t,n,e,r){return 1===arguments.length?function(t){if(t instanceof Ar)return new Ar(t.h,t.s,t.l,t.opacity);t instanceof qe||(t=Re(t));var n=t.r/255,e=t.g/255,r=t.b/255,i=(Mr*r+xr*n-wr*e)/(Mr+xr-wr),o=r-i,a=(mr*(e-i)-_r*o)/br,u=Math.sqrt(a*a+o*o)/(mr*i*(1-i)),c=u?Math.atan2(a,o)*Ke-120:NaN;return new Ar(c<0?c+360:c,u,i,t.opacity)}(t):new Ar(t,n,e,null==r?1:r)}function Ar(t,n,e,r){this.h=+t,this.s=+n,this.l=+e,this.opacity=+r}function Sr(t,n,e,r,i){var o=t*t,a=o*t;return((1-3*t+3*o-a)*n+(4-6*o+3*a)*e+(1+3*t+3*o-3*a)*r+a*i)/6}function Er(t){var n=t.length-1;return function(e){var r=e<=0?e=0:e>=1?(e=1,n-1):Math.floor(e*n),i=t[r],o=t[r+1],a=r>0?t[r-1]:2*i-o,u=r<n-1?t[r+2]:2*o-i;return Sr((e-r/n)*n,a,i,o,u)}}function Nr(t){var n=t.length;return function(e){var r=Math.floor(((e%=1)<0?++e:e)*n),i=t[(r+n-1)%n],o=t[r%n],a=t[(r+1)%n],u=t[(r+2)%n];return Sr((e-r/n)*n,i,o,a,u)}}pe(Ar,Tr,ge(ye,{brighter(t){return t=null==t?_e:Math.pow(_e,t),new Ar(this.h,this.s,this.l*t,this.opacity)},darker(t){return t=null==t?ve:Math.pow(ve,t),new Ar(this.h,this.s,this.l*t,this.opacity)},rgb(){var t=isNaN(this.h)?0:(this.h+120)*Ze,n=+this.l,e=isNaN(this.s)?0:this.s*n*(1-n),r=Math.cos(t),i=Math.sin(t);return new qe(255*(n+e*(yr*r+vr*i)),255*(n+e*(_r*r+br*i)),255*(n+e*(mr*r)),this.opacity)}}));var kr=t=>()=>t;function Cr(t,n){return function(e){return t+e*n}}function Pr(t,n){var e=n-t;return e?Cr(t,e>180||e<-180?e-360*Math.round(e/360):e):kr(isNaN(t)?n:t)}function zr(t){return 1==(t=+t)?$r:function(n,e){return e-n?function(t,n,e){return t=Math.pow(t,e),n=Math.pow(n,e)-t,e=1/e,function(r){return Math.pow(t+r*n,e)}}(n,e,t):kr(isNaN(n)?e:n)}}function $r(t,n){var e=n-t;return e?Cr(t,e):kr(isNaN(t)?n:t)}var Dr=function t(n){var e=zr(n);function r(t,n){var r=e((t=Fe(t)).r,(n=Fe(n)).r),i=e(t.g,n.g),o=e(t.b,n.b),a=$r(t.opacity,n.opacity);return function(n){return t.r=r(n),t.g=i(n),t.b=o(n),t.opacity=a(n),t+""}}return r.gamma=t,r}(1);function Rr(t){return function(n){var e,r,i=n.length,o=new Array(i),a=new Array(i),u=new Array(i);for(e=0;e<i;++e)r=Fe(n[e]),o[e]=r.r||0,a[e]=r.g||0,u[e]=r.b||0;return o=t(o),a=t(a),u=t(u),r.opacity=1,function(t){return r.r=o(t),r.g=a(t),r.b=u(t),r+""}}}var Fr=Rr(Er),qr=Rr(Nr);function Ur(t,n){n||(n=[]);var e,r=t?Math.min(n.length,t.length):0,i=n.slice();return function(o){for(e=0;e<r;++e)i[e]=t[e]*(1-o)+n[e]*o;return i}}function Ir(t){return ArrayBuffer.isView(t)&&!(t instanceof DataView)}function Or(t,n){var e,r=n?n.length:0,i=t?Math.min(r,t.length):0,o=new Array(i),a=new Array(r);for(e=0;e<i;++e)o[e]=Gr(t[e],n[e]);for(;e<r;++e)a[e]=n[e];return function(t){for(e=0;e<i;++e)a[e]=o[e](t);return a}}function Br(t,n){var e=new Date;return t=+t,n=+n,function(r){return e.setTime(t*(1-r)+n*r),e}}function Yr(t,n){return t=+t,n=+n,function(e){return t*(1-e)+n*e}}function Lr(t,n){var e,r={},i={};for(e in null!==t&&"object"==typeof t||(t={}),null!==n&&"object"==typeof n||(n={}),n)e in t?r[e]=Gr(t[e],n[e]):i[e]=n[e];return function(t){for(e in r)i[e]=r[e](t);return i}}var jr=/[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g,Hr=new RegExp(jr.source,"g");function Xr(t,n){var e,r,i,o=jr.lastIndex=Hr.lastIndex=0,a=-1,u=[],c=[];for(t+="",n+="";(e=jr.exec(t))&&(r=Hr.exec(n));)(i=r.index)>o&&(i=n.slice(o,i),u[a]?u[a]+=i:u[++a]=i),(e=e[0])===(r=r[0])?u[a]?u[a]+=r:u[++a]=r:(u[++a]=null,c.push({i:a,x:Yr(e,r)})),o=Hr.lastIndex;return o<n.length&&(i=n.slice(o),u[a]?u[a]+=i:u[++a]=i),u.length<2?c[0]?function(t){return function(n){return t(n)+""}}(c[0].x):function(t){return function(){return t}}(n):(n=c.length,function(t){for(var e,r=0;r<n;++r)u[(e=c[r]).i]=e.x(t);return u.join("")})}function Gr(t,n){var e,r=typeof n;return null==n||"boolean"===r?kr(n):("number"===r?Yr:"string"===r?(e=ze(n))?(n=e,Dr):Xr:n instanceof ze?Dr:n instanceof Date?Br:Ir(n)?Ur:Array.isArray(n)?Or:"function"!=typeof n.valueOf&&"function"!=typeof n.toString||isNaN(n)?Lr:Yr)(t,n)}function Vr(t,n){return t=+t,n=+n,function(e){return Math.round(t*(1-e)+n*e)}}var Wr,Zr=180/Math.PI,Kr={translateX:0,translateY:0,rotate:0,skewX:0,scaleX:1,scaleY:1};function Qr(t,n,e,r,i,o){var a,u,c;return(a=Math.sqrt(t*t+n*n))&&(t/=a,n/=a),(c=t*e+n*r)&&(e-=t*c,r-=n*c),(u=Math.sqrt(e*e+r*r))&&(e/=u,r/=u,c/=u),t*r<n*e&&(t=-t,n=-n,c=-c,a=-a),{translateX:i,translateY:o,rotate:Math.atan2(n,t)*Zr,skewX:Math.atan(c)*Zr,scaleX:a,scaleY:u}}function Jr(t,n,e,r){function i(t){return t.length?t.pop()+" ":""}return function(o,a){var u=[],c=[];return o=t(o),a=t(a),function(t,r,i,o,a,u){if(t!==i||r!==o){var c=a.push("translate(",null,n,null,e);u.push({i:c-4,x:Yr(t,i)},{i:c-2,x:Yr(r,o)})}else(i||o)&&a.push("translate("+i+n+o+e)}(o.translateX,o.translateY,a.translateX,a.translateY,u,c),function(t,n,e,o){t!==n?(t-n>180?n+=360:n-t>180&&(t+=360),o.push({i:e.push(i(e)+"rotate(",null,r)-2,x:Yr(t,n)})):n&&e.push(i(e)+"rotate("+n+r)}(o.rotate,a.rotate,u,c),function(t,n,e,o){t!==n?o.push({i:e.push(i(e)+"skewX(",null,r)-2,x:Yr(t,n)}):n&&e.push(i(e)+"skewX("+n+r)}(o.skewX,a.skewX,u,c),function(t,n,e,r,o,a){if(t!==e||n!==r){var u=o.push(i(o)+"scale(",null,",",null,")");a.push({i:u-4,x:Yr(t,e)},{i:u-2,x:Yr(n,r)})}else 1===e&&1===r||o.push(i(o)+"scale("+e+","+r+")")}(o.scaleX,o.scaleY,a.scaleX,a.scaleY,u,c),o=a=null,function(t){for(var n,e=-1,r=c.length;++e<r;)u[(n=c[e]).i]=n.x(t);return u.join("")}}}var ti=Jr((function(t){const n=new("function"==typeof DOMMatrix?DOMMatrix:WebKitCSSMatrix)(t+"");return n.isIdentity?Kr:Qr(n.a,n.b,n.c,n.d,n.e,n.f)}),"px, ","px)","deg)"),ni=Jr((function(t){return null==t?Kr:(Wr||(Wr=document.createElementNS("http://www.w3.org/2000/svg","g")),Wr.setAttribute("transform",t),(t=Wr.transform.baseVal.consolidate())?Qr((t=t.matrix).a,t.b,t.c,t.d,t.e,t.f):Kr)}),", ",")",")");function ei(t){return((t=Math.exp(t))+1/t)/2}var ri=function t(n,e,r){function i(t,i){var o,a,u=t[0],c=t[1],f=t[2],s=i[0],l=i[1],h=i[2],d=s-u,p=l-c,g=d*d+p*p;if(g<1e-12)a=Math.log(h/f)/n,o=function(t){return[u+t*d,c+t*p,f*Math.exp(n*t*a)]};else{var y=Math.sqrt(g),v=(h*h-f*f+r*g)/(2*f*e*y),_=(h*h-f*f-r*g)/(2*h*e*y),b=Math.log(Math.sqrt(v*v+1)-v),m=Math.log(Math.sqrt(_*_+1)-_);a=(m-b)/n,o=function(t){var r=t*a,i=ei(b),o=f/(e*y)*(i*function(t){return((t=Math.exp(2*t))-1)/(t+1)}(n*r+b)-function(t){return((t=Math.exp(t))-1/t)/2}(b));return[u+o*d,c+o*p,f*i/ei(n*r+b)]}}return o.duration=1e3*a*n/Math.SQRT2,o}return i.rho=function(n){var e=Math.max(.001,+n),r=e*e;return t(e,r,r*r)},i}(Math.SQRT2,2,4);function ii(t){return function(n,e){var r=t((n=He(n)).h,(e=He(e)).h),i=$r(n.s,e.s),o=$r(n.l,e.l),a=$r(n.opacity,e.opacity);return function(t){return n.h=r(t),n.s=i(t),n.l=o(t),n.opacity=a(t),n+""}}}var oi=ii(Pr),ai=ii($r);function ui(t){return function(n,e){var r=t((n=dr(n)).h,(e=dr(e)).h),i=$r(n.c,e.c),o=$r(n.l,e.l),a=$r(n.opacity,e.opacity);return function(t){return n.h=r(t),n.c=i(t),n.l=o(t),n.opacity=a(t),n+""}}}var ci=ui(Pr),fi=ui($r);function si(t){return function n(e){function r(n,r){var i=t((n=Tr(n)).h,(r=Tr(r)).h),o=$r(n.s,r.s),a=$r(n.l,r.l),u=$r(n.opacity,r.opacity);return function(t){return n.h=i(t),n.s=o(t),n.l=a(Math.pow(t,e)),n.opacity=u(t),n+""}}return e=+e,r.gamma=n,r}(1)}var li=si(Pr),hi=si($r);function di(t,n){void 0===n&&(n=t,t=Gr);for(var e=0,r=n.length-1,i=n[0],o=new Array(r<0?0:r);e<r;)o[e]=t(i,i=n[++e]);return function(t){var n=Math.max(0,Math.min(r-1,Math.floor(t*=r)));return o[n](t-n)}}var pi,gi,yi=0,vi=0,_i=0,bi=1e3,mi=0,xi=0,wi=0,Mi="object"==typeof performance&&performance.now?performance:Date,Ti="object"==typeof window&&window.requestAnimationFrame?window.requestAnimationFrame.bind(window):function(t){setTimeout(t,17)};function Ai(){return xi||(Ti(Si),xi=Mi.now()+wi)}function Si(){xi=0}function Ei(){this._call=this._time=this._next=null}function Ni(t,n,e){var r=new Ei;return r.restart(t,n,e),r}function ki(){Ai(),++yi;for(var t,n=pi;n;)(t=xi-n._time)>=0&&n._call.call(void 0,t),n=n._next;--yi}function Ci(){xi=(mi=Mi.now())+wi,yi=vi=0;try{ki()}finally{yi=0,function(){var t,n,e=pi,r=1/0;for(;e;)e._call?(r>e._time&&(r=e._time),t=e,e=e._next):(n=e._next,e._next=null,e=t?t._next=n:pi=n);gi=t,zi(r)}(),xi=0}}function Pi(){var t=Mi.now(),n=t-mi;n>bi&&(wi-=n,mi=t)}function zi(t){yi||(vi&&(vi=clearTimeout(vi)),t-xi>24?(t<1/0&&(vi=setTimeout(Ci,t-Mi.now()-wi)),_i&&(_i=clearInterval(_i))):(_i||(mi=Mi.now(),_i=setInterval(Pi,bi)),yi=1,Ti(Ci)))}function $i(t,n,e){var r=new Ei;return n=null==n?0:+n,r.restart((e=>{r.stop(),t(e+n)}),n,e),r}Ei.prototype=Ni.prototype={constructor:Ei,restart:function(t,n,e){if("function"!=typeof t)throw new TypeError("callback is not a function");e=(null==e?Ai():+e)+(null==n?0:+n),this._next||gi===this||(gi?gi._next=this:pi=this,gi=this),this._call=t,this._time=e,zi()},stop:function(){this._call&&(this._call=null,this._time=1/0,zi())}};var Di=$t("start","end","cancel","interrupt"),Ri=[],Fi=0,qi=1,Ui=2,Ii=3,Oi=4,Bi=5,Yi=6;function Li(t,n,e,r,i,o){var a=t.__transition;if(a){if(e in a)return}else t.__transition={};!function(t,n,e){var r,i=t.__transition;function o(t){e.state=qi,e.timer.restart(a,e.delay,e.time),e.delay<=t&&a(t-e.delay)}function a(o){var f,s,l,h;if(e.state!==qi)return c();for(f in i)if((h=i[f]).name===e.name){if(h.state===Ii)return $i(a);h.state===Oi?(h.state=Yi,h.timer.stop(),h.on.call("interrupt",t,t.__data__,h.index,h.group),delete i[f]):+f<n&&(h.state=Yi,h.timer.stop(),h.on.call("cancel",t,t.__data__,h.index,h.group),delete i[f])}if($i((function(){e.state===Ii&&(e.state=Oi,e.timer.restart(u,e.delay,e.time),u(o))})),e.state=Ui,e.on.call("start",t,t.__data__,e.index,e.group),e.state===Ui){for(e.state=Ii,r=new Array(l=e.tween.length),f=0,s=-1;f<l;++f)(h=e.tween[f].value.call(t,t.__data__,e.index,e.group))&&(r[++s]=h);r.length=s+1}}function u(n){for(var i=n<e.duration?e.ease.call(null,n/e.duration):(e.timer.restart(c),e.state=Bi,1),o=-1,a=r.length;++o<a;)r[o].call(t,i);e.state===Bi&&(e.on.call("end",t,t.__data__,e.index,e.group),c())}function c(){for(var r in e.state=Yi,e.timer.stop(),delete i[n],i)return;delete t.__transition}i[n]=e,e.timer=Ni(o,0,e.time)}(t,e,{name:n,index:r,group:i,on:Di,tween:Ri,time:o.time,delay:o.delay,duration:o.duration,ease:o.ease,timer:null,state:Fi})}function ji(t,n){var e=Xi(t,n);if(e.state>Fi)throw new Error("too late; already scheduled");return e}function Hi(t,n){var e=Xi(t,n);if(e.state>Ii)throw new Error("too late; already running");return e}function Xi(t,n){var e=t.__transition;if(!e||!(e=e[n]))throw new Error("transition not found");return e}function Gi(t,n){var e,r,i,o=t.__transition,a=!0;if(o){for(i in n=null==n?null:n+"",o)(e=o[i]).name===n?(r=e.state>Ui&&e.state<Bi,e.state=Yi,e.timer.stop(),e.on.call(r?"interrupt":"cancel",t,t.__data__,e.index,e.group),delete o[i]):a=!1;a&&delete t.__transition}}function Vi(t,n){var e,r;return function(){var i=Hi(this,t),o=i.tween;if(o!==e)for(var a=0,u=(r=e=o).length;a<u;++a)if(r[a].name===n){(r=r.slice()).splice(a,1);break}i.tween=r}}function Wi(t,n,e){var r,i;if("function"!=typeof e)throw new Error;return function(){var o=Hi(this,t),a=o.tween;if(a!==r){i=(r=a).slice();for(var u={name:n,value:e},c=0,f=i.length;c<f;++c)if(i[c].name===n){i[c]=u;break}c===f&&i.push(u)}o.tween=i}}function Zi(t,n,e){var r=t._id;return t.each((function(){var t=Hi(this,r);(t.value||(t.value={}))[n]=e.apply(this,arguments)})),function(t){return Xi(t,r).value[n]}}function Ki(t,n){var e;return("number"==typeof n?Yr:n instanceof ze?Dr:(e=ze(n))?(n=e,Dr):Xr)(t,n)}function Qi(t){return function(){this.removeAttribute(t)}}function Ji(t){return function(){this.removeAttributeNS(t.space,t.local)}}function to(t,n,e){var r,i,o=e+"";return function(){var a=this.getAttribute(t);return a===o?null:a===r?i:i=n(r=a,e)}}function no(t,n,e){var r,i,o=e+"";return function(){var a=this.getAttributeNS(t.space,t.local);return a===o?null:a===r?i:i=n(r=a,e)}}function eo(t,n,e){var r,i,o;return function(){var a,u,c=e(this);if(null!=c)return(a=this.getAttribute(t))===(u=c+"")?null:a===r&&u===i?o:(i=u,o=n(r=a,c));this.removeAttribute(t)}}function ro(t,n,e){var r,i,o;return function(){var a,u,c=e(this);if(null!=c)return(a=this.getAttributeNS(t.space,t.local))===(u=c+"")?null:a===r&&u===i?o:(i=u,o=n(r=a,c));this.removeAttributeNS(t.space,t.local)}}function io(t,n){var e,r;function i(){var i=n.apply(this,arguments);return i!==r&&(e=(r=i)&&function(t,n){return function(e){this.setAttributeNS(t.space,t.local,n.call(this,e))}}(t,i)),e}return i._value=n,i}function oo(t,n){var e,r;function i(){var i=n.apply(this,arguments);return i!==r&&(e=(r=i)&&function(t,n){return function(e){this.setAttribute(t,n.call(this,e))}}(t,i)),e}return i._value=n,i}function ao(t,n){return function(){ji(this,t).delay=+n.apply(this,arguments)}}function uo(t,n){return n=+n,function(){ji(this,t).delay=n}}function co(t,n){return function(){Hi(this,t).duration=+n.apply(this,arguments)}}function fo(t,n){return n=+n,function(){Hi(this,t).duration=n}}var so=Wn.prototype.constructor;function lo(t){return function(){this.style.removeProperty(t)}}var ho=0;function po(t,n,e,r){this._groups=t,this._parents=n,this._name=e,this._id=r}function go(t){return Wn().transition(t)}function yo(){return++ho}var vo=Wn.prototype;po.prototype=go.prototype={constructor:po,select:function(t){var n=this._name,e=this._id;"function"!=typeof t&&(t=jt(t));for(var r=this._groups,i=r.length,o=new Array(i),a=0;a<i;++a)for(var u,c,f=r[a],s=f.length,l=o[a]=new Array(s),h=0;h<s;++h)(u=f[h])&&(c=t.call(u,u.__data__,h,f))&&("__data__"in u&&(c.__data__=u.__data__),l[h]=c,Li(l[h],n,e,h,l,Xi(u,e)));return new po(o,this._parents,n,e)},selectAll:function(t){var n=this._name,e=this._id;"function"!=typeof t&&(t=Gt(t));for(var r=this._groups,i=r.length,o=[],a=[],u=0;u<i;++u)for(var c,f=r[u],s=f.length,l=0;l<s;++l)if(c=f[l]){for(var h,d=t.call(c,c.__data__,l,f),p=Xi(c,e),g=0,y=d.length;g<y;++g)(h=d[g])&&Li(h,n,e,g,d,p);o.push(d),a.push(c)}return new po(o,a,n,e)},selectChild:vo.selectChild,selectChildren:vo.selectChildren,filter:function(t){"function"!=typeof t&&(t=Vt(t));for(var n=this._groups,e=n.length,r=new Array(e),i=0;i<e;++i)for(var o,a=n[i],u=a.length,c=r[i]=[],f=0;f<u;++f)(o=a[f])&&t.call(o,o.__data__,f,a)&&c.push(o);return new po(r,this._parents,this._name,this._id)},merge:function(t){if(t._id!==this._id)throw new Error;for(var n=this._groups,e=t._groups,r=n.length,i=e.length,o=Math.min(r,i),a=new Array(r),u=0;u<o;++u)for(var c,f=n[u],s=e[u],l=f.length,h=a[u]=new Array(l),d=0;d<l;++d)(c=f[d]||s[d])&&(h[d]=c);for(;u<r;++u)a[u]=n[u];return new po(a,this._parents,this._name,this._id)},selection:function(){return new so(this._groups,this._parents)},transition:function(){for(var t=this._name,n=this._id,e=yo(),r=this._groups,i=r.length,o=0;o<i;++o)for(var a,u=r[o],c=u.length,f=0;f<c;++f)if(a=u[f]){var s=Xi(a,n);Li(a,t,e,f,u,{time:s.time+s.delay+s.duration,delay:0,duration:s.duration,ease:s.ease})}return new po(r,this._parents,t,e)},call:vo.call,nodes:vo.nodes,node:vo.node,size:vo.size,empty:vo.empty,each:vo.each,on:function(t,n){var e=this._id;return arguments.length<2?Xi(this.node(),e).on.on(t):this.each(function(t,n,e){var r,i,o=function(t){return(t+"").trim().split(/^|\s+/).every((function(t){var n=t.indexOf(".");return n>=0&&(t=t.slice(0,n)),!t||"start"===t}))}(n)?ji:Hi;return function(){var a=o(this,t),u=a.on;u!==r&&(i=(r=u).copy()).on(n,e),a.on=i}}(e,t,n))},attr:function(t,n){var e=It(t),r="transform"===e?ni:Ki;return this.attrTween(t,"function"==typeof n?(e.local?ro:eo)(e,r,Zi(this,"attr."+t,n)):null==n?(e.local?Ji:Qi)(e):(e.local?no:to)(e,r,n))},attrTween:function(t,n){var e="attr."+t;if(arguments.length<2)return(e=this.tween(e))&&e._value;if(null==n)return this.tween(e,null);if("function"!=typeof n)throw new Error;var r=It(t);return this.tween(e,(r.local?io:oo)(r,n))},style:function(t,n,e){var r="transform"==(t+="")?ti:Ki;return null==n?this.styleTween(t,function(t,n){var e,r,i;return function(){var o=_n(this,t),a=(this.style.removeProperty(t),_n(this,t));return o===a?null:o===e&&a===r?i:i=n(e=o,r=a)}}(t,r)).on("end.style."+t,lo(t)):"function"==typeof n?this.styleTween(t,function(t,n,e){var r,i,o;return function(){var a=_n(this,t),u=e(this),c=u+"";return null==u&&(this.style.removeProperty(t),c=u=_n(this,t)),a===c?null:a===r&&c===i?o:(i=c,o=n(r=a,u))}}(t,r,Zi(this,"style."+t,n))).each(function(t,n){var e,r,i,o,a="style."+n,u="end."+a;return function(){var c=Hi(this,t),f=c.on,s=null==c.value[a]?o||(o=lo(n)):void 0;f===e&&i===s||(r=(e=f).copy()).on(u,i=s),c.on=r}}(this._id,t)):this.styleTween(t,function(t,n,e){var r,i,o=e+"";return function(){var a=_n(this,t);return a===o?null:a===r?i:i=n(r=a,e)}}(t,r,n),e).on("end.style."+t,null)},styleTween:function(t,n,e){var r="style."+(t+="");if(arguments.length<2)return(r=this.tween(r))&&r._value;if(null==n)return this.tween(r,null);if("function"!=typeof n)throw new Error;return this.tween(r,function(t,n,e){var r,i;function o(){var o=n.apply(this,arguments);return o!==i&&(r=(i=o)&&function(t,n,e){return function(r){this.style.setProperty(t,n.call(this,r),e)}}(t,o,e)),r}return o._value=n,o}(t,n,null==e?"":e))},text:function(t){return this.tween("text","function"==typeof t?function(t){return function(){var n=t(this);this.textContent=null==n?"":n}}(Zi(this,"text",t)):function(t){return function(){this.textContent=t}}(null==t?"":t+""))},textTween:function(t){var n="text";if(arguments.length<1)return(n=this.tween(n))&&n._value;if(null==t)return this.tween(n,null);if("function"!=typeof t)throw new Error;return this.tween(n,function(t){var n,e;function r(){var r=t.apply(this,arguments);return r!==e&&(n=(e=r)&&function(t){return function(n){this.textContent=t.call(this,n)}}(r)),n}return r._value=t,r}(t))},remove:function(){return this.on("end.remove",function(t){return function(){var n=this.parentNode;for(var e in this.__transition)if(+e!==t)return;n&&n.removeChild(this)}}(this._id))},tween:function(t,n){var e=this._id;if(t+="",arguments.length<2){for(var r,i=Xi(this.node(),e).tween,o=0,a=i.length;o<a;++o)if((r=i[o]).name===t)return r.value;return null}return this.each((null==n?Vi:Wi)(e,t,n))},delay:function(t){var n=this._id;return arguments.length?this.each(("function"==typeof t?ao:uo)(n,t)):Xi(this.node(),n).delay},duration:function(t){var n=this._id;return arguments.length?this.each(("function"==typeof t?co:fo)(n,t)):Xi(this.node(),n).duration},ease:function(t){var n=this._id;return arguments.length?this.each(function(t,n){if("function"!=typeof n)throw new Error;return function(){Hi(this,t).ease=n}}(n,t)):Xi(this.node(),n).ease},easeVarying:function(t){if("function"!=typeof t)throw new Error;return this.each(function(t,n){return function(){var e=n.apply(this,arguments);if("function"!=typeof e)throw new Error;Hi(this,t).ease=e}}(this._id,t))},end:function(){var t,n,e=this,r=e._id,i=e.size();return new Promise((function(o,a){var u={value:a},c={value:function(){0==--i&&o()}};e.each((function(){var e=Hi(this,r),i=e.on;i!==t&&((n=(t=i).copy())._.cancel.push(u),n._.interrupt.push(u),n._.end.push(c)),e.on=n})),0===i&&o()}))},[Symbol.iterator]:vo[Symbol.iterator]};function _o(t){return((t*=2)<=1?t*t:--t*(2-t)+1)/2}function bo(t){return((t*=2)<=1?t*t*t:(t-=2)*t*t+2)/2}var mo=function t(n){function e(t){return Math.pow(t,n)}return n=+n,e.exponent=t,e}(3),xo=function t(n){function e(t){return 1-Math.pow(1-t,n)}return n=+n,e.exponent=t,e}(3),wo=function t(n){function e(t){return((t*=2)<=1?Math.pow(t,n):2-Math.pow(2-t,n))/2}return n=+n,e.exponent=t,e}(3),Mo=Math.PI,To=Mo/2;function Ao(t){return(1-Math.cos(Mo*t))/2}function So(t){return 1.0009775171065494*(Math.pow(2,-10*t)-.0009765625)}function Eo(t){return((t*=2)<=1?So(1-t):2-So(t-1))/2}function No(t){return((t*=2)<=1?1-Math.sqrt(1-t*t):Math.sqrt(1-(t-=2)*t)+1)/2}var ko=4/11,Co=6/11,Po=8/11,zo=3/4,$o=9/11,Do=10/11,Ro=15/16,Fo=21/22,qo=63/64,Uo=1/ko/ko;function Io(t){return(t=+t)<ko?Uo*t*t:t<Po?Uo*(t-=Co)*t+zo:t<Do?Uo*(t-=$o)*t+Ro:Uo*(t-=Fo)*t+qo}var Oo=1.70158,Bo=function t(n){function e(t){return(t=+t)*t*(n*(t-1)+t)}return n=+n,e.overshoot=t,e}(Oo),Yo=function t(n){function e(t){return--t*t*((t+1)*n+t)+1}return n=+n,e.overshoot=t,e}(Oo),Lo=function t(n){function e(t){return((t*=2)<1?t*t*((n+1)*t-n):(t-=2)*t*((n+1)*t+n)+2)/2}return n=+n,e.overshoot=t,e}(Oo),jo=2*Math.PI,Ho=function t(n,e){var r=Math.asin(1/(n=Math.max(1,n)))*(e/=jo);function i(t){return n*So(- --t)*Math.sin((r-t)/e)}return i.amplitude=function(n){return t(n,e*jo)},i.period=function(e){return t(n,e)},i}(1,.3),Xo=function t(n,e){var r=Math.asin(1/(n=Math.max(1,n)))*(e/=jo);function i(t){return 1-n*So(t=+t)*Math.sin((t+r)/e)}return i.amplitude=function(n){return t(n,e*jo)},i.period=function(e){return t(n,e)},i}(1,.3),Go=function t(n,e){var r=Math.asin(1/(n=Math.max(1,n)))*(e/=jo);function i(t){return((t=2*t-1)<0?n*So(-t)*Math.sin((r-t)/e):2-n*So(t)*Math.sin((r+t)/e))/2}return i.amplitude=function(n){return t(n,e*jo)},i.period=function(e){return t(n,e)},i}(1,.3),Vo={time:null,delay:0,duration:250,ease:bo};function Wo(t,n){for(var e;!(e=t.__transition)||!(e=e[n]);)if(!(t=t.parentNode))throw new Error(`transition ${n} not found`);return e}Wn.prototype.interrupt=function(t){return this.each((function(){Gi(this,t)}))},Wn.prototype.transition=function(t){var n,e;t instanceof po?(n=t._id,t=t._name):(n=yo(),(e=Vo).time=Ai(),t=null==t?null:t+"");for(var r=this._groups,i=r.length,o=0;o<i;++o)for(var a,u=r[o],c=u.length,f=0;f<c;++f)(a=u[f])&&Li(a,t,n,f,u,e||Wo(a,n));return new po(r,this._parents,t,n)};var Zo=[null];var Ko=t=>()=>t;function Qo(t,{sourceEvent:n,target:e,selection:r,mode:i,dispatch:o}){Object.defineProperties(this,{type:{value:t,enumerable:!0,configurable:!0},sourceEvent:{value:n,enumerable:!0,configurable:!0},target:{value:e,enumerable:!0,configurable:!0},selection:{value:r,enumerable:!0,configurable:!0},mode:{value:i,enumerable:!0,configurable:!0},_:{value:o}})}function Jo(t){t.preventDefault(),t.stopImmediatePropagation()}var ta={name:"drag"},na={name:"space"},ea={name:"handle"},ra={name:"center"};const{abs:ia,max:oa,min:aa}=Math;function ua(t){return[+t[0],+t[1]]}function ca(t){return[ua(t[0]),ua(t[1])]}var fa={name:"x",handles:["w","e"].map(va),input:function(t,n){return null==t?null:[[+t[0],n[0][1]],[+t[1],n[1][1]]]},output:function(t){return t&&[t[0][0],t[1][0]]}},sa={name:"y",handles:["n","s"].map(va),input:function(t,n){return null==t?null:[[n[0][0],+t[0]],[n[1][0],+t[1]]]},output:function(t){return t&&[t[0][1],t[1][1]]}},la={name:"xy",handles:["n","w","e","s","nw","ne","sw","se"].map(va),input:function(t){return null==t?null:ca(t)},output:function(t){return t}},ha={overlay:"crosshair",selection:"move",n:"ns-resize",e:"ew-resize",s:"ns-resize",w:"ew-resize",nw:"nwse-resize",ne:"nesw-resize",se:"nwse-resize",sw:"nesw-resize"},da={e:"w",w:"e",nw:"ne",ne:"nw",se:"sw",sw:"se"},pa={n:"s",s:"n",nw:"sw",ne:"se",se:"ne",sw:"nw"},ga={overlay:1,selection:1,n:null,e:1,s:null,w:-1,nw:-1,ne:1,se:1,sw:-1},ya={overlay:1,selection:1,n:-1,e:null,s:1,w:null,nw:-1,ne:-1,se:1,sw:1};function va(t){return{type:t}}function _a(t){return!t.ctrlKey&&!t.button}function ba(){var t=this.ownerSVGElement||this;return t.hasAttribute("viewBox")?[[(t=t.viewBox.baseVal).x,t.y],[t.x+t.width,t.y+t.height]]:[[0,0],[t.width.baseVal.value,t.height.baseVal.value]]}function ma(){return navigator.maxTouchPoints||"ontouchstart"in this}function xa(t){for(;!t.__brush;)if(!(t=t.parentNode))return;return t.__brush}function wa(t){var n,e=ba,r=_a,i=ma,o=!0,a=$t("start","brush","end"),u=6;function c(n){var e=n.property("__brush",g).selectAll(".overlay").data([va("overlay")]);e.enter().append("rect").attr("class","overlay").attr("pointer-events","all").attr("cursor",ha.overlay).merge(e).each((function(){var t=xa(this).extent;Zn(this).attr("x",t[0][0]).attr("y",t[0][1]).attr("width",t[1][0]-t[0][0]).attr("height",t[1][1]-t[0][1])})),n.selectAll(".selection").data([va("selection")]).enter().append("rect").attr("class","selection").attr("cursor",ha.selection).attr("fill","#777").attr("fill-opacity",.3).attr("stroke","#fff").attr("shape-rendering","crispEdges");var r=n.selectAll(".handle").data(t.handles,(function(t){return t.type}));r.exit().remove(),r.enter().append("rect").attr("class",(function(t){return"handle handle--"+t.type})).attr("cursor",(function(t){return ha[t.type]})),n.each(f).attr("fill","none").attr("pointer-events","all").on("mousedown.brush",h).filter(i).on("touchstart.brush",h).on("touchmove.brush",d).on("touchend.brush touchcancel.brush",p).style("touch-action","none").style("-webkit-tap-highlight-color","rgba(0,0,0,0)")}function f(){var t=Zn(this),n=xa(this).selection;n?(t.selectAll(".selection").style("display",null).attr("x",n[0][0]).attr("y",n[0][1]).attr("width",n[1][0]-n[0][0]).attr("height",n[1][1]-n[0][1]),t.selectAll(".handle").style("display",null).attr("x",(function(t){return"e"===t.type[t.type.length-1]?n[1][0]-u/2:n[0][0]-u/2})).attr("y",(function(t){return"s"===t.type[0]?n[1][1]-u/2:n[0][1]-u/2})).attr("width",(function(t){return"n"===t.type||"s"===t.type?n[1][0]-n[0][0]+u:u})).attr("height",(function(t){return"e"===t.type||"w"===t.type?n[1][1]-n[0][1]+u:u}))):t.selectAll(".selection,.handle").style("display","none").attr("x",null).attr("y",null).attr("width",null).attr("height",null)}function s(t,n,e){var r=t.__brush.emitter;return!r||e&&r.clean?new l(t,n,e):r}function l(t,n,e){this.that=t,this.args=n,this.state=t.__brush,this.active=0,this.clean=e}function h(e){if((!n||e.touches)&&r.apply(this,arguments)){var i,a,u,c,l,h,d,p,g,y,v,_=this,b=e.target.__data__.type,m="selection"===(o&&e.metaKey?b="overlay":b)?ta:o&&e.altKey?ra:ea,x=t===sa?null:ga[b],w=t===fa?null:ya[b],M=xa(_),T=M.extent,A=M.selection,S=T[0][0],E=T[0][1],N=T[1][0],k=T[1][1],C=0,P=0,z=x&&w&&o&&e.shiftKey,$=Array.from(e.touches||[e],(t=>{const n=t.identifier;return(t=ne(t,_)).point0=t.slice(),t.identifier=n,t}));Gi(_);var D=s(_,arguments,!0).beforestart();if("overlay"===b){A&&(g=!0);const n=[$[0],$[1]||$[0]];M.selection=A=[[i=t===sa?S:aa(n[0][0],n[1][0]),u=t===fa?E:aa(n[0][1],n[1][1])],[l=t===sa?N:oa(n[0][0],n[1][0]),d=t===fa?k:oa(n[0][1],n[1][1])]],$.length>1&&I(e)}else i=A[0][0],u=A[0][1],l=A[1][0],d=A[1][1];a=i,c=u,h=l,p=d;var R=Zn(_).attr("pointer-events","none"),F=R.selectAll(".overlay").attr("cursor",ha[b]);if(e.touches)D.moved=U,D.ended=O;else{var q=Zn(e.view).on("mousemove.brush",U,!0).on("mouseup.brush",O,!0);o&&q.on("keydown.brush",(function(t){switch(t.keyCode){case 16:z=x&&w;break;case 18:m===ea&&(x&&(l=h-C*x,i=a+C*x),w&&(d=p-P*w,u=c+P*w),m=ra,I(t));break;case 32:m!==ea&&m!==ra||(x<0?l=h-C:x>0&&(i=a-C),w<0?d=p-P:w>0&&(u=c-P),m=na,F.attr("cursor",ha.selection),I(t));break;default:return}Jo(t)}),!0).on("keyup.brush",(function(t){switch(t.keyCode){case 16:z&&(y=v=z=!1,I(t));break;case 18:m===ra&&(x<0?l=h:x>0&&(i=a),w<0?d=p:w>0&&(u=c),m=ea,I(t));break;case 32:m===na&&(t.altKey?(x&&(l=h-C*x,i=a+C*x),w&&(d=p-P*w,u=c+P*w),m=ra):(x<0?l=h:x>0&&(i=a),w<0?d=p:w>0&&(u=c),m=ea),F.attr("cursor",ha[b]),I(t));break;default:return}Jo(t)}),!0),ae(e.view)}f.call(_),D.start(e,m.name)}function U(t){for(const n of t.changedTouches||[t])for(const t of $)t.identifier===n.identifier&&(t.cur=ne(n,_));if(z&&!y&&!v&&1===$.length){const t=$[0];ia(t.cur[0]-t[0])>ia(t.cur[1]-t[1])?v=!0:y=!0}for(const t of $)t.cur&&(t[0]=t.cur[0],t[1]=t.cur[1]);g=!0,Jo(t),I(t)}function I(t){const n=$[0],e=n.point0;var r;switch(C=n[0]-e[0],P=n[1]-e[1],m){case na:case ta:x&&(C=oa(S-i,aa(N-l,C)),a=i+C,h=l+C),w&&(P=oa(E-u,aa(k-d,P)),c=u+P,p=d+P);break;case ea:$[1]?(x&&(a=oa(S,aa(N,$[0][0])),h=oa(S,aa(N,$[1][0])),x=1),w&&(c=oa(E,aa(k,$[0][1])),p=oa(E,aa(k,$[1][1])),w=1)):(x<0?(C=oa(S-i,aa(N-i,C)),a=i+C,h=l):x>0&&(C=oa(S-l,aa(N-l,C)),a=i,h=l+C),w<0?(P=oa(E-u,aa(k-u,P)),c=u+P,p=d):w>0&&(P=oa(E-d,aa(k-d,P)),c=u,p=d+P));break;case ra:x&&(a=oa(S,aa(N,i-C*x)),h=oa(S,aa(N,l+C*x))),w&&(c=oa(E,aa(k,u-P*w)),p=oa(E,aa(k,d+P*w)))}h<a&&(x*=-1,r=i,i=l,l=r,r=a,a=h,h=r,b in da&&F.attr("cursor",ha[b=da[b]])),p<c&&(w*=-1,r=u,u=d,d=r,r=c,c=p,p=r,b in pa&&F.attr("cursor",ha[b=pa[b]])),M.selection&&(A=M.selection),y&&(a=A[0][0],h=A[1][0]),v&&(c=A[0][1],p=A[1][1]),A[0][0]===a&&A[0][1]===c&&A[1][0]===h&&A[1][1]===p||(M.selection=[[a,c],[h,p]],f.call(_),D.brush(t,m.name))}function O(t){if(function(t){t.stopImmediatePropagation()}(t),t.touches){if(t.touches.length)return;n&&clearTimeout(n),n=setTimeout((function(){n=null}),500)}else ue(t.view,g),q.on("keydown.brush keyup.brush mousemove.brush mouseup.brush",null);R.attr("pointer-events","all"),F.attr("cursor",ha.overlay),M.selection&&(A=M.selection),function(t){return t[0][0]===t[1][0]||t[0][1]===t[1][1]}(A)&&(M.selection=null,f.call(_)),D.end(t,m.name)}}function d(t){s(this,arguments).moved(t)}function p(t){s(this,arguments).ended(t)}function g(){var n=this.__brush||{selection:null};return n.extent=ca(e.apply(this,arguments)),n.dim=t,n}return c.move=function(n,e,r){n.tween?n.on("start.brush",(function(t){s(this,arguments).beforestart().start(t)})).on("interrupt.brush end.brush",(function(t){s(this,arguments).end(t)})).tween("brush",(function(){var n=this,r=n.__brush,i=s(n,arguments),o=r.selection,a=t.input("function"==typeof e?e.apply(this,arguments):e,r.extent),u=Gr(o,a);function c(t){r.selection=1===t&&null===a?null:u(t),f.call(n),i.brush()}return null!==o&&null!==a?c:c(1)})):n.each((function(){var n=this,i=arguments,o=n.__brush,a=t.input("function"==typeof e?e.apply(n,i):e,o.extent),u=s(n,i).beforestart();Gi(n),o.selection=null===a?null:a,f.call(n),u.start(r).brush(r).end(r)}))},c.clear=function(t,n){c.move(t,null,n)},l.prototype={beforestart:function(){return 1==++this.active&&(this.state.emitter=this,this.starting=!0),this},start:function(t,n){return this.starting?(this.starting=!1,this.emit("start",t,n)):this.emit("brush",t),this},brush:function(t,n){return this.emit("brush",t,n),this},end:function(t,n){return 0==--this.active&&(delete this.state.emitter,this.emit("end",t,n)),this},emit:function(n,e,r){var i=Zn(this.that).datum();a.call(n,this.that,new Qo(n,{sourceEvent:e,target:c,selection:t.output(this.state.selection),mode:r,dispatch:a}),i)}},c.extent=function(t){return arguments.length?(e="function"==typeof t?t:Ko(ca(t)),c):e},c.filter=function(t){return arguments.length?(r="function"==typeof t?t:Ko(!!t),c):r},c.touchable=function(t){return arguments.length?(i="function"==typeof t?t:Ko(!!t),c):i},c.handleSize=function(t){return arguments.length?(u=+t,c):u},c.keyModifiers=function(t){return arguments.length?(o=!!t,c):o},c.on=function(){var t=a.on.apply(a,arguments);return t===a?c:t},c}var Ma=Math.abs,Ta=Math.cos,Aa=Math.sin,Sa=Math.PI,Ea=Sa/2,Na=2*Sa,ka=Math.max,Ca=1e-12;function Pa(t,n){return Array.from({length:n-t},((n,e)=>t+e))}function za(t,n){var e=0,r=null,i=null,o=null;function a(a){var u,c=a.length,f=new Array(c),s=Pa(0,c),l=new Array(c*c),h=new Array(c),d=0;a=Float64Array.from({length:c*c},n?(t,n)=>a[n%c][n/c|0]:(t,n)=>a[n/c|0][n%c]);for(let n=0;n<c;++n){let e=0;for(let r=0;r<c;++r)e+=a[n*c+r]+t*a[r*c+n];d+=f[n]=e}u=(d=ka(0,Na-e*c)/d)?e:Na/c;{let n=0;r&&s.sort(((t,n)=>r(f[t],f[n])));for(const e of s){const r=n;if(t){const t=Pa(1+~c,c).filter((t=>t<0?a[~t*c+e]:a[e*c+t]));i&&t.sort(((t,n)=>i(t<0?-a[~t*c+e]:a[e*c+t],n<0?-a[~n*c+e]:a[e*c+n])));for(const r of t)if(r<0){(l[~r*c+e]||(l[~r*c+e]={source:null,target:null})).target={index:e,startAngle:n,endAngle:n+=a[~r*c+e]*d,value:a[~r*c+e]}}else{(l[e*c+r]||(l[e*c+r]={source:null,target:null})).source={index:e,startAngle:n,endAngle:n+=a[e*c+r]*d,value:a[e*c+r]}}h[e]={index:e,startAngle:r,endAngle:n,value:f[e]}}else{const t=Pa(0,c).filter((t=>a[e*c+t]||a[t*c+e]));i&&t.sort(((t,n)=>i(a[e*c+t],a[e*c+n])));for(const r of t){let t;if(e<r?(t=l[e*c+r]||(l[e*c+r]={source:null,target:null}),t.source={index:e,startAngle:n,endAngle:n+=a[e*c+r]*d,value:a[e*c+r]}):(t=l[r*c+e]||(l[r*c+e]={source:null,target:null}),t.target={index:e,startAngle:n,endAngle:n+=a[e*c+r]*d,value:a[e*c+r]},e===r&&(t.source=t.target)),t.source&&t.target&&t.source.value<t.target.value){const n=t.source;t.source=t.target,t.target=n}}h[e]={index:e,startAngle:r,endAngle:n,value:f[e]}}n+=u}}return(l=Object.values(l)).groups=h,o?l.sort(o):l}return a.padAngle=function(t){return arguments.length?(e=ka(0,t),a):e},a.sortGroups=function(t){return arguments.length?(r=t,a):r},a.sortSubgroups=function(t){return arguments.length?(i=t,a):i},a.sortChords=function(t){return arguments.length?(null==t?o=null:(n=t,o=function(t,e){return n(t.source.value+t.target.value,e.source.value+e.target.value)})._=t,a):o&&o._;var n},a}const $a=Math.PI,Da=2*$a,Ra=1e-6,Fa=Da-Ra;function qa(t){this._+=t[0];for(let n=1,e=t.length;n<e;++n)this._+=arguments[n]+t[n]}let Ua=class{constructor(t){this._x0=this._y0=this._x1=this._y1=null,this._="",this._append=null==t?qa:function(t){let n=Math.floor(t);if(!(n>=0))throw new Error(`invalid digits: ${t}`);if(n>15)return qa;const e=10**n;return function(t){this._+=t[0];for(let n=1,r=t.length;n<r;++n)this._+=Math.round(arguments[n]*e)/e+t[n]}}(t)}moveTo(t,n){this._append`M${this._x0=this._x1=+t},${this._y0=this._y1=+n}`}closePath(){null!==this._x1&&(this._x1=this._x0,this._y1=this._y0,this._append`Z`)}lineTo(t,n){this._append`L${this._x1=+t},${this._y1=+n}`}quadraticCurveTo(t,n,e,r){this._append`Q${+t},${+n},${this._x1=+e},${this._y1=+r}`}bezierCurveTo(t,n,e,r,i,o){this._append`C${+t},${+n},${+e},${+r},${this._x1=+i},${this._y1=+o}`}arcTo(t,n,e,r,i){if(t=+t,n=+n,e=+e,r=+r,(i=+i)<0)throw new Error(`negative radius: ${i}`);let o=this._x1,a=this._y1,u=e-t,c=r-n,f=o-t,s=a-n,l=f*f+s*s;if(null===this._x1)this._append`M${this._x1=t},${this._y1=n}`;else if(l>Ra)if(Math.abs(s*u-c*f)>Ra&&i){let h=e-o,d=r-a,p=u*u+c*c,g=h*h+d*d,y=Math.sqrt(p),v=Math.sqrt(l),_=i*Math.tan(($a-Math.acos((p+l-g)/(2*y*v)))/2),b=_/v,m=_/y;Math.abs(b-1)>Ra&&this._append`L${t+b*f},${n+b*s}`,this._append`A${i},${i},0,0,${+(s*h>f*d)},${this._x1=t+m*u},${this._y1=n+m*c}`}else this._append`L${this._x1=t},${this._y1=n}`;else;}arc(t,n,e,r,i,o){if(t=+t,n=+n,o=!!o,(e=+e)<0)throw new Error(`negative radius: ${e}`);let a=e*Math.cos(r),u=e*Math.sin(r),c=t+a,f=n+u,s=1^o,l=o?r-i:i-r;null===this._x1?this._append`M${c},${f}`:(Math.abs(this._x1-c)>Ra||Math.abs(this._y1-f)>Ra)&&this._append`L${c},${f}`,e&&(l<0&&(l=l%Da+Da),l>Fa?this._append`A${e},${e},0,1,${s},${t-a},${n-u}A${e},${e},0,1,${s},${this._x1=c},${this._y1=f}`:l>Ra&&this._append`A${e},${e},0,${+(l>=$a)},${s},${this._x1=t+e*Math.cos(i)},${this._y1=n+e*Math.sin(i)}`)}rect(t,n,e,r){this._append`M${this._x0=this._x1=+t},${this._y0=this._y1=+n}h${e=+e}v${+r}h${-e}Z`}toString(){return this._}};function Ia(){return new Ua}Ia.prototype=Ua.prototype;var Oa=Array.prototype.slice;function Ba(t){return function(){return t}}function Ya(t){return t.source}function La(t){return t.target}function ja(t){return t.radius}function Ha(t){return t.startAngle}function Xa(t){return t.endAngle}function Ga(){return 0}function Va(){return 10}function Wa(t){var n=Ya,e=La,r=ja,i=ja,o=Ha,a=Xa,u=Ga,c=null;function f(){var f,s=n.apply(this,arguments),l=e.apply(this,arguments),h=u.apply(this,arguments)/2,d=Oa.call(arguments),p=+r.apply(this,(d[0]=s,d)),g=o.apply(this,d)-Ea,y=a.apply(this,d)-Ea,v=+i.apply(this,(d[0]=l,d)),_=o.apply(this,d)-Ea,b=a.apply(this,d)-Ea;if(c||(c=f=Ia()),h>Ca&&(Ma(y-g)>2*h+Ca?y>g?(g+=h,y-=h):(g-=h,y+=h):g=y=(g+y)/2,Ma(b-_)>2*h+Ca?b>_?(_+=h,b-=h):(_-=h,b+=h):_=b=(_+b)/2),c.moveTo(p*Ta(g),p*Aa(g)),c.arc(0,0,p,g,y),g!==_||y!==b)if(t){var m=v-+t.apply(this,arguments),x=(_+b)/2;c.quadraticCurveTo(0,0,m*Ta(_),m*Aa(_)),c.lineTo(v*Ta(x),v*Aa(x)),c.lineTo(m*Ta(b),m*Aa(b))}else c.quadraticCurveTo(0,0,v*Ta(_),v*Aa(_)),c.arc(0,0,v,_,b);if(c.quadraticCurveTo(0,0,p*Ta(g),p*Aa(g)),c.closePath(),f)return c=null,f+""||null}return t&&(f.headRadius=function(n){return arguments.length?(t="function"==typeof n?n:Ba(+n),f):t}),f.radius=function(t){return arguments.length?(r=i="function"==typeof t?t:Ba(+t),f):r},f.sourceRadius=function(t){return arguments.length?(r="function"==typeof t?t:Ba(+t),f):r},f.targetRadius=function(t){return arguments.length?(i="function"==typeof t?t:Ba(+t),f):i},f.startAngle=function(t){return arguments.length?(o="function"==typeof t?t:Ba(+t),f):o},f.endAngle=function(t){return arguments.length?(a="function"==typeof t?t:Ba(+t),f):a},f.padAngle=function(t){return arguments.length?(u="function"==typeof t?t:Ba(+t),f):u},f.source=function(t){return arguments.length?(n=t,f):n},f.target=function(t){return arguments.length?(e=t,f):e},f.context=function(t){return arguments.length?(c=null==t?null:t,f):c},f}var Za=Array.prototype.slice;function Ka(t,n){return t-n}var Qa=t=>()=>t;function Ja(t,n){for(var e,r=-1,i=n.length;++r<i;)if(e=tu(t,n[r]))return e;return 0}function tu(t,n){for(var e=n[0],r=n[1],i=-1,o=0,a=t.length,u=a-1;o<a;u=o++){var c=t[o],f=c[0],s=c[1],l=t[u],h=l[0],d=l[1];if(nu(c,l,n))return 0;s>r!=d>r&&e<(h-f)*(r-s)/(d-s)+f&&(i=-i)}return i}function nu(t,n,e){var r,i,o,a;return function(t,n,e){return(n[0]-t[0])*(e[1]-t[1])==(e[0]-t[0])*(n[1]-t[1])}(t,n,e)&&(i=t[r=+(t[0]===n[0])],o=e[r],a=n[r],i<=o&&o<=a||a<=o&&o<=i)}function eu(){}var ru=[[],[[[1,1.5],[.5,1]]],[[[1.5,1],[1,1.5]]],[[[1.5,1],[.5,1]]],[[[1,.5],[1.5,1]]],[[[1,1.5],[.5,1]],[[1,.5],[1.5,1]]],[[[1,.5],[1,1.5]]],[[[1,.5],[.5,1]]],[[[.5,1],[1,.5]]],[[[1,1.5],[1,.5]]],[[[.5,1],[1,.5]],[[1.5,1],[1,1.5]]],[[[1.5,1],[1,.5]]],[[[.5,1],[1.5,1]]],[[[1,1.5],[1.5,1]]],[[[.5,1],[1,1.5]]],[]];function iu(){var t=1,n=1,e=K,r=u;function i(t){var n=e(t);if(Array.isArray(n))n=n.slice().sort(Ka);else{const e=M(t,ou);for(n=G(...Z(e[0],e[1],n),n);n[n.length-1]>=e[1];)n.pop();for(;n[1]<e[0];)n.shift()}return n.map((n=>o(t,n)))}function o(e,i){const o=null==i?NaN:+i;if(isNaN(o))throw new Error(`invalid value: ${i}`);var u=[],c=[];return function(e,r,i){var o,u,c,f,s,l,h=new Array,d=new Array;o=u=-1,f=au(e[0],r),ru[f<<1].forEach(p);for(;++o<t-1;)c=f,f=au(e[o+1],r),ru[c|f<<1].forEach(p);ru[f|0].forEach(p);for(;++u<n-1;){for(o=-1,f=au(e[u*t+t],r),s=au(e[u*t],r),ru[f<<1|s<<2].forEach(p);++o<t-1;)c=f,f=au(e[u*t+t+o+1],r),l=s,s=au(e[u*t+o+1],r),ru[c|f<<1|s<<2|l<<3].forEach(p);ru[f|s<<3].forEach(p)}o=-1,s=e[u*t]>=r,ru[s<<2].forEach(p);for(;++o<t-1;)l=s,s=au(e[u*t+o+1],r),ru[s<<2|l<<3].forEach(p);function p(t){var n,e,r=[t[0][0]+o,t[0][1]+u],c=[t[1][0]+o,t[1][1]+u],f=a(r),s=a(c);(n=d[f])?(e=h[s])?(delete d[n.end],delete h[e.start],n===e?(n.ring.push(c),i(n.ring)):h[n.start]=d[e.end]={start:n.start,end:e.end,ring:n.ring.concat(e.ring)}):(delete d[n.end],n.ring.push(c),d[n.end=s]=n):(n=h[s])?(e=d[f])?(delete h[n.start],delete d[e.end],n===e?(n.ring.push(c),i(n.ring)):h[e.start]=d[n.end]={start:e.start,end:n.end,ring:e.ring.concat(n.ring)}):(delete h[n.start],n.ring.unshift(r),h[n.start=f]=n):h[f]=d[s]={start:f,end:s,ring:[r,c]}}ru[s<<3].forEach(p)}(e,o,(function(t){r(t,e,o),function(t){for(var n=0,e=t.length,r=t[e-1][1]*t[0][0]-t[e-1][0]*t[0][1];++n<e;)r+=t[n-1][1]*t[n][0]-t[n-1][0]*t[n][1];return r}(t)>0?u.push([t]):c.push(t)})),c.forEach((function(t){for(var n,e=0,r=u.length;e<r;++e)if(-1!==Ja((n=u[e])[0],t))return void n.push(t)})),{type:"MultiPolygon",value:i,coordinates:u}}function a(n){return 2*n[0]+n[1]*(t+1)*4}function u(e,r,i){e.forEach((function(e){var o=e[0],a=e[1],u=0|o,c=0|a,f=uu(r[c*t+u]);o>0&&o<t&&u===o&&(e[0]=cu(o,uu(r[c*t+u-1]),f,i)),a>0&&a<n&&c===a&&(e[1]=cu(a,uu(r[(c-1)*t+u]),f,i))}))}return i.contour=o,i.size=function(e){if(!arguments.length)return[t,n];var r=Math.floor(e[0]),o=Math.floor(e[1]);if(!(r>=0&&o>=0))throw new Error("invalid size");return t=r,n=o,i},i.thresholds=function(t){return arguments.length?(e="function"==typeof t?t:Array.isArray(t)?Qa(Za.call(t)):Qa(t),i):e},i.smooth=function(t){return arguments.length?(r=t?u:eu,i):r===u},i}function ou(t){return isFinite(t)?t:NaN}function au(t,n){return null!=t&&+t>=n}function uu(t){return null==t||isNaN(t=+t)?-1/0:t}function cu(t,n,e,r){const i=r-n,o=e-n,a=isFinite(i)||isFinite(o)?i/o:Math.sign(i)/Math.sign(o);return isNaN(a)?t:t+a-.5}function fu(t){return t[0]}function su(t){return t[1]}function lu(){return 1}const hu=134217729,du=33306690738754706e-32;function pu(t,n,e,r,i){let o,a,u,c,f=n[0],s=r[0],l=0,h=0;s>f==s>-f?(o=f,f=n[++l]):(o=s,s=r[++h]);let d=0;if(l<t&&h<e)for(s>f==s>-f?(a=f+o,u=o-(a-f),f=n[++l]):(a=s+o,u=o-(a-s),s=r[++h]),o=a,0!==u&&(i[d++]=u);l<t&&h<e;)s>f==s>-f?(a=o+f,c=a-o,u=o-(a-c)+(f-c),f=n[++l]):(a=o+s,c=a-o,u=o-(a-c)+(s-c),s=r[++h]),o=a,0!==u&&(i[d++]=u);for(;l<t;)a=o+f,c=a-o,u=o-(a-c)+(f-c),f=n[++l],o=a,0!==u&&(i[d++]=u);for(;h<e;)a=o+s,c=a-o,u=o-(a-c)+(s-c),s=r[++h],o=a,0!==u&&(i[d++]=u);return 0===o&&0!==d||(i[d++]=o),d}function gu(t){return new Float64Array(t)}const yu=22204460492503146e-32,vu=11093356479670487e-47,_u=gu(4),bu=gu(8),mu=gu(12),xu=gu(16),wu=gu(4);function Mu(t,n,e,r,i,o){const a=(n-o)*(e-i),u=(t-i)*(r-o),c=a-u,f=Math.abs(a+u);return Math.abs(c)>=33306690738754716e-32*f?c:-function(t,n,e,r,i,o,a){let u,c,f,s,l,h,d,p,g,y,v,_,b,m,x,w,M,T;const A=t-i,S=e-i,E=n-o,N=r-o;m=A*N,h=hu*A,d=h-(h-A),p=A-d,h=hu*N,g=h-(h-N),y=N-g,x=p*y-(m-d*g-p*g-d*y),w=E*S,h=hu*E,d=h-(h-E),p=E-d,h=hu*S,g=h-(h-S),y=S-g,M=p*y-(w-d*g-p*g-d*y),v=x-M,l=x-v,_u[0]=x-(v+l)+(l-M),_=m+v,l=_-m,b=m-(_-l)+(v-l),v=b-w,l=b-v,_u[1]=b-(v+l)+(l-w),T=_+v,l=T-_,_u[2]=_-(T-l)+(v-l),_u[3]=T;let k=function(t,n){let e=n[0];for(let r=1;r<t;r++)e+=n[r];return e}(4,_u),C=yu*a;if(k>=C||-k>=C)return k;if(l=t-A,u=t-(A+l)+(l-i),l=e-S,f=e-(S+l)+(l-i),l=n-E,c=n-(E+l)+(l-o),l=r-N,s=r-(N+l)+(l-o),0===u&&0===c&&0===f&&0===s)return k;if(C=vu*a+du*Math.abs(k),k+=A*s+N*u-(E*f+S*c),k>=C||-k>=C)return k;m=u*N,h=hu*u,d=h-(h-u),p=u-d,h=hu*N,g=h-(h-N),y=N-g,x=p*y-(m-d*g-p*g-d*y),w=c*S,h=hu*c,d=h-(h-c),p=c-d,h=hu*S,g=h-(h-S),y=S-g,M=p*y-(w-d*g-p*g-d*y),v=x-M,l=x-v,wu[0]=x-(v+l)+(l-M),_=m+v,l=_-m,b=m-(_-l)+(v-l),v=b-w,l=b-v,wu[1]=b-(v+l)+(l-w),T=_+v,l=T-_,wu[2]=_-(T-l)+(v-l),wu[3]=T;const P=pu(4,_u,4,wu,bu);m=A*s,h=hu*A,d=h-(h-A),p=A-d,h=hu*s,g=h-(h-s),y=s-g,x=p*y-(m-d*g-p*g-d*y),w=E*f,h=hu*E,d=h-(h-E),p=E-d,h=hu*f,g=h-(h-f),y=f-g,M=p*y-(w-d*g-p*g-d*y),v=x-M,l=x-v,wu[0]=x-(v+l)+(l-M),_=m+v,l=_-m,b=m-(_-l)+(v-l),v=b-w,l=b-v,wu[1]=b-(v+l)+(l-w),T=_+v,l=T-_,wu[2]=_-(T-l)+(v-l),wu[3]=T;const z=pu(P,bu,4,wu,mu);m=u*s,h=hu*u,d=h-(h-u),p=u-d,h=hu*s,g=h-(h-s),y=s-g,x=p*y-(m-d*g-p*g-d*y),w=c*f,h=hu*c,d=h-(h-c),p=c-d,h=hu*f,g=h-(h-f),y=f-g,M=p*y-(w-d*g-p*g-d*y),v=x-M,l=x-v,wu[0]=x-(v+l)+(l-M),_=m+v,l=_-m,b=m-(_-l)+(v-l),v=b-w,l=b-v,wu[1]=b-(v+l)+(l-w),T=_+v,l=T-_,wu[2]=_-(T-l)+(v-l),wu[3]=T;const $=pu(z,mu,4,wu,xu);return xu[$-1]}(t,n,e,r,i,o,f)}const Tu=Math.pow(2,-52),Au=new Uint32Array(512);class Su{static from(t,n=zu,e=$u){const r=t.length,i=new Float64Array(2*r);for(let o=0;o<r;o++){const r=t[o];i[2*o]=n(r),i[2*o+1]=e(r)}return new Su(i)}constructor(t){const n=t.length>>1;if(n>0&&"number"!=typeof t[0])throw new Error("Expected coords to contain numbers.");this.coords=t;const e=Math.max(2*n-5,0);this._triangles=new Uint32Array(3*e),this._halfedges=new Int32Array(3*e),this._hashSize=Math.ceil(Math.sqrt(n)),this._hullPrev=new Uint32Array(n),this._hullNext=new Uint32Array(n),this._hullTri=new Uint32Array(n),this._hullHash=new Int32Array(this._hashSize),this._ids=new Uint32Array(n),this._dists=new Float64Array(n),this.update()}update(){const{coords:t,_hullPrev:n,_hullNext:e,_hullTri:r,_hullHash:i}=this,o=t.length>>1;let a=1/0,u=1/0,c=-1/0,f=-1/0;for(let n=0;n<o;n++){const e=t[2*n],r=t[2*n+1];e<a&&(a=e),r<u&&(u=r),e>c&&(c=e),r>f&&(f=r),this._ids[n]=n}const s=(a+c)/2,l=(u+f)/2;let h,d,p;for(let n=0,e=1/0;n<o;n++){const r=Eu(s,l,t[2*n],t[2*n+1]);r<e&&(h=n,e=r)}const g=t[2*h],y=t[2*h+1];for(let n=0,e=1/0;n<o;n++){if(n===h)continue;const r=Eu(g,y,t[2*n],t[2*n+1]);r<e&&r>0&&(d=n,e=r)}let v=t[2*d],_=t[2*d+1],b=1/0;for(let n=0;n<o;n++){if(n===h||n===d)continue;const e=ku(g,y,v,_,t[2*n],t[2*n+1]);e<b&&(p=n,b=e)}let m=t[2*p],x=t[2*p+1];if(b===1/0){for(let n=0;n<o;n++)this._dists[n]=t[2*n]-t[0]||t[2*n+1]-t[1];Cu(this._ids,this._dists,0,o-1);const n=new Uint32Array(o);let e=0;for(let t=0,r=-1/0;t<o;t++){const i=this._ids[t],o=this._dists[i];o>r&&(n[e++]=i,r=o)}return this.hull=n.subarray(0,e),this.triangles=new Uint32Array(0),void(this.halfedges=new Uint32Array(0))}if(Mu(g,y,v,_,m,x)<0){const t=d,n=v,e=_;d=p,v=m,_=x,p=t,m=n,x=e}const w=function(t,n,e,r,i,o){const a=e-t,u=r-n,c=i-t,f=o-n,s=a*a+u*u,l=c*c+f*f,h=.5/(a*f-u*c),d=t+(f*s-u*l)*h,p=n+(a*l-c*s)*h;return{x:d,y:p}}(g,y,v,_,m,x);this._cx=w.x,this._cy=w.y;for(let n=0;n<o;n++)this._dists[n]=Eu(t[2*n],t[2*n+1],w.x,w.y);Cu(this._ids,this._dists,0,o-1),this._hullStart=h;let M=3;e[h]=n[p]=d,e[d]=n[h]=p,e[p]=n[d]=h,r[h]=0,r[d]=1,r[p]=2,i.fill(-1),i[this._hashKey(g,y)]=h,i[this._hashKey(v,_)]=d,i[this._hashKey(m,x)]=p,this.trianglesLen=0,this._addTriangle(h,d,p,-1,-1,-1);for(let o,a,u=0;u<this._ids.length;u++){const c=this._ids[u],f=t[2*c],s=t[2*c+1];if(u>0&&Math.abs(f-o)<=Tu&&Math.abs(s-a)<=Tu)continue;if(o=f,a=s,c===h||c===d||c===p)continue;let l=0;for(let t=0,n=this._hashKey(f,s);t<this._hashSize&&(l=i[(n+t)%this._hashSize],-1===l||l===e[l]);t++);l=n[l];let g,y=l;for(;g=e[y],Mu(f,s,t[2*y],t[2*y+1],t[2*g],t[2*g+1])>=0;)if(y=g,y===l){y=-1;break}if(-1===y)continue;let v=this._addTriangle(y,c,e[y],-1,-1,r[y]);r[c]=this._legalize(v+2),r[y]=v,M++;let _=e[y];for(;g=e[_],Mu(f,s,t[2*_],t[2*_+1],t[2*g],t[2*g+1])<0;)v=this._addTriangle(_,c,g,r[c],-1,r[_]),r[c]=this._legalize(v+2),e[_]=_,M--,_=g;if(y===l)for(;g=n[y],Mu(f,s,t[2*g],t[2*g+1],t[2*y],t[2*y+1])<0;)v=this._addTriangle(g,c,y,-1,r[y],r[g]),this._legalize(v+2),r[g]=v,e[y]=y,M--,y=g;this._hullStart=n[c]=y,e[y]=n[_]=c,e[c]=_,i[this._hashKey(f,s)]=c,i[this._hashKey(t[2*y],t[2*y+1])]=y}this.hull=new Uint32Array(M);for(let t=0,n=this._hullStart;t<M;t++)this.hull[t]=n,n=e[n];this.triangles=this._triangles.subarray(0,this.trianglesLen),this.halfedges=this._halfedges.subarray(0,this.trianglesLen)}_hashKey(t,n){return Math.floor(function(t,n){const e=t/(Math.abs(t)+Math.abs(n));return(n>0?3-e:1+e)/4}(t-this._cx,n-this._cy)*this._hashSize)%this._hashSize}_legalize(t){const{_triangles:n,_halfedges:e,coords:r}=this;let i=0,o=0;for(;;){const a=e[t],u=t-t%3;if(o=u+(t+2)%3,-1===a){if(0===i)break;t=Au[--i];continue}const c=a-a%3,f=u+(t+1)%3,s=c+(a+2)%3,l=n[o],h=n[t],d=n[f],p=n[s];if(Nu(r[2*l],r[2*l+1],r[2*h],r[2*h+1],r[2*d],r[2*d+1],r[2*p],r[2*p+1])){n[t]=p,n[a]=l;const r=e[s];if(-1===r){let n=this._hullStart;do{if(this._hullTri[n]===s){this._hullTri[n]=t;break}n=this._hullPrev[n]}while(n!==this._hullStart)}this._link(t,r),this._link(a,e[o]),this._link(o,s);const u=c+(a+1)%3;i<Au.length&&(Au[i++]=u)}else{if(0===i)break;t=Au[--i]}}return o}_link(t,n){this._halfedges[t]=n,-1!==n&&(this._halfedges[n]=t)}_addTriangle(t,n,e,r,i,o){const a=this.trianglesLen;return this._triangles[a]=t,this._triangles[a+1]=n,this._triangles[a+2]=e,this._link(a,r),this._link(a+1,i),this._link(a+2,o),this.trianglesLen+=3,a}}function Eu(t,n,e,r){const i=t-e,o=n-r;return i*i+o*o}function Nu(t,n,e,r,i,o,a,u){const c=t-a,f=n-u,s=e-a,l=r-u,h=i-a,d=o-u,p=s*s+l*l,g=h*h+d*d;return c*(l*g-p*d)-f*(s*g-p*h)+(c*c+f*f)*(s*d-l*h)<0}function ku(t,n,e,r,i,o){const a=e-t,u=r-n,c=i-t,f=o-n,s=a*a+u*u,l=c*c+f*f,h=.5/(a*f-u*c),d=(f*s-u*l)*h,p=(a*l-c*s)*h;return d*d+p*p}function Cu(t,n,e,r){if(r-e<=20)for(let i=e+1;i<=r;i++){const r=t[i],o=n[r];let a=i-1;for(;a>=e&&n[t[a]]>o;)t[a+1]=t[a--];t[a+1]=r}else{let i=e+1,o=r;Pu(t,e+r>>1,i),n[t[e]]>n[t[r]]&&Pu(t,e,r),n[t[i]]>n[t[r]]&&Pu(t,i,r),n[t[e]]>n[t[i]]&&Pu(t,e,i);const a=t[i],u=n[a];for(;;){do{i++}while(n[t[i]]<u);do{o--}while(n[t[o]]>u);if(o<i)break;Pu(t,i,o)}t[e+1]=t[o],t[o]=a,r-i+1>=o-e?(Cu(t,n,i,r),Cu(t,n,e,o-1)):(Cu(t,n,e,o-1),Cu(t,n,i,r))}}function Pu(t,n,e){const r=t[n];t[n]=t[e],t[e]=r}function zu(t){return t[0]}function $u(t){return t[1]}const Du=1e-6;class Ru{constructor(){this._x0=this._y0=this._x1=this._y1=null,this._=""}moveTo(t,n){this._+=`M${this._x0=this._x1=+t},${this._y0=this._y1=+n}`}closePath(){null!==this._x1&&(this._x1=this._x0,this._y1=this._y0,this._+="Z")}lineTo(t,n){this._+=`L${this._x1=+t},${this._y1=+n}`}arc(t,n,e){const r=(t=+t)+(e=+e),i=n=+n;if(e<0)throw new Error("negative radius");null===this._x1?this._+=`M${r},${i}`:(Math.abs(this._x1-r)>Du||Math.abs(this._y1-i)>Du)&&(this._+="L"+r+","+i),e&&(this._+=`A${e},${e},0,1,1,${t-e},${n}A${e},${e},0,1,1,${this._x1=r},${this._y1=i}`)}rect(t,n,e,r){this._+=`M${this._x0=this._x1=+t},${this._y0=this._y1=+n}h${+e}v${+r}h${-e}Z`}value(){return this._||null}}class Fu{constructor(){this._=[]}moveTo(t,n){this._.push([t,n])}closePath(){this._.push(this._[0].slice())}lineTo(t,n){this._.push([t,n])}value(){return this._.length?this._:null}}class qu{constructor(t,[n,e,r,i]=[0,0,960,500]){if(!((r=+r)>=(n=+n)&&(i=+i)>=(e=+e)))throw new Error("invalid bounds");this.delaunay=t,this._circumcenters=new Float64Array(2*t.points.length),this.vectors=new Float64Array(2*t.points.length),this.xmax=r,this.xmin=n,this.ymax=i,this.ymin=e,this._init()}update(){return this.delaunay.update(),this._init(),this}_init(){const{delaunay:{points:t,hull:n,triangles:e},vectors:r}=this;let i,o;const a=this.circumcenters=this._circumcenters.subarray(0,e.length/3*2);for(let r,u,c=0,f=0,s=e.length;c<s;c+=3,f+=2){const s=2*e[c],l=2*e[c+1],h=2*e[c+2],d=t[s],p=t[s+1],g=t[l],y=t[l+1],v=t[h],_=t[h+1],b=g-d,m=y-p,x=v-d,w=_-p,M=2*(b*w-m*x);if(Math.abs(M)<1e-9){if(void 0===i){i=o=0;for(const e of n)i+=t[2*e],o+=t[2*e+1];i/=n.length,o/=n.length}const e=1e9*Math.sign((i-d)*w-(o-p)*x);r=(d+v)/2-e*w,u=(p+_)/2+e*x}else{const t=1/M,n=b*b+m*m,e=x*x+w*w;r=d+(w*n-m*e)*t,u=p+(b*e-x*n)*t}a[f]=r,a[f+1]=u}let u,c,f,s=n[n.length-1],l=4*s,h=t[2*s],d=t[2*s+1];r.fill(0);for(let e=0;e<n.length;++e)s=n[e],u=l,c=h,f=d,l=4*s,h=t[2*s],d=t[2*s+1],r[u+2]=r[l]=f-d,r[u+3]=r[l+1]=h-c}render(t){const n=null==t?t=new Ru:void 0,{delaunay:{halfedges:e,inedges:r,hull:i},circumcenters:o,vectors:a}=this;if(i.length<=1)return null;for(let n=0,r=e.length;n<r;++n){const r=e[n];if(r<n)continue;const i=2*Math.floor(n/3),a=2*Math.floor(r/3),u=o[i],c=o[i+1],f=o[a],s=o[a+1];this._renderSegment(u,c,f,s,t)}let u,c=i[i.length-1];for(let n=0;n<i.length;++n){u=c,c=i[n];const e=2*Math.floor(r[c]/3),f=o[e],s=o[e+1],l=4*u,h=this._project(f,s,a[l+2],a[l+3]);h&&this._renderSegment(f,s,h[0],h[1],t)}return n&&n.value()}renderBounds(t){const n=null==t?t=new Ru:void 0;return t.rect(this.xmin,this.ymin,this.xmax-this.xmin,this.ymax-this.ymin),n&&n.value()}renderCell(t,n){const e=null==n?n=new Ru:void 0,r=this._clip(t);if(null===r||!r.length)return;n.moveTo(r[0],r[1]);let i=r.length;for(;r[0]===r[i-2]&&r[1]===r[i-1]&&i>1;)i-=2;for(let t=2;t<i;t+=2)r[t]===r[t-2]&&r[t+1]===r[t-1]||n.lineTo(r[t],r[t+1]);return n.closePath(),e&&e.value()}*cellPolygons(){const{delaunay:{points:t}}=this;for(let n=0,e=t.length/2;n<e;++n){const t=this.cellPolygon(n);t&&(t.index=n,yield t)}}cellPolygon(t){const n=new Fu;return this.renderCell(t,n),n.value()}_renderSegment(t,n,e,r,i){let o;const a=this._regioncode(t,n),u=this._regioncode(e,r);0===a&&0===u?(i.moveTo(t,n),i.lineTo(e,r)):(o=this._clipSegment(t,n,e,r,a,u))&&(i.moveTo(o[0],o[1]),i.lineTo(o[2],o[3]))}contains(t,n,e){return(n=+n)==n&&(e=+e)==e&&this.delaunay._step(t,n,e)===t}*neighbors(t){const n=this._clip(t);if(n)for(const e of this.delaunay.neighbors(t)){const t=this._clip(e);if(t)t:for(let r=0,i=n.length;r<i;r+=2)for(let o=0,a=t.length;o<a;o+=2)if(n[r]===t[o]&&n[r+1]===t[o+1]&&n[(r+2)%i]===t[(o+a-2)%a]&&n[(r+3)%i]===t[(o+a-1)%a]){yield e;break t}}}_cell(t){const{circumcenters:n,delaunay:{inedges:e,halfedges:r,triangles:i}}=this,o=e[t];if(-1===o)return null;const a=[];let u=o;do{const e=Math.floor(u/3);if(a.push(n[2*e],n[2*e+1]),u=u%3==2?u-2:u+1,i[u]!==t)break;u=r[u]}while(u!==o&&-1!==u);return a}_clip(t){if(0===t&&1===this.delaunay.hull.length)return[this.xmax,this.ymin,this.xmax,this.ymax,this.xmin,this.ymax,this.xmin,this.ymin];const n=this._cell(t);if(null===n)return null;const{vectors:e}=this,r=4*t;return this._simplify(e[r]||e[r+1]?this._clipInfinite(t,n,e[r],e[r+1],e[r+2],e[r+3]):this._clipFinite(t,n))}_clipFinite(t,n){const e=n.length;let r,i,o,a,u=null,c=n[e-2],f=n[e-1],s=this._regioncode(c,f),l=0;for(let h=0;h<e;h+=2)if(r=c,i=f,c=n[h],f=n[h+1],o=s,s=this._regioncode(c,f),0===o&&0===s)a=l,l=0,u?u.push(c,f):u=[c,f];else{let n,e,h,d,p;if(0===o){if(null===(n=this._clipSegment(r,i,c,f,o,s)))continue;[e,h,d,p]=n}else{if(null===(n=this._clipSegment(c,f,r,i,s,o)))continue;[d,p,e,h]=n,a=l,l=this._edgecode(e,h),a&&l&&this._edge(t,a,l,u,u.length),u?u.push(e,h):u=[e,h]}a=l,l=this._edgecode(d,p),a&&l&&this._edge(t,a,l,u,u.length),u?u.push(d,p):u=[d,p]}if(u)a=l,l=this._edgecode(u[0],u[1]),a&&l&&this._edge(t,a,l,u,u.length);else if(this.contains(t,(this.xmin+this.xmax)/2,(this.ymin+this.ymax)/2))return[this.xmax,this.ymin,this.xmax,this.ymax,this.xmin,this.ymax,this.xmin,this.ymin];return u}_clipSegment(t,n,e,r,i,o){const a=i<o;for(a&&([t,n,e,r,i,o]=[e,r,t,n,o,i]);;){if(0===i&&0===o)return a?[e,r,t,n]:[t,n,e,r];if(i&o)return null;let u,c,f=i||o;8&f?(u=t+(e-t)*(this.ymax-n)/(r-n),c=this.ymax):4&f?(u=t+(e-t)*(this.ymin-n)/(r-n),c=this.ymin):2&f?(c=n+(r-n)*(this.xmax-t)/(e-t),u=this.xmax):(c=n+(r-n)*(this.xmin-t)/(e-t),u=this.xmin),i?(t=u,n=c,i=this._regioncode(t,n)):(e=u,r=c,o=this._regioncode(e,r))}}_clipInfinite(t,n,e,r,i,o){let a,u=Array.from(n);if((a=this._project(u[0],u[1],e,r))&&u.unshift(a[0],a[1]),(a=this._project(u[u.length-2],u[u.length-1],i,o))&&u.push(a[0],a[1]),u=this._clipFinite(t,u))for(let n,e=0,r=u.length,i=this._edgecode(u[r-2],u[r-1]);e<r;e+=2)n=i,i=this._edgecode(u[e],u[e+1]),n&&i&&(e=this._edge(t,n,i,u,e),r=u.length);else this.contains(t,(this.xmin+this.xmax)/2,(this.ymin+this.ymax)/2)&&(u=[this.xmin,this.ymin,this.xmax,this.ymin,this.xmax,this.ymax,this.xmin,this.ymax]);return u}_edge(t,n,e,r,i){for(;n!==e;){let e,o;switch(n){case 5:n=4;continue;case 4:n=6,e=this.xmax,o=this.ymin;break;case 6:n=2;continue;case 2:n=10,e=this.xmax,o=this.ymax;break;case 10:n=8;continue;case 8:n=9,e=this.xmin,o=this.ymax;break;case 9:n=1;continue;case 1:n=5,e=this.xmin,o=this.ymin}r[i]===e&&r[i+1]===o||!this.contains(t,e,o)||(r.splice(i,0,e,o),i+=2)}return i}_project(t,n,e,r){let i,o,a,u=1/0;if(r<0){if(n<=this.ymin)return null;(i=(this.ymin-n)/r)<u&&(a=this.ymin,o=t+(u=i)*e)}else if(r>0){if(n>=this.ymax)return null;(i=(this.ymax-n)/r)<u&&(a=this.ymax,o=t+(u=i)*e)}if(e>0){if(t>=this.xmax)return null;(i=(this.xmax-t)/e)<u&&(o=this.xmax,a=n+(u=i)*r)}else if(e<0){if(t<=this.xmin)return null;(i=(this.xmin-t)/e)<u&&(o=this.xmin,a=n+(u=i)*r)}return[o,a]}_edgecode(t,n){return(t===this.xmin?1:t===this.xmax?2:0)|(n===this.ymin?4:n===this.ymax?8:0)}_regioncode(t,n){return(t<this.xmin?1:t>this.xmax?2:0)|(n<this.ymin?4:n>this.ymax?8:0)}_simplify(t){if(t&&t.length>4){for(let n=0;n<t.length;n+=2){const e=(n+2)%t.length,r=(n+4)%t.length;(t[n]===t[e]&&t[e]===t[r]||t[n+1]===t[e+1]&&t[e+1]===t[r+1])&&(t.splice(e,2),n-=2)}t.length||(t=null)}return t}}const Uu=2*Math.PI,Iu=Math.pow;function Ou(t){return t[0]}function Bu(t){return t[1]}function Yu(t,n,e){return[t+Math.sin(t+n)*e,n+Math.cos(t-n)*e]}class Lu{static from(t,n=Ou,e=Bu,r){return new Lu("length"in t?function(t,n,e,r){const i=t.length,o=new Float64Array(2*i);for(let a=0;a<i;++a){const i=t[a];o[2*a]=n.call(r,i,a,t),o[2*a+1]=e.call(r,i,a,t)}return o}(t,n,e,r):Float64Array.from(function*(t,n,e,r){let i=0;for(const o of t)yield n.call(r,o,i,t),yield e.call(r,o,i,t),++i}(t,n,e,r)))}constructor(t){this._delaunator=new Su(t),this.inedges=new Int32Array(t.length/2),this._hullIndex=new Int32Array(t.length/2),this.points=this._delaunator.coords,this._init()}update(){return this._delaunator.update(),this._init(),this}_init(){const t=this._delaunator,n=this.points;if(t.hull&&t.hull.length>2&&function(t){const{triangles:n,coords:e}=t;for(let t=0;t<n.length;t+=3){const r=2*n[t],i=2*n[t+1],o=2*n[t+2];if((e[o]-e[r])*(e[i+1]-e[r+1])-(e[i]-e[r])*(e[o+1]-e[r+1])>1e-10)return!1}return!0}(t)){this.collinear=Int32Array.from({length:n.length/2},((t,n)=>n)).sort(((t,e)=>n[2*t]-n[2*e]||n[2*t+1]-n[2*e+1]));const t=this.collinear[0],e=this.collinear[this.collinear.length-1],r=[n[2*t],n[2*t+1],n[2*e],n[2*e+1]],i=1e-8*Math.hypot(r[3]-r[1],r[2]-r[0]);for(let t=0,e=n.length/2;t<e;++t){const e=Yu(n[2*t],n[2*t+1],i);n[2*t]=e[0],n[2*t+1]=e[1]}this._delaunator=new Su(n)}else delete this.collinear;const e=this.halfedges=this._delaunator.halfedges,r=this.hull=this._delaunator.hull,i=this.triangles=this._delaunator.triangles,o=this.inedges.fill(-1),a=this._hullIndex.fill(-1);for(let t=0,n=e.length;t<n;++t){const n=i[t%3==2?t-2:t+1];-1!==e[t]&&-1!==o[n]||(o[n]=t)}for(let t=0,n=r.length;t<n;++t)a[r[t]]=t;r.length<=2&&r.length>0&&(this.triangles=new Int32Array(3).fill(-1),this.halfedges=new Int32Array(3).fill(-1),this.triangles[0]=r[0],o[r[0]]=1,2===r.length&&(o[r[1]]=0,this.triangles[1]=r[1],this.triangles[2]=r[1]))}voronoi(t){return new qu(this,t)}*neighbors(t){const{inedges:n,hull:e,_hullIndex:r,halfedges:i,triangles:o,collinear:a}=this;if(a){const n=a.indexOf(t);return n>0&&(yield a[n-1]),void(n<a.length-1&&(yield a[n+1]))}const u=n[t];if(-1===u)return;let c=u,f=-1;do{if(yield f=o[c],c=c%3==2?c-2:c+1,o[c]!==t)return;if(c=i[c],-1===c){const n=e[(r[t]+1)%e.length];return void(n!==f&&(yield n))}}while(c!==u)}find(t,n,e=0){if((t=+t)!=t||(n=+n)!=n)return-1;const r=e;let i;for(;(i=this._step(e,t,n))>=0&&i!==e&&i!==r;)e=i;return i}_step(t,n,e){const{inedges:r,hull:i,_hullIndex:o,halfedges:a,triangles:u,points:c}=this;if(-1===r[t]||!c.length)return(t+1)%(c.length>>1);let f=t,s=Iu(n-c[2*t],2)+Iu(e-c[2*t+1],2);const l=r[t];let h=l;do{let r=u[h];const l=Iu(n-c[2*r],2)+Iu(e-c[2*r+1],2);if(l<s&&(s=l,f=r),h=h%3==2?h-2:h+1,u[h]!==t)break;if(h=a[h],-1===h){if(h=i[(o[t]+1)%i.length],h!==r&&Iu(n-c[2*h],2)+Iu(e-c[2*h+1],2)<s)return h;break}}while(h!==l);return f}render(t){const n=null==t?t=new Ru:void 0,{points:e,halfedges:r,triangles:i}=this;for(let n=0,o=r.length;n<o;++n){const o=r[n];if(o<n)continue;const a=2*i[n],u=2*i[o];t.moveTo(e[a],e[a+1]),t.lineTo(e[u],e[u+1])}return this.renderHull(t),n&&n.value()}renderPoints(t,n){void 0!==n||t&&"function"==typeof t.moveTo||(n=t,t=null),n=null==n?2:+n;const e=null==t?t=new Ru:void 0,{points:r}=this;for(let e=0,i=r.length;e<i;e+=2){const i=r[e],o=r[e+1];t.moveTo(i+n,o),t.arc(i,o,n,0,Uu)}return e&&e.value()}renderHull(t){const n=null==t?t=new Ru:void 0,{hull:e,points:r}=this,i=2*e[0],o=e.length;t.moveTo(r[i],r[i+1]);for(let n=1;n<o;++n){const i=2*e[n];t.lineTo(r[i],r[i+1])}return t.closePath(),n&&n.value()}hullPolygon(){const t=new Fu;return this.renderHull(t),t.value()}renderTriangle(t,n){const e=null==n?n=new Ru:void 0,{points:r,triangles:i}=this,o=2*i[t*=3],a=2*i[t+1],u=2*i[t+2];return n.moveTo(r[o],r[o+1]),n.lineTo(r[a],r[a+1]),n.lineTo(r[u],r[u+1]),n.closePath(),e&&e.value()}*trianglePolygons(){const{triangles:t}=this;for(let n=0,e=t.length/3;n<e;++n)yield this.trianglePolygon(n)}trianglePolygon(t){const n=new Fu;return this.renderTriangle(t,n),n.value()}}var ju={},Hu={},Xu=34,Gu=10,Vu=13;function Wu(t){return new Function("d","return {"+t.map((function(t,n){return JSON.stringify(t)+": d["+n+'] || ""'})).join(",")+"}")}function Zu(t){var n=Object.create(null),e=[];return t.forEach((function(t){for(var r in t)r in n||e.push(n[r]=r)})),e}function Ku(t,n){var e=t+"",r=e.length;return r<n?new Array(n-r+1).join(0)+e:e}function Qu(t){var n,e=t.getUTCHours(),r=t.getUTCMinutes(),i=t.getUTCSeconds(),o=t.getUTCMilliseconds();return isNaN(t)?"Invalid Date":((n=t.getUTCFullYear())<0?"-"+Ku(-n,6):n>9999?"+"+Ku(n,6):Ku(n,4))+"-"+Ku(t.getUTCMonth()+1,2)+"-"+Ku(t.getUTCDate(),2)+(o?"T"+Ku(e,2)+":"+Ku(r,2)+":"+Ku(i,2)+"."+Ku(o,3)+"Z":i?"T"+Ku(e,2)+":"+Ku(r,2)+":"+Ku(i,2)+"Z":r||e?"T"+Ku(e,2)+":"+Ku(r,2)+"Z":"")}function Ju(t){var n=new RegExp('["'+t+"\n\r]"),e=t.charCodeAt(0);function r(t,n){var r,i=[],o=t.length,a=0,u=0,c=o<=0,f=!1;function s(){if(c)return Hu;if(f)return f=!1,ju;var n,r,i=a;if(t.charCodeAt(i)===Xu){for(;a++<o&&t.charCodeAt(a)!==Xu||t.charCodeAt(++a)===Xu;);return(n=a)>=o?c=!0:(r=t.charCodeAt(a++))===Gu?f=!0:r===Vu&&(f=!0,t.charCodeAt(a)===Gu&&++a),t.slice(i+1,n-1).replace(/""/g,'"')}for(;a<o;){if((r=t.charCodeAt(n=a++))===Gu)f=!0;else if(r===Vu)f=!0,t.charCodeAt(a)===Gu&&++a;else if(r!==e)continue;return t.slice(i,n)}return c=!0,t.slice(i,o)}for(t.charCodeAt(o-1)===Gu&&--o,t.charCodeAt(o-1)===Vu&&--o;(r=s())!==Hu;){for(var l=[];r!==ju&&r!==Hu;)l.push(r),r=s();n&&null==(l=n(l,u++))||i.push(l)}return i}function i(n,e){return n.map((function(n){return e.map((function(t){return a(n[t])})).join(t)}))}function o(n){return n.map(a).join(t)}function a(t){return null==t?"":t instanceof Date?Qu(t):n.test(t+="")?'"'+t.replace(/"/g,'""')+'"':t}return{parse:function(t,n){var e,i,o=r(t,(function(t,r){if(e)return e(t,r-1);i=t,e=n?function(t,n){var e=Wu(t);return function(r,i){return n(e(r),i,t)}}(t,n):Wu(t)}));return o.columns=i||[],o},parseRows:r,format:function(n,e){return null==e&&(e=Zu(n)),[e.map(a).join(t)].concat(i(n,e)).join("\n")},formatBody:function(t,n){return null==n&&(n=Zu(t)),i(t,n).join("\n")},formatRows:function(t){return t.map(o).join("\n")},formatRow:o,formatValue:a}}var tc=Ju(","),nc=tc.parse,ec=tc.parseRows,rc=tc.format,ic=tc.formatBody,oc=tc.formatRows,ac=tc.formatRow,uc=tc.formatValue,cc=Ju("\t"),fc=cc.parse,sc=cc.parseRows,lc=cc.format,hc=cc.formatBody,dc=cc.formatRows,pc=cc.formatRow,gc=cc.formatValue;const yc=new Date("2019-01-01T00:00").getHours()||new Date("2019-07-01T00:00").getHours();function vc(t){if(!t.ok)throw new Error(t.status+" "+t.statusText);return t.blob()}function _c(t){if(!t.ok)throw new Error(t.status+" "+t.statusText);return t.arrayBuffer()}function bc(t){if(!t.ok)throw new Error(t.status+" "+t.statusText);return t.text()}function mc(t,n){return fetch(t,n).then(bc)}function xc(t){return function(n,e,r){return 2===arguments.length&&"function"==typeof e&&(r=e,e=void 0),mc(n,e).then((function(n){return t(n,r)}))}}var wc=xc(nc),Mc=xc(fc);function Tc(t){if(!t.ok)throw new Error(t.status+" "+t.statusText);if(204!==t.status&&205!==t.status)return t.json()}function Ac(t){return(n,e)=>mc(n,e).then((n=>(new DOMParser).parseFromString(n,t)))}var Sc=Ac("application/xml"),Ec=Ac("text/html"),Nc=Ac("image/svg+xml");function kc(t,n,e,r){if(isNaN(n)||isNaN(e))return t;var i,o,a,u,c,f,s,l,h,d=t._root,p={data:r},g=t._x0,y=t._y0,v=t._x1,_=t._y1;if(!d)return t._root=p,t;for(;d.length;)if((f=n>=(o=(g+v)/2))?g=o:v=o,(s=e>=(a=(y+_)/2))?y=a:_=a,i=d,!(d=d[l=s<<1|f]))return i[l]=p,t;if(u=+t._x.call(null,d.data),c=+t._y.call(null,d.data),n===u&&e===c)return p.next=d,i?i[l]=p:t._root=p,t;do{i=i?i[l]=new Array(4):t._root=new Array(4),(f=n>=(o=(g+v)/2))?g=o:v=o,(s=e>=(a=(y+_)/2))?y=a:_=a}while((l=s<<1|f)==(h=(c>=a)<<1|u>=o));return i[h]=d,i[l]=p,t}function Cc(t,n,e,r,i){this.node=t,this.x0=n,this.y0=e,this.x1=r,this.y1=i}function Pc(t){return t[0]}function zc(t){return t[1]}function $c(t,n,e){var r=new Dc(null==n?Pc:n,null==e?zc:e,NaN,NaN,NaN,NaN);return null==t?r:r.addAll(t)}function Dc(t,n,e,r,i,o){this._x=t,this._y=n,this._x0=e,this._y0=r,this._x1=i,this._y1=o,this._root=void 0}function Rc(t){for(var n={data:t.data},e=n;t=t.next;)e=e.next={data:t.data};return n}var Fc=$c.prototype=Dc.prototype;function qc(t){return function(){return t}}function Uc(t){return 1e-6*(t()-.5)}function Ic(t){return t.x+t.vx}function Oc(t){return t.y+t.vy}function Bc(t){return t.index}function Yc(t,n){var e=t.get(n);if(!e)throw new Error("node not found: "+n);return e}Fc.copy=function(){var t,n,e=new Dc(this._x,this._y,this._x0,this._y0,this._x1,this._y1),r=this._root;if(!r)return e;if(!r.length)return e._root=Rc(r),e;for(t=[{source:r,target:e._root=new Array(4)}];r=t.pop();)for(var i=0;i<4;++i)(n=r.source[i])&&(n.length?t.push({source:n,target:r.target[i]=new Array(4)}):r.target[i]=Rc(n));return e},Fc.add=function(t){const n=+this._x.call(null,t),e=+this._y.call(null,t);return kc(this.cover(n,e),n,e,t)},Fc.addAll=function(t){var n,e,r,i,o=t.length,a=new Array(o),u=new Array(o),c=1/0,f=1/0,s=-1/0,l=-1/0;for(e=0;e<o;++e)isNaN(r=+this._x.call(null,n=t[e]))||isNaN(i=+this._y.call(null,n))||(a[e]=r,u[e]=i,r<c&&(c=r),r>s&&(s=r),i<f&&(f=i),i>l&&(l=i));if(c>s||f>l)return this;for(this.cover(c,f).cover(s,l),e=0;e<o;++e)kc(this,a[e],u[e],t[e]);return this},Fc.cover=function(t,n){if(isNaN(t=+t)||isNaN(n=+n))return this;var e=this._x0,r=this._y0,i=this._x1,o=this._y1;if(isNaN(e))i=(e=Math.floor(t))+1,o=(r=Math.floor(n))+1;else{for(var a,u,c=i-e||1,f=this._root;e>t||t>=i||r>n||n>=o;)switch(u=(n<r)<<1|t<e,(a=new Array(4))[u]=f,f=a,c*=2,u){case 0:i=e+c,o=r+c;break;case 1:e=i-c,o=r+c;break;case 2:i=e+c,r=o-c;break;case 3:e=i-c,r=o-c}this._root&&this._root.length&&(this._root=f)}return this._x0=e,this._y0=r,this._x1=i,this._y1=o,this},Fc.data=function(){var t=[];return this.visit((function(n){if(!n.length)do{t.push(n.data)}while(n=n.next)})),t},Fc.extent=function(t){return arguments.length?this.cover(+t[0][0],+t[0][1]).cover(+t[1][0],+t[1][1]):isNaN(this._x0)?void 0:[[this._x0,this._y0],[this._x1,this._y1]]},Fc.find=function(t,n,e){var r,i,o,a,u,c,f,s=this._x0,l=this._y0,h=this._x1,d=this._y1,p=[],g=this._root;for(g&&p.push(new Cc(g,s,l,h,d)),null==e?e=1/0:(s=t-e,l=n-e,h=t+e,d=n+e,e*=e);c=p.pop();)if(!(!(g=c.node)||(i=c.x0)>h||(o=c.y0)>d||(a=c.x1)<s||(u=c.y1)<l))if(g.length){var y=(i+a)/2,v=(o+u)/2;p.push(new Cc(g[3],y,v,a,u),new Cc(g[2],i,v,y,u),new Cc(g[1],y,o,a,v),new Cc(g[0],i,o,y,v)),(f=(n>=v)<<1|t>=y)&&(c=p[p.length-1],p[p.length-1]=p[p.length-1-f],p[p.length-1-f]=c)}else{var _=t-+this._x.call(null,g.data),b=n-+this._y.call(null,g.data),m=_*_+b*b;if(m<e){var x=Math.sqrt(e=m);s=t-x,l=n-x,h=t+x,d=n+x,r=g.data}}return r},Fc.remove=function(t){if(isNaN(o=+this._x.call(null,t))||isNaN(a=+this._y.call(null,t)))return this;var n,e,r,i,o,a,u,c,f,s,l,h,d=this._root,p=this._x0,g=this._y0,y=this._x1,v=this._y1;if(!d)return this;if(d.length)for(;;){if((f=o>=(u=(p+y)/2))?p=u:y=u,(s=a>=(c=(g+v)/2))?g=c:v=c,n=d,!(d=d[l=s<<1|f]))return this;if(!d.length)break;(n[l+1&3]||n[l+2&3]||n[l+3&3])&&(e=n,h=l)}for(;d.data!==t;)if(r=d,!(d=d.next))return this;return(i=d.next)&&delete d.next,r?(i?r.next=i:delete r.next,this):n?(i?n[l]=i:delete n[l],(d=n[0]||n[1]||n[2]||n[3])&&d===(n[3]||n[2]||n[1]||n[0])&&!d.length&&(e?e[h]=d:this._root=d),this):(this._root=i,this)},Fc.removeAll=function(t){for(var n=0,e=t.length;n<e;++n)this.remove(t[n]);return this},Fc.root=function(){return this._root},Fc.size=function(){var t=0;return this.visit((function(n){if(!n.length)do{++t}while(n=n.next)})),t},Fc.visit=function(t){var n,e,r,i,o,a,u=[],c=this._root;for(c&&u.push(new Cc(c,this._x0,this._y0,this._x1,this._y1));n=u.pop();)if(!t(c=n.node,r=n.x0,i=n.y0,o=n.x1,a=n.y1)&&c.length){var f=(r+o)/2,s=(i+a)/2;(e=c[3])&&u.push(new Cc(e,f,s,o,a)),(e=c[2])&&u.push(new Cc(e,r,s,f,a)),(e=c[1])&&u.push(new Cc(e,f,i,o,s)),(e=c[0])&&u.push(new Cc(e,r,i,f,s))}return this},Fc.visitAfter=function(t){var n,e=[],r=[];for(this._root&&e.push(new Cc(this._root,this._x0,this._y0,this._x1,this._y1));n=e.pop();){var i=n.node;if(i.length){var o,a=n.x0,u=n.y0,c=n.x1,f=n.y1,s=(a+c)/2,l=(u+f)/2;(o=i[0])&&e.push(new Cc(o,a,u,s,l)),(o=i[1])&&e.push(new Cc(o,s,u,c,l)),(o=i[2])&&e.push(new Cc(o,a,l,s,f)),(o=i[3])&&e.push(new Cc(o,s,l,c,f))}r.push(n)}for(;n=r.pop();)t(n.node,n.x0,n.y0,n.x1,n.y1);return this},Fc.x=function(t){return arguments.length?(this._x=t,this):this._x},Fc.y=function(t){return arguments.length?(this._y=t,this):this._y};const Lc=1664525,jc=1013904223,Hc=4294967296;function Xc(t){return t.x}function Gc(t){return t.y}var Vc=Math.PI*(3-Math.sqrt(5));function Wc(t,n){if((e=(t=n?t.toExponential(n-1):t.toExponential()).indexOf("e"))<0)return null;var e,r=t.slice(0,e);return[r.length>1?r[0]+r.slice(2):r,+t.slice(e+1)]}function Zc(t){return(t=Wc(Math.abs(t)))?t[1]:NaN}var Kc,Qc=/^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;function Jc(t){if(!(n=Qc.exec(t)))throw new Error("invalid format: "+t);var n;return new tf({fill:n[1],align:n[2],sign:n[3],symbol:n[4],zero:n[5],width:n[6],comma:n[7],precision:n[8]&&n[8].slice(1),trim:n[9],type:n[10]})}function tf(t){this.fill=void 0===t.fill?" ":t.fill+"",this.align=void 0===t.align?">":t.align+"",this.sign=void 0===t.sign?"-":t.sign+"",this.symbol=void 0===t.symbol?"":t.symbol+"",this.zero=!!t.zero,this.width=void 0===t.width?void 0:+t.width,this.comma=!!t.comma,this.precision=void 0===t.precision?void 0:+t.precision,this.trim=!!t.trim,this.type=void 0===t.type?"":t.type+""}function nf(t,n){var e=Wc(t,n);if(!e)return t+"";var r=e[0],i=e[1];return i<0?"0."+new Array(-i).join("0")+r:r.length>i+1?r.slice(0,i+1)+"."+r.slice(i+1):r+new Array(i-r.length+2).join("0")}Jc.prototype=tf.prototype,tf.prototype.toString=function(){return this.fill+this.align+this.sign+this.symbol+(this.zero?"0":"")+(void 0===this.width?"":Math.max(1,0|this.width))+(this.comma?",":"")+(void 0===this.precision?"":"."+Math.max(0,0|this.precision))+(this.trim?"~":"")+this.type};var ef={"%":(t,n)=>(100*t).toFixed(n),b:t=>Math.round(t).toString(2),c:t=>t+"",d:function(t){return Math.abs(t=Math.round(t))>=1e21?t.toLocaleString("en").replace(/,/g,""):t.toString(10)},e:(t,n)=>t.toExponential(n),f:(t,n)=>t.toFixed(n),g:(t,n)=>t.toPrecision(n),o:t=>Math.round(t).toString(8),p:(t,n)=>nf(100*t,n),r:nf,s:function(t,n){var e=Wc(t,n);if(!e)return t+"";var r=e[0],i=e[1],o=i-(Kc=3*Math.max(-8,Math.min(8,Math.floor(i/3))))+1,a=r.length;return o===a?r:o>a?r+new Array(o-a+1).join("0"):o>0?r.slice(0,o)+"."+r.slice(o):"0."+new Array(1-o).join("0")+Wc(t,Math.max(0,n+o-1))[0]},X:t=>Math.round(t).toString(16).toUpperCase(),x:t=>Math.round(t).toString(16)};function rf(t){return t}var of,af=Array.prototype.map,uf=["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"];function cf(t){var n,e,r=void 0===t.grouping||void 0===t.thousands?rf:(n=af.call(t.grouping,Number),e=t.thousands+"",function(t,r){for(var i=t.length,o=[],a=0,u=n[0],c=0;i>0&&u>0&&(c+u+1>r&&(u=Math.max(1,r-c)),o.push(t.substring(i-=u,i+u)),!((c+=u+1)>r));)u=n[a=(a+1)%n.length];return o.reverse().join(e)}),i=void 0===t.currency?"":t.currency[0]+"",o=void 0===t.currency?"":t.currency[1]+"",a=void 0===t.decimal?".":t.decimal+"",u=void 0===t.numerals?rf:function(t){return function(n){return n.replace(/[0-9]/g,(function(n){return t[+n]}))}}(af.call(t.numerals,String)),c=void 0===t.percent?"%":t.percent+"",f=void 0===t.minus?"−":t.minus+"",s=void 0===t.nan?"NaN":t.nan+"";function l(t){var n=(t=Jc(t)).fill,e=t.align,l=t.sign,h=t.symbol,d=t.zero,p=t.width,g=t.comma,y=t.precision,v=t.trim,_=t.type;"n"===_?(g=!0,_="g"):ef[_]||(void 0===y&&(y=12),v=!0,_="g"),(d||"0"===n&&"="===e)&&(d=!0,n="0",e="=");var b="$"===h?i:"#"===h&&/[boxX]/.test(_)?"0"+_.toLowerCase():"",m="$"===h?o:/[%p]/.test(_)?c:"",x=ef[_],w=/[defgprs%]/.test(_);function M(t){var i,o,c,h=b,M=m;if("c"===_)M=x(t)+M,t="";else{var T=(t=+t)<0||1/t<0;if(t=isNaN(t)?s:x(Math.abs(t),y),v&&(t=function(t){t:for(var n,e=t.length,r=1,i=-1;r<e;++r)switch(t[r]){case".":i=n=r;break;case"0":0===i&&(i=r),n=r;break;default:if(!+t[r])break t;i>0&&(i=0)}return i>0?t.slice(0,i)+t.slice(n+1):t}(t)),T&&0==+t&&"+"!==l&&(T=!1),h=(T?"("===l?l:f:"-"===l||"("===l?"":l)+h,M=("s"===_?uf[8+Kc/3]:"")+M+(T&&"("===l?")":""),w)for(i=-1,o=t.length;++i<o;)if(48>(c=t.charCodeAt(i))||c>57){M=(46===c?a+t.slice(i+1):t.slice(i))+M,t=t.slice(0,i);break}}g&&!d&&(t=r(t,1/0));var A=h.length+t.length+M.length,S=A<p?new Array(p-A+1).join(n):"";switch(g&&d&&(t=r(S+t,S.length?p-M.length:1/0),S=""),e){case"<":t=h+t+M+S;break;case"=":t=h+S+t+M;break;case"^":t=S.slice(0,A=S.length>>1)+h+t+M+S.slice(A);break;default:t=S+h+t+M}return u(t)}return y=void 0===y?6:/[gprs]/.test(_)?Math.max(1,Math.min(21,y)):Math.max(0,Math.min(20,y)),M.toString=function(){return t+""},M}return{format:l,formatPrefix:function(t,n){var e=l(((t=Jc(t)).type="f",t)),r=3*Math.max(-8,Math.min(8,Math.floor(Zc(n)/3))),i=Math.pow(10,-r),o=uf[8+r/3];return function(t){return e(i*t)+o}}}}function ff(n){return of=cf(n),t.format=of.format,t.formatPrefix=of.formatPrefix,of}function sf(t){return Math.max(0,-Zc(Math.abs(t)))}function lf(t,n){return Math.max(0,3*Math.max(-8,Math.min(8,Math.floor(Zc(n)/3)))-Zc(Math.abs(t)))}function hf(t,n){return t=Math.abs(t),n=Math.abs(n)-t,Math.max(0,Zc(n)-Zc(t))+1}t.format=void 0,t.formatPrefix=void 0,ff({thousands:",",grouping:[3],currency:["$",""]});var df=1e-6,pf=1e-12,gf=Math.PI,yf=gf/2,vf=gf/4,_f=2*gf,bf=180/gf,mf=gf/180,xf=Math.abs,wf=Math.atan,Mf=Math.atan2,Tf=Math.cos,Af=Math.ceil,Sf=Math.exp,Ef=Math.hypot,Nf=Math.log,kf=Math.pow,Cf=Math.sin,Pf=Math.sign||function(t){return t>0?1:t<0?-1:0},zf=Math.sqrt,$f=Math.tan;function Df(t){return t>1?0:t<-1?gf:Math.acos(t)}function Rf(t){return t>1?yf:t<-1?-yf:Math.asin(t)}function Ff(t){return(t=Cf(t/2))*t}function qf(){}function Uf(t,n){t&&Of.hasOwnProperty(t.type)&&Of[t.type](t,n)}var If={Feature:function(t,n){Uf(t.geometry,n)},FeatureCollection:function(t,n){for(var e=t.features,r=-1,i=e.length;++r<i;)Uf(e[r].geometry,n)}},Of={Sphere:function(t,n){n.sphere()},Point:function(t,n){t=t.coordinates,n.point(t[0],t[1],t[2])},MultiPoint:function(t,n){for(var e=t.coordinates,r=-1,i=e.length;++r<i;)t=e[r],n.point(t[0],t[1],t[2])},LineString:function(t,n){Bf(t.coordinates,n,0)},MultiLineString:function(t,n){for(var e=t.coordinates,r=-1,i=e.length;++r<i;)Bf(e[r],n,0)},Polygon:function(t,n){Yf(t.coordinates,n)},MultiPolygon:function(t,n){for(var e=t.coordinates,r=-1,i=e.length;++r<i;)Yf(e[r],n)},GeometryCollection:function(t,n){for(var e=t.geometries,r=-1,i=e.length;++r<i;)Uf(e[r],n)}};function Bf(t,n,e){var r,i=-1,o=t.length-e;for(n.lineStart();++i<o;)r=t[i],n.point(r[0],r[1],r[2]);n.lineEnd()}function Yf(t,n){var e=-1,r=t.length;for(n.polygonStart();++e<r;)Bf(t[e],n,1);n.polygonEnd()}function Lf(t,n){t&&If.hasOwnProperty(t.type)?If[t.type](t,n):Uf(t,n)}var jf,Hf,Xf,Gf,Vf,Wf,Zf,Kf,Qf,Jf,ts,ns,es,rs,is,os,as=new T,us=new T,cs={point:qf,lineStart:qf,lineEnd:qf,polygonStart:function(){as=new T,cs.lineStart=fs,cs.lineEnd=ss},polygonEnd:function(){var t=+as;us.add(t<0?_f+t:t),this.lineStart=this.lineEnd=this.point=qf},sphere:function(){us.add(_f)}};function fs(){cs.point=ls}function ss(){hs(jf,Hf)}function ls(t,n){cs.point=hs,jf=t,Hf=n,Xf=t*=mf,Gf=Tf(n=(n*=mf)/2+vf),Vf=Cf(n)}function hs(t,n){var e=(t*=mf)-Xf,r=e>=0?1:-1,i=r*e,o=Tf(n=(n*=mf)/2+vf),a=Cf(n),u=Vf*a,c=Gf*o+u*Tf(i),f=u*r*Cf(i);as.add(Mf(f,c)),Xf=t,Gf=o,Vf=a}function ds(t){return[Mf(t[1],t[0]),Rf(t[2])]}function ps(t){var n=t[0],e=t[1],r=Tf(e);return[r*Tf(n),r*Cf(n),Cf(e)]}function gs(t,n){return t[0]*n[0]+t[1]*n[1]+t[2]*n[2]}function ys(t,n){return[t[1]*n[2]-t[2]*n[1],t[2]*n[0]-t[0]*n[2],t[0]*n[1]-t[1]*n[0]]}function vs(t,n){t[0]+=n[0],t[1]+=n[1],t[2]+=n[2]}function _s(t,n){return[t[0]*n,t[1]*n,t[2]*n]}function bs(t){var n=zf(t[0]*t[0]+t[1]*t[1]+t[2]*t[2]);t[0]/=n,t[1]/=n,t[2]/=n}var ms,xs,ws,Ms,Ts,As,Ss,Es,Ns,ks,Cs,Ps,zs,$s,Ds,Rs,Fs={point:qs,lineStart:Is,lineEnd:Os,polygonStart:function(){Fs.point=Bs,Fs.lineStart=Ys,Fs.lineEnd=Ls,rs=new T,cs.polygonStart()},polygonEnd:function(){cs.polygonEnd(),Fs.point=qs,Fs.lineStart=Is,Fs.lineEnd=Os,as<0?(Wf=-(Kf=180),Zf=-(Qf=90)):rs>df?Qf=90:rs<-df&&(Zf=-90),os[0]=Wf,os[1]=Kf},sphere:function(){Wf=-(Kf=180),Zf=-(Qf=90)}};function qs(t,n){is.push(os=[Wf=t,Kf=t]),n<Zf&&(Zf=n),n>Qf&&(Qf=n)}function Us(t,n){var e=ps([t*mf,n*mf]);if(es){var r=ys(es,e),i=ys([r[1],-r[0],0],r);bs(i),i=ds(i);var o,a=t-Jf,u=a>0?1:-1,c=i[0]*bf*u,f=xf(a)>180;f^(u*Jf<c&&c<u*t)?(o=i[1]*bf)>Qf&&(Qf=o):f^(u*Jf<(c=(c+360)%360-180)&&c<u*t)?(o=-i[1]*bf)<Zf&&(Zf=o):(n<Zf&&(Zf=n),n>Qf&&(Qf=n)),f?t<Jf?js(Wf,t)>js(Wf,Kf)&&(Kf=t):js(t,Kf)>js(Wf,Kf)&&(Wf=t):Kf>=Wf?(t<Wf&&(Wf=t),t>Kf&&(Kf=t)):t>Jf?js(Wf,t)>js(Wf,Kf)&&(Kf=t):js(t,Kf)>js(Wf,Kf)&&(Wf=t)}else is.push(os=[Wf=t,Kf=t]);n<Zf&&(Zf=n),n>Qf&&(Qf=n),es=e,Jf=t}function Is(){Fs.point=Us}function Os(){os[0]=Wf,os[1]=Kf,Fs.point=qs,es=null}function Bs(t,n){if(es){var e=t-Jf;rs.add(xf(e)>180?e+(e>0?360:-360):e)}else ts=t,ns=n;cs.point(t,n),Us(t,n)}function Ys(){cs.lineStart()}function Ls(){Bs(ts,ns),cs.lineEnd(),xf(rs)>df&&(Wf=-(Kf=180)),os[0]=Wf,os[1]=Kf,es=null}function js(t,n){return(n-=t)<0?n+360:n}function Hs(t,n){return t[0]-n[0]}function Xs(t,n){return t[0]<=t[1]?t[0]<=n&&n<=t[1]:n<t[0]||t[1]<n}var Gs={sphere:qf,point:Vs,lineStart:Zs,lineEnd:Js,polygonStart:function(){Gs.lineStart=tl,Gs.lineEnd=nl},polygonEnd:function(){Gs.lineStart=Zs,Gs.lineEnd=Js}};function Vs(t,n){t*=mf;var e=Tf(n*=mf);Ws(e*Tf(t),e*Cf(t),Cf(n))}function Ws(t,n,e){++ms,ws+=(t-ws)/ms,Ms+=(n-Ms)/ms,Ts+=(e-Ts)/ms}function Zs(){Gs.point=Ks}function Ks(t,n){t*=mf;var e=Tf(n*=mf);$s=e*Tf(t),Ds=e*Cf(t),Rs=Cf(n),Gs.point=Qs,Ws($s,Ds,Rs)}function Qs(t,n){t*=mf;var e=Tf(n*=mf),r=e*Tf(t),i=e*Cf(t),o=Cf(n),a=Mf(zf((a=Ds*o-Rs*i)*a+(a=Rs*r-$s*o)*a+(a=$s*i-Ds*r)*a),$s*r+Ds*i+Rs*o);xs+=a,As+=a*($s+($s=r)),Ss+=a*(Ds+(Ds=i)),Es+=a*(Rs+(Rs=o)),Ws($s,Ds,Rs)}function Js(){Gs.point=Vs}function tl(){Gs.point=el}function nl(){rl(Ps,zs),Gs.point=Vs}function el(t,n){Ps=t,zs=n,t*=mf,n*=mf,Gs.point=rl;var e=Tf(n);$s=e*Tf(t),Ds=e*Cf(t),Rs=Cf(n),Ws($s,Ds,Rs)}function rl(t,n){t*=mf;var e=Tf(n*=mf),r=e*Tf(t),i=e*Cf(t),o=Cf(n),a=Ds*o-Rs*i,u=Rs*r-$s*o,c=$s*i-Ds*r,f=Ef(a,u,c),s=Rf(f),l=f&&-s/f;Ns.add(l*a),ks.add(l*u),Cs.add(l*c),xs+=s,As+=s*($s+($s=r)),Ss+=s*(Ds+(Ds=i)),Es+=s*(Rs+(Rs=o)),Ws($s,Ds,Rs)}function il(t){return function(){return t}}function ol(t,n){function e(e,r){return e=t(e,r),n(e[0],e[1])}return t.invert&&n.invert&&(e.invert=function(e,r){return(e=n.invert(e,r))&&t.invert(e[0],e[1])}),e}function al(t,n){return xf(t)>gf&&(t-=Math.round(t/_f)*_f),[t,n]}function ul(t,n,e){return(t%=_f)?n||e?ol(fl(t),sl(n,e)):fl(t):n||e?sl(n,e):al}function cl(t){return function(n,e){return xf(n+=t)>gf&&(n-=Math.round(n/_f)*_f),[n,e]}}function fl(t){var n=cl(t);return n.invert=cl(-t),n}function sl(t,n){var e=Tf(t),r=Cf(t),i=Tf(n),o=Cf(n);function a(t,n){var a=Tf(n),u=Tf(t)*a,c=Cf(t)*a,f=Cf(n),s=f*e+u*r;return[Mf(c*i-s*o,u*e-f*r),Rf(s*i+c*o)]}return a.invert=function(t,n){var a=Tf(n),u=Tf(t)*a,c=Cf(t)*a,f=Cf(n),s=f*i-c*o;return[Mf(c*i+f*o,u*e+s*r),Rf(s*e-u*r)]},a}function ll(t){function n(n){return(n=t(n[0]*mf,n[1]*mf))[0]*=bf,n[1]*=bf,n}return t=ul(t[0]*mf,t[1]*mf,t.length>2?t[2]*mf:0),n.invert=function(n){return(n=t.invert(n[0]*mf,n[1]*mf))[0]*=bf,n[1]*=bf,n},n}function hl(t,n,e,r,i,o){if(e){var a=Tf(n),u=Cf(n),c=r*e;null==i?(i=n+r*_f,o=n-c/2):(i=dl(a,i),o=dl(a,o),(r>0?i<o:i>o)&&(i+=r*_f));for(var f,s=i;r>0?s>o:s<o;s-=c)f=ds([a,-u*Tf(s),-u*Cf(s)]),t.point(f[0],f[1])}}function dl(t,n){(n=ps(n))[0]-=t,bs(n);var e=Df(-n[1]);return((-n[2]<0?-e:e)+_f-df)%_f}function pl(){var t,n=[];return{point:function(n,e,r){t.push([n,e,r])},lineStart:function(){n.push(t=[])},lineEnd:qf,rejoin:function(){n.length>1&&n.push(n.pop().concat(n.shift()))},result:function(){var e=n;return n=[],t=null,e}}}function gl(t,n){return xf(t[0]-n[0])<df&&xf(t[1]-n[1])<df}function yl(t,n,e,r){this.x=t,this.z=n,this.o=e,this.e=r,this.v=!1,this.n=this.p=null}function vl(t,n,e,r,i){var o,a,u=[],c=[];if(t.forEach((function(t){if(!((n=t.length-1)<=0)){var n,e,r=t[0],a=t[n];if(gl(r,a)){if(!r[2]&&!a[2]){for(i.lineStart(),o=0;o<n;++o)i.point((r=t[o])[0],r[1]);return void i.lineEnd()}a[0]+=2*df}u.push(e=new yl(r,t,null,!0)),c.push(e.o=new yl(r,null,e,!1)),u.push(e=new yl(a,t,null,!1)),c.push(e.o=new yl(a,null,e,!0))}})),u.length){for(c.sort(n),_l(u),_l(c),o=0,a=c.length;o<a;++o)c[o].e=e=!e;for(var f,s,l=u[0];;){for(var h=l,d=!0;h.v;)if((h=h.n)===l)return;f=h.z,i.lineStart();do{if(h.v=h.o.v=!0,h.e){if(d)for(o=0,a=f.length;o<a;++o)i.point((s=f[o])[0],s[1]);else r(h.x,h.n.x,1,i);h=h.n}else{if(d)for(f=h.p.z,o=f.length-1;o>=0;--o)i.point((s=f[o])[0],s[1]);else r(h.x,h.p.x,-1,i);h=h.p}f=(h=h.o).z,d=!d}while(!h.v);i.lineEnd()}}}function _l(t){if(n=t.length){for(var n,e,r=0,i=t[0];++r<n;)i.n=e=t[r],e.p=i,i=e;i.n=e=t[0],e.p=i}}function bl(t){return xf(t[0])<=gf?t[0]:Pf(t[0])*((xf(t[0])+gf)%_f-gf)}function ml(t,n){var e=bl(n),r=n[1],i=Cf(r),o=[Cf(e),-Tf(e),0],a=0,u=0,c=new T;1===i?r=yf+df:-1===i&&(r=-yf-df);for(var f=0,s=t.length;f<s;++f)if(h=(l=t[f]).length)for(var l,h,d=l[h-1],p=bl(d),g=d[1]/2+vf,y=Cf(g),v=Tf(g),_=0;_<h;++_,p=m,y=w,v=M,d=b){var b=l[_],m=bl(b),x=b[1]/2+vf,w=Cf(x),M=Tf(x),A=m-p,S=A>=0?1:-1,E=S*A,N=E>gf,k=y*w;if(c.add(Mf(k*S*Cf(E),v*M+k*Tf(E))),a+=N?A+S*_f:A,N^p>=e^m>=e){var C=ys(ps(d),ps(b));bs(C);var P=ys(o,C);bs(P);var z=(N^A>=0?-1:1)*Rf(P[2]);(r>z||r===z&&(C[0]||C[1]))&&(u+=N^A>=0?1:-1)}}return(a<-df||a<df&&c<-pf)^1&u}function xl(t,n,e,r){return function(i){var o,a,u,c=n(i),f=pl(),s=n(f),l=!1,h={point:d,lineStart:g,lineEnd:y,polygonStart:function(){h.point=v,h.lineStart=_,h.lineEnd=b,a=[],o=[]},polygonEnd:function(){h.point=d,h.lineStart=g,h.lineEnd=y,a=ft(a);var t=ml(o,r);a.length?(l||(i.polygonStart(),l=!0),vl(a,Ml,t,e,i)):t&&(l||(i.polygonStart(),l=!0),i.lineStart(),e(null,null,1,i),i.lineEnd()),l&&(i.polygonEnd(),l=!1),a=o=null},sphere:function(){i.polygonStart(),i.lineStart(),e(null,null,1,i),i.lineEnd(),i.polygonEnd()}};function d(n,e){t(n,e)&&i.point(n,e)}function p(t,n){c.point(t,n)}function g(){h.point=p,c.lineStart()}function y(){h.point=d,c.lineEnd()}function v(t,n){u.push([t,n]),s.point(t,n)}function _(){s.lineStart(),u=[]}function b(){v(u[0][0],u[0][1]),s.lineEnd();var t,n,e,r,c=s.clean(),h=f.result(),d=h.length;if(u.pop(),o.push(u),u=null,d)if(1&c){if((n=(e=h[0]).length-1)>0){for(l||(i.polygonStart(),l=!0),i.lineStart(),t=0;t<n;++t)i.point((r=e[t])[0],r[1]);i.lineEnd()}}else d>1&&2&c&&h.push(h.pop().concat(h.shift())),a.push(h.filter(wl))}return h}}function wl(t){return t.length>1}function Ml(t,n){return((t=t.x)[0]<0?t[1]-yf-df:yf-t[1])-((n=n.x)[0]<0?n[1]-yf-df:yf-n[1])}al.invert=al;var Tl=xl((function(){return!0}),(function(t){var n,e=NaN,r=NaN,i=NaN;return{lineStart:function(){t.lineStart(),n=1},point:function(o,a){var u=o>0?gf:-gf,c=xf(o-e);xf(c-gf)<df?(t.point(e,r=(r+a)/2>0?yf:-yf),t.point(i,r),t.lineEnd(),t.lineStart(),t.point(u,r),t.point(o,r),n=0):i!==u&&c>=gf&&(xf(e-i)<df&&(e-=i*df),xf(o-u)<df&&(o-=u*df),r=function(t,n,e,r){var i,o,a=Cf(t-e);return xf(a)>df?wf((Cf(n)*(o=Tf(r))*Cf(e)-Cf(r)*(i=Tf(n))*Cf(t))/(i*o*a)):(n+r)/2}(e,r,o,a),t.point(i,r),t.lineEnd(),t.lineStart(),t.point(u,r),n=0),t.point(e=o,r=a),i=u},lineEnd:function(){t.lineEnd(),e=r=NaN},clean:function(){return 2-n}}}),(function(t,n,e,r){var i;if(null==t)i=e*yf,r.point(-gf,i),r.point(0,i),r.point(gf,i),r.point(gf,0),r.point(gf,-i),r.point(0,-i),r.point(-gf,-i),r.point(-gf,0),r.point(-gf,i);else if(xf(t[0]-n[0])>df){var o=t[0]<n[0]?gf:-gf;i=e*o/2,r.point(-o,i),r.point(0,i),r.point(o,i)}else r.point(n[0],n[1])}),[-gf,-yf]);function Al(t){var n=Tf(t),e=2*mf,r=n>0,i=xf(n)>df;function o(t,e){return Tf(t)*Tf(e)>n}function a(t,e,r){var i=[1,0,0],o=ys(ps(t),ps(e)),a=gs(o,o),u=o[0],c=a-u*u;if(!c)return!r&&t;var f=n*a/c,s=-n*u/c,l=ys(i,o),h=_s(i,f);vs(h,_s(o,s));var d=l,p=gs(h,d),g=gs(d,d),y=p*p-g*(gs(h,h)-1);if(!(y<0)){var v=zf(y),_=_s(d,(-p-v)/g);if(vs(_,h),_=ds(_),!r)return _;var b,m=t[0],x=e[0],w=t[1],M=e[1];x<m&&(b=m,m=x,x=b);var T=x-m,A=xf(T-gf)<df;if(!A&&M<w&&(b=w,w=M,M=b),A||T<df?A?w+M>0^_[1]<(xf(_[0]-m)<df?w:M):w<=_[1]&&_[1]<=M:T>gf^(m<=_[0]&&_[0]<=x)){var S=_s(d,(-p+v)/g);return vs(S,h),[_,ds(S)]}}}function u(n,e){var i=r?t:gf-t,o=0;return n<-i?o|=1:n>i&&(o|=2),e<-i?o|=4:e>i&&(o|=8),o}return xl(o,(function(t){var n,e,c,f,s;return{lineStart:function(){f=c=!1,s=1},point:function(l,h){var d,p=[l,h],g=o(l,h),y=r?g?0:u(l,h):g?u(l+(l<0?gf:-gf),h):0;if(!n&&(f=c=g)&&t.lineStart(),g!==c&&(!(d=a(n,p))||gl(n,d)||gl(p,d))&&(p[2]=1),g!==c)s=0,g?(t.lineStart(),d=a(p,n),t.point(d[0],d[1])):(d=a(n,p),t.point(d[0],d[1],2),t.lineEnd()),n=d;else if(i&&n&&r^g){var v;y&e||!(v=a(p,n,!0))||(s=0,r?(t.lineStart(),t.point(v[0][0],v[0][1]),t.point(v[1][0],v[1][1]),t.lineEnd()):(t.point(v[1][0],v[1][1]),t.lineEnd(),t.lineStart(),t.point(v[0][0],v[0][1],3)))}!g||n&&gl(n,p)||t.point(p[0],p[1]),n=p,c=g,e=y},lineEnd:function(){c&&t.lineEnd(),n=null},clean:function(){return s|(f&&c)<<1}}}),(function(n,r,i,o){hl(o,t,e,i,n,r)}),r?[0,-t]:[-gf,t-gf])}var Sl,El,Nl,kl,Cl=1e9,Pl=-Cl;function zl(t,n,e,r){function i(i,o){return t<=i&&i<=e&&n<=o&&o<=r}function o(i,o,u,f){var s=0,l=0;if(null==i||(s=a(i,u))!==(l=a(o,u))||c(i,o)<0^u>0)do{f.point(0===s||3===s?t:e,s>1?r:n)}while((s=(s+u+4)%4)!==l);else f.point(o[0],o[1])}function a(r,i){return xf(r[0]-t)<df?i>0?0:3:xf(r[0]-e)<df?i>0?2:1:xf(r[1]-n)<df?i>0?1:0:i>0?3:2}function u(t,n){return c(t.x,n.x)}function c(t,n){var e=a(t,1),r=a(n,1);return e!==r?e-r:0===e?n[1]-t[1]:1===e?t[0]-n[0]:2===e?t[1]-n[1]:n[0]-t[0]}return function(a){var c,f,s,l,h,d,p,g,y,v,_,b=a,m=pl(),x={point:w,lineStart:function(){x.point=M,f&&f.push(s=[]);v=!0,y=!1,p=g=NaN},lineEnd:function(){c&&(M(l,h),d&&y&&m.rejoin(),c.push(m.result()));x.point=w,y&&b.lineEnd()},polygonStart:function(){b=m,c=[],f=[],_=!0},polygonEnd:function(){var n=function(){for(var n=0,e=0,i=f.length;e<i;++e)for(var o,a,u=f[e],c=1,s=u.length,l=u[0],h=l[0],d=l[1];c<s;++c)o=h,a=d,h=(l=u[c])[0],d=l[1],a<=r?d>r&&(h-o)*(r-a)>(d-a)*(t-o)&&++n:d<=r&&(h-o)*(r-a)<(d-a)*(t-o)&&--n;return n}(),e=_&&n,i=(c=ft(c)).length;(e||i)&&(a.polygonStart(),e&&(a.lineStart(),o(null,null,1,a),a.lineEnd()),i&&vl(c,u,n,o,a),a.polygonEnd());b=a,c=f=s=null}};function w(t,n){i(t,n)&&b.point(t,n)}function M(o,a){var u=i(o,a);if(f&&s.push([o,a]),v)l=o,h=a,d=u,v=!1,u&&(b.lineStart(),b.point(o,a));else if(u&&y)b.point(o,a);else{var c=[p=Math.max(Pl,Math.min(Cl,p)),g=Math.max(Pl,Math.min(Cl,g))],m=[o=Math.max(Pl,Math.min(Cl,o)),a=Math.max(Pl,Math.min(Cl,a))];!function(t,n,e,r,i,o){var a,u=t[0],c=t[1],f=0,s=1,l=n[0]-u,h=n[1]-c;if(a=e-u,l||!(a>0)){if(a/=l,l<0){if(a<f)return;a<s&&(s=a)}else if(l>0){if(a>s)return;a>f&&(f=a)}if(a=i-u,l||!(a<0)){if(a/=l,l<0){if(a>s)return;a>f&&(f=a)}else if(l>0){if(a<f)return;a<s&&(s=a)}if(a=r-c,h||!(a>0)){if(a/=h,h<0){if(a<f)return;a<s&&(s=a)}else if(h>0){if(a>s)return;a>f&&(f=a)}if(a=o-c,h||!(a<0)){if(a/=h,h<0){if(a>s)return;a>f&&(f=a)}else if(h>0){if(a<f)return;a<s&&(s=a)}return f>0&&(t[0]=u+f*l,t[1]=c+f*h),s<1&&(n[0]=u+s*l,n[1]=c+s*h),!0}}}}}(c,m,t,n,e,r)?u&&(b.lineStart(),b.point(o,a),_=!1):(y||(b.lineStart(),b.point(c[0],c[1])),b.point(m[0],m[1]),u||b.lineEnd(),_=!1)}p=o,g=a,y=u}return x}}var $l={sphere:qf,point:qf,lineStart:function(){$l.point=Rl,$l.lineEnd=Dl},lineEnd:qf,polygonStart:qf,polygonEnd:qf};function Dl(){$l.point=$l.lineEnd=qf}function Rl(t,n){El=t*=mf,Nl=Cf(n*=mf),kl=Tf(n),$l.point=Fl}function Fl(t,n){t*=mf;var e=Cf(n*=mf),r=Tf(n),i=xf(t-El),o=Tf(i),a=r*Cf(i),u=kl*e-Nl*r*o,c=Nl*e+kl*r*o;Sl.add(Mf(zf(a*a+u*u),c)),El=t,Nl=e,kl=r}function ql(t){return Sl=new T,Lf(t,$l),+Sl}var Ul=[null,null],Il={type:"LineString",coordinates:Ul};function Ol(t,n){return Ul[0]=t,Ul[1]=n,ql(Il)}var Bl={Feature:function(t,n){return Ll(t.geometry,n)},FeatureCollection:function(t,n){for(var e=t.features,r=-1,i=e.length;++r<i;)if(Ll(e[r].geometry,n))return!0;return!1}},Yl={Sphere:function(){return!0},Point:function(t,n){return jl(t.coordinates,n)},MultiPoint:function(t,n){for(var e=t.coordinates,r=-1,i=e.length;++r<i;)if(jl(e[r],n))return!0;return!1},LineString:function(t,n){return Hl(t.coordinates,n)},MultiLineString:function(t,n){for(var e=t.coordinates,r=-1,i=e.length;++r<i;)if(Hl(e[r],n))return!0;return!1},Polygon:function(t,n){return Xl(t.coordinates,n)},MultiPolygon:function(t,n){for(var e=t.coordinates,r=-1,i=e.length;++r<i;)if(Xl(e[r],n))return!0;return!1},GeometryCollection:function(t,n){for(var e=t.geometries,r=-1,i=e.length;++r<i;)if(Ll(e[r],n))return!0;return!1}};function Ll(t,n){return!(!t||!Yl.hasOwnProperty(t.type))&&Yl[t.type](t,n)}function jl(t,n){return 0===Ol(t,n)}function Hl(t,n){for(var e,r,i,o=0,a=t.length;o<a;o++){if(0===(r=Ol(t[o],n)))return!0;if(o>0&&(i=Ol(t[o],t[o-1]))>0&&e<=i&&r<=i&&(e+r-i)*(1-Math.pow((e-r)/i,2))<pf*i)return!0;e=r}return!1}function Xl(t,n){return!!ml(t.map(Gl),Vl(n))}function Gl(t){return(t=t.map(Vl)).pop(),t}function Vl(t){return[t[0]*mf,t[1]*mf]}function Wl(t,n,e){var r=lt(t,n-df,e).concat(n);return function(t){return r.map((function(n){return[t,n]}))}}function Zl(t,n,e){var r=lt(t,n-df,e).concat(n);return function(t){return r.map((function(n){return[n,t]}))}}function Kl(){var t,n,e,r,i,o,a,u,c,f,s,l,h=10,d=h,p=90,g=360,y=2.5;function v(){return{type:"MultiLineString",coordinates:_()}}function _(){return lt(Af(r/p)*p,e,p).map(s).concat(lt(Af(u/g)*g,a,g).map(l)).concat(lt(Af(n/h)*h,t,h).filter((function(t){return xf(t%p)>df})).map(c)).concat(lt(Af(o/d)*d,i,d).filter((function(t){return xf(t%g)>df})).map(f))}return v.lines=function(){return _().map((function(t){return{type:"LineString",coordinates:t}}))},v.outline=function(){return{type:"Polygon",coordinates:[s(r).concat(l(a).slice(1),s(e).reverse().slice(1),l(u).reverse().slice(1))]}},v.extent=function(t){return arguments.length?v.extentMajor(t).extentMinor(t):v.extentMinor()},v.extentMajor=function(t){return arguments.length?(r=+t[0][0],e=+t[1][0],u=+t[0][1],a=+t[1][1],r>e&&(t=r,r=e,e=t),u>a&&(t=u,u=a,a=t),v.precision(y)):[[r,u],[e,a]]},v.extentMinor=function(e){return arguments.length?(n=+e[0][0],t=+e[1][0],o=+e[0][1],i=+e[1][1],n>t&&(e=n,n=t,t=e),o>i&&(e=o,o=i,i=e),v.precision(y)):[[n,o],[t,i]]},v.step=function(t){return arguments.length?v.stepMajor(t).stepMinor(t):v.stepMinor()},v.stepMajor=function(t){return arguments.length?(p=+t[0],g=+t[1],v):[p,g]},v.stepMinor=function(t){return arguments.length?(h=+t[0],d=+t[1],v):[h,d]},v.precision=function(h){return arguments.length?(y=+h,c=Wl(o,i,90),f=Zl(n,t,y),s=Wl(u,a,90),l=Zl(r,e,y),v):y},v.extentMajor([[-180,-90+df],[180,90-df]]).extentMinor([[-180,-80-df],[180,80+df]])}var Ql,Jl,th,nh,eh=t=>t,rh=new T,ih=new T,oh={point:qf,lineStart:qf,lineEnd:qf,polygonStart:function(){oh.lineStart=ah,oh.lineEnd=fh},polygonEnd:function(){oh.lineStart=oh.lineEnd=oh.point=qf,rh.add(xf(ih)),ih=new T},result:function(){var t=rh/2;return rh=new T,t}};function ah(){oh.point=uh}function uh(t,n){oh.point=ch,Ql=th=t,Jl=nh=n}function ch(t,n){ih.add(nh*t-th*n),th=t,nh=n}function fh(){ch(Ql,Jl)}var sh=oh,lh=1/0,hh=lh,dh=-lh,ph=dh,gh={point:function(t,n){t<lh&&(lh=t);t>dh&&(dh=t);n<hh&&(hh=n);n>ph&&(ph=n)},lineStart:qf,lineEnd:qf,polygonStart:qf,polygonEnd:qf,result:function(){var t=[[lh,hh],[dh,ph]];return dh=ph=-(hh=lh=1/0),t}};var yh,vh,_h,bh,mh=gh,xh=0,wh=0,Mh=0,Th=0,Ah=0,Sh=0,Eh=0,Nh=0,kh=0,Ch={point:Ph,lineStart:zh,lineEnd:Rh,polygonStart:function(){Ch.lineStart=Fh,Ch.lineEnd=qh},polygonEnd:function(){Ch.point=Ph,Ch.lineStart=zh,Ch.lineEnd=Rh},result:function(){var t=kh?[Eh/kh,Nh/kh]:Sh?[Th/Sh,Ah/Sh]:Mh?[xh/Mh,wh/Mh]:[NaN,NaN];return xh=wh=Mh=Th=Ah=Sh=Eh=Nh=kh=0,t}};function Ph(t,n){xh+=t,wh+=n,++Mh}function zh(){Ch.point=$h}function $h(t,n){Ch.point=Dh,Ph(_h=t,bh=n)}function Dh(t,n){var e=t-_h,r=n-bh,i=zf(e*e+r*r);Th+=i*(_h+t)/2,Ah+=i*(bh+n)/2,Sh+=i,Ph(_h=t,bh=n)}function Rh(){Ch.point=Ph}function Fh(){Ch.point=Uh}function qh(){Ih(yh,vh)}function Uh(t,n){Ch.point=Ih,Ph(yh=_h=t,vh=bh=n)}function Ih(t,n){var e=t-_h,r=n-bh,i=zf(e*e+r*r);Th+=i*(_h+t)/2,Ah+=i*(bh+n)/2,Sh+=i,Eh+=(i=bh*t-_h*n)*(_h+t),Nh+=i*(bh+n),kh+=3*i,Ph(_h=t,bh=n)}var Oh=Ch;function Bh(t){this._context=t}Bh.prototype={_radius:4.5,pointRadius:function(t){return this._radius=t,this},polygonStart:function(){this._line=0},polygonEnd:function(){this._line=NaN},lineStart:function(){this._point=0},lineEnd:function(){0===this._line&&this._context.closePath(),this._point=NaN},point:function(t,n){switch(this._point){case 0:this._context.moveTo(t,n),this._point=1;break;case 1:this._context.lineTo(t,n);break;default:this._context.moveTo(t+this._radius,n),this._context.arc(t,n,this._radius,0,_f)}},result:qf};var Yh,Lh,jh,Hh,Xh,Gh=new T,Vh={point:qf,lineStart:function(){Vh.point=Wh},lineEnd:function(){Yh&&Zh(Lh,jh),Vh.point=qf},polygonStart:function(){Yh=!0},polygonEnd:function(){Yh=null},result:function(){var t=+Gh;return Gh=new T,t}};function Wh(t,n){Vh.point=Zh,Lh=Hh=t,jh=Xh=n}function Zh(t,n){Hh-=t,Xh-=n,Gh.add(zf(Hh*Hh+Xh*Xh)),Hh=t,Xh=n}var Kh=Vh;let Qh,Jh,td,nd;class ed{constructor(t){this._append=null==t?rd:function(t){const n=Math.floor(t);if(!(n>=0))throw new RangeError(`invalid digits: ${t}`);if(n>15)return rd;if(n!==Qh){const t=10**n;Qh=n,Jh=function(n){let e=1;this._+=n[0];for(const r=n.length;e<r;++e)this._+=Math.round(arguments[e]*t)/t+n[e]}}return Jh}(t),this._radius=4.5,this._=""}pointRadius(t){return this._radius=+t,this}polygonStart(){this._line=0}polygonEnd(){this._line=NaN}lineStart(){this._point=0}lineEnd(){0===this._line&&(this._+="Z"),this._point=NaN}point(t,n){switch(this._point){case 0:this._append`M${t},${n}`,this._point=1;break;case 1:this._append`L${t},${n}`;break;default:if(this._append`M${t},${n}`,this._radius!==td||this._append!==Jh){const t=this._radius,n=this._;this._="",this._append`m0,${t}a${t},${t} 0 1,1 0,${-2*t}a${t},${t} 0 1,1 0,${2*t}z`,td=t,Jh=this._append,nd=this._,this._=n}this._+=nd}}result(){const t=this._;return this._="",t.length?t:null}}function rd(t){let n=1;this._+=t[0];for(const e=t.length;n<e;++n)this._+=arguments[n]+t[n]}function id(t){return function(n){var e=new od;for(var r in t)e[r]=t[r];return e.stream=n,e}}function od(){}function ad(t,n,e){var r=t.clipExtent&&t.clipExtent();return t.scale(150).translate([0,0]),null!=r&&t.clipExtent(null),Lf(e,t.stream(mh)),n(mh.result()),null!=r&&t.clipExtent(r),t}function ud(t,n,e){return ad(t,(function(e){var r=n[1][0]-n[0][0],i=n[1][1]-n[0][1],o=Math.min(r/(e[1][0]-e[0][0]),i/(e[1][1]-e[0][1])),a=+n[0][0]+(r-o*(e[1][0]+e[0][0]))/2,u=+n[0][1]+(i-o*(e[1][1]+e[0][1]))/2;t.scale(150*o).translate([a,u])}),e)}function cd(t,n,e){return ud(t,[[0,0],n],e)}function fd(t,n,e){return ad(t,(function(e){var r=+n,i=r/(e[1][0]-e[0][0]),o=(r-i*(e[1][0]+e[0][0]))/2,a=-i*e[0][1];t.scale(150*i).translate([o,a])}),e)}function sd(t,n,e){return ad(t,(function(e){var r=+n,i=r/(e[1][1]-e[0][1]),o=-i*e[0][0],a=(r-i*(e[1][1]+e[0][1]))/2;t.scale(150*i).translate([o,a])}),e)}od.prototype={constructor:od,point:function(t,n){this.stream.point(t,n)},sphere:function(){this.stream.sphere()},lineStart:function(){this.stream.lineStart()},lineEnd:function(){this.stream.lineEnd()},polygonStart:function(){this.stream.polygonStart()},polygonEnd:function(){this.stream.polygonEnd()}};var ld=16,hd=Tf(30*mf);function dd(t,n){return+n?function(t,n){function e(r,i,o,a,u,c,f,s,l,h,d,p,g,y){var v=f-r,_=s-i,b=v*v+_*_;if(b>4*n&&g--){var m=a+h,x=u+d,w=c+p,M=zf(m*m+x*x+w*w),T=Rf(w/=M),A=xf(xf(w)-1)<df||xf(o-l)<df?(o+l)/2:Mf(x,m),S=t(A,T),E=S[0],N=S[1],k=E-r,C=N-i,P=_*k-v*C;(P*P/b>n||xf((v*k+_*C)/b-.5)>.3||a*h+u*d+c*p<hd)&&(e(r,i,o,a,u,c,E,N,A,m/=M,x/=M,w,g,y),y.point(E,N),e(E,N,A,m,x,w,f,s,l,h,d,p,g,y))}}return function(n){var r,i,o,a,u,c,f,s,l,h,d,p,g={point:y,lineStart:v,lineEnd:b,polygonStart:function(){n.polygonStart(),g.lineStart=m},polygonEnd:function(){n.polygonEnd(),g.lineStart=v}};function y(e,r){e=t(e,r),n.point(e[0],e[1])}function v(){s=NaN,g.point=_,n.lineStart()}function _(r,i){var o=ps([r,i]),a=t(r,i);e(s,l,f,h,d,p,s=a[0],l=a[1],f=r,h=o[0],d=o[1],p=o[2],ld,n),n.point(s,l)}function b(){g.point=y,n.lineEnd()}function m(){v(),g.point=x,g.lineEnd=w}function x(t,n){_(r=t,n),i=s,o=l,a=h,u=d,c=p,g.point=_}function w(){e(s,l,f,h,d,p,i,o,r,a,u,c,ld,n),g.lineEnd=b,b()}return g}}(t,n):function(t){return id({point:function(n,e){n=t(n,e),this.stream.point(n[0],n[1])}})}(t)}var pd=id({point:function(t,n){this.stream.point(t*mf,n*mf)}});function gd(t,n,e,r,i,o){if(!o)return function(t,n,e,r,i){function o(o,a){return[n+t*(o*=r),e-t*(a*=i)]}return o.invert=function(o,a){return[(o-n)/t*r,(e-a)/t*i]},o}(t,n,e,r,i);var a=Tf(o),u=Cf(o),c=a*t,f=u*t,s=a/t,l=u/t,h=(u*e-a*n)/t,d=(u*n+a*e)/t;function p(t,o){return[c*(t*=r)-f*(o*=i)+n,e-f*t-c*o]}return p.invert=function(t,n){return[r*(s*t-l*n+h),i*(d-l*t-s*n)]},p}function yd(t){return vd((function(){return t}))()}function vd(t){var n,e,r,i,o,a,u,c,f,s,l=150,h=480,d=250,p=0,g=0,y=0,v=0,_=0,b=0,m=1,x=1,w=null,M=Tl,T=null,A=eh,S=.5;function E(t){return c(t[0]*mf,t[1]*mf)}function N(t){return(t=c.invert(t[0],t[1]))&&[t[0]*bf,t[1]*bf]}function k(){var t=gd(l,0,0,m,x,b).apply(null,n(p,g)),r=gd(l,h-t[0],d-t[1],m,x,b);return e=ul(y,v,_),u=ol(n,r),c=ol(e,u),a=dd(u,S),C()}function C(){return f=s=null,E}return E.stream=function(t){return f&&s===t?f:f=pd(function(t){return id({point:function(n,e){var r=t(n,e);return this.stream.point(r[0],r[1])}})}(e)(M(a(A(s=t)))))},E.preclip=function(t){return arguments.length?(M=t,w=void 0,C()):M},E.postclip=function(t){return arguments.length?(A=t,T=r=i=o=null,C()):A},E.clipAngle=function(t){return arguments.length?(M=+t?Al(w=t*mf):(w=null,Tl),C()):w*bf},E.clipExtent=function(t){return arguments.length?(A=null==t?(T=r=i=o=null,eh):zl(T=+t[0][0],r=+t[0][1],i=+t[1][0],o=+t[1][1]),C()):null==T?null:[[T,r],[i,o]]},E.scale=function(t){return arguments.length?(l=+t,k()):l},E.translate=function(t){return arguments.length?(h=+t[0],d=+t[1],k()):[h,d]},E.center=function(t){return arguments.length?(p=t[0]%360*mf,g=t[1]%360*mf,k()):[p*bf,g*bf]},E.rotate=function(t){return arguments.length?(y=t[0]%360*mf,v=t[1]%360*mf,_=t.length>2?t[2]%360*mf:0,k()):[y*bf,v*bf,_*bf]},E.angle=function(t){return arguments.length?(b=t%360*mf,k()):b*bf},E.reflectX=function(t){return arguments.length?(m=t?-1:1,k()):m<0},E.reflectY=function(t){return arguments.length?(x=t?-1:1,k()):x<0},E.precision=function(t){return arguments.length?(a=dd(u,S=t*t),C()):zf(S)},E.fitExtent=function(t,n){return ud(E,t,n)},E.fitSize=function(t,n){return cd(E,t,n)},E.fitWidth=function(t,n){return fd(E,t,n)},E.fitHeight=function(t,n){return sd(E,t,n)},function(){return n=t.apply(this,arguments),E.invert=n.invert&&N,k()}}function _d(t){var n=0,e=gf/3,r=vd(t),i=r(n,e);return i.parallels=function(t){return arguments.length?r(n=t[0]*mf,e=t[1]*mf):[n*bf,e*bf]},i}function bd(t,n){var e=Cf(t),r=(e+Cf(n))/2;if(xf(r)<df)return function(t){var n=Tf(t);function e(t,e){return[t*n,Cf(e)/n]}return e.invert=function(t,e){return[t/n,Rf(e*n)]},e}(t);var i=1+e*(2*r-e),o=zf(i)/r;function a(t,n){var e=zf(i-2*r*Cf(n))/r;return[e*Cf(t*=r),o-e*Tf(t)]}return a.invert=function(t,n){var e=o-n,a=Mf(t,xf(e))*Pf(e);return e*r<0&&(a-=gf*Pf(t)*Pf(e)),[a/r,Rf((i-(t*t+e*e)*r*r)/(2*r))]},a}function md(){return _d(bd).scale(155.424).center([0,33.6442])}function xd(){return md().parallels([29.5,45.5]).scale(1070).translate([480,250]).rotate([96,0]).center([-.6,38.7])}function wd(t){return function(n,e){var r=Tf(n),i=Tf(e),o=t(r*i);return o===1/0?[2,0]:[o*i*Cf(n),o*Cf(e)]}}function Md(t){return function(n,e){var r=zf(n*n+e*e),i=t(r),o=Cf(i),a=Tf(i);return[Mf(n*o,r*a),Rf(r&&e*o/r)]}}var Td=wd((function(t){return zf(2/(1+t))}));Td.invert=Md((function(t){return 2*Rf(t/2)}));var Ad=wd((function(t){return(t=Df(t))&&t/Cf(t)}));function Sd(t,n){return[t,Nf($f((yf+n)/2))]}function Ed(t){var n,e,r,i=yd(t),o=i.center,a=i.scale,u=i.translate,c=i.clipExtent,f=null;function s(){var o=gf*a(),u=i(ll(i.rotate()).invert([0,0]));return c(null==f?[[u[0]-o,u[1]-o],[u[0]+o,u[1]+o]]:t===Sd?[[Math.max(u[0]-o,f),n],[Math.min(u[0]+o,e),r]]:[[f,Math.max(u[1]-o,n)],[e,Math.min(u[1]+o,r)]])}return i.scale=function(t){return arguments.length?(a(t),s()):a()},i.translate=function(t){return arguments.length?(u(t),s()):u()},i.center=function(t){return arguments.length?(o(t),s()):o()},i.clipExtent=function(t){return arguments.length?(null==t?f=n=e=r=null:(f=+t[0][0],n=+t[0][1],e=+t[1][0],r=+t[1][1]),s()):null==f?null:[[f,n],[e,r]]},s()}function Nd(t){return $f((yf+t)/2)}function kd(t,n){var e=Tf(t),r=t===n?Cf(t):Nf(e/Tf(n))/Nf(Nd(n)/Nd(t)),i=e*kf(Nd(t),r)/r;if(!r)return Sd;function o(t,n){i>0?n<-yf+df&&(n=-yf+df):n>yf-df&&(n=yf-df);var e=i/kf(Nd(n),r);return[e*Cf(r*t),i-e*Tf(r*t)]}return o.invert=function(t,n){var e=i-n,o=Pf(r)*zf(t*t+e*e),a=Mf(t,xf(e))*Pf(e);return e*r<0&&(a-=gf*Pf(t)*Pf(e)),[a/r,2*wf(kf(i/o,1/r))-yf]},o}function Cd(t,n){return[t,n]}function Pd(t,n){var e=Tf(t),r=t===n?Cf(t):(e-Tf(n))/(n-t),i=e/r+t;if(xf(r)<df)return Cd;function o(t,n){var e=i-n,o=r*t;return[e*Cf(o),i-e*Tf(o)]}return o.invert=function(t,n){var e=i-n,o=Mf(t,xf(e))*Pf(e);return e*r<0&&(o-=gf*Pf(t)*Pf(e)),[o/r,i-Pf(r)*zf(t*t+e*e)]},o}Ad.invert=Md((function(t){return t})),Sd.invert=function(t,n){return[t,2*wf(Sf(n))-yf]},Cd.invert=Cd;var zd=1.340264,$d=-.081106,Dd=893e-6,Rd=.003796,Fd=zf(3)/2;function qd(t,n){var e=Rf(Fd*Cf(n)),r=e*e,i=r*r*r;return[t*Tf(e)/(Fd*(zd+3*$d*r+i*(7*Dd+9*Rd*r))),e*(zd+$d*r+i*(Dd+Rd*r))]}function Ud(t,n){var e=Tf(n),r=Tf(t)*e;return[e*Cf(t)/r,Cf(n)/r]}function Id(t,n){var e=n*n,r=e*e;return[t*(.8707-.131979*e+r*(r*(.003971*e-.001529*r)-.013791)),n*(1.007226+e*(.015085+r*(.028874*e-.044475-.005916*r)))]}function Od(t,n){return[Tf(n)*Cf(t),Cf(n)]}function Bd(t,n){var e=Tf(n),r=1+Tf(t)*e;return[e*Cf(t)/r,Cf(n)/r]}function Yd(t,n){return[Nf($f((yf+n)/2)),-t]}function Ld(t,n){return t.parent===n.parent?1:2}function jd(t,n){return t+n.x}function Hd(t,n){return Math.max(t,n.y)}function Xd(t){var n=0,e=t.children,r=e&&e.length;if(r)for(;--r>=0;)n+=e[r].value;else n=1;t.value=n}function Gd(t,n){t instanceof Map?(t=[void 0,t],void 0===n&&(n=Wd)):void 0===n&&(n=Vd);for(var e,r,i,o,a,u=new Qd(t),c=[u];e=c.pop();)if((i=n(e.data))&&(a=(i=Array.from(i)).length))for(e.children=i,o=a-1;o>=0;--o)c.push(r=i[o]=new Qd(i[o])),r.parent=e,r.depth=e.depth+1;return u.eachBefore(Kd)}function Vd(t){return t.children}function Wd(t){return Array.isArray(t)?t[1]:null}function Zd(t){void 0!==t.data.value&&(t.value=t.data.value),t.data=t.data.data}function Kd(t){var n=0;do{t.height=n}while((t=t.parent)&&t.height<++n)}function Qd(t){this.data=t,this.depth=this.height=0,this.parent=null}function Jd(t){return null==t?null:tp(t)}function tp(t){if("function"!=typeof t)throw new Error;return t}function np(){return 0}function ep(t){return function(){return t}}qd.invert=function(t,n){for(var e,r=n,i=r*r,o=i*i*i,a=0;a<12&&(o=(i=(r-=e=(r*(zd+$d*i+o*(Dd+Rd*i))-n)/(zd+3*$d*i+o*(7*Dd+9*Rd*i)))*r)*i*i,!(xf(e)<pf));++a);return[Fd*t*(zd+3*$d*i+o*(7*Dd+9*Rd*i))/Tf(r),Rf(Cf(r)/Fd)]},Ud.invert=Md(wf),Id.invert=function(t,n){var e,r=n,i=25;do{var o=r*r,a=o*o;r-=e=(r*(1.007226+o*(.015085+a*(.028874*o-.044475-.005916*a)))-n)/(1.007226+o*(.045255+a*(.259866*o-.311325-.005916*11*a)))}while(xf(e)>df&&--i>0);return[t/(.8707+(o=r*r)*(o*(o*o*o*(.003971-.001529*o)-.013791)-.131979)),r]},Od.invert=Md(Rf),Bd.invert=Md((function(t){return 2*wf(t)})),Yd.invert=function(t,n){return[-n,2*wf(Sf(t))-yf]},Qd.prototype=Gd.prototype={constructor:Qd,count:function(){return this.eachAfter(Xd)},each:function(t,n){let e=-1;for(const r of this)t.call(n,r,++e,this);return this},eachAfter:function(t,n){for(var e,r,i,o=this,a=[o],u=[],c=-1;o=a.pop();)if(u.push(o),e=o.children)for(r=0,i=e.length;r<i;++r)a.push(e[r]);for(;o=u.pop();)t.call(n,o,++c,this);return this},eachBefore:function(t,n){for(var e,r,i=this,o=[i],a=-1;i=o.pop();)if(t.call(n,i,++a,this),e=i.children)for(r=e.length-1;r>=0;--r)o.push(e[r]);return this},find:function(t,n){let e=-1;for(const r of this)if(t.call(n,r,++e,this))return r},sum:function(t){return this.eachAfter((function(n){for(var e=+t(n.data)||0,r=n.children,i=r&&r.length;--i>=0;)e+=r[i].value;n.value=e}))},sort:function(t){return this.eachBefore((function(n){n.children&&n.children.sort(t)}))},path:function(t){for(var n=this,e=function(t,n){if(t===n)return t;var e=t.ancestors(),r=n.ancestors(),i=null;t=e.pop(),n=r.pop();for(;t===n;)i=t,t=e.pop(),n=r.pop();return i}(n,t),r=[n];n!==e;)n=n.parent,r.push(n);for(var i=r.length;t!==e;)r.splice(i,0,t),t=t.parent;return r},ancestors:function(){for(var t=this,n=[t];t=t.parent;)n.push(t);return n},descendants:function(){return Array.from(this)},leaves:function(){var t=[];return this.eachBefore((function(n){n.children||t.push(n)})),t},links:function(){var t=this,n=[];return t.each((function(e){e!==t&&n.push({source:e.parent,target:e})})),n},copy:function(){return Gd(this).eachBefore(Zd)},[Symbol.iterator]:function*(){var t,n,e,r,i=this,o=[i];do{for(t=o.reverse(),o=[];i=t.pop();)if(yield i,n=i.children)for(e=0,r=n.length;e<r;++e)o.push(n[e])}while(o.length)}};const rp=1664525,ip=1013904223,op=4294967296;function ap(){let t=1;return()=>(t=(rp*t+ip)%op)/op}function up(t,n){for(var e,r,i=0,o=(t=function(t,n){let e,r,i=t.length;for(;i;)r=n()*i--|0,e=t[i],t[i]=t[r],t[r]=e;return t}(Array.from(t),n)).length,a=[];i<o;)e=t[i],r&&sp(r,e)?++i:(r=hp(a=cp(a,e)),i=0);return r}function cp(t,n){var e,r;if(lp(n,t))return[n];for(e=0;e<t.length;++e)if(fp(n,t[e])&&lp(dp(t[e],n),t))return[t[e],n];for(e=0;e<t.length-1;++e)for(r=e+1;r<t.length;++r)if(fp(dp(t[e],t[r]),n)&&fp(dp(t[e],n),t[r])&&fp(dp(t[r],n),t[e])&&lp(pp(t[e],t[r],n),t))return[t[e],t[r],n];throw new Error}function fp(t,n){var e=t.r-n.r,r=n.x-t.x,i=n.y-t.y;return e<0||e*e<r*r+i*i}function sp(t,n){var e=t.r-n.r+1e-9*Math.max(t.r,n.r,1),r=n.x-t.x,i=n.y-t.y;return e>0&&e*e>r*r+i*i}function lp(t,n){for(var e=0;e<n.length;++e)if(!sp(t,n[e]))return!1;return!0}function hp(t){switch(t.length){case 1:return function(t){return{x:t.x,y:t.y,r:t.r}}(t[0]);case 2:return dp(t[0],t[1]);case 3:return pp(t[0],t[1],t[2])}}function dp(t,n){var e=t.x,r=t.y,i=t.r,o=n.x,a=n.y,u=n.r,c=o-e,f=a-r,s=u-i,l=Math.sqrt(c*c+f*f);return{x:(e+o+c/l*s)/2,y:(r+a+f/l*s)/2,r:(l+i+u)/2}}function pp(t,n,e){var r=t.x,i=t.y,o=t.r,a=n.x,u=n.y,c=n.r,f=e.x,s=e.y,l=e.r,h=r-a,d=r-f,p=i-u,g=i-s,y=c-o,v=l-o,_=r*r+i*i-o*o,b=_-a*a-u*u+c*c,m=_-f*f-s*s+l*l,x=d*p-h*g,w=(p*m-g*b)/(2*x)-r,M=(g*y-p*v)/x,T=(d*b-h*m)/(2*x)-i,A=(h*v-d*y)/x,S=M*M+A*A-1,E=2*(o+w*M+T*A),N=w*w+T*T-o*o,k=-(Math.abs(S)>1e-6?(E+Math.sqrt(E*E-4*S*N))/(2*S):N/E);return{x:r+w+M*k,y:i+T+A*k,r:k}}function gp(t,n,e){var r,i,o,a,u=t.x-n.x,c=t.y-n.y,f=u*u+c*c;f?(i=n.r+e.r,i*=i,a=t.r+e.r,i>(a*=a)?(r=(f+a-i)/(2*f),o=Math.sqrt(Math.max(0,a/f-r*r)),e.x=t.x-r*u-o*c,e.y=t.y-r*c+o*u):(r=(f+i-a)/(2*f),o=Math.sqrt(Math.max(0,i/f-r*r)),e.x=n.x+r*u-o*c,e.y=n.y+r*c+o*u)):(e.x=n.x+e.r,e.y=n.y)}function yp(t,n){var e=t.r+n.r-1e-6,r=n.x-t.x,i=n.y-t.y;return e>0&&e*e>r*r+i*i}function vp(t){var n=t._,e=t.next._,r=n.r+e.r,i=(n.x*e.r+e.x*n.r)/r,o=(n.y*e.r+e.y*n.r)/r;return i*i+o*o}function _p(t){this._=t,this.next=null,this.previous=null}function bp(t,n){if(!(o=(t=function(t){return"object"==typeof t&&"length"in t?t:Array.from(t)}(t)).length))return 0;var e,r,i,o,a,u,c,f,s,l,h;if((e=t[0]).x=0,e.y=0,!(o>1))return e.r;if(r=t[1],e.x=-r.r,r.x=e.r,r.y=0,!(o>2))return e.r+r.r;gp(r,e,i=t[2]),e=new _p(e),r=new _p(r),i=new _p(i),e.next=i.previous=r,r.next=e.previous=i,i.next=r.previous=e;t:for(c=3;c<o;++c){gp(e._,r._,i=t[c]),i=new _p(i),f=r.next,s=e.previous,l=r._.r,h=e._.r;do{if(l<=h){if(yp(f._,i._)){r=f,e.next=r,r.previous=e,--c;continue t}l+=f._.r,f=f.next}else{if(yp(s._,i._)){(e=s).next=r,r.previous=e,--c;continue t}h+=s._.r,s=s.previous}}while(f!==s.next);for(i.previous=e,i.next=r,e.next=r.previous=r=i,a=vp(e);(i=i.next)!==r;)(u=vp(i))<a&&(e=i,a=u);r=e.next}for(e=[r._],i=r;(i=i.next)!==r;)e.push(i._);for(i=up(e,n),c=0;c<o;++c)(e=t[c]).x-=i.x,e.y-=i.y;return i.r}function mp(t){return Math.sqrt(t.value)}function xp(t){return function(n){n.children||(n.r=Math.max(0,+t(n)||0))}}function wp(t,n,e){return function(r){if(i=r.children){var i,o,a,u=i.length,c=t(r)*n||0;if(c)for(o=0;o<u;++o)i[o].r+=c;if(a=bp(i,e),c)for(o=0;o<u;++o)i[o].r-=c;r.r=a+c}}}function Mp(t){return function(n){var e=n.parent;n.r*=t,e&&(n.x=e.x+t*n.x,n.y=e.y+t*n.y)}}function Tp(t){t.x0=Math.round(t.x0),t.y0=Math.round(t.y0),t.x1=Math.round(t.x1),t.y1=Math.round(t.y1)}function Ap(t,n,e,r,i){for(var o,a=t.children,u=-1,c=a.length,f=t.value&&(r-n)/t.value;++u<c;)(o=a[u]).y0=e,o.y1=i,o.x0=n,o.x1=n+=o.value*f}var Sp={depth:-1},Ep={},Np={};function kp(t){return t.id}function Cp(t){return t.parentId}function Pp(t){let n=t.length;if(n<2)return"";for(;--n>1&&!zp(t,n););return t.slice(0,n)}function zp(t,n){if("/"===t[n]){let e=0;for(;n>0&&"\\"===t[--n];)++e;if(!(1&e))return!0}return!1}function $p(t,n){return t.parent===n.parent?1:2}function Dp(t){var n=t.children;return n?n[0]:t.t}function Rp(t){var n=t.children;return n?n[n.length-1]:t.t}function Fp(t,n,e){var r=e/(n.i-t.i);n.c-=r,n.s+=e,t.c+=r,n.z+=e,n.m+=e}function qp(t,n,e){return t.a.parent===n.parent?t.a:e}function Up(t,n){this._=t,this.parent=null,this.children=null,this.A=null,this.a=this,this.z=0,this.m=0,this.c=0,this.s=0,this.t=null,this.i=n}function Ip(t,n,e,r,i){for(var o,a=t.children,u=-1,c=a.length,f=t.value&&(i-e)/t.value;++u<c;)(o=a[u]).x0=n,o.x1=r,o.y0=e,o.y1=e+=o.value*f}Up.prototype=Object.create(Qd.prototype);var Op=(1+Math.sqrt(5))/2;function Bp(t,n,e,r,i,o){for(var a,u,c,f,s,l,h,d,p,g,y,v=[],_=n.children,b=0,m=0,x=_.length,w=n.value;b<x;){c=i-e,f=o-r;do{s=_[m++].value}while(!s&&m<x);for(l=h=s,y=s*s*(g=Math.max(f/c,c/f)/(w*t)),p=Math.max(h/y,y/l);m<x;++m){if(s+=u=_[m].value,u<l&&(l=u),u>h&&(h=u),y=s*s*g,(d=Math.max(h/y,y/l))>p){s-=u;break}p=d}v.push(a={value:s,dice:c<f,children:_.slice(b,m)}),a.dice?Ap(a,e,r,i,w?r+=f*s/w:o):Ip(a,e,r,w?e+=c*s/w:i,o),w-=s,b=m}return v}var Yp=function t(n){function e(t,e,r,i,o){Bp(n,t,e,r,i,o)}return e.ratio=function(n){return t((n=+n)>1?n:1)},e}(Op);var Lp=function t(n){function e(t,e,r,i,o){if((a=t._squarify)&&a.ratio===n)for(var a,u,c,f,s,l=-1,h=a.length,d=t.value;++l<h;){for(c=(u=a[l]).children,f=u.value=0,s=c.length;f<s;++f)u.value+=c[f].value;u.dice?Ap(u,e,r,i,d?r+=(o-r)*u.value/d:o):Ip(u,e,r,d?e+=(i-e)*u.value/d:i,o),d-=u.value}else t._squarify=a=Bp(n,t,e,r,i,o),a.ratio=n}return e.ratio=function(n){return t((n=+n)>1?n:1)},e}(Op);function jp(t,n,e){return(n[0]-t[0])*(e[1]-t[1])-(n[1]-t[1])*(e[0]-t[0])}function Hp(t,n){return t[0]-n[0]||t[1]-n[1]}function Xp(t){const n=t.length,e=[0,1];let r,i=2;for(r=2;r<n;++r){for(;i>1&&jp(t[e[i-2]],t[e[i-1]],t[r])<=0;)--i;e[i++]=r}return e.slice(0,i)}var Gp=Math.random,Vp=function t(n){function e(t,e){return t=null==t?0:+t,e=null==e?1:+e,1===arguments.length?(e=t,t=0):e-=t,function(){return n()*e+t}}return e.source=t,e}(Gp),Wp=function t(n){function e(t,e){return arguments.length<2&&(e=t,t=0),t=Math.floor(t),e=Math.floor(e)-t,function(){return Math.floor(n()*e+t)}}return e.source=t,e}(Gp),Zp=function t(n){function e(t,e){var r,i;return t=null==t?0:+t,e=null==e?1:+e,function(){var o;if(null!=r)o=r,r=null;else do{r=2*n()-1,o=2*n()-1,i=r*r+o*o}while(!i||i>1);return t+e*o*Math.sqrt(-2*Math.log(i)/i)}}return e.source=t,e}(Gp),Kp=function t(n){var e=Zp.source(n);function r(){var t=e.apply(this,arguments);return function(){return Math.exp(t())}}return r.source=t,r}(Gp),Qp=function t(n){function e(t){return(t=+t)<=0?()=>0:function(){for(var e=0,r=t;r>1;--r)e+=n();return e+r*n()}}return e.source=t,e}(Gp),Jp=function t(n){var e=Qp.source(n);function r(t){if(0==(t=+t))return n;var r=e(t);return function(){return r()/t}}return r.source=t,r}(Gp),tg=function t(n){function e(t){return function(){return-Math.log1p(-n())/t}}return e.source=t,e}(Gp),ng=function t(n){function e(t){if((t=+t)<0)throw new RangeError("invalid alpha");return t=1/-t,function(){return Math.pow(1-n(),t)}}return e.source=t,e}(Gp),eg=function t(n){function e(t){if((t=+t)<0||t>1)throw new RangeError("invalid p");return function(){return Math.floor(n()+t)}}return e.source=t,e}(Gp),rg=function t(n){function e(t){if((t=+t)<0||t>1)throw new RangeError("invalid p");return 0===t?()=>1/0:1===t?()=>1:(t=Math.log1p(-t),function(){return 1+Math.floor(Math.log1p(-n())/t)})}return e.source=t,e}(Gp),ig=function t(n){var e=Zp.source(n)();function r(t,r){if((t=+t)<0)throw new RangeError("invalid k");if(0===t)return()=>0;if(r=null==r?1:+r,1===t)return()=>-Math.log1p(-n())*r;var i=(t<1?t+1:t)-1/3,o=1/(3*Math.sqrt(i)),a=t<1?()=>Math.pow(n(),1/t):()=>1;return function(){do{do{var t=e(),u=1+o*t}while(u<=0);u*=u*u;var c=1-n()}while(c>=1-.0331*t*t*t*t&&Math.log(c)>=.5*t*t+i*(1-u+Math.log(u)));return i*u*a()*r}}return r.source=t,r}(Gp),og=function t(n){var e=ig.source(n);function r(t,n){var r=e(t),i=e(n);return function(){var t=r();return 0===t?0:t/(t+i())}}return r.source=t,r}(Gp),ag=function t(n){var e=rg.source(n),r=og.source(n);function i(t,n){return t=+t,(n=+n)>=1?()=>t:n<=0?()=>0:function(){for(var i=0,o=t,a=n;o*a>16&&o*(1-a)>16;){var u=Math.floor((o+1)*a),c=r(u,o-u+1)();c<=a?(i+=u,o-=u,a=(a-c)/(1-c)):(o=u-1,a/=c)}for(var f=a<.5,s=e(f?a:1-a),l=s(),h=0;l<=o;++h)l+=s();return i+(f?h:o-h)}}return i.source=t,i}(Gp),ug=function t(n){function e(t,e,r){var i;return 0==(t=+t)?i=t=>-Math.log(t):(t=1/t,i=n=>Math.pow(n,t)),e=null==e?0:+e,r=null==r?1:+r,function(){return e+r*i(-Math.log1p(-n()))}}return e.source=t,e}(Gp),cg=function t(n){function e(t,e){return t=null==t?0:+t,e=null==e?1:+e,function(){return t+e*Math.tan(Math.PI*n())}}return e.source=t,e}(Gp),fg=function t(n){function e(t,e){return t=null==t?0:+t,e=null==e?1:+e,function(){var r=n();return t+e*Math.log(r/(1-r))}}return e.source=t,e}(Gp),sg=function t(n){var e=ig.source(n),r=ag.source(n);function i(t){return function(){for(var i=0,o=t;o>16;){var a=Math.floor(.875*o),u=e(a)();if(u>o)return i+r(a-1,o/u)();i+=a,o-=u}for(var c=-Math.log1p(-n()),f=0;c<=o;++f)c-=Math.log1p(-n());return i+f}}return i.source=t,i}(Gp);const lg=1/4294967296;function hg(t,n){switch(arguments.length){case 0:break;case 1:this.range(t);break;default:this.range(n).domain(t)}return this}function dg(t,n){switch(arguments.length){case 0:break;case 1:"function"==typeof t?this.interpolator(t):this.range(t);break;default:this.domain(t),"function"==typeof n?this.interpolator(n):this.range(n)}return this}const pg=Symbol("implicit");function gg(){var t=new InternMap,n=[],e=[],r=pg;function i(i){let o=t.get(i);if(void 0===o){if(r!==pg)return r;t.set(i,o=n.push(i)-1)}return e[o%e.length]}return i.domain=function(e){if(!arguments.length)return n.slice();n=[],t=new InternMap;for(const r of e)t.has(r)||t.set(r,n.push(r)-1);return i},i.range=function(t){return arguments.length?(e=Array.from(t),i):e.slice()},i.unknown=function(t){return arguments.length?(r=t,i):r},i.copy=function(){return gg(n,e).unknown(r)},hg.apply(i,arguments),i}function yg(){var t,n,e=gg().unknown(void 0),r=e.domain,i=e.range,o=0,a=1,u=!1,c=0,f=0,s=.5;function l(){var e=r().length,l=a<o,h=l?a:o,d=l?o:a;t=(d-h)/Math.max(1,e-c+2*f),u&&(t=Math.floor(t)),h+=(d-h-t*(e-c))*s,n=t*(1-c),u&&(h=Math.round(h),n=Math.round(n));var p=lt(e).map((function(n){return h+t*n}));return i(l?p.reverse():p)}return delete e.unknown,e.domain=function(t){return arguments.length?(r(t),l()):r()},e.range=function(t){return arguments.length?([o,a]=t,o=+o,a=+a,l()):[o,a]},e.rangeRound=function(t){return[o,a]=t,o=+o,a=+a,u=!0,l()},e.bandwidth=function(){return n},e.step=function(){return t},e.round=function(t){return arguments.length?(u=!!t,l()):u},e.padding=function(t){return arguments.length?(c=Math.min(1,f=+t),l()):c},e.paddingInner=function(t){return arguments.length?(c=Math.min(1,t),l()):c},e.paddingOuter=function(t){return arguments.length?(f=+t,l()):f},e.align=function(t){return arguments.length?(s=Math.max(0,Math.min(1,t)),l()):s},e.copy=function(){return yg(r(),[o,a]).round(u).paddingInner(c).paddingOuter(f).align(s)},hg.apply(l(),arguments)}function vg(t){var n=t.copy;return t.padding=t.paddingOuter,delete t.paddingInner,delete t.paddingOuter,t.copy=function(){return vg(n())},t}function _g(t){return+t}var bg=[0,1];function mg(t){return t}function xg(t,n){return(n-=t=+t)?function(e){return(e-t)/n}:function(t){return function(){return t}}(isNaN(n)?NaN:.5)}function wg(t,n,e){var r=t[0],i=t[1],o=n[0],a=n[1];return i<r?(r=xg(i,r),o=e(a,o)):(r=xg(r,i),o=e(o,a)),function(t){return o(r(t))}}function Mg(t,n,e){var r=Math.min(t.length,n.length)-1,i=new Array(r),o=new Array(r),a=-1;for(t[r]<t[0]&&(t=t.slice().reverse(),n=n.slice().reverse());++a<r;)i[a]=xg(t[a],t[a+1]),o[a]=e(n[a],n[a+1]);return function(n){var e=s(t,n,1,r)-1;return o[e](i[e](n))}}function Tg(t,n){return n.domain(t.domain()).range(t.range()).interpolate(t.interpolate()).clamp(t.clamp()).unknown(t.unknown())}function Ag(){var t,n,e,r,i,o,a=bg,u=bg,c=Gr,f=mg;function s(){var t=Math.min(a.length,u.length);return f!==mg&&(f=function(t,n){var e;return t>n&&(e=t,t=n,n=e),function(e){return Math.max(t,Math.min(n,e))}}(a[0],a[t-1])),r=t>2?Mg:wg,i=o=null,l}function l(n){return null==n||isNaN(n=+n)?e:(i||(i=r(a.map(t),u,c)))(t(f(n)))}return l.invert=function(e){return f(n((o||(o=r(u,a.map(t),Yr)))(e)))},l.domain=function(t){return arguments.length?(a=Array.from(t,_g),s()):a.slice()},l.range=function(t){return arguments.length?(u=Array.from(t),s()):u.slice()},l.rangeRound=function(t){return u=Array.from(t),c=Vr,s()},l.clamp=function(t){return arguments.length?(f=!!t||mg,s()):f!==mg},l.interpolate=function(t){return arguments.length?(c=t,s()):c},l.unknown=function(t){return arguments.length?(e=t,l):e},function(e,r){return t=e,n=r,s()}}function Sg(){return Ag()(mg,mg)}function Eg(n,e,r,i){var o,a=W(n,e,r);switch((i=Jc(null==i?",f":i)).type){case"s":var u=Math.max(Math.abs(n),Math.abs(e));return null!=i.precision||isNaN(o=lf(a,u))||(i.precision=o),t.formatPrefix(i,u);case"":case"e":case"g":case"p":case"r":null!=i.precision||isNaN(o=hf(a,Math.max(Math.abs(n),Math.abs(e))))||(i.precision=o-("e"===i.type));break;case"f":case"%":null!=i.precision||isNaN(o=sf(a))||(i.precision=o-2*("%"===i.type))}return t.format(i)}function Ng(t){var n=t.domain;return t.ticks=function(t){var e=n();return G(e[0],e[e.length-1],null==t?10:t)},t.tickFormat=function(t,e){var r=n();return Eg(r[0],r[r.length-1],null==t?10:t,e)},t.nice=function(e){null==e&&(e=10);var r,i,o=n(),a=0,u=o.length-1,c=o[a],f=o[u],s=10;for(f<c&&(i=c,c=f,f=i,i=a,a=u,u=i);s-- >0;){if((i=V(c,f,e))===r)return o[a]=c,o[u]=f,n(o);if(i>0)c=Math.floor(c/i)*i,f=Math.ceil(f/i)*i;else{if(!(i<0))break;c=Math.ceil(c*i)/i,f=Math.floor(f*i)/i}r=i}return t},t}function kg(t,n){var e,r=0,i=(t=t.slice()).length-1,o=t[r],a=t[i];return a<o&&(e=r,r=i,i=e,e=o,o=a,a=e),t[r]=n.floor(o),t[i]=n.ceil(a),t}function Cg(t){return Math.log(t)}function Pg(t){return Math.exp(t)}function zg(t){return-Math.log(-t)}function $g(t){return-Math.exp(-t)}function Dg(t){return isFinite(t)?+("1e"+t):t<0?0:t}function Rg(t){return(n,e)=>-t(-n,e)}function Fg(n){const e=n(Cg,Pg),r=e.domain;let i,o,a=10;function u(){return i=function(t){return t===Math.E?Math.log:10===t&&Math.log10||2===t&&Math.log2||(t=Math.log(t),n=>Math.log(n)/t)}(a),o=function(t){return 10===t?Dg:t===Math.E?Math.exp:n=>Math.pow(t,n)}(a),r()[0]<0?(i=Rg(i),o=Rg(o),n(zg,$g)):n(Cg,Pg),e}return e.base=function(t){return arguments.length?(a=+t,u()):a},e.domain=function(t){return arguments.length?(r(t),u()):r()},e.ticks=t=>{const n=r();let e=n[0],u=n[n.length-1];const c=u<e;c&&([e,u]=[u,e]);let f,s,l=i(e),h=i(u);const d=null==t?10:+t;let p=[];if(!(a%1)&&h-l<d){if(l=Math.floor(l),h=Math.ceil(h),e>0){for(;l<=h;++l)for(f=1;f<a;++f)if(s=l<0?f/o(-l):f*o(l),!(s<e)){if(s>u)break;p.push(s)}}else for(;l<=h;++l)for(f=a-1;f>=1;--f)if(s=l>0?f/o(-l):f*o(l),!(s<e)){if(s>u)break;p.push(s)}2*p.length<d&&(p=G(e,u,d))}else p=G(l,h,Math.min(h-l,d)).map(o);return c?p.reverse():p},e.tickFormat=(n,r)=>{if(null==n&&(n=10),null==r&&(r=10===a?"s":","),"function"!=typeof r&&(a%1||null!=(r=Jc(r)).precision||(r.trim=!0),r=t.format(r)),n===1/0)return r;const u=Math.max(1,a*n/e.ticks().length);return t=>{let n=t/o(Math.round(i(t)));return n*a<a-.5&&(n*=a),n<=u?r(t):""}},e.nice=()=>r(kg(r(),{floor:t=>o(Math.floor(i(t))),ceil:t=>o(Math.ceil(i(t)))})),e}function qg(t){return function(n){return Math.sign(n)*Math.log1p(Math.abs(n/t))}}function Ug(t){return function(n){return Math.sign(n)*Math.expm1(Math.abs(n))*t}}function Ig(t){var n=1,e=t(qg(n),Ug(n));return e.constant=function(e){return arguments.length?t(qg(n=+e),Ug(n)):n},Ng(e)}function Og(t){return function(n){return n<0?-Math.pow(-n,t):Math.pow(n,t)}}function Bg(t){return t<0?-Math.sqrt(-t):Math.sqrt(t)}function Yg(t){return t<0?-t*t:t*t}function Lg(t){var n=t(mg,mg),e=1;return n.exponent=function(n){return arguments.length?1===(e=+n)?t(mg,mg):.5===e?t(Bg,Yg):t(Og(e),Og(1/e)):e},Ng(n)}function jg(){var t=Lg(Ag());return t.copy=function(){return Tg(t,jg()).exponent(t.exponent())},hg.apply(t,arguments),t}function Hg(t){return Math.sign(t)*t*t}const Xg=new Date,Gg=new Date;function Vg(t,n,e,r){function i(n){return t(n=0===arguments.length?new Date:new Date(+n)),n}return i.floor=n=>(t(n=new Date(+n)),n),i.ceil=e=>(t(e=new Date(e-1)),n(e,1),t(e),e),i.round=t=>{const n=i(t),e=i.ceil(t);return t-n<e-t?n:e},i.offset=(t,e)=>(n(t=new Date(+t),null==e?1:Math.floor(e)),t),i.range=(e,r,o)=>{const a=[];if(e=i.ceil(e),o=null==o?1:Math.floor(o),!(e<r&&o>0))return a;let u;do{a.push(u=new Date(+e)),n(e,o),t(e)}while(u<e&&e<r);return a},i.filter=e=>Vg((n=>{if(n>=n)for(;t(n),!e(n);)n.setTime(n-1)}),((t,r)=>{if(t>=t)if(r<0)for(;++r<=0;)for(;n(t,-1),!e(t););else for(;--r>=0;)for(;n(t,1),!e(t););})),e&&(i.count=(n,r)=>(Xg.setTime(+n),Gg.setTime(+r),t(Xg),t(Gg),Math.floor(e(Xg,Gg))),i.every=t=>(t=Math.floor(t),isFinite(t)&&t>0?t>1?i.filter(r?n=>r(n)%t==0:n=>i.count(0,n)%t==0):i:null)),i}const Wg=Vg((()=>{}),((t,n)=>{t.setTime(+t+n)}),((t,n)=>n-t));Wg.every=t=>(t=Math.floor(t),isFinite(t)&&t>0?t>1?Vg((n=>{n.setTime(Math.floor(n/t)*t)}),((n,e)=>{n.setTime(+n+e*t)}),((n,e)=>(e-n)/t)):Wg:null);const Zg=Wg.range,Kg=1e3,Qg=6e4,Jg=36e5,ty=864e5,ny=6048e5,ey=2592e6,ry=31536e6,iy=Vg((t=>{t.setTime(t-t.getMilliseconds())}),((t,n)=>{t.setTime(+t+n*Kg)}),((t,n)=>(n-t)/Kg),(t=>t.getUTCSeconds())),oy=iy.range,ay=Vg((t=>{t.setTime(t-t.getMilliseconds()-t.getSeconds()*Kg)}),((t,n)=>{t.setTime(+t+n*Qg)}),((t,n)=>(n-t)/Qg),(t=>t.getMinutes())),uy=ay.range,cy=Vg((t=>{t.setUTCSeconds(0,0)}),((t,n)=>{t.setTime(+t+n*Qg)}),((t,n)=>(n-t)/Qg),(t=>t.getUTCMinutes())),fy=cy.range,sy=Vg((t=>{t.setTime(t-t.getMilliseconds()-t.getSeconds()*Kg-t.getMinutes()*Qg)}),((t,n)=>{t.setTime(+t+n*Jg)}),((t,n)=>(n-t)/Jg),(t=>t.getHours())),ly=sy.range,hy=Vg((t=>{t.setUTCMinutes(0,0,0)}),((t,n)=>{t.setTime(+t+n*Jg)}),((t,n)=>(n-t)/Jg),(t=>t.getUTCHours())),dy=hy.range,py=Vg((t=>t.setHours(0,0,0,0)),((t,n)=>t.setDate(t.getDate()+n)),((t,n)=>(n-t-(n.getTimezoneOffset()-t.getTimezoneOffset())*Qg)/ty),(t=>t.getDate()-1)),gy=py.range,yy=Vg((t=>{t.setUTCHours(0,0,0,0)}),((t,n)=>{t.setUTCDate(t.getUTCDate()+n)}),((t,n)=>(n-t)/ty),(t=>t.getUTCDate()-1)),vy=yy.range,_y=Vg((t=>{t.setUTCHours(0,0,0,0)}),((t,n)=>{t.setUTCDate(t.getUTCDate()+n)}),((t,n)=>(n-t)/ty),(t=>Math.floor(t/ty))),by=_y.range;function my(t){return Vg((n=>{n.setDate(n.getDate()-(n.getDay()+7-t)%7),n.setHours(0,0,0,0)}),((t,n)=>{t.setDate(t.getDate()+7*n)}),((t,n)=>(n-t-(n.getTimezoneOffset()-t.getTimezoneOffset())*Qg)/ny))}const xy=my(0),wy=my(1),My=my(2),Ty=my(3),Ay=my(4),Sy=my(5),Ey=my(6),Ny=xy.range,ky=wy.range,Cy=My.range,Py=Ty.range,zy=Ay.range,$y=Sy.range,Dy=Ey.range;function Ry(t){return Vg((n=>{n.setUTCDate(n.getUTCDate()-(n.getUTCDay()+7-t)%7),n.setUTCHours(0,0,0,0)}),((t,n)=>{t.setUTCDate(t.getUTCDate()+7*n)}),((t,n)=>(n-t)/ny))}const Fy=Ry(0),qy=Ry(1),Uy=Ry(2),Iy=Ry(3),Oy=Ry(4),By=Ry(5),Yy=Ry(6),Ly=Fy.range,jy=qy.range,Hy=Uy.range,Xy=Iy.range,Gy=Oy.range,Vy=By.range,Wy=Yy.range,Zy=Vg((t=>{t.setDate(1),t.setHours(0,0,0,0)}),((t,n)=>{t.setMonth(t.getMonth()+n)}),((t,n)=>n.getMonth()-t.getMonth()+12*(n.getFullYear()-t.getFullYear())),(t=>t.getMonth())),Ky=Zy.range,Qy=Vg((t=>{t.setUTCDate(1),t.setUTCHours(0,0,0,0)}),((t,n)=>{t.setUTCMonth(t.getUTCMonth()+n)}),((t,n)=>n.getUTCMonth()-t.getUTCMonth()+12*(n.getUTCFullYear()-t.getUTCFullYear())),(t=>t.getUTCMonth())),Jy=Qy.range,tv=Vg((t=>{t.setMonth(0,1),t.setHours(0,0,0,0)}),((t,n)=>{t.setFullYear(t.getFullYear()+n)}),((t,n)=>n.getFullYear()-t.getFullYear()),(t=>t.getFullYear()));tv.every=t=>isFinite(t=Math.floor(t))&&t>0?Vg((n=>{n.setFullYear(Math.floor(n.getFullYear()/t)*t),n.setMonth(0,1),n.setHours(0,0,0,0)}),((n,e)=>{n.setFullYear(n.getFullYear()+e*t)})):null;const nv=tv.range,ev=Vg((t=>{t.setUTCMonth(0,1),t.setUTCHours(0,0,0,0)}),((t,n)=>{t.setUTCFullYear(t.getUTCFullYear()+n)}),((t,n)=>n.getUTCFullYear()-t.getUTCFullYear()),(t=>t.getUTCFullYear()));ev.every=t=>isFinite(t=Math.floor(t))&&t>0?Vg((n=>{n.setUTCFullYear(Math.floor(n.getUTCFullYear()/t)*t),n.setUTCMonth(0,1),n.setUTCHours(0,0,0,0)}),((n,e)=>{n.setUTCFullYear(n.getUTCFullYear()+e*t)})):null;const rv=ev.range;function iv(t,n,e,i,o,a){const u=[[iy,1,Kg],[iy,5,5e3],[iy,15,15e3],[iy,30,3e4],[a,1,Qg],[a,5,3e5],[a,15,9e5],[a,30,18e5],[o,1,Jg],[o,3,108e5],[o,6,216e5],[o,12,432e5],[i,1,ty],[i,2,1728e5],[e,1,ny],[n,1,ey],[n,3,7776e6],[t,1,ry]];function c(n,e,i){const o=Math.abs(e-n)/i,a=r((([,,t])=>t)).right(u,o);if(a===u.length)return t.every(W(n/ry,e/ry,i));if(0===a)return Wg.every(Math.max(W(n,e,i),1));const[c,f]=u[o/u[a-1][2]<u[a][2]/o?a-1:a];return c.every(f)}return[function(t,n,e){const r=n<t;r&&([t,n]=[n,t]);const i=e&&"function"==typeof e.range?e:c(t,n,e),o=i?i.range(t,+n+1):[];return r?o.reverse():o},c]}const[ov,av]=iv(ev,Qy,Fy,_y,hy,cy),[uv,cv]=iv(tv,Zy,xy,py,sy,ay);function fv(t){if(0<=t.y&&t.y<100){var n=new Date(-1,t.m,t.d,t.H,t.M,t.S,t.L);return n.setFullYear(t.y),n}return new Date(t.y,t.m,t.d,t.H,t.M,t.S,t.L)}function sv(t){if(0<=t.y&&t.y<100){var n=new Date(Date.UTC(-1,t.m,t.d,t.H,t.M,t.S,t.L));return n.setUTCFullYear(t.y),n}return new Date(Date.UTC(t.y,t.m,t.d,t.H,t.M,t.S,t.L))}function lv(t,n,e){return{y:t,m:n,d:e,H:0,M:0,S:0,L:0}}function hv(t){var n=t.dateTime,e=t.date,r=t.time,i=t.periods,o=t.days,a=t.shortDays,u=t.months,c=t.shortMonths,f=mv(i),s=xv(i),l=mv(o),h=xv(o),d=mv(a),p=xv(a),g=mv(u),y=xv(u),v=mv(c),_=xv(c),b={a:function(t){return a[t.getDay()]},A:function(t){return o[t.getDay()]},b:function(t){return c[t.getMonth()]},B:function(t){return u[t.getMonth()]},c:null,d:Yv,e:Yv,f:Gv,g:i_,G:a_,H:Lv,I:jv,j:Hv,L:Xv,m:Vv,M:Wv,p:function(t){return i[+(t.getHours()>=12)]},q:function(t){return 1+~~(t.getMonth()/3)},Q:k_,s:C_,S:Zv,u:Kv,U:Qv,V:t_,w:n_,W:e_,x:null,X:null,y:r_,Y:o_,Z:u_,"%":N_},m={a:function(t){return a[t.getUTCDay()]},A:function(t){return o[t.getUTCDay()]},b:function(t){return c[t.getUTCMonth()]},B:function(t){return u[t.getUTCMonth()]},c:null,d:c_,e:c_,f:d_,g:T_,G:S_,H:f_,I:s_,j:l_,L:h_,m:p_,M:g_,p:function(t){return i[+(t.getUTCHours()>=12)]},q:function(t){return 1+~~(t.getUTCMonth()/3)},Q:k_,s:C_,S:y_,u:v_,U:__,V:m_,w:x_,W:w_,x:null,X:null,y:M_,Y:A_,Z:E_,"%":N_},x={a:function(t,n,e){var r=d.exec(n.slice(e));return r?(t.w=p.get(r[0].toLowerCase()),e+r[0].length):-1},A:function(t,n,e){var r=l.exec(n.slice(e));return r?(t.w=h.get(r[0].toLowerCase()),e+r[0].length):-1},b:function(t,n,e){var r=v.exec(n.slice(e));return r?(t.m=_.get(r[0].toLowerCase()),e+r[0].length):-1},B:function(t,n,e){var r=g.exec(n.slice(e));return r?(t.m=y.get(r[0].toLowerCase()),e+r[0].length):-1},c:function(t,e,r){return T(t,n,e,r)},d:zv,e:zv,f:Uv,g:Nv,G:Ev,H:Dv,I:Dv,j:$v,L:qv,m:Pv,M:Rv,p:function(t,n,e){var r=f.exec(n.slice(e));return r?(t.p=s.get(r[0].toLowerCase()),e+r[0].length):-1},q:Cv,Q:Ov,s:Bv,S:Fv,u:Mv,U:Tv,V:Av,w:wv,W:Sv,x:function(t,n,r){return T(t,e,n,r)},X:function(t,n,e){return T(t,r,n,e)},y:Nv,Y:Ev,Z:kv,"%":Iv};function w(t,n){return function(e){var r,i,o,a=[],u=-1,c=0,f=t.length;for(e instanceof Date||(e=new Date(+e));++u<f;)37===t.charCodeAt(u)&&(a.push(t.slice(c,u)),null!=(i=pv[r=t.charAt(++u)])?r=t.charAt(++u):i="e"===r?" ":"0",(o=n[r])&&(r=o(e,i)),a.push(r),c=u+1);return a.push(t.slice(c,u)),a.join("")}}function M(t,n){return function(e){var r,i,o=lv(1900,void 0,1);if(T(o,t,e+="",0)!=e.length)return null;if("Q"in o)return new Date(o.Q);if("s"in o)return new Date(1e3*o.s+("L"in o?o.L:0));if(n&&!("Z"in o)&&(o.Z=0),"p"in o&&(o.H=o.H%12+12*o.p),void 0===o.m&&(o.m="q"in o?o.q:0),"V"in o){if(o.V<1||o.V>53)return null;"w"in o||(o.w=1),"Z"in o?(i=(r=sv(lv(o.y,0,1))).getUTCDay(),r=i>4||0===i?qy.ceil(r):qy(r),r=yy.offset(r,7*(o.V-1)),o.y=r.getUTCFullYear(),o.m=r.getUTCMonth(),o.d=r.getUTCDate()+(o.w+6)%7):(i=(r=fv(lv(o.y,0,1))).getDay(),r=i>4||0===i?wy.ceil(r):wy(r),r=py.offset(r,7*(o.V-1)),o.y=r.getFullYear(),o.m=r.getMonth(),o.d=r.getDate()+(o.w+6)%7)}else("W"in o||"U"in o)&&("w"in o||(o.w="u"in o?o.u%7:"W"in o?1:0),i="Z"in o?sv(lv(o.y,0,1)).getUTCDay():fv(lv(o.y,0,1)).getDay(),o.m=0,o.d="W"in o?(o.w+6)%7+7*o.W-(i+5)%7:o.w+7*o.U-(i+6)%7);return"Z"in o?(o.H+=o.Z/100|0,o.M+=o.Z%100,sv(o)):fv(o)}}function T(t,n,e,r){for(var i,o,a=0,u=n.length,c=e.length;a<u;){if(r>=c)return-1;if(37===(i=n.charCodeAt(a++))){if(i=n.charAt(a++),!(o=x[i in pv?n.charAt(a++):i])||(r=o(t,e,r))<0)return-1}else if(i!=e.charCodeAt(r++))return-1}return r}return b.x=w(e,b),b.X=w(r,b),b.c=w(n,b),m.x=w(e,m),m.X=w(r,m),m.c=w(n,m),{format:function(t){var n=w(t+="",b);return n.toString=function(){return t},n},parse:function(t){var n=M(t+="",!1);return n.toString=function(){return t},n},utcFormat:function(t){var n=w(t+="",m);return n.toString=function(){return t},n},utcParse:function(t){var n=M(t+="",!0);return n.toString=function(){return t},n}}}var dv,pv={"-":"",_:" ",0:"0"},gv=/^\s*\d+/,yv=/^%/,vv=/[\\^$*+?|[\]().{}]/g;function _v(t,n,e){var r=t<0?"-":"",i=(r?-t:t)+"",o=i.length;return r+(o<e?new Array(e-o+1).join(n)+i:i)}function bv(t){return t.replace(vv,"\\$&")}function mv(t){return new RegExp("^(?:"+t.map(bv).join("|")+")","i")}function xv(t){return new Map(t.map(((t,n)=>[t.toLowerCase(),n])))}function wv(t,n,e){var r=gv.exec(n.slice(e,e+1));return r?(t.w=+r[0],e+r[0].length):-1}function Mv(t,n,e){var r=gv.exec(n.slice(e,e+1));return r?(t.u=+r[0],e+r[0].length):-1}function Tv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.U=+r[0],e+r[0].length):-1}function Av(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.V=+r[0],e+r[0].length):-1}function Sv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.W=+r[0],e+r[0].length):-1}function Ev(t,n,e){var r=gv.exec(n.slice(e,e+4));return r?(t.y=+r[0],e+r[0].length):-1}function Nv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.y=+r[0]+(+r[0]>68?1900:2e3),e+r[0].length):-1}function kv(t,n,e){var r=/^(Z)|([+-]\d\d)(?::?(\d\d))?/.exec(n.slice(e,e+6));return r?(t.Z=r[1]?0:-(r[2]+(r[3]||"00")),e+r[0].length):-1}function Cv(t,n,e){var r=gv.exec(n.slice(e,e+1));return r?(t.q=3*r[0]-3,e+r[0].length):-1}function Pv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.m=r[0]-1,e+r[0].length):-1}function zv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.d=+r[0],e+r[0].length):-1}function $v(t,n,e){var r=gv.exec(n.slice(e,e+3));return r?(t.m=0,t.d=+r[0],e+r[0].length):-1}function Dv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.H=+r[0],e+r[0].length):-1}function Rv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.M=+r[0],e+r[0].length):-1}function Fv(t,n,e){var r=gv.exec(n.slice(e,e+2));return r?(t.S=+r[0],e+r[0].length):-1}function qv(t,n,e){var r=gv.exec(n.slice(e,e+3));return r?(t.L=+r[0],e+r[0].length):-1}function Uv(t,n,e){var r=gv.exec(n.slice(e,e+6));return r?(t.L=Math.floor(r[0]/1e3),e+r[0].length):-1}function Iv(t,n,e){var r=yv.exec(n.slice(e,e+1));return r?e+r[0].length:-1}function Ov(t,n,e){var r=gv.exec(n.slice(e));return r?(t.Q=+r[0],e+r[0].length):-1}function Bv(t,n,e){var r=gv.exec(n.slice(e));return r?(t.s=+r[0],e+r[0].length):-1}function Yv(t,n){return _v(t.getDate(),n,2)}function Lv(t,n){return _v(t.getHours(),n,2)}function jv(t,n){return _v(t.getHours()%12||12,n,2)}function Hv(t,n){return _v(1+py.count(tv(t),t),n,3)}function Xv(t,n){return _v(t.getMilliseconds(),n,3)}function Gv(t,n){return Xv(t,n)+"000"}function Vv(t,n){return _v(t.getMonth()+1,n,2)}function Wv(t,n){return _v(t.getMinutes(),n,2)}function Zv(t,n){return _v(t.getSeconds(),n,2)}function Kv(t){var n=t.getDay();return 0===n?7:n}function Qv(t,n){return _v(xy.count(tv(t)-1,t),n,2)}function Jv(t){var n=t.getDay();return n>=4||0===n?Ay(t):Ay.ceil(t)}function t_(t,n){return t=Jv(t),_v(Ay.count(tv(t),t)+(4===tv(t).getDay()),n,2)}function n_(t){return t.getDay()}function e_(t,n){return _v(wy.count(tv(t)-1,t),n,2)}function r_(t,n){return _v(t.getFullYear()%100,n,2)}function i_(t,n){return _v((t=Jv(t)).getFullYear()%100,n,2)}function o_(t,n){return _v(t.getFullYear()%1e4,n,4)}function a_(t,n){var e=t.getDay();return _v((t=e>=4||0===e?Ay(t):Ay.ceil(t)).getFullYear()%1e4,n,4)}function u_(t){var n=t.getTimezoneOffset();return(n>0?"-":(n*=-1,"+"))+_v(n/60|0,"0",2)+_v(n%60,"0",2)}function c_(t,n){return _v(t.getUTCDate(),n,2)}function f_(t,n){return _v(t.getUTCHours(),n,2)}function s_(t,n){return _v(t.getUTCHours()%12||12,n,2)}function l_(t,n){return _v(1+yy.count(ev(t),t),n,3)}function h_(t,n){return _v(t.getUTCMilliseconds(),n,3)}function d_(t,n){return h_(t,n)+"000"}function p_(t,n){return _v(t.getUTCMonth()+1,n,2)}function g_(t,n){return _v(t.getUTCMinutes(),n,2)}function y_(t,n){return _v(t.getUTCSeconds(),n,2)}function v_(t){var n=t.getUTCDay();return 0===n?7:n}function __(t,n){return _v(Fy.count(ev(t)-1,t),n,2)}function b_(t){var n=t.getUTCDay();return n>=4||0===n?Oy(t):Oy.ceil(t)}function m_(t,n){return t=b_(t),_v(Oy.count(ev(t),t)+(4===ev(t).getUTCDay()),n,2)}function x_(t){return t.getUTCDay()}function w_(t,n){return _v(qy.count(ev(t)-1,t),n,2)}function M_(t,n){return _v(t.getUTCFullYear()%100,n,2)}function T_(t,n){return _v((t=b_(t)).getUTCFullYear()%100,n,2)}function A_(t,n){return _v(t.getUTCFullYear()%1e4,n,4)}function S_(t,n){var e=t.getUTCDay();return _v((t=e>=4||0===e?Oy(t):Oy.ceil(t)).getUTCFullYear()%1e4,n,4)}function E_(){return"+0000"}function N_(){return"%"}function k_(t){return+t}function C_(t){return Math.floor(+t/1e3)}function P_(n){return dv=hv(n),t.timeFormat=dv.format,t.timeParse=dv.parse,t.utcFormat=dv.utcFormat,t.utcParse=dv.utcParse,dv}t.timeFormat=void 0,t.timeParse=void 0,t.utcFormat=void 0,t.utcParse=void 0,P_({dateTime:"%x, %X",date:"%-m/%-d/%Y",time:"%-I:%M:%S %p",periods:["AM","PM"],days:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],shortDays:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],months:["January","February","March","April","May","June","July","August","September","October","November","December"],shortMonths:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]});var z_="%Y-%m-%dT%H:%M:%S.%LZ";var $_=Date.prototype.toISOString?function(t){return t.toISOString()}:t.utcFormat(z_),D_=$_;var R_=+new Date("2000-01-01T00:00:00.000Z")?function(t){var n=new Date(t);return isNaN(n)?null:n}:t.utcParse(z_),F_=R_;function q_(t){return new Date(t)}function U_(t){return t instanceof Date?+t:+new Date(+t)}function I_(t,n,e,r,i,o,a,u,c,f){var s=Sg(),l=s.invert,h=s.domain,d=f(".%L"),p=f(":%S"),g=f("%I:%M"),y=f("%I %p"),v=f("%a %d"),_=f("%b %d"),b=f("%B"),m=f("%Y");function x(t){return(c(t)<t?d:u(t)<t?p:a(t)<t?g:o(t)<t?y:r(t)<t?i(t)<t?v:_:e(t)<t?b:m)(t)}return s.invert=function(t){return new Date(l(t))},s.domain=function(t){return arguments.length?h(Array.from(t,U_)):h().map(q_)},s.ticks=function(n){var e=h();return t(e[0],e[e.length-1],null==n?10:n)},s.tickFormat=function(t,n){return null==n?x:f(n)},s.nice=function(t){var e=h();return t&&"function"==typeof t.range||(t=n(e[0],e[e.length-1],null==t?10:t)),t?h(kg(e,t)):s},s.copy=function(){return Tg(s,I_(t,n,e,r,i,o,a,u,c,f))},s}function O_(){var t,n,e,r,i,o=0,a=1,u=mg,c=!1;function f(n){return null==n||isNaN(n=+n)?i:u(0===e?.5:(n=(r(n)-t)*e,c?Math.max(0,Math.min(1,n)):n))}function s(t){return function(n){var e,r;return arguments.length?([e,r]=n,u=t(e,r),f):[u(0),u(1)]}}return f.domain=function(i){return arguments.length?([o,a]=i,t=r(o=+o),n=r(a=+a),e=t===n?0:1/(n-t),f):[o,a]},f.clamp=function(t){return arguments.length?(c=!!t,f):c},f.interpolator=function(t){return arguments.length?(u=t,f):u},f.range=s(Gr),f.rangeRound=s(Vr),f.unknown=function(t){return arguments.length?(i=t,f):i},function(i){return r=i,t=i(o),n=i(a),e=t===n?0:1/(n-t),f}}function B_(t,n){return n.domain(t.domain()).interpolator(t.interpolator()).clamp(t.clamp()).unknown(t.unknown())}function Y_(){var t=Lg(O_());return t.copy=function(){return B_(t,Y_()).exponent(t.exponent())},dg.apply(t,arguments)}function L_(){var t,n,e,r,i,o,a,u=0,c=.5,f=1,s=1,l=mg,h=!1;function d(t){return isNaN(t=+t)?a:(t=.5+((t=+o(t))-n)*(s*t<s*n?r:i),l(h?Math.max(0,Math.min(1,t)):t))}function p(t){return function(n){var e,r,i;return arguments.length?([e,r,i]=n,l=di(t,[e,r,i]),d):[l(0),l(.5),l(1)]}}return d.domain=function(a){return arguments.length?([u,c,f]=a,t=o(u=+u),n=o(c=+c),e=o(f=+f),r=t===n?0:.5/(n-t),i=n===e?0:.5/(e-n),s=n<t?-1:1,d):[u,c,f]},d.clamp=function(t){return arguments.length?(h=!!t,d):h},d.interpolator=function(t){return arguments.length?(l=t,d):l},d.range=p(Gr),d.rangeRound=p(Vr),d.unknown=function(t){return arguments.length?(a=t,d):a},function(a){return o=a,t=a(u),n=a(c),e=a(f),r=t===n?0:.5/(n-t),i=n===e?0:.5/(e-n),s=n<t?-1:1,d}}function j_(){var t=Lg(L_());return t.copy=function(){return B_(t,j_()).exponent(t.exponent())},dg.apply(t,arguments)}function H_(t){for(var n=t.length/6|0,e=new Array(n),r=0;r<n;)e[r]="#"+t.slice(6*r,6*++r);return e}var X_=H_("1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf"),G_=H_("7fc97fbeaed4fdc086ffff99386cb0f0027fbf5b17666666"),V_=H_("1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666"),W_=H_("4269d0efb118ff725c6cc5b03ca951ff8ab7a463f297bbf59c6b4e9498a0"),Z_=H_("a6cee31f78b4b2df8a33a02cfb9a99e31a1cfdbf6fff7f00cab2d66a3d9affff99b15928"),K_=H_("fbb4aeb3cde3ccebc5decbe4fed9a6ffffcce5d8bdfddaecf2f2f2"),Q_=H_("b3e2cdfdcdaccbd5e8f4cae4e6f5c9fff2aef1e2cccccccc"),J_=H_("e41a1c377eb84daf4a984ea3ff7f00ffff33a65628f781bf999999"),tb=H_("66c2a5fc8d628da0cbe78ac3a6d854ffd92fe5c494b3b3b3"),nb=H_("8dd3c7ffffb3bebadafb807280b1d3fdb462b3de69fccde5d9d9d9bc80bdccebc5ffed6f"),eb=H_("4e79a7f28e2ce1575976b7b259a14fedc949af7aa1ff9da79c755fbab0ab"),rb=t=>Fr(t[t.length-1]),ib=new Array(3).concat("d8b365f5f5f55ab4ac","a6611adfc27d80cdc1018571","a6611adfc27df5f5f580cdc1018571","8c510ad8b365f6e8c3c7eae55ab4ac01665e","8c510ad8b365f6e8c3f5f5f5c7eae55ab4ac01665e","8c510abf812ddfc27df6e8c3c7eae580cdc135978f01665e","8c510abf812ddfc27df6e8c3f5f5f5c7eae580cdc135978f01665e","5430058c510abf812ddfc27df6e8c3c7eae580cdc135978f01665e003c30","5430058c510abf812ddfc27df6e8c3f5f5f5c7eae580cdc135978f01665e003c30").map(H_),ob=rb(ib),ab=new Array(3).concat("af8dc3f7f7f77fbf7b","7b3294c2a5cfa6dba0008837","7b3294c2a5cff7f7f7a6dba0008837","762a83af8dc3e7d4e8d9f0d37fbf7b1b7837","762a83af8dc3e7d4e8f7f7f7d9f0d37fbf7b1b7837","762a839970abc2a5cfe7d4e8d9f0d3a6dba05aae611b7837","762a839970abc2a5cfe7d4e8f7f7f7d9f0d3a6dba05aae611b7837","40004b762a839970abc2a5cfe7d4e8d9f0d3a6dba05aae611b783700441b","40004b762a839970abc2a5cfe7d4e8f7f7f7d9f0d3a6dba05aae611b783700441b").map(H_),ub=rb(ab),cb=new Array(3).concat("e9a3c9f7f7f7a1d76a","d01c8bf1b6dab8e1864dac26","d01c8bf1b6daf7f7f7b8e1864dac26","c51b7de9a3c9fde0efe6f5d0a1d76a4d9221","c51b7de9a3c9fde0eff7f7f7e6f5d0a1d76a4d9221","c51b7dde77aef1b6dafde0efe6f5d0b8e1867fbc414d9221","c51b7dde77aef1b6dafde0eff7f7f7e6f5d0b8e1867fbc414d9221","8e0152c51b7dde77aef1b6dafde0efe6f5d0b8e1867fbc414d9221276419","8e0152c51b7dde77aef1b6dafde0eff7f7f7e6f5d0b8e1867fbc414d9221276419").map(H_),fb=rb(cb),sb=new Array(3).concat("998ec3f7f7f7f1a340","5e3c99b2abd2fdb863e66101","5e3c99b2abd2f7f7f7fdb863e66101","542788998ec3d8daebfee0b6f1a340b35806","542788998ec3d8daebf7f7f7fee0b6f1a340b35806","5427888073acb2abd2d8daebfee0b6fdb863e08214b35806","5427888073acb2abd2d8daebf7f7f7fee0b6fdb863e08214b35806","2d004b5427888073acb2abd2d8daebfee0b6fdb863e08214b358067f3b08","2d004b5427888073acb2abd2d8daebf7f7f7fee0b6fdb863e08214b358067f3b08").map(H_),lb=rb(sb),hb=new Array(3).concat("ef8a62f7f7f767a9cf","ca0020f4a58292c5de0571b0","ca0020f4a582f7f7f792c5de0571b0","b2182bef8a62fddbc7d1e5f067a9cf2166ac","b2182bef8a62fddbc7f7f7f7d1e5f067a9cf2166ac","b2182bd6604df4a582fddbc7d1e5f092c5de4393c32166ac","b2182bd6604df4a582fddbc7f7f7f7d1e5f092c5de4393c32166ac","67001fb2182bd6604df4a582fddbc7d1e5f092c5de4393c32166ac053061","67001fb2182bd6604df4a582fddbc7f7f7f7d1e5f092c5de4393c32166ac053061").map(H_),db=rb(hb),pb=new Array(3).concat("ef8a62ffffff999999","ca0020f4a582bababa404040","ca0020f4a582ffffffbababa404040","b2182bef8a62fddbc7e0e0e09999994d4d4d","b2182bef8a62fddbc7ffffffe0e0e09999994d4d4d","b2182bd6604df4a582fddbc7e0e0e0bababa8787874d4d4d","b2182bd6604df4a582fddbc7ffffffe0e0e0bababa8787874d4d4d","67001fb2182bd6604df4a582fddbc7e0e0e0bababa8787874d4d4d1a1a1a","67001fb2182bd6604df4a582fddbc7ffffffe0e0e0bababa8787874d4d4d1a1a1a").map(H_),gb=rb(pb),yb=new Array(3).concat("fc8d59ffffbf91bfdb","d7191cfdae61abd9e92c7bb6","d7191cfdae61ffffbfabd9e92c7bb6","d73027fc8d59fee090e0f3f891bfdb4575b4","d73027fc8d59fee090ffffbfe0f3f891bfdb4575b4","d73027f46d43fdae61fee090e0f3f8abd9e974add14575b4","d73027f46d43fdae61fee090ffffbfe0f3f8abd9e974add14575b4","a50026d73027f46d43fdae61fee090e0f3f8abd9e974add14575b4313695","a50026d73027f46d43fdae61fee090ffffbfe0f3f8abd9e974add14575b4313695").map(H_),vb=rb(yb),_b=new Array(3).concat("fc8d59ffffbf91cf60","d7191cfdae61a6d96a1a9641","d7191cfdae61ffffbfa6d96a1a9641","d73027fc8d59fee08bd9ef8b91cf601a9850","d73027fc8d59fee08bffffbfd9ef8b91cf601a9850","d73027f46d43fdae61fee08bd9ef8ba6d96a66bd631a9850","d73027f46d43fdae61fee08bffffbfd9ef8ba6d96a66bd631a9850","a50026d73027f46d43fdae61fee08bd9ef8ba6d96a66bd631a9850006837","a50026d73027f46d43fdae61fee08bffffbfd9ef8ba6d96a66bd631a9850006837").map(H_),bb=rb(_b),mb=new Array(3).concat("fc8d59ffffbf99d594","d7191cfdae61abdda42b83ba","d7191cfdae61ffffbfabdda42b83ba","d53e4ffc8d59fee08be6f59899d5943288bd","d53e4ffc8d59fee08bffffbfe6f59899d5943288bd","d53e4ff46d43fdae61fee08be6f598abdda466c2a53288bd","d53e4ff46d43fdae61fee08bffffbfe6f598abdda466c2a53288bd","9e0142d53e4ff46d43fdae61fee08be6f598abdda466c2a53288bd5e4fa2","9e0142d53e4ff46d43fdae61fee08bffffbfe6f598abdda466c2a53288bd5e4fa2").map(H_),xb=rb(mb),wb=new Array(3).concat("e5f5f999d8c92ca25f","edf8fbb2e2e266c2a4238b45","edf8fbb2e2e266c2a42ca25f006d2c","edf8fbccece699d8c966c2a42ca25f006d2c","edf8fbccece699d8c966c2a441ae76238b45005824","f7fcfde5f5f9ccece699d8c966c2a441ae76238b45005824","f7fcfde5f5f9ccece699d8c966c2a441ae76238b45006d2c00441b").map(H_),Mb=rb(wb),Tb=new Array(3).concat("e0ecf49ebcda8856a7","edf8fbb3cde38c96c688419d","edf8fbb3cde38c96c68856a7810f7c","edf8fbbfd3e69ebcda8c96c68856a7810f7c","edf8fbbfd3e69ebcda8c96c68c6bb188419d6e016b","f7fcfde0ecf4bfd3e69ebcda8c96c68c6bb188419d6e016b","f7fcfde0ecf4bfd3e69ebcda8c96c68c6bb188419d810f7c4d004b").map(H_),Ab=rb(Tb),Sb=new Array(3).concat("e0f3dba8ddb543a2ca","f0f9e8bae4bc7bccc42b8cbe","f0f9e8bae4bc7bccc443a2ca0868ac","f0f9e8ccebc5a8ddb57bccc443a2ca0868ac","f0f9e8ccebc5a8ddb57bccc44eb3d32b8cbe08589e","f7fcf0e0f3dbccebc5a8ddb57bccc44eb3d32b8cbe08589e","f7fcf0e0f3dbccebc5a8ddb57bccc44eb3d32b8cbe0868ac084081").map(H_),Eb=rb(Sb),Nb=new Array(3).concat("fee8c8fdbb84e34a33","fef0d9fdcc8afc8d59d7301f","fef0d9fdcc8afc8d59e34a33b30000","fef0d9fdd49efdbb84fc8d59e34a33b30000","fef0d9fdd49efdbb84fc8d59ef6548d7301f990000","fff7ecfee8c8fdd49efdbb84fc8d59ef6548d7301f990000","fff7ecfee8c8fdd49efdbb84fc8d59ef6548d7301fb300007f0000").map(H_),kb=rb(Nb),Cb=new Array(3).concat("ece2f0a6bddb1c9099","f6eff7bdc9e167a9cf02818a","f6eff7bdc9e167a9cf1c9099016c59","f6eff7d0d1e6a6bddb67a9cf1c9099016c59","f6eff7d0d1e6a6bddb67a9cf3690c002818a016450","fff7fbece2f0d0d1e6a6bddb67a9cf3690c002818a016450","fff7fbece2f0d0d1e6a6bddb67a9cf3690c002818a016c59014636").map(H_),Pb=rb(Cb),zb=new Array(3).concat("ece7f2a6bddb2b8cbe","f1eef6bdc9e174a9cf0570b0","f1eef6bdc9e174a9cf2b8cbe045a8d","f1eef6d0d1e6a6bddb74a9cf2b8cbe045a8d","f1eef6d0d1e6a6bddb74a9cf3690c00570b0034e7b","fff7fbece7f2d0d1e6a6bddb74a9cf3690c00570b0034e7b","fff7fbece7f2d0d1e6a6bddb74a9cf3690c00570b0045a8d023858").map(H_),$b=rb(zb),Db=new Array(3).concat("e7e1efc994c7dd1c77","f1eef6d7b5d8df65b0ce1256","f1eef6d7b5d8df65b0dd1c77980043","f1eef6d4b9dac994c7df65b0dd1c77980043","f1eef6d4b9dac994c7df65b0e7298ace125691003f","f7f4f9e7e1efd4b9dac994c7df65b0e7298ace125691003f","f7f4f9e7e1efd4b9dac994c7df65b0e7298ace125698004367001f").map(H_),Rb=rb(Db),Fb=new Array(3).concat("fde0ddfa9fb5c51b8a","feebe2fbb4b9f768a1ae017e","feebe2fbb4b9f768a1c51b8a7a0177","feebe2fcc5c0fa9fb5f768a1c51b8a7a0177","feebe2fcc5c0fa9fb5f768a1dd3497ae017e7a0177","fff7f3fde0ddfcc5c0fa9fb5f768a1dd3497ae017e7a0177","fff7f3fde0ddfcc5c0fa9fb5f768a1dd3497ae017e7a017749006a").map(H_),qb=rb(Fb),Ub=new Array(3).concat("edf8b17fcdbb2c7fb8","ffffcca1dab441b6c4225ea8","ffffcca1dab441b6c42c7fb8253494","ffffccc7e9b47fcdbb41b6c42c7fb8253494","ffffccc7e9b47fcdbb41b6c41d91c0225ea80c2c84","ffffd9edf8b1c7e9b47fcdbb41b6c41d91c0225ea80c2c84","ffffd9edf8b1c7e9b47fcdbb41b6c41d91c0225ea8253494081d58").map(H_),Ib=rb(Ub),Ob=new Array(3).concat("f7fcb9addd8e31a354","ffffccc2e69978c679238443","ffffccc2e69978c67931a354006837","ffffccd9f0a3addd8e78c67931a354006837","ffffccd9f0a3addd8e78c67941ab5d238443005a32","ffffe5f7fcb9d9f0a3addd8e78c67941ab5d238443005a32","ffffe5f7fcb9d9f0a3addd8e78c67941ab5d238443006837004529").map(H_),Bb=rb(Ob),Yb=new Array(3).concat("fff7bcfec44fd95f0e","ffffd4fed98efe9929cc4c02","ffffd4fed98efe9929d95f0e993404","ffffd4fee391fec44ffe9929d95f0e993404","ffffd4fee391fec44ffe9929ec7014cc4c028c2d04","ffffe5fff7bcfee391fec44ffe9929ec7014cc4c028c2d04","ffffe5fff7bcfee391fec44ffe9929ec7014cc4c02993404662506").map(H_),Lb=rb(Yb),jb=new Array(3).concat("ffeda0feb24cf03b20","ffffb2fecc5cfd8d3ce31a1c","ffffb2fecc5cfd8d3cf03b20bd0026","ffffb2fed976feb24cfd8d3cf03b20bd0026","ffffb2fed976feb24cfd8d3cfc4e2ae31a1cb10026","ffffccffeda0fed976feb24cfd8d3cfc4e2ae31a1cb10026","ffffccffeda0fed976feb24cfd8d3cfc4e2ae31a1cbd0026800026").map(H_),Hb=rb(jb),Xb=new Array(3).concat("deebf79ecae13182bd","eff3ffbdd7e76baed62171b5","eff3ffbdd7e76baed63182bd08519c","eff3ffc6dbef9ecae16baed63182bd08519c","eff3ffc6dbef9ecae16baed64292c62171b5084594","f7fbffdeebf7c6dbef9ecae16baed64292c62171b5084594","f7fbffdeebf7c6dbef9ecae16baed64292c62171b508519c08306b").map(H_),Gb=rb(Xb),Vb=new Array(3).concat("e5f5e0a1d99b31a354","edf8e9bae4b374c476238b45","edf8e9bae4b374c47631a354006d2c","edf8e9c7e9c0a1d99b74c47631a354006d2c","edf8e9c7e9c0a1d99b74c47641ab5d238b45005a32","f7fcf5e5f5e0c7e9c0a1d99b74c47641ab5d238b45005a32","f7fcf5e5f5e0c7e9c0a1d99b74c47641ab5d238b45006d2c00441b").map(H_),Wb=rb(Vb),Zb=new Array(3).concat("f0f0f0bdbdbd636363","f7f7f7cccccc969696525252","f7f7f7cccccc969696636363252525","f7f7f7d9d9d9bdbdbd969696636363252525","f7f7f7d9d9d9bdbdbd969696737373525252252525","fffffff0f0f0d9d9d9bdbdbd969696737373525252252525","fffffff0f0f0d9d9d9bdbdbd969696737373525252252525000000").map(H_),Kb=rb(Zb),Qb=new Array(3).concat("efedf5bcbddc756bb1","f2f0f7cbc9e29e9ac86a51a3","f2f0f7cbc9e29e9ac8756bb154278f","f2f0f7dadaebbcbddc9e9ac8756bb154278f","f2f0f7dadaebbcbddc9e9ac8807dba6a51a34a1486","fcfbfdefedf5dadaebbcbddc9e9ac8807dba6a51a34a1486","fcfbfdefedf5dadaebbcbddc9e9ac8807dba6a51a354278f3f007d").map(H_),Jb=rb(Qb),tm=new Array(3).concat("fee0d2fc9272de2d26","fee5d9fcae91fb6a4acb181d","fee5d9fcae91fb6a4ade2d26a50f15","fee5d9fcbba1fc9272fb6a4ade2d26a50f15","fee5d9fcbba1fc9272fb6a4aef3b2ccb181d99000d","fff5f0fee0d2fcbba1fc9272fb6a4aef3b2ccb181d99000d","fff5f0fee0d2fcbba1fc9272fb6a4aef3b2ccb181da50f1567000d").map(H_),nm=rb(tm),em=new Array(3).concat("fee6cefdae6be6550d","feeddefdbe85fd8d3cd94701","feeddefdbe85fd8d3ce6550da63603","feeddefdd0a2fdae6bfd8d3ce6550da63603","feeddefdd0a2fdae6bfd8d3cf16913d948018c2d04","fff5ebfee6cefdd0a2fdae6bfd8d3cf16913d948018c2d04","fff5ebfee6cefdd0a2fdae6bfd8d3cf16913d94801a636037f2704").map(H_),rm=rb(em);var im=hi(Tr(300,.5,0),Tr(-240,.5,1)),om=hi(Tr(-100,.75,.35),Tr(80,1.5,.8)),am=hi(Tr(260,.75,.35),Tr(80,1.5,.8)),um=Tr();var cm=Fe(),fm=Math.PI/3,sm=2*Math.PI/3;function lm(t){var n=t.length;return function(e){return t[Math.max(0,Math.min(n-1,Math.floor(e*n)))]}}var hm=lm(H_("44015444025645045745055946075a46085c460a5d460b5e470d60470e6147106347116447136548146748166848176948186a481a6c481b6d481c6e481d6f481f70482071482173482374482475482576482677482878482979472a7a472c7a472d7b472e7c472f7d46307e46327e46337f463480453581453781453882443983443a83443b84433d84433e85423f854240864241864142874144874045884046883f47883f48893e49893e4a893e4c8a3d4d8a3d4e8a3c4f8a3c508b3b518b3b528b3a538b3a548c39558c39568c38588c38598c375a8c375b8d365c8d365d8d355e8d355f8d34608d34618d33628d33638d32648e32658e31668e31678e31688e30698e306a8e2f6b8e2f6c8e2e6d8e2e6e8e2e6f8e2d708e2d718e2c718e2c728e2c738e2b748e2b758e2a768e2a778e2a788e29798e297a8e297b8e287c8e287d8e277e8e277f8e27808e26818e26828e26828e25838e25848e25858e24868e24878e23888e23898e238a8d228b8d228c8d228d8d218e8d218f8d21908d21918c20928c20928c20938c1f948c1f958b1f968b1f978b1f988b1f998a1f9a8a1e9b8a1e9c891e9d891f9e891f9f881fa0881fa1881fa1871fa28720a38620a48621a58521a68522a78522a88423a98324aa8325ab8225ac8226ad8127ad8128ae8029af7f2ab07f2cb17e2db27d2eb37c2fb47c31b57b32b67a34b67935b77937b87838b9773aba763bbb753dbc743fbc7340bd7242be7144bf7046c06f48c16e4ac16d4cc26c4ec36b50c46a52c56954c56856c66758c7655ac8645cc8635ec96260ca6063cb5f65cb5e67cc5c69cd5b6ccd5a6ece5870cf5773d05675d05477d1537ad1517cd2507fd34e81d34d84d44b86d54989d5488bd6468ed64590d74393d74195d84098d83e9bd93c9dd93ba0da39a2da37a5db36a8db34aadc32addc30b0dd2fb2dd2db5de2bb8de29bade28bddf26c0df25c2df23c5e021c8e020cae11fcde11dd0e11cd2e21bd5e21ad8e219dae319dde318dfe318e2e418e5e419e7e419eae51aece51befe51cf1e51df4e61ef6e620f8e621fbe723fde725")),dm=lm(H_("00000401000501010601010802010902020b02020d03030f03031204041405041606051806051a07061c08071e0907200a08220b09240c09260d0a290e0b2b100b2d110c2f120d31130d34140e36150e38160f3b180f3d19103f1a10421c10441d11471e114920114b21114e22115024125325125527125829115a2a115c2c115f2d11612f116331116533106734106936106b38106c390f6e3b0f703d0f713f0f72400f74420f75440f764510774710784910784a10794c117a4e117b4f127b51127c52137c54137d56147d57157e59157e5a167e5c167f5d177f5f187f601880621980641a80651a80671b80681c816a1c816b1d816d1d816e1e81701f81721f817320817521817621817822817922827b23827c23827e24828025828125818326818426818627818827818928818b29818c29818e2a81902a81912b81932b80942c80962c80982d80992d809b2e7f9c2e7f9e2f7fa02f7fa1307ea3307ea5317ea6317da8327daa337dab337cad347cae347bb0357bb2357bb3367ab5367ab73779b83779ba3878bc3978bd3977bf3a77c03a76c23b75c43c75c53c74c73d73c83e73ca3e72cc3f71cd4071cf4070d0416fd2426fd3436ed5446dd6456cd8456cd9466bdb476adc4869de4968df4a68e04c67e24d66e34e65e44f64e55064e75263e85362e95462ea5661eb5760ec5860ed5a5fee5b5eef5d5ef05f5ef1605df2625df2645cf3655cf4675cf4695cf56b5cf66c5cf66e5cf7705cf7725cf8745cf8765cf9785df9795df97b5dfa7d5efa7f5efa815ffb835ffb8560fb8761fc8961fc8a62fc8c63fc8e64fc9065fd9266fd9467fd9668fd9869fd9a6afd9b6bfe9d6cfe9f6dfea16efea36ffea571fea772fea973feaa74feac76feae77feb078feb27afeb47bfeb67cfeb77efeb97ffebb81febd82febf84fec185fec287fec488fec68afec88cfeca8dfecc8ffecd90fecf92fed194fed395fed597fed799fed89afdda9cfddc9efddea0fde0a1fde2a3fde3a5fde5a7fde7a9fde9aafdebacfcecaefceeb0fcf0b2fcf2b4fcf4b6fcf6b8fcf7b9fcf9bbfcfbbdfcfdbf")),pm=lm(H_("00000401000501010601010802010a02020c02020e03021004031204031405041706041907051b08051d09061f0a07220b07240c08260d08290e092b10092d110a30120a32140b34150b37160b39180c3c190c3e1b0c411c0c431e0c451f0c48210c4a230c4c240c4f260c51280b53290b552b0b572d0b592f0a5b310a5c320a5e340a5f3609613809623909633b09643d09653e0966400a67420a68440a68450a69470b6a490b6a4a0c6b4c0c6b4d0d6c4f0d6c510e6c520e6d540f6d550f6d57106e59106e5a116e5c126e5d126e5f136e61136e62146e64156e65156e67166e69166e6a176e6c186e6d186e6f196e71196e721a6e741a6e751b6e771c6d781c6d7a1d6d7c1d6d7d1e6d7f1e6c801f6c82206c84206b85216b87216b88226a8a226a8c23698d23698f24699025689225689326679526679727669827669a28659b29649d29649f2a63a02a63a22b62a32c61a52c60a62d60a82e5fa92e5eab2f5ead305dae305cb0315bb1325ab3325ab43359b63458b73557b93556ba3655bc3754bd3853bf3952c03a51c13a50c33b4fc43c4ec63d4dc73e4cc83f4bca404acb4149cc4248ce4347cf4446d04545d24644d34743d44842d54a41d74b3fd84c3ed94d3dda4e3cdb503bdd513ade5238df5337e05536e15635e25734e35933e45a31e55c30e65d2fe75e2ee8602de9612bea632aeb6429eb6628ec6726ed6925ee6a24ef6c23ef6e21f06f20f1711ff1731df2741cf3761bf37819f47918f57b17f57d15f67e14f68013f78212f78410f8850ff8870ef8890cf98b0bf98c0af98e09fa9008fa9207fa9407fb9606fb9706fb9906fb9b06fb9d07fc9f07fca108fca309fca50afca60cfca80dfcaa0ffcac11fcae12fcb014fcb216fcb418fbb61afbb81dfbba1ffbbc21fbbe23fac026fac228fac42afac62df9c72ff9c932f9cb35f8cd37f8cf3af7d13df7d340f6d543f6d746f5d949f5db4cf4dd4ff4df53f4e156f3e35af3e55df2e661f2e865f2ea69f1ec6df1ed71f1ef75f1f179f2f27df2f482f3f586f3f68af4f88ef5f992f6fa96f8fb9af9fc9dfafda1fcffa4")),gm=lm(H_("0d088710078813078916078a19068c1b068d1d068e20068f2206902406912605912805922a05932c05942e05952f059631059733059735049837049938049a3a049a3c049b3e049c3f049c41049d43039e44039e46039f48039f4903a04b03a14c02a14e02a25002a25102a35302a35502a45601a45801a45901a55b01a55c01a65e01a66001a66100a76300a76400a76600a76700a86900a86a00a86c00a86e00a86f00a87100a87201a87401a87501a87701a87801a87a02a87b02a87d03a87e03a88004a88104a78305a78405a78606a68707a68808a68a09a58b0aa58d0ba58e0ca48f0da4910ea3920fa39410a29511a19613a19814a099159f9a169f9c179e9d189d9e199da01a9ca11b9ba21d9aa31e9aa51f99a62098a72197a82296aa2395ab2494ac2694ad2793ae2892b02991b12a90b22b8fb32c8eb42e8db52f8cb6308bb7318ab83289ba3388bb3488bc3587bd3786be3885bf3984c03a83c13b82c23c81c33d80c43e7fc5407ec6417dc7427cc8437bc9447aca457acb4679cc4778cc4977cd4a76ce4b75cf4c74d04d73d14e72d24f71d35171d45270d5536fd5546ed6556dd7566cd8576bd9586ada5a6ada5b69db5c68dc5d67dd5e66de5f65de6164df6263e06363e16462e26561e26660e3685fe4695ee56a5de56b5de66c5ce76e5be76f5ae87059e97158e97257ea7457eb7556eb7655ec7754ed7953ed7a52ee7b51ef7c51ef7e50f07f4ff0804ef1814df1834cf2844bf3854bf3874af48849f48948f58b47f58c46f68d45f68f44f79044f79143f79342f89441f89540f9973ff9983ef99a3efa9b3dfa9c3cfa9e3bfb9f3afba139fba238fca338fca537fca636fca835fca934fdab33fdac33fdae32fdaf31fdb130fdb22ffdb42ffdb52efeb72dfeb82cfeba2cfebb2bfebd2afebe2afec029fdc229fdc328fdc527fdc627fdc827fdca26fdcb26fccd25fcce25fcd025fcd225fbd324fbd524fbd724fad824fada24f9dc24f9dd25f8df25f8e125f7e225f7e425f6e626f6e826f5e926f5eb27f4ed27f3ee27f3f027f2f227f1f426f1f525f0f724f0f921"));function ym(t){return function(){return t}}const vm=Math.abs,_m=Math.atan2,bm=Math.cos,mm=Math.max,xm=Math.min,wm=Math.sin,Mm=Math.sqrt,Tm=1e-12,Am=Math.PI,Sm=Am/2,Em=2*Am;function Nm(t){return t>=1?Sm:t<=-1?-Sm:Math.asin(t)}function km(t){let n=3;return t.digits=function(e){if(!arguments.length)return n;if(null==e)n=null;else{const t=Math.floor(e);if(!(t>=0))throw new RangeError(`invalid digits: ${e}`);n=t}return t},()=>new Ua(n)}function Cm(t){return t.innerRadius}function Pm(t){return t.outerRadius}function zm(t){return t.startAngle}function $m(t){return t.endAngle}function Dm(t){return t&&t.padAngle}function Rm(t,n,e,r,i,o,a){var u=t-e,c=n-r,f=(a?o:-o)/Mm(u*u+c*c),s=f*c,l=-f*u,h=t+s,d=n+l,p=e+s,g=r+l,y=(h+p)/2,v=(d+g)/2,_=p-h,b=g-d,m=_*_+b*b,x=i-o,w=h*g-p*d,M=(b<0?-1:1)*Mm(mm(0,x*x*m-w*w)),T=(w*b-_*M)/m,A=(-w*_-b*M)/m,S=(w*b+_*M)/m,E=(-w*_+b*M)/m,N=T-y,k=A-v,C=S-y,P=E-v;return N*N+k*k>C*C+P*P&&(T=S,A=E),{cx:T,cy:A,x01:-s,y01:-l,x11:T*(i/x-1),y11:A*(i/x-1)}}var Fm=Array.prototype.slice;function qm(t){return"object"==typeof t&&"length"in t?t:Array.from(t)}function Um(t){this._context=t}function Im(t){return new Um(t)}function Om(t){return t[0]}function Bm(t){return t[1]}function Ym(t,n){var e=ym(!0),r=null,i=Im,o=null,a=km(u);function u(u){var c,f,s,l=(u=qm(u)).length,h=!1;for(null==r&&(o=i(s=a())),c=0;c<=l;++c)!(c<l&&e(f=u[c],c,u))===h&&((h=!h)?o.lineStart():o.lineEnd()),h&&o.point(+t(f,c,u),+n(f,c,u));if(s)return o=null,s+""||null}return t="function"==typeof t?t:void 0===t?Om:ym(t),n="function"==typeof n?n:void 0===n?Bm:ym(n),u.x=function(n){return arguments.length?(t="function"==typeof n?n:ym(+n),u):t},u.y=function(t){return arguments.length?(n="function"==typeof t?t:ym(+t),u):n},u.defined=function(t){return arguments.length?(e="function"==typeof t?t:ym(!!t),u):e},u.curve=function(t){return arguments.length?(i=t,null!=r&&(o=i(r)),u):i},u.context=function(t){return arguments.length?(null==t?r=o=null:o=i(r=t),u):r},u}function Lm(t,n,e){var r=null,i=ym(!0),o=null,a=Im,u=null,c=km(f);function f(f){var s,l,h,d,p,g=(f=qm(f)).length,y=!1,v=new Array(g),_=new Array(g);for(null==o&&(u=a(p=c())),s=0;s<=g;++s){if(!(s<g&&i(d=f[s],s,f))===y)if(y=!y)l=s,u.areaStart(),u.lineStart();else{for(u.lineEnd(),u.lineStart(),h=s-1;h>=l;--h)u.point(v[h],_[h]);u.lineEnd(),u.areaEnd()}y&&(v[s]=+t(d,s,f),_[s]=+n(d,s,f),u.point(r?+r(d,s,f):v[s],e?+e(d,s,f):_[s]))}if(p)return u=null,p+""||null}function s(){return Ym().defined(i).curve(a).context(o)}return t="function"==typeof t?t:void 0===t?Om:ym(+t),n="function"==typeof n?n:ym(void 0===n?0:+n),e="function"==typeof e?e:void 0===e?Bm:ym(+e),f.x=function(n){return arguments.length?(t="function"==typeof n?n:ym(+n),r=null,f):t},f.x0=function(n){return arguments.length?(t="function"==typeof n?n:ym(+n),f):t},f.x1=function(t){return arguments.length?(r=null==t?null:"function"==typeof t?t:ym(+t),f):r},f.y=function(t){return arguments.length?(n="function"==typeof t?t:ym(+t),e=null,f):n},f.y0=function(t){return arguments.length?(n="function"==typeof t?t:ym(+t),f):n},f.y1=function(t){return arguments.length?(e=null==t?null:"function"==typeof t?t:ym(+t),f):e},f.lineX0=f.lineY0=function(){return s().x(t).y(n)},f.lineY1=function(){return s().x(t).y(e)},f.lineX1=function(){return s().x(r).y(n)},f.defined=function(t){return arguments.length?(i="function"==typeof t?t:ym(!!t),f):i},f.curve=function(t){return arguments.length?(a=t,null!=o&&(u=a(o)),f):a},f.context=function(t){return arguments.length?(null==t?o=u=null:u=a(o=t),f):o},f}function jm(t,n){return n<t?-1:n>t?1:n>=t?0:NaN}function Hm(t){return t}Um.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._point=0},lineEnd:function(){(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2;default:this._context.lineTo(t,n)}}};var Xm=Vm(Im);function Gm(t){this._curve=t}function Vm(t){function n(n){return new Gm(t(n))}return n._curve=t,n}function Wm(t){var n=t.curve;return t.angle=t.x,delete t.x,t.radius=t.y,delete t.y,t.curve=function(t){return arguments.length?n(Vm(t)):n()._curve},t}function Zm(){return Wm(Ym().curve(Xm))}function Km(){var t=Lm().curve(Xm),n=t.curve,e=t.lineX0,r=t.lineX1,i=t.lineY0,o=t.lineY1;return t.angle=t.x,delete t.x,t.startAngle=t.x0,delete t.x0,t.endAngle=t.x1,delete t.x1,t.radius=t.y,delete t.y,t.innerRadius=t.y0,delete t.y0,t.outerRadius=t.y1,delete t.y1,t.lineStartAngle=function(){return Wm(e())},delete t.lineX0,t.lineEndAngle=function(){return Wm(r())},delete t.lineX1,t.lineInnerRadius=function(){return Wm(i())},delete t.lineY0,t.lineOuterRadius=function(){return Wm(o())},delete t.lineY1,t.curve=function(t){return arguments.length?n(Vm(t)):n()._curve},t}function Qm(t,n){return[(n=+n)*Math.cos(t-=Math.PI/2),n*Math.sin(t)]}Gm.prototype={areaStart:function(){this._curve.areaStart()},areaEnd:function(){this._curve.areaEnd()},lineStart:function(){this._curve.lineStart()},lineEnd:function(){this._curve.lineEnd()},point:function(t,n){this._curve.point(n*Math.sin(t),n*-Math.cos(t))}};class Jm{constructor(t,n){this._context=t,this._x=n}areaStart(){this._line=0}areaEnd(){this._line=NaN}lineStart(){this._point=0}lineEnd(){(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line=1-this._line}point(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2;default:this._x?this._context.bezierCurveTo(this._x0=(this._x0+t)/2,this._y0,this._x0,n,t,n):this._context.bezierCurveTo(this._x0,this._y0=(this._y0+n)/2,t,this._y0,t,n)}this._x0=t,this._y0=n}}class tx{constructor(t){this._context=t}lineStart(){this._point=0}lineEnd(){}point(t,n){if(t=+t,n=+n,0===this._point)this._point=1;else{const e=Qm(this._x0,this._y0),r=Qm(this._x0,this._y0=(this._y0+n)/2),i=Qm(t,this._y0),o=Qm(t,n);this._context.moveTo(...e),this._context.bezierCurveTo(...r,...i,...o)}this._x0=t,this._y0=n}}function nx(t){return new Jm(t,!0)}function ex(t){return new Jm(t,!1)}function rx(t){return new tx(t)}function ix(t){return t.source}function ox(t){return t.target}function ax(t){let n=ix,e=ox,r=Om,i=Bm,o=null,a=null,u=km(c);function c(){let c;const f=Fm.call(arguments),s=n.apply(this,f),l=e.apply(this,f);if(null==o&&(a=t(c=u())),a.lineStart(),f[0]=s,a.point(+r.apply(this,f),+i.apply(this,f)),f[0]=l,a.point(+r.apply(this,f),+i.apply(this,f)),a.lineEnd(),c)return a=null,c+""||null}return c.source=function(t){return arguments.length?(n=t,c):n},c.target=function(t){return arguments.length?(e=t,c):e},c.x=function(t){return arguments.length?(r="function"==typeof t?t:ym(+t),c):r},c.y=function(t){return arguments.length?(i="function"==typeof t?t:ym(+t),c):i},c.context=function(n){return arguments.length?(null==n?o=a=null:a=t(o=n),c):o},c}const ux=Mm(3);var cx={draw(t,n){const e=.59436*Mm(n+xm(n/28,.75)),r=e/2,i=r*ux;t.moveTo(0,e),t.lineTo(0,-e),t.moveTo(-i,-r),t.lineTo(i,r),t.moveTo(-i,r),t.lineTo(i,-r)}},fx={draw(t,n){const e=Mm(n/Am);t.moveTo(e,0),t.arc(0,0,e,0,Em)}},sx={draw(t,n){const e=Mm(n/5)/2;t.moveTo(-3*e,-e),t.lineTo(-e,-e),t.lineTo(-e,-3*e),t.lineTo(e,-3*e),t.lineTo(e,-e),t.lineTo(3*e,-e),t.lineTo(3*e,e),t.lineTo(e,e),t.lineTo(e,3*e),t.lineTo(-e,3*e),t.lineTo(-e,e),t.lineTo(-3*e,e),t.closePath()}};const lx=Mm(1/3),hx=2*lx;var dx={draw(t,n){const e=Mm(n/hx),r=e*lx;t.moveTo(0,-e),t.lineTo(r,0),t.lineTo(0,e),t.lineTo(-r,0),t.closePath()}},px={draw(t,n){const e=.62625*Mm(n);t.moveTo(0,-e),t.lineTo(e,0),t.lineTo(0,e),t.lineTo(-e,0),t.closePath()}},gx={draw(t,n){const e=.87559*Mm(n-xm(n/7,2));t.moveTo(-e,0),t.lineTo(e,0),t.moveTo(0,e),t.lineTo(0,-e)}},yx={draw(t,n){const e=Mm(n),r=-e/2;t.rect(r,r,e,e)}},vx={draw(t,n){const e=.4431*Mm(n);t.moveTo(e,e),t.lineTo(e,-e),t.lineTo(-e,-e),t.lineTo(-e,e),t.closePath()}};const _x=wm(Am/10)/wm(7*Am/10),bx=wm(Em/10)*_x,mx=-bm(Em/10)*_x;var xx={draw(t,n){const e=Mm(.8908130915292852*n),r=bx*e,i=mx*e;t.moveTo(0,-e),t.lineTo(r,i);for(let n=1;n<5;++n){const o=Em*n/5,a=bm(o),u=wm(o);t.lineTo(u*e,-a*e),t.lineTo(a*r-u*i,u*r+a*i)}t.closePath()}};const wx=Mm(3);var Mx={draw(t,n){const e=-Mm(n/(3*wx));t.moveTo(0,2*e),t.lineTo(-wx*e,-e),t.lineTo(wx*e,-e),t.closePath()}};const Tx=Mm(3);var Ax={draw(t,n){const e=.6824*Mm(n),r=e/2,i=e*Tx/2;t.moveTo(0,-e),t.lineTo(i,r),t.lineTo(-i,r),t.closePath()}};const Sx=-.5,Ex=Mm(3)/2,Nx=1/Mm(12),kx=3*(Nx/2+1);var Cx={draw(t,n){const e=Mm(n/kx),r=e/2,i=e*Nx,o=r,a=e*Nx+e,u=-o,c=a;t.moveTo(r,i),t.lineTo(o,a),t.lineTo(u,c),t.lineTo(Sx*r-Ex*i,Ex*r+Sx*i),t.lineTo(Sx*o-Ex*a,Ex*o+Sx*a),t.lineTo(Sx*u-Ex*c,Ex*u+Sx*c),t.lineTo(Sx*r+Ex*i,Sx*i-Ex*r),t.lineTo(Sx*o+Ex*a,Sx*a-Ex*o),t.lineTo(Sx*u+Ex*c,Sx*c-Ex*u),t.closePath()}},Px={draw(t,n){const e=.6189*Mm(n-xm(n/6,1.7));t.moveTo(-e,-e),t.lineTo(e,e),t.moveTo(-e,e),t.lineTo(e,-e)}};const zx=[fx,sx,dx,yx,xx,Mx,Cx],$x=[fx,gx,Px,Ax,cx,vx,px];function Dx(){}function Rx(t,n,e){t._context.bezierCurveTo((2*t._x0+t._x1)/3,(2*t._y0+t._y1)/3,(t._x0+2*t._x1)/3,(t._y0+2*t._y1)/3,(t._x0+4*t._x1+n)/6,(t._y0+4*t._y1+e)/6)}function Fx(t){this._context=t}function qx(t){this._context=t}function Ux(t){this._context=t}function Ix(t,n){this._basis=new Fx(t),this._beta=n}Fx.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._y0=this._y1=NaN,this._point=0},lineEnd:function(){switch(this._point){case 3:Rx(this,this._x1,this._y1);case 2:this._context.lineTo(this._x1,this._y1)}(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2;break;case 2:this._point=3,this._context.lineTo((5*this._x0+this._x1)/6,(5*this._y0+this._y1)/6);default:Rx(this,t,n)}this._x0=this._x1,this._x1=t,this._y0=this._y1,this._y1=n}},qx.prototype={areaStart:Dx,areaEnd:Dx,lineStart:function(){this._x0=this._x1=this._x2=this._x3=this._x4=this._y0=this._y1=this._y2=this._y3=this._y4=NaN,this._point=0},lineEnd:function(){switch(this._point){case 1:this._context.moveTo(this._x2,this._y2),this._context.closePath();break;case 2:this._context.moveTo((this._x2+2*this._x3)/3,(this._y2+2*this._y3)/3),this._context.lineTo((this._x3+2*this._x2)/3,(this._y3+2*this._y2)/3),this._context.closePath();break;case 3:this.point(this._x2,this._y2),this.point(this._x3,this._y3),this.point(this._x4,this._y4)}},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._x2=t,this._y2=n;break;case 1:this._point=2,this._x3=t,this._y3=n;break;case 2:this._point=3,this._x4=t,this._y4=n,this._context.moveTo((this._x0+4*this._x1+t)/6,(this._y0+4*this._y1+n)/6);break;default:Rx(this,t,n)}this._x0=this._x1,this._x1=t,this._y0=this._y1,this._y1=n}},Ux.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._y0=this._y1=NaN,this._point=0},lineEnd:function(){(this._line||0!==this._line&&3===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1;break;case 1:this._point=2;break;case 2:this._point=3;var e=(this._x0+4*this._x1+t)/6,r=(this._y0+4*this._y1+n)/6;this._line?this._context.lineTo(e,r):this._context.moveTo(e,r);break;case 3:this._point=4;default:Rx(this,t,n)}this._x0=this._x1,this._x1=t,this._y0=this._y1,this._y1=n}},Ix.prototype={lineStart:function(){this._x=[],this._y=[],this._basis.lineStart()},lineEnd:function(){var t=this._x,n=this._y,e=t.length-1;if(e>0)for(var r,i=t[0],o=n[0],a=t[e]-i,u=n[e]-o,c=-1;++c<=e;)r=c/e,this._basis.point(this._beta*t[c]+(1-this._beta)*(i+r*a),this._beta*n[c]+(1-this._beta)*(o+r*u));this._x=this._y=null,this._basis.lineEnd()},point:function(t,n){this._x.push(+t),this._y.push(+n)}};var Ox=function t(n){function e(t){return 1===n?new Fx(t):new Ix(t,n)}return e.beta=function(n){return t(+n)},e}(.85);function Bx(t,n,e){t._context.bezierCurveTo(t._x1+t._k*(t._x2-t._x0),t._y1+t._k*(t._y2-t._y0),t._x2+t._k*(t._x1-n),t._y2+t._k*(t._y1-e),t._x2,t._y2)}function Yx(t,n){this._context=t,this._k=(1-n)/6}Yx.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._x2=this._y0=this._y1=this._y2=NaN,this._point=0},lineEnd:function(){switch(this._point){case 2:this._context.lineTo(this._x2,this._y2);break;case 3:Bx(this,this._x1,this._y1)}(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2,this._x1=t,this._y1=n;break;case 2:this._point=3;default:Bx(this,t,n)}this._x0=this._x1,this._x1=this._x2,this._x2=t,this._y0=this._y1,this._y1=this._y2,this._y2=n}};var Lx=function t(n){function e(t){return new Yx(t,n)}return e.tension=function(n){return t(+n)},e}(0);function jx(t,n){this._context=t,this._k=(1-n)/6}jx.prototype={areaStart:Dx,areaEnd:Dx,lineStart:function(){this._x0=this._x1=this._x2=this._x3=this._x4=this._x5=this._y0=this._y1=this._y2=this._y3=this._y4=this._y5=NaN,this._point=0},lineEnd:function(){switch(this._point){case 1:this._context.moveTo(this._x3,this._y3),this._context.closePath();break;case 2:this._context.lineTo(this._x3,this._y3),this._context.closePath();break;case 3:this.point(this._x3,this._y3),this.point(this._x4,this._y4),this.point(this._x5,this._y5)}},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._x3=t,this._y3=n;break;case 1:this._point=2,this._context.moveTo(this._x4=t,this._y4=n);break;case 2:this._point=3,this._x5=t,this._y5=n;break;default:Bx(this,t,n)}this._x0=this._x1,this._x1=this._x2,this._x2=t,this._y0=this._y1,this._y1=this._y2,this._y2=n}};var Hx=function t(n){function e(t){return new jx(t,n)}return e.tension=function(n){return t(+n)},e}(0);function Xx(t,n){this._context=t,this._k=(1-n)/6}Xx.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._x2=this._y0=this._y1=this._y2=NaN,this._point=0},lineEnd:function(){(this._line||0!==this._line&&3===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1;break;case 1:this._point=2;break;case 2:this._point=3,this._line?this._context.lineTo(this._x2,this._y2):this._context.moveTo(this._x2,this._y2);break;case 3:this._point=4;default:Bx(this,t,n)}this._x0=this._x1,this._x1=this._x2,this._x2=t,this._y0=this._y1,this._y1=this._y2,this._y2=n}};var Gx=function t(n){function e(t){return new Xx(t,n)}return e.tension=function(n){return t(+n)},e}(0);function Vx(t,n,e){var r=t._x1,i=t._y1,o=t._x2,a=t._y2;if(t._l01_a>Tm){var u=2*t._l01_2a+3*t._l01_a*t._l12_a+t._l12_2a,c=3*t._l01_a*(t._l01_a+t._l12_a);r=(r*u-t._x0*t._l12_2a+t._x2*t._l01_2a)/c,i=(i*u-t._y0*t._l12_2a+t._y2*t._l01_2a)/c}if(t._l23_a>Tm){var f=2*t._l23_2a+3*t._l23_a*t._l12_a+t._l12_2a,s=3*t._l23_a*(t._l23_a+t._l12_a);o=(o*f+t._x1*t._l23_2a-n*t._l12_2a)/s,a=(a*f+t._y1*t._l23_2a-e*t._l12_2a)/s}t._context.bezierCurveTo(r,i,o,a,t._x2,t._y2)}function Wx(t,n){this._context=t,this._alpha=n}Wx.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._x2=this._y0=this._y1=this._y2=NaN,this._l01_a=this._l12_a=this._l23_a=this._l01_2a=this._l12_2a=this._l23_2a=this._point=0},lineEnd:function(){switch(this._point){case 2:this._context.lineTo(this._x2,this._y2);break;case 3:this.point(this._x2,this._y2)}(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){if(t=+t,n=+n,this._point){var e=this._x2-t,r=this._y2-n;this._l23_a=Math.sqrt(this._l23_2a=Math.pow(e*e+r*r,this._alpha))}switch(this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2;break;case 2:this._point=3;default:Vx(this,t,n)}this._l01_a=this._l12_a,this._l12_a=this._l23_a,this._l01_2a=this._l12_2a,this._l12_2a=this._l23_2a,this._x0=this._x1,this._x1=this._x2,this._x2=t,this._y0=this._y1,this._y1=this._y2,this._y2=n}};var Zx=function t(n){function e(t){return n?new Wx(t,n):new Yx(t,0)}return e.alpha=function(n){return t(+n)},e}(.5);function Kx(t,n){this._context=t,this._alpha=n}Kx.prototype={areaStart:Dx,areaEnd:Dx,lineStart:function(){this._x0=this._x1=this._x2=this._x3=this._x4=this._x5=this._y0=this._y1=this._y2=this._y3=this._y4=this._y5=NaN,this._l01_a=this._l12_a=this._l23_a=this._l01_2a=this._l12_2a=this._l23_2a=this._point=0},lineEnd:function(){switch(this._point){case 1:this._context.moveTo(this._x3,this._y3),this._context.closePath();break;case 2:this._context.lineTo(this._x3,this._y3),this._context.closePath();break;case 3:this.point(this._x3,this._y3),this.point(this._x4,this._y4),this.point(this._x5,this._y5)}},point:function(t,n){if(t=+t,n=+n,this._point){var e=this._x2-t,r=this._y2-n;this._l23_a=Math.sqrt(this._l23_2a=Math.pow(e*e+r*r,this._alpha))}switch(this._point){case 0:this._point=1,this._x3=t,this._y3=n;break;case 1:this._point=2,this._context.moveTo(this._x4=t,this._y4=n);break;case 2:this._point=3,this._x5=t,this._y5=n;break;default:Vx(this,t,n)}this._l01_a=this._l12_a,this._l12_a=this._l23_a,this._l01_2a=this._l12_2a,this._l12_2a=this._l23_2a,this._x0=this._x1,this._x1=this._x2,this._x2=t,this._y0=this._y1,this._y1=this._y2,this._y2=n}};var Qx=function t(n){function e(t){return n?new Kx(t,n):new jx(t,0)}return e.alpha=function(n){return t(+n)},e}(.5);function Jx(t,n){this._context=t,this._alpha=n}Jx.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._x2=this._y0=this._y1=this._y2=NaN,this._l01_a=this._l12_a=this._l23_a=this._l01_2a=this._l12_2a=this._l23_2a=this._point=0},lineEnd:function(){(this._line||0!==this._line&&3===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){if(t=+t,n=+n,this._point){var e=this._x2-t,r=this._y2-n;this._l23_a=Math.sqrt(this._l23_2a=Math.pow(e*e+r*r,this._alpha))}switch(this._point){case 0:this._point=1;break;case 1:this._point=2;break;case 2:this._point=3,this._line?this._context.lineTo(this._x2,this._y2):this._context.moveTo(this._x2,this._y2);break;case 3:this._point=4;default:Vx(this,t,n)}this._l01_a=this._l12_a,this._l12_a=this._l23_a,this._l01_2a=this._l12_2a,this._l12_2a=this._l23_2a,this._x0=this._x1,this._x1=this._x2,this._x2=t,this._y0=this._y1,this._y1=this._y2,this._y2=n}};var tw=function t(n){function e(t){return n?new Jx(t,n):new Xx(t,0)}return e.alpha=function(n){return t(+n)},e}(.5);function nw(t){this._context=t}function ew(t){return t<0?-1:1}function rw(t,n,e){var r=t._x1-t._x0,i=n-t._x1,o=(t._y1-t._y0)/(r||i<0&&-0),a=(e-t._y1)/(i||r<0&&-0),u=(o*i+a*r)/(r+i);return(ew(o)+ew(a))*Math.min(Math.abs(o),Math.abs(a),.5*Math.abs(u))||0}function iw(t,n){var e=t._x1-t._x0;return e?(3*(t._y1-t._y0)/e-n)/2:n}function ow(t,n,e){var r=t._x0,i=t._y0,o=t._x1,a=t._y1,u=(o-r)/3;t._context.bezierCurveTo(r+u,i+u*n,o-u,a-u*e,o,a)}function aw(t){this._context=t}function uw(t){this._context=new cw(t)}function cw(t){this._context=t}function fw(t){this._context=t}function sw(t){var n,e,r=t.length-1,i=new Array(r),o=new Array(r),a=new Array(r);for(i[0]=0,o[0]=2,a[0]=t[0]+2*t[1],n=1;n<r-1;++n)i[n]=1,o[n]=4,a[n]=4*t[n]+2*t[n+1];for(i[r-1]=2,o[r-1]=7,a[r-1]=8*t[r-1]+t[r],n=1;n<r;++n)e=i[n]/o[n-1],o[n]-=e,a[n]-=e*a[n-1];for(i[r-1]=a[r-1]/o[r-1],n=r-2;n>=0;--n)i[n]=(a[n]-i[n+1])/o[n];for(o[r-1]=(t[r]+i[r-1])/2,n=0;n<r-1;++n)o[n]=2*t[n+1]-i[n+1];return[i,o]}function lw(t,n){this._context=t,this._t=n}function hw(t,n){if((i=t.length)>1)for(var e,r,i,o=1,a=t[n[0]],u=a.length;o<i;++o)for(r=a,a=t[n[o]],e=0;e<u;++e)a[e][1]+=a[e][0]=isNaN(r[e][1])?r[e][0]:r[e][1]}function dw(t){for(var n=t.length,e=new Array(n);--n>=0;)e[n]=n;return e}function pw(t,n){return t[n]}function gw(t){const n=[];return n.key=t,n}function yw(t){var n=t.map(vw);return dw(t).sort((function(t,e){return n[t]-n[e]}))}function vw(t){for(var n,e=-1,r=0,i=t.length,o=-1/0;++e<i;)(n=+t[e][1])>o&&(o=n,r=e);return r}function _w(t){var n=t.map(bw);return dw(t).sort((function(t,e){return n[t]-n[e]}))}function bw(t){for(var n,e=0,r=-1,i=t.length;++r<i;)(n=+t[r][1])&&(e+=n);return e}nw.prototype={areaStart:Dx,areaEnd:Dx,lineStart:function(){this._point=0},lineEnd:function(){this._point&&this._context.closePath()},point:function(t,n){t=+t,n=+n,this._point?this._context.lineTo(t,n):(this._point=1,this._context.moveTo(t,n))}},aw.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x0=this._x1=this._y0=this._y1=this._t0=NaN,this._point=0},lineEnd:function(){switch(this._point){case 2:this._context.lineTo(this._x1,this._y1);break;case 3:ow(this,this._t0,iw(this,this._t0))}(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line=1-this._line},point:function(t,n){var e=NaN;if(n=+n,(t=+t)!==this._x1||n!==this._y1){switch(this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2;break;case 2:this._point=3,ow(this,iw(this,e=rw(this,t,n)),e);break;default:ow(this,this._t0,e=rw(this,t,n))}this._x0=this._x1,this._x1=t,this._y0=this._y1,this._y1=n,this._t0=e}}},(uw.prototype=Object.create(aw.prototype)).point=function(t,n){aw.prototype.point.call(this,n,t)},cw.prototype={moveTo:function(t,n){this._context.moveTo(n,t)},closePath:function(){this._context.closePath()},lineTo:function(t,n){this._context.lineTo(n,t)},bezierCurveTo:function(t,n,e,r,i,o){this._context.bezierCurveTo(n,t,r,e,o,i)}},fw.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x=[],this._y=[]},lineEnd:function(){var t=this._x,n=this._y,e=t.length;if(e)if(this._line?this._context.lineTo(t[0],n[0]):this._context.moveTo(t[0],n[0]),2===e)this._context.lineTo(t[1],n[1]);else for(var r=sw(t),i=sw(n),o=0,a=1;a<e;++o,++a)this._context.bezierCurveTo(r[0][o],i[0][o],r[1][o],i[1][o],t[a],n[a]);(this._line||0!==this._line&&1===e)&&this._context.closePath(),this._line=1-this._line,this._x=this._y=null},point:function(t,n){this._x.push(+t),this._y.push(+n)}},lw.prototype={areaStart:function(){this._line=0},areaEnd:function(){this._line=NaN},lineStart:function(){this._x=this._y=NaN,this._point=0},lineEnd:function(){0<this._t&&this._t<1&&2===this._point&&this._context.lineTo(this._x,this._y),(this._line||0!==this._line&&1===this._point)&&this._context.closePath(),this._line>=0&&(this._t=1-this._t,this._line=1-this._line)},point:function(t,n){switch(t=+t,n=+n,this._point){case 0:this._point=1,this._line?this._context.lineTo(t,n):this._context.moveTo(t,n);break;case 1:this._point=2;default:if(this._t<=0)this._context.lineTo(this._x,n),this._context.lineTo(t,n);else{var e=this._x*(1-this._t)+t*this._t;this._context.lineTo(e,this._y),this._context.lineTo(e,n)}}this._x=t,this._y=n}};var mw=t=>()=>t;function xw(t,{sourceEvent:n,target:e,transform:r,dispatch:i}){Object.defineProperties(this,{type:{value:t,enumerable:!0,configurable:!0},sourceEvent:{value:n,enumerable:!0,configurable:!0},target:{value:e,enumerable:!0,configurable:!0},transform:{value:r,enumerable:!0,configurable:!0},_:{value:i}})}function ww(t,n,e){this.k=t,this.x=n,this.y=e}ww.prototype={constructor:ww,scale:function(t){return 1===t?this:new ww(this.k*t,this.x,this.y)},translate:function(t,n){return 0===t&0===n?this:new ww(this.k,this.x+this.k*t,this.y+this.k*n)},apply:function(t){return[t[0]*this.k+this.x,t[1]*this.k+this.y]},applyX:function(t){return t*this.k+this.x},applyY:function(t){return t*this.k+this.y},invert:function(t){return[(t[0]-this.x)/this.k,(t[1]-this.y)/this.k]},invertX:function(t){return(t-this.x)/this.k},invertY:function(t){return(t-this.y)/this.k},rescaleX:function(t){return t.copy().domain(t.range().map(this.invertX,this).map(t.invert,t))},rescaleY:function(t){return t.copy().domain(t.range().map(this.invertY,this).map(t.invert,t))},toString:function(){return"translate("+this.x+","+this.y+") scale("+this.k+")"}};var Mw=new ww(1,0,0);function Tw(t){for(;!t.__zoom;)if(!(t=t.parentNode))return Mw;return t.__zoom}function Aw(t){t.stopImmediatePropagation()}function Sw(t){t.preventDefault(),t.stopImmediatePropagation()}function Ew(t){return!(t.ctrlKey&&"wheel"!==t.type||t.button)}function Nw(){var t=this;return t instanceof SVGElement?(t=t.ownerSVGElement||t).hasAttribute("viewBox")?[[(t=t.viewBox.baseVal).x,t.y],[t.x+t.width,t.y+t.height]]:[[0,0],[t.width.baseVal.value,t.height.baseVal.value]]:[[0,0],[t.clientWidth,t.clientHeight]]}function kw(){return this.__zoom||Mw}function Cw(t){return-t.deltaY*(1===t.deltaMode?.05:t.deltaMode?1:.002)*(t.ctrlKey?10:1)}function Pw(){return navigator.maxTouchPoints||"ontouchstart"in this}function zw(t,n,e){var r=t.invertX(n[0][0])-e[0][0],i=t.invertX(n[1][0])-e[1][0],o=t.invertY(n[0][1])-e[0][1],a=t.invertY(n[1][1])-e[1][1];return t.translate(i>r?(r+i)/2:Math.min(0,r)||Math.max(0,i),a>o?(o+a)/2:Math.min(0,o)||Math.max(0,a))}Tw.prototype=ww.prototype,t.Adder=T,t.Delaunay=Lu,t.FormatSpecifier=tf,t.InternMap=InternMap,t.InternSet=InternSet,t.Node=Qd,t.Path=Ua,t.Voronoi=qu,t.ZoomTransform=ww,t.active=function(t,n){var e,r,i=t.__transition;if(i)for(r in n=null==n?null:n+"",i)if((e=i[r]).state>qi&&e.name===n)return new po([[t]],Zo,n,+r);return null},t.arc=function(){var t=Cm,n=Pm,e=ym(0),r=null,i=zm,o=$m,a=Dm,u=null,c=km(f);function f(){var f,s,l=+t.apply(this,arguments),h=+n.apply(this,arguments),d=i.apply(this,arguments)-Sm,p=o.apply(this,arguments)-Sm,g=vm(p-d),y=p>d;if(u||(u=f=c()),h<l&&(s=h,h=l,l=s),h>Tm)if(g>Em-Tm)u.moveTo(h*bm(d),h*wm(d)),u.arc(0,0,h,d,p,!y),l>Tm&&(u.moveTo(l*bm(p),l*wm(p)),u.arc(0,0,l,p,d,y));else{var v,_,b=d,m=p,x=d,w=p,M=g,T=g,A=a.apply(this,arguments)/2,S=A>Tm&&(r?+r.apply(this,arguments):Mm(l*l+h*h)),E=xm(vm(h-l)/2,+e.apply(this,arguments)),N=E,k=E;if(S>Tm){var C=Nm(S/l*wm(A)),P=Nm(S/h*wm(A));(M-=2*C)>Tm?(x+=C*=y?1:-1,w-=C):(M=0,x=w=(d+p)/2),(T-=2*P)>Tm?(b+=P*=y?1:-1,m-=P):(T=0,b=m=(d+p)/2)}var z=h*bm(b),$=h*wm(b),D=l*bm(w),R=l*wm(w);if(E>Tm){var F,q=h*bm(m),U=h*wm(m),I=l*bm(x),O=l*wm(x);if(g<Am)if(F=function(t,n,e,r,i,o,a,u){var c=e-t,f=r-n,s=a-i,l=u-o,h=l*c-s*f;if(!(h*h<Tm))return[t+(h=(s*(n-o)-l*(t-i))/h)*c,n+h*f]}(z,$,I,O,q,U,D,R)){var B=z-F[0],Y=$-F[1],L=q-F[0],j=U-F[1],H=1/wm(function(t){return t>1?0:t<-1?Am:Math.acos(t)}((B*L+Y*j)/(Mm(B*B+Y*Y)*Mm(L*L+j*j)))/2),X=Mm(F[0]*F[0]+F[1]*F[1]);N=xm(E,(l-X)/(H-1)),k=xm(E,(h-X)/(H+1))}else N=k=0}T>Tm?k>Tm?(v=Rm(I,O,z,$,h,k,y),_=Rm(q,U,D,R,h,k,y),u.moveTo(v.cx+v.x01,v.cy+v.y01),k<E?u.arc(v.cx,v.cy,k,_m(v.y01,v.x01),_m(_.y01,_.x01),!y):(u.arc(v.cx,v.cy,k,_m(v.y01,v.x01),_m(v.y11,v.x11),!y),u.arc(0,0,h,_m(v.cy+v.y11,v.cx+v.x11),_m(_.cy+_.y11,_.cx+_.x11),!y),u.arc(_.cx,_.cy,k,_m(_.y11,_.x11),_m(_.y01,_.x01),!y))):(u.moveTo(z,$),u.arc(0,0,h,b,m,!y)):u.moveTo(z,$),l>Tm&&M>Tm?N>Tm?(v=Rm(D,R,q,U,l,-N,y),_=Rm(z,$,I,O,l,-N,y),u.lineTo(v.cx+v.x01,v.cy+v.y01),N<E?u.arc(v.cx,v.cy,N,_m(v.y01,v.x01),_m(_.y01,_.x01),!y):(u.arc(v.cx,v.cy,N,_m(v.y01,v.x01),_m(v.y11,v.x11),!y),u.arc(0,0,l,_m(v.cy+v.y11,v.cx+v.x11),_m(_.cy+_.y11,_.cx+_.x11),y),u.arc(_.cx,_.cy,N,_m(_.y11,_.x11),_m(_.y01,_.x01),!y))):u.arc(0,0,l,w,x,y):u.lineTo(D,R)}else u.moveTo(0,0);if(u.closePath(),f)return u=null,f+""||null}return f.centroid=function(){var e=(+t.apply(this,arguments)+ +n.apply(this,arguments))/2,r=(+i.apply(this,arguments)+ +o.apply(this,arguments))/2-Am/2;return[bm(r)*e,wm(r)*e]},f.innerRadius=function(n){return arguments.length?(t="function"==typeof n?n:ym(+n),f):t},f.outerRadius=function(t){return arguments.length?(n="function"==typeof t?t:ym(+t),f):n},f.cornerRadius=function(t){return arguments.length?(e="function"==typeof t?t:ym(+t),f):e},f.padRadius=function(t){return arguments.length?(r=null==t?null:"function"==typeof t?t:ym(+t),f):r},f.startAngle=function(t){return arguments.length?(i="function"==typeof t?t:ym(+t),f):i},f.endAngle=function(t){return arguments.length?(o="function"==typeof t?t:ym(+t),f):o},f.padAngle=function(t){return arguments.length?(a="function"==typeof t?t:ym(+t),f):a},f.context=function(t){return arguments.length?(u=null==t?null:t,f):u},f},t.area=Lm,t.areaRadial=Km,t.ascending=n,t.autoType=function(t){for(var n in t){var e,r,i=t[n].trim();if(i)if("true"===i)i=!0;else if("false"===i)i=!1;else if("NaN"===i)i=NaN;else if(isNaN(e=+i)){if(!(r=i.match(/^([-+]\d{2})?\d{4}(-\d{2}(-\d{2})?)?(T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?(Z|[-+]\d{2}:\d{2})?)?$/)))continue;yc&&r[4]&&!r[7]&&(i=i.replace(/-/g,"/").replace(/T/," ")),i=new Date(i)}else i=e;else i=null;t[n]=i}return t},t.axisBottom=function(t){return Pt(Mt,t)},t.axisLeft=function(t){return Pt(Tt,t)},t.axisRight=function(t){return Pt(wt,t)},t.axisTop=function(t){return Pt(xt,t)},t.bin=Q,t.bisect=s,t.bisectCenter=f,t.bisectLeft=c,t.bisectRight=u,t.bisector=r,t.blob=function(t,n){return fetch(t,n).then(vc)},t.blur=function(t,n){if(!((n=+n)>=0))throw new RangeError("invalid r");let e=t.length;if(!((e=Math.floor(e))>=0))throw new RangeError("invalid length");if(!e||!n)return t;const r=y(n),i=t.slice();return r(t,i,0,e,1),r(i,t,0,e,1),r(t,i,0,e,1),t},t.blur2=l,t.blurImage=h,t.brush=function(){return wa(la)},t.brushSelection=function(t){var n=t.__brush;return n?n.dim.output(n.selection):null},t.brushX=function(){return wa(fa)},t.brushY=function(){return wa(sa)},t.buffer=function(t,n){return fetch(t,n).then(_c)},t.chord=function(){return za(!1,!1)},t.chordDirected=function(){return za(!0,!1)},t.chordTranspose=function(){return za(!1,!0)},t.cluster=function(){var t=Ld,n=1,e=1,r=!1;function i(i){var o,a=0;i.eachAfter((function(n){var e=n.children;e?(n.x=function(t){return t.reduce(jd,0)/t.length}(e),n.y=function(t){return 1+t.reduce(Hd,0)}(e)):(n.x=o?a+=t(n,o):0,n.y=0,o=n)}));var u=function(t){for(var n;n=t.children;)t=n[0];return t}(i),c=function(t){for(var n;n=t.children;)t=n[n.length-1];return t}(i),f=u.x-t(u,c)/2,s=c.x+t(c,u)/2;return i.eachAfter(r?function(t){t.x=(t.x-i.x)*n,t.y=(i.y-t.y)*e}:function(t){t.x=(t.x-f)/(s-f)*n,t.y=(1-(i.y?t.y/i.y:1))*e})}return i.separation=function(n){return arguments.length?(t=n,i):t},i.size=function(t){return arguments.length?(r=!1,n=+t[0],e=+t[1],i):r?null:[n,e]},i.nodeSize=function(t){return arguments.length?(r=!0,n=+t[0],e=+t[1],i):r?[n,e]:null},i},t.color=ze,t.contourDensity=function(){var t=fu,n=su,e=lu,r=960,i=500,o=20,a=2,u=3*o,c=r+2*u>>a,f=i+2*u>>a,s=Qa(20);function h(r){var i=new Float32Array(c*f),s=Math.pow(2,-a),h=-1;for(const o of r){var d=(t(o,++h,r)+u)*s,p=(n(o,h,r)+u)*s,g=+e(o,h,r);if(g&&d>=0&&d<c&&p>=0&&p<f){var y=Math.floor(d),v=Math.floor(p),_=d-y-.5,b=p-v-.5;i[y+v*c]+=(1-_)*(1-b)*g,i[y+1+v*c]+=_*(1-b)*g,i[y+1+(v+1)*c]+=_*b*g,i[y+(v+1)*c]+=(1-_)*b*g}}return l({data:i,width:c,height:f},o*s),i}function d(t){var n=h(t),e=s(n),r=Math.pow(2,2*a);return Array.isArray(e)||(e=G(Number.MIN_VALUE,J(n)/r,e)),iu().size([c,f]).thresholds(e.map((t=>t*r)))(n).map(((t,n)=>(t.value=+e[n],p(t))))}function p(t){return t.coordinates.forEach(g),t}function g(t){t.forEach(y)}function y(t){t.forEach(v)}function v(t){t[0]=t[0]*Math.pow(2,a)-u,t[1]=t[1]*Math.pow(2,a)-u}function _(){return c=r+2*(u=3*o)>>a,f=i+2*u>>a,d}return d.contours=function(t){var n=h(t),e=iu().size([c,f]),r=Math.pow(2,2*a),i=t=>{t=+t;var i=p(e.contour(n,t*r));return i.value=t,i};return Object.defineProperty(i,"max",{get:()=>J(n)/r}),i},d.x=function(n){return arguments.length?(t="function"==typeof n?n:Qa(+n),d):t},d.y=function(t){return arguments.length?(n="function"==typeof t?t:Qa(+t),d):n},d.weight=function(t){return arguments.length?(e="function"==typeof t?t:Qa(+t),d):e},d.size=function(t){if(!arguments.length)return[r,i];var n=+t[0],e=+t[1];if(!(n>=0&&e>=0))throw new Error("invalid size");return r=n,i=e,_()},d.cellSize=function(t){if(!arguments.length)return 1<<a;if(!((t=+t)>=1))throw new Error("invalid cell size");return a=Math.floor(Math.log(t)/Math.LN2),_()},d.thresholds=function(t){return arguments.length?(s="function"==typeof t?t:Array.isArray(t)?Qa(Za.call(t)):Qa(t),d):s},d.bandwidth=function(t){if(!arguments.length)return Math.sqrt(o*(o+1));if(!((t=+t)>=0))throw new Error("invalid bandwidth");return o=(Math.sqrt(4*t*t+1)-1)/2,_()},d},t.contours=iu,t.count=v,t.create=function(t){return Zn(Yt(t).call(document.documentElement))},t.creator=Yt,t.cross=function(...t){const n="function"==typeof t[t.length-1]&&function(t){return n=>t(...n)}(t.pop()),e=(t=t.map(m)).map(_),r=t.length-1,i=new Array(r+1).fill(0),o=[];if(r<0||e.some(b))return o;for(;;){o.push(i.map(((n,e)=>t[e][n])));let a=r;for(;++i[a]===e[a];){if(0===a)return n?o.map(n):o;i[a--]=0}}},t.csv=wc,t.csvFormat=rc,t.csvFormatBody=ic,t.csvFormatRow=ac,t.csvFormatRows=oc,t.csvFormatValue=uc,t.csvParse=nc,t.csvParseRows=ec,t.cubehelix=Tr,t.cumsum=function(t,n){var e=0,r=0;return Float64Array.from(t,void 0===n?t=>e+=+t||0:i=>e+=+n(i,r++,t)||0)},t.curveBasis=function(t){return new Fx(t)},t.curveBasisClosed=function(t){return new qx(t)},t.curveBasisOpen=function(t){return new Ux(t)},t.curveBumpX=nx,t.curveBumpY=ex,t.curveBundle=Ox,t.curveCardinal=Lx,t.curveCardinalClosed=Hx,t.curveCardinalOpen=Gx,t.curveCatmullRom=Zx,t.curveCatmullRomClosed=Qx,t.curveCatmullRomOpen=tw,t.curveLinear=Im,t.curveLinearClosed=function(t){return new nw(t)},t.curveMonotoneX=function(t){return new aw(t)},t.curveMonotoneY=function(t){return new uw(t)},t.curveNatural=function(t){return new fw(t)},t.curveStep=function(t){return new lw(t,.5)},t.curveStepAfter=function(t){return new lw(t,1)},t.curveStepBefore=function(t){return new lw(t,0)},t.descending=e,t.deviation=w,t.difference=function(t,...n){t=new InternSet(t);for(const e of n)for(const n of e)t.delete(n);return t},t.disjoint=function(t,n){const e=n[Symbol.iterator](),r=new InternSet;for(const n of t){if(r.has(n))return!1;let t,i;for(;({value:t,done:i}=e.next())&&!i;){if(Object.is(n,t))return!1;r.add(t)}}return!0},t.dispatch=$t,t.drag=function(){var t,n,e,r,i=se,o=le,a=he,u=de,c={},f=$t("start","drag","end"),s=0,l=0;function h(t){t.on("mousedown.drag",d).filter(u).on("touchstart.drag",y).on("touchmove.drag",v,ee).on("touchend.drag touchcancel.drag",_).style("touch-action","none").style("-webkit-tap-highlight-color","rgba(0,0,0,0)")}function d(a,u){if(!r&&i.call(this,a,u)){var c=b(this,o.call(this,a,u),a,u,"mouse");c&&(Zn(a.view).on("mousemove.drag",p,re).on("mouseup.drag",g,re),ae(a.view),ie(a),e=!1,t=a.clientX,n=a.clientY,c("start",a))}}function p(r){if(oe(r),!e){var i=r.clientX-t,o=r.clientY-n;e=i*i+o*o>l}c.mouse("drag",r)}function g(t){Zn(t.view).on("mousemove.drag mouseup.drag",null),ue(t.view,e),oe(t),c.mouse("end",t)}function y(t,n){if(i.call(this,t,n)){var e,r,a=t.changedTouches,u=o.call(this,t,n),c=a.length;for(e=0;e<c;++e)(r=b(this,u,t,n,a[e].identifier,a[e]))&&(ie(t),r("start",t,a[e]))}}function v(t){var n,e,r=t.changedTouches,i=r.length;for(n=0;n<i;++n)(e=c[r[n].identifier])&&(oe(t),e("drag",t,r[n]))}function _(t){var n,e,i=t.changedTouches,o=i.length;for(r&&clearTimeout(r),r=setTimeout((function(){r=null}),500),n=0;n<o;++n)(e=c[i[n].identifier])&&(ie(t),e("end",t,i[n]))}function b(t,n,e,r,i,o){var u,l,d,p=f.copy(),g=ne(o||e,n);if(null!=(d=a.call(t,new fe("beforestart",{sourceEvent:e,target:h,identifier:i,active:s,x:g[0],y:g[1],dx:0,dy:0,dispatch:p}),r)))return u=d.x-g[0]||0,l=d.y-g[1]||0,function e(o,a,f){var y,v=g;switch(o){case"start":c[i]=e,y=s++;break;case"end":delete c[i],--s;case"drag":g=ne(f||a,n),y=s}p.call(o,t,new fe(o,{sourceEvent:a,subject:d,target:h,identifier:i,active:y,x:g[0]+u,y:g[1]+l,dx:g[0]-v[0],dy:g[1]-v[1],dispatch:p}),r)}}return h.filter=function(t){return arguments.length?(i="function"==typeof t?t:ce(!!t),h):i},h.container=function(t){return arguments.length?(o="function"==typeof t?t:ce(t),h):o},h.subject=function(t){return arguments.length?(a="function"==typeof t?t:ce(t),h):a},h.touchable=function(t){return arguments.length?(u="function"==typeof t?t:ce(!!t),h):u},h.on=function(){var t=f.on.apply(f,arguments);return t===f?h:t},h.clickDistance=function(t){return arguments.length?(l=(t=+t)*t,h):Math.sqrt(l)},h},t.dragDisable=ae,t.dragEnable=ue,t.dsv=function(t,n,e,r){3===arguments.length&&"function"==typeof e&&(r=e,e=void 0);var i=Ju(t);return mc(n,e).then((function(t){return i.parse(t,r)}))},t.dsvFormat=Ju,t.easeBack=Lo,t.easeBackIn=Bo,t.easeBackInOut=Lo,t.easeBackOut=Yo,t.easeBounce=Io,t.easeBounceIn=function(t){return 1-Io(1-t)},t.easeBounceInOut=function(t){return((t*=2)<=1?1-Io(1-t):Io(t-1)+1)/2},t.easeBounceOut=Io,t.easeCircle=No,t.easeCircleIn=function(t){return 1-Math.sqrt(1-t*t)},t.easeCircleInOut=No,t.easeCircleOut=function(t){return Math.sqrt(1- --t*t)},t.easeCubic=bo,t.easeCubicIn=function(t){return t*t*t},t.easeCubicInOut=bo,t.easeCubicOut=function(t){return--t*t*t+1},t.easeElastic=Xo,t.easeElasticIn=Ho,t.easeElasticInOut=Go,t.easeElasticOut=Xo,t.easeExp=Eo,t.easeExpIn=function(t){return So(1-+t)},t.easeExpInOut=Eo,t.easeExpOut=function(t){return 1-So(t)},t.easeLinear=t=>+t,t.easePoly=wo,t.easePolyIn=mo,t.easePolyInOut=wo,t.easePolyOut=xo,t.easeQuad=_o,t.easeQuadIn=function(t){return t*t},t.easeQuadInOut=_o,t.easeQuadOut=function(t){return t*(2-t)},t.easeSin=Ao,t.easeSinIn=function(t){return 1==+t?1:1-Math.cos(t*To)},t.easeSinInOut=Ao,t.easeSinOut=function(t){return Math.sin(t*To)},t.every=function(t,n){if("function"!=typeof n)throw new TypeError("test is not a function");let e=-1;for(const r of t)if(!n(r,++e,t))return!1;return!0},t.extent=M,t.fcumsum=function(t,n){const e=new T;let r=-1;return Float64Array.from(t,void 0===n?t=>e.add(+t||0):i=>e.add(+n(i,++r,t)||0))},t.filter=function(t,n){if("function"!=typeof n)throw new TypeError("test is not a function");const e=[];let r=-1;for(const i of t)n(i,++r,t)&&e.push(i);return e},t.flatGroup=function(t,...n){return z(P(t,...n),n)},t.flatRollup=function(t,n,...e){return z(D(t,n,...e),e)},t.forceCenter=function(t,n){var e,r=1;function i(){var i,o,a=e.length,u=0,c=0;for(i=0;i<a;++i)u+=(o=e[i]).x,c+=o.y;for(u=(u/a-t)*r,c=(c/a-n)*r,i=0;i<a;++i)(o=e[i]).x-=u,o.y-=c}return null==t&&(t=0),null==n&&(n=0),i.initialize=function(t){e=t},i.x=function(n){return arguments.length?(t=+n,i):t},i.y=function(t){return arguments.length?(n=+t,i):n},i.strength=function(t){return arguments.length?(r=+t,i):r},i},t.forceCollide=function(t){var n,e,r,i=1,o=1;function a(){for(var t,a,c,f,s,l,h,d=n.length,p=0;p<o;++p)for(a=$c(n,Ic,Oc).visitAfter(u),t=0;t<d;++t)c=n[t],l=e[c.index],h=l*l,f=c.x+c.vx,s=c.y+c.vy,a.visit(g);function g(t,n,e,o,a){var u=t.data,d=t.r,p=l+d;if(!u)return n>f+p||o<f-p||e>s+p||a<s-p;if(u.index>c.index){var g=f-u.x-u.vx,y=s-u.y-u.vy,v=g*g+y*y;v<p*p&&(0===g&&(v+=(g=Uc(r))*g),0===y&&(v+=(y=Uc(r))*y),v=(p-(v=Math.sqrt(v)))/v*i,c.vx+=(g*=v)*(p=(d*=d)/(h+d)),c.vy+=(y*=v)*p,u.vx-=g*(p=1-p),u.vy-=y*p)}}}function u(t){if(t.data)return t.r=e[t.data.index];for(var n=t.r=0;n<4;++n)t[n]&&t[n].r>t.r&&(t.r=t[n].r)}function c(){if(n){var r,i,o=n.length;for(e=new Array(o),r=0;r<o;++r)i=n[r],e[i.index]=+t(i,r,n)}}return"function"!=typeof t&&(t=qc(null==t?1:+t)),a.initialize=function(t,e){n=t,r=e,c()},a.iterations=function(t){return arguments.length?(o=+t,a):o},a.strength=function(t){return arguments.length?(i=+t,a):i},a.radius=function(n){return arguments.length?(t="function"==typeof n?n:qc(+n),c(),a):t},a},t.forceLink=function(t){var n,e,r,i,o,a,u=Bc,c=function(t){return 1/Math.min(i[t.source.index],i[t.target.index])},f=qc(30),s=1;function l(r){for(var i=0,u=t.length;i<s;++i)for(var c,f,l,h,d,p,g,y=0;y<u;++y)f=(c=t[y]).source,h=(l=c.target).x+l.vx-f.x-f.vx||Uc(a),d=l.y+l.vy-f.y-f.vy||Uc(a),h*=p=((p=Math.sqrt(h*h+d*d))-e[y])/p*r*n[y],d*=p,l.vx-=h*(g=o[y]),l.vy-=d*g,f.vx+=h*(g=1-g),f.vy+=d*g}function h(){if(r){var a,c,f=r.length,s=t.length,l=new Map(r.map(((t,n)=>[u(t,n,r),t])));for(a=0,i=new Array(f);a<s;++a)(c=t[a]).index=a,"object"!=typeof c.source&&(c.source=Yc(l,c.source)),"object"!=typeof c.target&&(c.target=Yc(l,c.target)),i[c.source.index]=(i[c.source.index]||0)+1,i[c.target.index]=(i[c.target.index]||0)+1;for(a=0,o=new Array(s);a<s;++a)c=t[a],o[a]=i[c.source.index]/(i[c.source.index]+i[c.target.index]);n=new Array(s),d(),e=new Array(s),p()}}function d(){if(r)for(var e=0,i=t.length;e<i;++e)n[e]=+c(t[e],e,t)}function p(){if(r)for(var n=0,i=t.length;n<i;++n)e[n]=+f(t[n],n,t)}return null==t&&(t=[]),l.initialize=function(t,n){r=t,a=n,h()},l.links=function(n){return arguments.length?(t=n,h(),l):t},l.id=function(t){return arguments.length?(u=t,l):u},l.iterations=function(t){return arguments.length?(s=+t,l):s},l.strength=function(t){return arguments.length?(c="function"==typeof t?t:qc(+t),d(),l):c},l.distance=function(t){return arguments.length?(f="function"==typeof t?t:qc(+t),p(),l):f},l},t.forceManyBody=function(){var t,n,e,r,i,o=qc(-30),a=1,u=1/0,c=.81;function f(e){var i,o=t.length,a=$c(t,Xc,Gc).visitAfter(l);for(r=e,i=0;i<o;++i)n=t[i],a.visit(h)}function s(){if(t){var n,e,r=t.length;for(i=new Array(r),n=0;n<r;++n)e=t[n],i[e.index]=+o(e,n,t)}}function l(t){var n,e,r,o,a,u=0,c=0;if(t.length){for(r=o=a=0;a<4;++a)(n=t[a])&&(e=Math.abs(n.value))&&(u+=n.value,c+=e,r+=e*n.x,o+=e*n.y);t.x=r/c,t.y=o/c}else{(n=t).x=n.data.x,n.y=n.data.y;do{u+=i[n.data.index]}while(n=n.next)}t.value=u}function h(t,o,f,s){if(!t.value)return!0;var l=t.x-n.x,h=t.y-n.y,d=s-o,p=l*l+h*h;if(d*d/c<p)return p<u&&(0===l&&(p+=(l=Uc(e))*l),0===h&&(p+=(h=Uc(e))*h),p<a&&(p=Math.sqrt(a*p)),n.vx+=l*t.value*r/p,n.vy+=h*t.value*r/p),!0;if(!(t.length||p>=u)){(t.data!==n||t.next)&&(0===l&&(p+=(l=Uc(e))*l),0===h&&(p+=(h=Uc(e))*h),p<a&&(p=Math.sqrt(a*p)));do{t.data!==n&&(d=i[t.data.index]*r/p,n.vx+=l*d,n.vy+=h*d)}while(t=t.next)}}return f.initialize=function(n,r){t=n,e=r,s()},f.strength=function(t){return arguments.length?(o="function"==typeof t?t:qc(+t),s(),f):o},f.distanceMin=function(t){return arguments.length?(a=t*t,f):Math.sqrt(a)},f.distanceMax=function(t){return arguments.length?(u=t*t,f):Math.sqrt(u)},f.theta=function(t){return arguments.length?(c=t*t,f):Math.sqrt(c)},f},t.forceRadial=function(t,n,e){var r,i,o,a=qc(.1);function u(t){for(var a=0,u=r.length;a<u;++a){var c=r[a],f=c.x-n||1e-6,s=c.y-e||1e-6,l=Math.sqrt(f*f+s*s),h=(o[a]-l)*i[a]*t/l;c.vx+=f*h,c.vy+=s*h}}function c(){if(r){var n,e=r.length;for(i=new Array(e),o=new Array(e),n=0;n<e;++n)o[n]=+t(r[n],n,r),i[n]=isNaN(o[n])?0:+a(r[n],n,r)}}return"function"!=typeof t&&(t=qc(+t)),null==n&&(n=0),null==e&&(e=0),u.initialize=function(t){r=t,c()},u.strength=function(t){return arguments.length?(a="function"==typeof t?t:qc(+t),c(),u):a},u.radius=function(n){return arguments.length?(t="function"==typeof n?n:qc(+n),c(),u):t},u.x=function(t){return arguments.length?(n=+t,u):n},u.y=function(t){return arguments.length?(e=+t,u):e},u},t.forceSimulation=function(t){var n,e=1,r=.001,i=1-Math.pow(r,1/300),o=0,a=.6,u=new Map,c=Ni(l),f=$t("tick","end"),s=function(){let t=1;return()=>(t=(Lc*t+jc)%Hc)/Hc}();function l(){h(),f.call("tick",n),e<r&&(c.stop(),f.call("end",n))}function h(r){var c,f,s=t.length;void 0===r&&(r=1);for(var l=0;l<r;++l)for(e+=(o-e)*i,u.forEach((function(t){t(e)})),c=0;c<s;++c)null==(f=t[c]).fx?f.x+=f.vx*=a:(f.x=f.fx,f.vx=0),null==f.fy?f.y+=f.vy*=a:(f.y=f.fy,f.vy=0);return n}function d(){for(var n,e=0,r=t.length;e<r;++e){if((n=t[e]).index=e,null!=n.fx&&(n.x=n.fx),null!=n.fy&&(n.y=n.fy),isNaN(n.x)||isNaN(n.y)){var i=10*Math.sqrt(.5+e),o=e*Vc;n.x=i*Math.cos(o),n.y=i*Math.sin(o)}(isNaN(n.vx)||isNaN(n.vy))&&(n.vx=n.vy=0)}}function p(n){return n.initialize&&n.initialize(t,s),n}return null==t&&(t=[]),d(),n={tick:h,restart:function(){return c.restart(l),n},stop:function(){return c.stop(),n},nodes:function(e){return arguments.length?(t=e,d(),u.forEach(p),n):t},alpha:function(t){return arguments.length?(e=+t,n):e},alphaMin:function(t){return arguments.length?(r=+t,n):r},alphaDecay:function(t){return arguments.length?(i=+t,n):+i},alphaTarget:function(t){return arguments.length?(o=+t,n):o},velocityDecay:function(t){return arguments.length?(a=1-t,n):1-a},randomSource:function(t){return arguments.length?(s=t,u.forEach(p),n):s},force:function(t,e){return arguments.length>1?(null==e?u.delete(t):u.set(t,p(e)),n):u.get(t)},find:function(n,e,r){var i,o,a,u,c,f=0,s=t.length;for(null==r?r=1/0:r*=r,f=0;f<s;++f)(a=(i=n-(u=t[f]).x)*i+(o=e-u.y)*o)<r&&(c=u,r=a);return c},on:function(t,e){return arguments.length>1?(f.on(t,e),n):f.on(t)}}},t.forceX=function(t){var n,e,r,i=qc(.1);function o(t){for(var i,o=0,a=n.length;o<a;++o)(i=n[o]).vx+=(r[o]-i.x)*e[o]*t}function a(){if(n){var o,a=n.length;for(e=new Array(a),r=new Array(a),o=0;o<a;++o)e[o]=isNaN(r[o]=+t(n[o],o,n))?0:+i(n[o],o,n)}}return"function"!=typeof t&&(t=qc(null==t?0:+t)),o.initialize=function(t){n=t,a()},o.strength=function(t){return arguments.length?(i="function"==typeof t?t:qc(+t),a(),o):i},o.x=function(n){return arguments.length?(t="function"==typeof n?n:qc(+n),a(),o):t},o},t.forceY=function(t){var n,e,r,i=qc(.1);function o(t){for(var i,o=0,a=n.length;o<a;++o)(i=n[o]).vy+=(r[o]-i.y)*e[o]*t}function a(){if(n){var o,a=n.length;for(e=new Array(a),r=new Array(a),o=0;o<a;++o)e[o]=isNaN(r[o]=+t(n[o],o,n))?0:+i(n[o],o,n)}}return"function"!=typeof t&&(t=qc(null==t?0:+t)),o.initialize=function(t){n=t,a()},o.strength=function(t){return arguments.length?(i="function"==typeof t?t:qc(+t),a(),o):i},o.y=function(n){return arguments.length?(t="function"==typeof n?n:qc(+n),a(),o):t},o},t.formatDefaultLocale=ff,t.formatLocale=cf,t.formatSpecifier=Jc,t.fsum=function(t,n){const e=new T;if(void 0===n)for(let n of t)(n=+n)&&e.add(n);else{let r=-1;for(let i of t)(i=+n(i,++r,t))&&e.add(i)}return+e},t.geoAlbers=xd,t.geoAlbersUsa=function(){var t,n,e,r,i,o,a=xd(),u=md().rotate([154,0]).center([-2,58.5]).parallels([55,65]),c=md().rotate([157,0]).center([-3,19.9]).parallels([8,18]),f={point:function(t,n){o=[t,n]}};function s(t){var n=t[0],a=t[1];return o=null,e.point(n,a),o||(r.point(n,a),o)||(i.point(n,a),o)}function l(){return t=n=null,s}return s.invert=function(t){var n=a.scale(),e=a.translate(),r=(t[0]-e[0])/n,i=(t[1]-e[1])/n;return(i>=.12&&i<.234&&r>=-.425&&r<-.214?u:i>=.166&&i<.234&&r>=-.214&&r<-.115?c:a).invert(t)},s.stream=function(e){return t&&n===e?t:(r=[a.stream(n=e),u.stream(e),c.stream(e)],i=r.length,t={point:function(t,n){for(var e=-1;++e<i;)r[e].point(t,n)},sphere:function(){for(var t=-1;++t<i;)r[t].sphere()},lineStart:function(){for(var t=-1;++t<i;)r[t].lineStart()},lineEnd:function(){for(var t=-1;++t<i;)r[t].lineEnd()},polygonStart:function(){for(var t=-1;++t<i;)r[t].polygonStart()},polygonEnd:function(){for(var t=-1;++t<i;)r[t].polygonEnd()}});var r,i},s.precision=function(t){return arguments.length?(a.precision(t),u.precision(t),c.precision(t),l()):a.precision()},s.scale=function(t){return arguments.length?(a.scale(t),u.scale(.35*t),c.scale(t),s.translate(a.translate())):a.scale()},s.translate=function(t){if(!arguments.length)return a.translate();var n=a.scale(),o=+t[0],s=+t[1];return e=a.translate(t).clipExtent([[o-.455*n,s-.238*n],[o+.455*n,s+.238*n]]).stream(f),r=u.translate([o-.307*n,s+.201*n]).clipExtent([[o-.425*n+df,s+.12*n+df],[o-.214*n-df,s+.234*n-df]]).stream(f),i=c.translate([o-.205*n,s+.212*n]).clipExtent([[o-.214*n+df,s+.166*n+df],[o-.115*n-df,s+.234*n-df]]).stream(f),l()},s.fitExtent=function(t,n){return ud(s,t,n)},s.fitSize=function(t,n){return cd(s,t,n)},s.fitWidth=function(t,n){return fd(s,t,n)},s.fitHeight=function(t,n){return sd(s,t,n)},s.scale(1070)},t.geoArea=function(t){return us=new T,Lf(t,cs),2*us},t.geoAzimuthalEqualArea=function(){return yd(Td).scale(124.75).clipAngle(179.999)},t.geoAzimuthalEqualAreaRaw=Td,t.geoAzimuthalEquidistant=function(){return yd(Ad).scale(79.4188).clipAngle(179.999)},t.geoAzimuthalEquidistantRaw=Ad,t.geoBounds=function(t){var n,e,r,i,o,a,u;if(Qf=Kf=-(Wf=Zf=1/0),is=[],Lf(t,Fs),e=is.length){for(is.sort(Hs),n=1,o=[r=is[0]];n<e;++n)Xs(r,(i=is[n])[0])||Xs(r,i[1])?(js(r[0],i[1])>js(r[0],r[1])&&(r[1]=i[1]),js(i[0],r[1])>js(r[0],r[1])&&(r[0]=i[0])):o.push(r=i);for(a=-1/0,n=0,r=o[e=o.length-1];n<=e;r=i,++n)i=o[n],(u=js(r[1],i[0]))>a&&(a=u,Wf=i[0],Kf=r[1])}return is=os=null,Wf===1/0||Zf===1/0?[[NaN,NaN],[NaN,NaN]]:[[Wf,Zf],[Kf,Qf]]},t.geoCentroid=function(t){ms=xs=ws=Ms=Ts=As=Ss=Es=0,Ns=new T,ks=new T,Cs=new T,Lf(t,Gs);var n=+Ns,e=+ks,r=+Cs,i=Ef(n,e,r);return i<pf&&(n=As,e=Ss,r=Es,xs<df&&(n=ws,e=Ms,r=Ts),(i=Ef(n,e,r))<pf)?[NaN,NaN]:[Mf(e,n)*bf,Rf(r/i)*bf]},t.geoCircle=function(){var t,n,e=il([0,0]),r=il(90),i=il(2),o={point:function(e,r){t.push(e=n(e,r)),e[0]*=bf,e[1]*=bf}};function a(){var a=e.apply(this,arguments),u=r.apply(this,arguments)*mf,c=i.apply(this,arguments)*mf;return t=[],n=ul(-a[0]*mf,-a[1]*mf,0).invert,hl(o,u,c,1),a={type:"Polygon",coordinates:[t]},t=n=null,a}return a.center=function(t){return arguments.length?(e="function"==typeof t?t:il([+t[0],+t[1]]),a):e},a.radius=function(t){return arguments.length?(r="function"==typeof t?t:il(+t),a):r},a.precision=function(t){return arguments.length?(i="function"==typeof t?t:il(+t),a):i},a},t.geoClipAntimeridian=Tl,t.geoClipCircle=Al,t.geoClipExtent=function(){var t,n,e,r=0,i=0,o=960,a=500;return e={stream:function(e){return t&&n===e?t:t=zl(r,i,o,a)(n=e)},extent:function(u){return arguments.length?(r=+u[0][0],i=+u[0][1],o=+u[1][0],a=+u[1][1],t=n=null,e):[[r,i],[o,a]]}}},t.geoClipRectangle=zl,t.geoConicConformal=function(){return _d(kd).scale(109.5).parallels([30,30])},t.geoConicConformalRaw=kd,t.geoConicEqualArea=md,t.geoConicEqualAreaRaw=bd,t.geoConicEquidistant=function(){return _d(Pd).scale(131.154).center([0,13.9389])},t.geoConicEquidistantRaw=Pd,t.geoContains=function(t,n){return(t&&Bl.hasOwnProperty(t.type)?Bl[t.type]:Ll)(t,n)},t.geoDistance=Ol,t.geoEqualEarth=function(){return yd(qd).scale(177.158)},t.geoEqualEarthRaw=qd,t.geoEquirectangular=function(){return yd(Cd).scale(152.63)},t.geoEquirectangularRaw=Cd,t.geoGnomonic=function(){return yd(Ud).scale(144.049).clipAngle(60)},t.geoGnomonicRaw=Ud,t.geoGraticule=Kl,t.geoGraticule10=function(){return Kl()()},t.geoIdentity=function(){var t,n,e,r,i,o,a,u=1,c=0,f=0,s=1,l=1,h=0,d=null,p=1,g=1,y=id({point:function(t,n){var e=b([t,n]);this.stream.point(e[0],e[1])}}),v=eh;function _(){return p=u*s,g=u*l,o=a=null,b}function b(e){var r=e[0]*p,i=e[1]*g;if(h){var o=i*t-r*n;r=r*t+i*n,i=o}return[r+c,i+f]}return b.invert=function(e){var r=e[0]-c,i=e[1]-f;if(h){var o=i*t+r*n;r=r*t-i*n,i=o}return[r/p,i/g]},b.stream=function(t){return o&&a===t?o:o=y(v(a=t))},b.postclip=function(t){return arguments.length?(v=t,d=e=r=i=null,_()):v},b.clipExtent=function(t){return arguments.length?(v=null==t?(d=e=r=i=null,eh):zl(d=+t[0][0],e=+t[0][1],r=+t[1][0],i=+t[1][1]),_()):null==d?null:[[d,e],[r,i]]},b.scale=function(t){return arguments.length?(u=+t,_()):u},b.translate=function(t){return arguments.length?(c=+t[0],f=+t[1],_()):[c,f]},b.angle=function(e){return arguments.length?(n=Cf(h=e%360*mf),t=Tf(h),_()):h*bf},b.reflectX=function(t){return arguments.length?(s=t?-1:1,_()):s<0},b.reflectY=function(t){return arguments.length?(l=t?-1:1,_()):l<0},b.fitExtent=function(t,n){return ud(b,t,n)},b.fitSize=function(t,n){return cd(b,t,n)},b.fitWidth=function(t,n){return fd(b,t,n)},b.fitHeight=function(t,n){return sd(b,t,n)},b},t.geoInterpolate=function(t,n){var e=t[0]*mf,r=t[1]*mf,i=n[0]*mf,o=n[1]*mf,a=Tf(r),u=Cf(r),c=Tf(o),f=Cf(o),s=a*Tf(e),l=a*Cf(e),h=c*Tf(i),d=c*Cf(i),p=2*Rf(zf(Ff(o-r)+a*c*Ff(i-e))),g=Cf(p),y=p?function(t){var n=Cf(t*=p)/g,e=Cf(p-t)/g,r=e*s+n*h,i=e*l+n*d,o=e*u+n*f;return[Mf(i,r)*bf,Mf(o,zf(r*r+i*i))*bf]}:function(){return[e*bf,r*bf]};return y.distance=p,y},t.geoLength=ql,t.geoMercator=function(){return Ed(Sd).scale(961/_f)},t.geoMercatorRaw=Sd,t.geoNaturalEarth1=function(){return yd(Id).scale(175.295)},t.geoNaturalEarth1Raw=Id,t.geoOrthographic=function(){return yd(Od).scale(249.5).clipAngle(90+df)},t.geoOrthographicRaw=Od,t.geoPath=function(t,n){let e,r,i=3,o=4.5;function a(t){return t&&("function"==typeof o&&r.pointRadius(+o.apply(this,arguments)),Lf(t,e(r))),r.result()}return a.area=function(t){return Lf(t,e(sh)),sh.result()},a.measure=function(t){return Lf(t,e(Kh)),Kh.result()},a.bounds=function(t){return Lf(t,e(mh)),mh.result()},a.centroid=function(t){return Lf(t,e(Oh)),Oh.result()},a.projection=function(n){return arguments.length?(e=null==n?(t=null,eh):(t=n).stream,a):t},a.context=function(t){return arguments.length?(r=null==t?(n=null,new ed(i)):new Bh(n=t),"function"!=typeof o&&r.pointRadius(o),a):n},a.pointRadius=function(t){return arguments.length?(o="function"==typeof t?t:(r.pointRadius(+t),+t),a):o},a.digits=function(t){if(!arguments.length)return i;if(null==t)i=null;else{const n=Math.floor(t);if(!(n>=0))throw new RangeError(`invalid digits: ${t}`);i=n}return null===n&&(r=new ed(i)),a},a.projection(t).digits(i).context(n)},t.geoProjection=yd,t.geoProjectionMutator=vd,t.geoRotation=ll,t.geoStereographic=function(){return yd(Bd).scale(250).clipAngle(142)},t.geoStereographicRaw=Bd,t.geoStream=Lf,t.geoTransform=function(t){return{stream:id(t)}},t.geoTransverseMercator=function(){var t=Ed(Yd),n=t.center,e=t.rotate;return t.center=function(t){return arguments.length?n([-t[1],t[0]]):[(t=n())[1],-t[0]]},t.rotate=function(t){return arguments.length?e([t[0],t[1],t.length>2?t[2]+90:90]):[(t=e())[0],t[1],t[2]-90]},e([0,0,90]).scale(159.155)},t.geoTransverseMercatorRaw=Yd,t.gray=function(t,n){return new ur(t,0,0,null==n?1:n)},t.greatest=ot,t.greatestIndex=function(t,e=n){if(1===e.length)return tt(t,e);let r,i=-1,o=-1;for(const n of t)++o,(i<0?0===e(n,n):e(n,r)>0)&&(r=n,i=o);return i},t.group=C,t.groupSort=function(t,e,r){return(2!==e.length?U($(t,e,r),(([t,e],[r,i])=>n(e,i)||n(t,r))):U(C(t,r),(([t,r],[i,o])=>e(r,o)||n(t,i)))).map((([t])=>t))},t.groups=P,t.hcl=dr,t.hierarchy=Gd,t.histogram=Q,t.hsl=He,t.html=Ec,t.image=function(t,n){return new Promise((function(e,r){var i=new Image;for(var o in n)i[o]=n[o];i.onerror=r,i.onload=function(){e(i)},i.src=t}))},t.index=function(t,...n){return F(t,k,R,n)},t.indexes=function(t,...n){return F(t,Array.from,R,n)},t.interpolate=Gr,t.interpolateArray=function(t,n){return(Ir(n)?Ur:Or)(t,n)},t.interpolateBasis=Er,t.interpolateBasisClosed=Nr,t.interpolateBlues=Gb,t.interpolateBrBG=ob,t.interpolateBuGn=Mb,t.interpolateBuPu=Ab,t.interpolateCividis=function(t){return t=Math.max(0,Math.min(1,t)),"rgb("+Math.max(0,Math.min(255,Math.round(-4.54-t*(35.34-t*(2381.73-t*(6402.7-t*(7024.72-2710.57*t)))))))+", "+Math.max(0,Math.min(255,Math.round(32.49+t*(170.73+t*(52.82-t*(131.46-t*(176.58-67.37*t)))))))+", "+Math.max(0,Math.min(255,Math.round(81.24+t*(442.36-t*(2482.43-t*(6167.24-t*(6614.94-2475.67*t)))))))+")"},t.interpolateCool=am,t.interpolateCubehelix=li,t.interpolateCubehelixDefault=im,t.interpolateCubehelixLong=hi,t.interpolateDate=Br,t.interpolateDiscrete=function(t){var n=t.length;return function(e){return t[Math.max(0,Math.min(n-1,Math.floor(e*n)))]}},t.interpolateGnBu=Eb,t.interpolateGreens=Wb,t.interpolateGreys=Kb,t.interpolateHcl=ci,t.interpolateHclLong=fi,t.interpolateHsl=oi,t.interpolateHslLong=ai,t.interpolateHue=function(t,n){var e=Pr(+t,+n);return function(t){var n=e(t);return n-360*Math.floor(n/360)}},t.interpolateInferno=pm,t.interpolateLab=function(t,n){var e=$r((t=ar(t)).l,(n=ar(n)).l),r=$r(t.a,n.a),i=$r(t.b,n.b),o=$r(t.opacity,n.opacity);return function(n){return t.l=e(n),t.a=r(n),t.b=i(n),t.opacity=o(n),t+""}},t.interpolateMagma=dm,t.interpolateNumber=Yr,t.interpolateNumberArray=Ur,t.interpolateObject=Lr,t.interpolateOrRd=kb,t.interpolateOranges=rm,t.interpolatePRGn=ub,t.interpolatePiYG=fb,t.interpolatePlasma=gm,t.interpolatePuBu=$b,t.interpolatePuBuGn=Pb,t.interpolatePuOr=lb,t.interpolatePuRd=Rb,t.interpolatePurples=Jb,t.interpolateRainbow=function(t){(t<0||t>1)&&(t-=Math.floor(t));var n=Math.abs(t-.5);return um.h=360*t-100,um.s=1.5-1.5*n,um.l=.8-.9*n,um+""},t.interpolateRdBu=db,t.interpolateRdGy=gb,t.interpolateRdPu=qb,t.interpolateRdYlBu=vb,t.interpolateRdYlGn=bb,t.interpolateReds=nm,t.interpolateRgb=Dr,t.interpolateRgbBasis=Fr,t.interpolateRgbBasisClosed=qr,t.interpolateRound=Vr,t.interpolateSinebow=function(t){var n;return t=(.5-t)*Math.PI,cm.r=255*(n=Math.sin(t))*n,cm.g=255*(n=Math.sin(t+fm))*n,cm.b=255*(n=Math.sin(t+sm))*n,cm+""},t.interpolateSpectral=xb,t.interpolateString=Xr,t.interpolateTransformCss=ti,t.interpolateTransformSvg=ni,t.interpolateTurbo=function(t){return t=Math.max(0,Math.min(1,t)),"rgb("+Math.max(0,Math.min(255,Math.round(34.61+t*(1172.33-t*(10793.56-t*(33300.12-t*(38394.49-14825.05*t)))))))+", "+Math.max(0,Math.min(255,Math.round(23.31+t*(557.33+t*(1225.33-t*(3574.96-t*(1073.77+707.56*t)))))))+", "+Math.max(0,Math.min(255,Math.round(27.2+t*(3211.1-t*(15327.97-t*(27814-t*(22569.18-6838.66*t)))))))+")"},t.interpolateViridis=hm,t.interpolateWarm=om,t.interpolateYlGn=Bb,t.interpolateYlGnBu=Ib,t.interpolateYlOrBr=Lb,t.interpolateYlOrRd=Hb,t.interpolateZoom=ri,t.interrupt=Gi,t.intersection=function(t,...n){t=new InternSet(t),n=n.map(vt);t:for(const e of t)for(const r of n)if(!r.has(e)){t.delete(e);continue t}return t},t.interval=function(t,n,e){var r=new Ei,i=n;return null==n?(r.restart(t,n,e),r):(r._restart=r.restart,r.restart=function(t,n,e){n=+n,e=null==e?Ai():+e,r._restart((function o(a){a+=i,r._restart(o,i+=n,e),t(a)}),n,e)},r.restart(t,n,e),r)},t.isoFormat=D_,t.isoParse=F_,t.json=function(t,n){return fetch(t,n).then(Tc)},t.lab=ar,t.lch=function(t,n,e,r){return 1===arguments.length?hr(t):new pr(e,n,t,null==r?1:r)},t.least=function(t,e=n){let r,i=!1;if(1===e.length){let o;for(const a of t){const t=e(a);(i?n(t,o)<0:0===n(t,t))&&(r=a,o=t,i=!0)}}else for(const n of t)(i?e(n,r)<0:0===e(n,n))&&(r=n,i=!0);return r},t.leastIndex=ht,t.line=Ym,t.lineRadial=Zm,t.link=ax,t.linkHorizontal=function(){return ax(nx)},t.linkRadial=function(){const t=ax(rx);return t.angle=t.x,delete t.x,t.radius=t.y,delete t.y,t},t.linkVertical=function(){return ax(ex)},t.local=Qn,t.map=function(t,n){if("function"!=typeof t[Symbol.iterator])throw new TypeError("values is not iterable");if("function"!=typeof n)throw new TypeError("mapper is not a function");return Array.from(t,((e,r)=>n(e,r,t)))},t.matcher=Vt,t.max=J,t.maxIndex=tt,t.mean=function(t,n){let e=0,r=0;if(void 0===n)for(let n of t)null!=n&&(n=+n)>=n&&(++e,r+=n);else{let i=-1;for(let o of t)null!=(o=n(o,++i,t))&&(o=+o)>=o&&(++e,r+=o)}if(e)return r/e},t.median=function(t,n){return at(t,.5,n)},t.medianIndex=function(t,n){return ct(t,.5,n)},t.merge=ft,t.min=nt,t.minIndex=et,t.mode=function(t,n){const e=new InternMap;if(void 0===n)for(let n of t)null!=n&&n>=n&&e.set(n,(e.get(n)||0)+1);else{let r=-1;for(let i of t)null!=(i=n(i,++r,t))&&i>=i&&e.set(i,(e.get(i)||0)+1)}let r,i=0;for(const[t,n]of e)n>i&&(i=n,r=t);return r},t.namespace=It,t.namespaces=Ut,t.nice=Z,t.now=Ai,t.pack=function(){var t=null,n=1,e=1,r=np;function i(i){const o=ap();return i.x=n/2,i.y=e/2,t?i.eachBefore(xp(t)).eachAfter(wp(r,.5,o)).eachBefore(Mp(1)):i.eachBefore(xp(mp)).eachAfter(wp(np,1,o)).eachAfter(wp(r,i.r/Math.min(n,e),o)).eachBefore(Mp(Math.min(n,e)/(2*i.r))),i}return i.radius=function(n){return arguments.length?(t=Jd(n),i):t},i.size=function(t){return arguments.length?(n=+t[0],e=+t[1],i):[n,e]},i.padding=function(t){return arguments.length?(r="function"==typeof t?t:ep(+t),i):r},i},t.packEnclose=function(t){return up(t,ap())},t.packSiblings=function(t){return bp(t,ap()),t},t.pairs=function(t,n=st){const e=[];let r,i=!1;for(const o of t)i&&e.push(n(r,o)),r=o,i=!0;return e},t.partition=function(){var t=1,n=1,e=0,r=!1;function i(i){var o=i.height+1;return i.x0=i.y0=e,i.x1=t,i.y1=n/o,i.eachBefore(function(t,n){return function(r){r.children&&Ap(r,r.x0,t*(r.depth+1)/n,r.x1,t*(r.depth+2)/n);var i=r.x0,o=r.y0,a=r.x1-e,u=r.y1-e;a<i&&(i=a=(i+a)/2),u<o&&(o=u=(o+u)/2),r.x0=i,r.y0=o,r.x1=a,r.y1=u}}(n,o)),r&&i.eachBefore(Tp),i}return i.round=function(t){return arguments.length?(r=!!t,i):r},i.size=function(e){return arguments.length?(t=+e[0],n=+e[1],i):[t,n]},i.padding=function(t){return arguments.length?(e=+t,i):e},i},t.path=Ia,t.pathRound=function(t=3){return new Ua(+t)},t.permute=q,t.pie=function(){var t=Hm,n=jm,e=null,r=ym(0),i=ym(Em),o=ym(0);function a(a){var u,c,f,s,l,h=(a=qm(a)).length,d=0,p=new Array(h),g=new Array(h),y=+r.apply(this,arguments),v=Math.min(Em,Math.max(-Em,i.apply(this,arguments)-y)),_=Math.min(Math.abs(v)/h,o.apply(this,arguments)),b=_*(v<0?-1:1);for(u=0;u<h;++u)(l=g[p[u]=u]=+t(a[u],u,a))>0&&(d+=l);for(null!=n?p.sort((function(t,e){return n(g[t],g[e])})):null!=e&&p.sort((function(t,n){return e(a[t],a[n])})),u=0,f=d?(v-h*b)/d:0;u<h;++u,y=s)c=p[u],s=y+((l=g[c])>0?l*f:0)+b,g[c]={data:a[c],index:u,value:l,startAngle:y,endAngle:s,padAngle:_};return g}return a.value=function(n){return arguments.length?(t="function"==typeof n?n:ym(+n),a):t},a.sortValues=function(t){return arguments.length?(n=t,e=null,a):n},a.sort=function(t){return arguments.length?(e=t,n=null,a):e},a.startAngle=function(t){return arguments.length?(r="function"==typeof t?t:ym(+t),a):r},a.endAngle=function(t){return arguments.length?(i="function"==typeof t?t:ym(+t),a):i},a.padAngle=function(t){return arguments.length?(o="function"==typeof t?t:ym(+t),a):o},a},t.piecewise=di,t.pointRadial=Qm,t.pointer=ne,t.pointers=function(t,n){return t.target&&(t=te(t),void 0===n&&(n=t.currentTarget),t=t.touches||[t]),Array.from(t,(t=>ne(t,n)))},t.polygonArea=function(t){for(var n,e=-1,r=t.length,i=t[r-1],o=0;++e<r;)n=i,i=t[e],o+=n[1]*i[0]-n[0]*i[1];return o/2},t.polygonCentroid=function(t){for(var n,e,r=-1,i=t.length,o=0,a=0,u=t[i-1],c=0;++r<i;)n=u,u=t[r],c+=e=n[0]*u[1]-u[0]*n[1],o+=(n[0]+u[0])*e,a+=(n[1]+u[1])*e;return[o/(c*=3),a/c]},t.polygonContains=function(t,n){for(var e,r,i=t.length,o=t[i-1],a=n[0],u=n[1],c=o[0],f=o[1],s=!1,l=0;l<i;++l)e=(o=t[l])[0],(r=o[1])>u!=f>u&&a<(c-e)*(u-r)/(f-r)+e&&(s=!s),c=e,f=r;return s},t.polygonHull=function(t){if((e=t.length)<3)return null;var n,e,r=new Array(e),i=new Array(e);for(n=0;n<e;++n)r[n]=[+t[n][0],+t[n][1],n];for(r.sort(Hp),n=0;n<e;++n)i[n]=[r[n][0],-r[n][1]];var o=Xp(r),a=Xp(i),u=a[0]===o[0],c=a[a.length-1]===o[o.length-1],f=[];for(n=o.length-1;n>=0;--n)f.push(t[r[o[n]][2]]);for(n=+u;n<a.length-c;++n)f.push(t[r[a[n]][2]]);return f},t.polygonLength=function(t){for(var n,e,r=-1,i=t.length,o=t[i-1],a=o[0],u=o[1],c=0;++r<i;)n=a,e=u,n-=a=(o=t[r])[0],e-=u=o[1],c+=Math.hypot(n,e);return c},t.precisionFixed=sf,t.precisionPrefix=lf,t.precisionRound=hf,t.quadtree=$c,t.quantile=at,t.quantileIndex=ct,t.quantileSorted=ut,t.quantize=function(t,n){for(var e=new Array(n),r=0;r<n;++r)e[r]=t(r/(n-1));return e},t.quickselect=rt,t.radialArea=Km,t.radialLine=Zm,t.randomBates=Jp,t.randomBernoulli=eg,t.randomBeta=og,t.randomBinomial=ag,t.randomCauchy=cg,t.randomExponential=tg,t.randomGamma=ig,t.randomGeometric=rg,t.randomInt=Wp,t.randomIrwinHall=Qp,t.randomLcg=function(t=Math.random()){let n=0|(0<=t&&t<1?t/lg:Math.abs(t));return()=>(n=1664525*n+1013904223|0,lg*(n>>>0))},t.randomLogNormal=Kp,t.randomLogistic=fg,t.randomNormal=Zp,t.randomPareto=ng,t.randomPoisson=sg,t.randomUniform=Vp,t.randomWeibull=ug,t.range=lt,t.rank=function(t,e=n){if("function"!=typeof t[Symbol.iterator])throw new TypeError("values is not iterable");let r=Array.from(t);const i=new Float64Array(r.length);2!==e.length&&(r=r.map(e),e=n);const o=(t,n)=>e(r[t],r[n]);let a,u;return(t=Uint32Array.from(r,((t,n)=>n))).sort(e===n?(t,n)=>O(r[t],r[n]):I(o)),t.forEach(((t,n)=>{const e=o(t,void 0===a?t:a);e>=0?((void 0===a||e>0)&&(a=t,u=n),i[t]=u):i[t]=NaN})),i},t.reduce=function(t,n,e){if("function"!=typeof n)throw new TypeError("reducer is not a function");const r=t[Symbol.iterator]();let i,o,a=-1;if(arguments.length<3){if(({done:i,value:e}=r.next()),i)return;++a}for(;({done:i,value:o}=r.next()),!i;)e=n(e,o,++a,t);return e},t.reverse=function(t){if("function"!=typeof t[Symbol.iterator])throw new TypeError("values is not iterable");return Array.from(t).reverse()},t.rgb=Fe,t.ribbon=function(){return Wa()},t.ribbonArrow=function(){return Wa(Va)},t.rollup=$,t.rollups=D,t.scaleBand=yg,t.scaleDiverging=function t(){var n=Ng(L_()(mg));return n.copy=function(){return B_(n,t())},dg.apply(n,arguments)},t.scaleDivergingLog=function t(){var n=Fg(L_()).domain([.1,1,10]);return n.copy=function(){return B_(n,t()).base(n.base())},dg.apply(n,arguments)},t.scaleDivergingPow=j_,t.scaleDivergingSqrt=function(){return j_.apply(null,arguments).exponent(.5)},t.scaleDivergingSymlog=function t(){var n=Ig(L_());return n.copy=function(){return B_(n,t()).constant(n.constant())},dg.apply(n,arguments)},t.scaleIdentity=function t(n){var e;function r(t){return null==t||isNaN(t=+t)?e:t}return r.invert=r,r.domain=r.range=function(t){return arguments.length?(n=Array.from(t,_g),r):n.slice()},r.unknown=function(t){return arguments.length?(e=t,r):e},r.copy=function(){return t(n).unknown(e)},n=arguments.length?Array.from(n,_g):[0,1],Ng(r)},t.scaleImplicit=pg,t.scaleLinear=function t(){var n=Sg();return n.copy=function(){return Tg(n,t())},hg.apply(n,arguments),Ng(n)},t.scaleLog=function t(){const n=Fg(Ag()).domain([1,10]);return n.copy=()=>Tg(n,t()).base(n.base()),hg.apply(n,arguments),n},t.scaleOrdinal=gg,t.scalePoint=function(){return vg(yg.apply(null,arguments).paddingInner(1))},t.scalePow=jg,t.scaleQuantile=function t(){var e,r=[],i=[],o=[];function a(){var t=0,n=Math.max(1,i.length);for(o=new Array(n-1);++t<n;)o[t-1]=ut(r,t/n);return u}function u(t){return null==t||isNaN(t=+t)?e:i[s(o,t)]}return u.invertExtent=function(t){var n=i.indexOf(t);return n<0?[NaN,NaN]:[n>0?o[n-1]:r[0],n<o.length?o[n]:r[r.length-1]]},u.domain=function(t){if(!arguments.length)return r.slice();r=[];for(let n of t)null==n||isNaN(n=+n)||r.push(n);return r.sort(n),a()},u.range=function(t){return arguments.length?(i=Array.from(t),a()):i.slice()},u.unknown=function(t){return arguments.length?(e=t,u):e},u.quantiles=function(){return o.slice()},u.copy=function(){return t().domain(r).range(i).unknown(e)},hg.apply(u,arguments)},t.scaleQuantize=function t(){var n,e=0,r=1,i=1,o=[.5],a=[0,1];function u(t){return null!=t&&t<=t?a[s(o,t,0,i)]:n}function c(){var t=-1;for(o=new Array(i);++t<i;)o[t]=((t+1)*r-(t-i)*e)/(i+1);return u}return u.domain=function(t){return arguments.length?([e,r]=t,e=+e,r=+r,c()):[e,r]},u.range=function(t){return arguments.length?(i=(a=Array.from(t)).length-1,c()):a.slice()},u.invertExtent=function(t){var n=a.indexOf(t);return n<0?[NaN,NaN]:n<1?[e,o[0]]:n>=i?[o[i-1],r]:[o[n-1],o[n]]},u.unknown=function(t){return arguments.length?(n=t,u):u},u.thresholds=function(){return o.slice()},u.copy=function(){return t().domain([e,r]).range(a).unknown(n)},hg.apply(Ng(u),arguments)},t.scaleRadial=function t(){var n,e=Sg(),r=[0,1],i=!1;function o(t){var r=function(t){return Math.sign(t)*Math.sqrt(Math.abs(t))}(e(t));return isNaN(r)?n:i?Math.round(r):r}return o.invert=function(t){return e.invert(Hg(t))},o.domain=function(t){return arguments.length?(e.domain(t),o):e.domain()},o.range=function(t){return arguments.length?(e.range((r=Array.from(t,_g)).map(Hg)),o):r.slice()},o.rangeRound=function(t){return o.range(t).round(!0)},o.round=function(t){return arguments.length?(i=!!t,o):i},o.clamp=function(t){return arguments.length?(e.clamp(t),o):e.clamp()},o.unknown=function(t){return arguments.length?(n=t,o):n},o.copy=function(){return t(e.domain(),r).round(i).clamp(e.clamp()).unknown(n)},hg.apply(o,arguments),Ng(o)},t.scaleSequential=function t(){var n=Ng(O_()(mg));return n.copy=function(){return B_(n,t())},dg.apply(n,arguments)},t.scaleSequentialLog=function t(){var n=Fg(O_()).domain([1,10]);return n.copy=function(){return B_(n,t()).base(n.base())},dg.apply(n,arguments)},t.scaleSequentialPow=Y_,t.scaleSequentialQuantile=function t(){var e=[],r=mg;function i(t){if(null!=t&&!isNaN(t=+t))return r((s(e,t,1)-1)/(e.length-1))}return i.domain=function(t){if(!arguments.length)return e.slice();e=[];for(let n of t)null==n||isNaN(n=+n)||e.push(n);return e.sort(n),i},i.interpolator=function(t){return arguments.length?(r=t,i):r},i.range=function(){return e.map(((t,n)=>r(n/(e.length-1))))},i.quantiles=function(t){return Array.from({length:t+1},((n,r)=>at(e,r/t)))},i.copy=function(){return t(r).domain(e)},dg.apply(i,arguments)},t.scaleSequentialSqrt=function(){return Y_.apply(null,arguments).exponent(.5)},t.scaleSequentialSymlog=function t(){var n=Ig(O_());return n.copy=function(){return B_(n,t()).constant(n.constant())},dg.apply(n,arguments)},t.scaleSqrt=function(){return jg.apply(null,arguments).exponent(.5)},t.scaleSymlog=function t(){var n=Ig(Ag());return n.copy=function(){return Tg(n,t()).constant(n.constant())},hg.apply(n,arguments)},t.scaleThreshold=function t(){var n,e=[.5],r=[0,1],i=1;function o(t){return null!=t&&t<=t?r[s(e,t,0,i)]:n}return o.domain=function(t){return arguments.length?(e=Array.from(t),i=Math.min(e.length,r.length-1),o):e.slice()},o.range=function(t){return arguments.length?(r=Array.from(t),i=Math.min(e.length,r.length-1),o):r.slice()},o.invertExtent=function(t){var n=r.indexOf(t);return[e[n-1],e[n]]},o.unknown=function(t){return arguments.length?(n=t,o):n},o.copy=function(){return t().domain(e).range(r).unknown(n)},hg.apply(o,arguments)},t.scaleTime=function(){return hg.apply(I_(uv,cv,tv,Zy,xy,py,sy,ay,iy,t.timeFormat).domain([new Date(2e3,0,1),new Date(2e3,0,2)]),arguments)},t.scaleUtc=function(){return hg.apply(I_(ov,av,ev,Qy,Fy,yy,hy,cy,iy,t.utcFormat).domain([Date.UTC(2e3,0,1),Date.UTC(2e3,0,2)]),arguments)},t.scan=function(t,n){const e=ht(t,n);return e<0?void 0:e},t.schemeAccent=G_,t.schemeBlues=Xb,t.schemeBrBG=ib,t.schemeBuGn=wb,t.schemeBuPu=Tb,t.schemeCategory10=X_,t.schemeDark2=V_,t.schemeGnBu=Sb,t.schemeGreens=Vb,t.schemeGreys=Zb,t.schemeObservable10=W_,t.schemeOrRd=Nb,t.schemeOranges=em,t.schemePRGn=ab,t.schemePaired=Z_,t.schemePastel1=K_,t.schemePastel2=Q_,t.schemePiYG=cb,t.schemePuBu=zb,t.schemePuBuGn=Cb,t.schemePuOr=sb,t.schemePuRd=Db,t.schemePurples=Qb,t.schemeRdBu=hb,t.schemeRdGy=pb,t.schemeRdPu=Fb,t.schemeRdYlBu=yb,t.schemeRdYlGn=_b,t.schemeReds=tm,t.schemeSet1=J_,t.schemeSet2=tb,t.schemeSet3=nb,t.schemeSpectral=mb,t.schemeTableau10=eb,t.schemeYlGn=Ob,t.schemeYlGnBu=Ub,t.schemeYlOrBr=Yb,t.schemeYlOrRd=jb,t.select=Zn,t.selectAll=function(t){return"string"==typeof t?new Vn([document.querySelectorAll(t)],[document.documentElement]):new Vn([Ht(t)],Gn)},t.selection=Wn,t.selector=jt,t.selectorAll=Gt,t.shuffle=dt,t.shuffler=pt,t.some=function(t,n){if("function"!=typeof n)throw new TypeError("test is not a function");let e=-1;for(const r of t)if(n(r,++e,t))return!0;return!1},t.sort=U,t.stack=function(){var t=ym([]),n=dw,e=hw,r=pw;function i(i){var o,a,u=Array.from(t.apply(this,arguments),gw),c=u.length,f=-1;for(const t of i)for(o=0,++f;o<c;++o)(u[o][f]=[0,+r(t,u[o].key,f,i)]).data=t;for(o=0,a=qm(n(u));o<c;++o)u[a[o]].index=o;return e(u,a),u}return i.keys=function(n){return arguments.length?(t="function"==typeof n?n:ym(Array.from(n)),i):t},i.value=function(t){return arguments.length?(r="function"==typeof t?t:ym(+t),i):r},i.order=function(t){return arguments.length?(n=null==t?dw:"function"==typeof t?t:ym(Array.from(t)),i):n},i.offset=function(t){return arguments.length?(e=null==t?hw:t,i):e},i},t.stackOffsetDiverging=function(t,n){if((u=t.length)>0)for(var e,r,i,o,a,u,c=0,f=t[n[0]].length;c<f;++c)for(o=a=0,e=0;e<u;++e)(i=(r=t[n[e]][c])[1]-r[0])>0?(r[0]=o,r[1]=o+=i):i<0?(r[1]=a,r[0]=a+=i):(r[0]=0,r[1]=i)},t.stackOffsetExpand=function(t,n){if((r=t.length)>0){for(var e,r,i,o=0,a=t[0].length;o<a;++o){for(i=e=0;e<r;++e)i+=t[e][o][1]||0;if(i)for(e=0;e<r;++e)t[e][o][1]/=i}hw(t,n)}},t.stackOffsetNone=hw,t.stackOffsetSilhouette=function(t,n){if((e=t.length)>0){for(var e,r=0,i=t[n[0]],o=i.length;r<o;++r){for(var a=0,u=0;a<e;++a)u+=t[a][r][1]||0;i[r][1]+=i[r][0]=-u/2}hw(t,n)}},t.stackOffsetWiggle=function(t,n){if((i=t.length)>0&&(r=(e=t[n[0]]).length)>0){for(var e,r,i,o=0,a=1;a<r;++a){for(var u=0,c=0,f=0;u<i;++u){for(var s=t[n[u]],l=s[a][1]||0,h=(l-(s[a-1][1]||0))/2,d=0;d<u;++d){var p=t[n[d]];h+=(p[a][1]||0)-(p[a-1][1]||0)}c+=l,f+=h*l}e[a-1][1]+=e[a-1][0]=o,c&&(o-=f/c)}e[a-1][1]+=e[a-1][0]=o,hw(t,n)}},t.stackOrderAppearance=yw,t.stackOrderAscending=_w,t.stackOrderDescending=function(t){return _w(t).reverse()},t.stackOrderInsideOut=function(t){var n,e,r=t.length,i=t.map(bw),o=yw(t),a=0,u=0,c=[],f=[];for(n=0;n<r;++n)e=o[n],a<u?(a+=i[e],c.push(e)):(u+=i[e],f.push(e));return f.reverse().concat(c)},t.stackOrderNone=dw,t.stackOrderReverse=function(t){return dw(t).reverse()},t.stratify=function(){var t,n=kp,e=Cp;function r(r){var i,o,a,u,c,f,s,l,h=Array.from(r),d=n,p=e,g=new Map;if(null!=t){const n=h.map(((n,e)=>function(t){t=`${t}`;let n=t.length;zp(t,n-1)&&!zp(t,n-2)&&(t=t.slice(0,-1));return"/"===t[0]?t:`/${t}`}(t(n,e,r)))),e=n.map(Pp),i=new Set(n).add("");for(const t of e)i.has(t)||(i.add(t),n.push(t),e.push(Pp(t)),h.push(Np));d=(t,e)=>n[e],p=(t,n)=>e[n]}for(a=0,i=h.length;a<i;++a)o=h[a],f=h[a]=new Qd(o),null!=(s=d(o,a,r))&&(s+="")&&(l=f.id=s,g.set(l,g.has(l)?Ep:f)),null!=(s=p(o,a,r))&&(s+="")&&(f.parent=s);for(a=0;a<i;++a)if(s=(f=h[a]).parent){if(!(c=g.get(s)))throw new Error("missing: "+s);if(c===Ep)throw new Error("ambiguous: "+s);c.children?c.children.push(f):c.children=[f],f.parent=c}else{if(u)throw new Error("multiple roots");u=f}if(!u)throw new Error("no root");if(null!=t){for(;u.data===Np&&1===u.children.length;)u=u.children[0],--i;for(let t=h.length-1;t>=0&&(f=h[t]).data===Np;--t)f.data=null}if(u.parent=Sp,u.eachBefore((function(t){t.depth=t.parent.depth+1,--i})).eachBefore(Kd),u.parent=null,i>0)throw new Error("cycle");return u}return r.id=function(t){return arguments.length?(n=Jd(t),r):n},r.parentId=function(t){return arguments.length?(e=Jd(t),r):e},r.path=function(n){return arguments.length?(t=Jd(n),r):t},r},t.style=_n,t.subset=function(t,n){return _t(n,t)},t.sum=function(t,n){let e=0;if(void 0===n)for(let n of t)(n=+n)&&(e+=n);else{let r=-1;for(let i of t)(i=+n(i,++r,t))&&(e+=i)}return e},t.superset=_t,t.svg=Nc,t.symbol=function(t,n){let e=null,r=km(i);function i(){let i;if(e||(e=i=r()),t.apply(this,arguments).draw(e,+n.apply(this,arguments)),i)return e=null,i+""||null}return t="function"==typeof t?t:ym(t||fx),n="function"==typeof n?n:ym(void 0===n?64:+n),i.type=function(n){return arguments.length?(t="function"==typeof n?n:ym(n),i):t},i.size=function(t){return arguments.length?(n="function"==typeof t?t:ym(+t),i):n},i.context=function(t){return arguments.length?(e=null==t?null:t,i):e},i},t.symbolAsterisk=cx,t.symbolCircle=fx,t.symbolCross=sx,t.symbolDiamond=dx,t.symbolDiamond2=px,t.symbolPlus=gx,t.symbolSquare=yx,t.symbolSquare2=vx,t.symbolStar=xx,t.symbolTimes=Px,t.symbolTriangle=Mx,t.symbolTriangle2=Ax,t.symbolWye=Cx,t.symbolX=Px,t.symbols=zx,t.symbolsFill=zx,t.symbolsStroke=$x,t.text=mc,t.thresholdFreedmanDiaconis=function(t,n,e){const r=v(t),i=at(t,.75)-at(t,.25);return r&&i?Math.ceil((e-n)/(2*i*Math.pow(r,-1/3))):1},t.thresholdScott=function(t,n,e){const r=v(t),i=w(t);return r&&i?Math.ceil((e-n)*Math.cbrt(r)/(3.49*i)):1},t.thresholdSturges=K,t.tickFormat=Eg,t.tickIncrement=V,t.tickStep=W,t.ticks=G,t.timeDay=py,t.timeDays=gy,t.timeFormatDefaultLocale=P_,t.timeFormatLocale=hv,t.timeFriday=Sy,t.timeFridays=$y,t.timeHour=sy,t.timeHours=ly,t.timeInterval=Vg,t.timeMillisecond=Wg,t.timeMilliseconds=Zg,t.timeMinute=ay,t.timeMinutes=uy,t.timeMonday=wy,t.timeMondays=ky,t.timeMonth=Zy,t.timeMonths=Ky,t.timeSaturday=Ey,t.timeSaturdays=Dy,t.timeSecond=iy,t.timeSeconds=oy,t.timeSunday=xy,t.timeSundays=Ny,t.timeThursday=Ay,t.timeThursdays=zy,t.timeTickInterval=cv,t.timeTicks=uv,t.timeTuesday=My,t.timeTuesdays=Cy,t.timeWednesday=Ty,t.timeWednesdays=Py,t.timeWeek=xy,t.timeWeeks=Ny,t.timeYear=tv,t.timeYears=nv,t.timeout=$i,t.timer=Ni,t.timerFlush=ki,t.transition=go,t.transpose=gt,t.tree=function(){var t=$p,n=1,e=1,r=null;function i(i){var c=function(t){for(var n,e,r,i,o,a=new Up(t,0),u=[a];n=u.pop();)if(r=n._.children)for(n.children=new Array(o=r.length),i=o-1;i>=0;--i)u.push(e=n.children[i]=new Up(r[i],i)),e.parent=n;return(a.parent=new Up(null,0)).children=[a],a}(i);if(c.eachAfter(o),c.parent.m=-c.z,c.eachBefore(a),r)i.eachBefore(u);else{var f=i,s=i,l=i;i.eachBefore((function(t){t.x<f.x&&(f=t),t.x>s.x&&(s=t),t.depth>l.depth&&(l=t)}));var h=f===s?1:t(f,s)/2,d=h-f.x,p=n/(s.x+h+d),g=e/(l.depth||1);i.eachBefore((function(t){t.x=(t.x+d)*p,t.y=t.depth*g}))}return i}function o(n){var e=n.children,r=n.parent.children,i=n.i?r[n.i-1]:null;if(e){!function(t){for(var n,e=0,r=0,i=t.children,o=i.length;--o>=0;)(n=i[o]).z+=e,n.m+=e,e+=n.s+(r+=n.c)}(n);var o=(e[0].z+e[e.length-1].z)/2;i?(n.z=i.z+t(n._,i._),n.m=n.z-o):n.z=o}else i&&(n.z=i.z+t(n._,i._));n.parent.A=function(n,e,r){if(e){for(var i,o=n,a=n,u=e,c=o.parent.children[0],f=o.m,s=a.m,l=u.m,h=c.m;u=Rp(u),o=Dp(o),u&&o;)c=Dp(c),(a=Rp(a)).a=n,(i=u.z+l-o.z-f+t(u._,o._))>0&&(Fp(qp(u,n,r),n,i),f+=i,s+=i),l+=u.m,f+=o.m,h+=c.m,s+=a.m;u&&!Rp(a)&&(a.t=u,a.m+=l-s),o&&!Dp(c)&&(c.t=o,c.m+=f-h,r=n)}return r}(n,i,n.parent.A||r[0])}function a(t){t._.x=t.z+t.parent.m,t.m+=t.parent.m}function u(t){t.x*=n,t.y=t.depth*e}return i.separation=function(n){return arguments.length?(t=n,i):t},i.size=function(t){return arguments.length?(r=!1,n=+t[0],e=+t[1],i):r?null:[n,e]},i.nodeSize=function(t){return arguments.length?(r=!0,n=+t[0],e=+t[1],i):r?[n,e]:null},i},t.treemap=function(){var t=Yp,n=!1,e=1,r=1,i=[0],o=np,a=np,u=np,c=np,f=np;function s(t){return t.x0=t.y0=0,t.x1=e,t.y1=r,t.eachBefore(l),i=[0],n&&t.eachBefore(Tp),t}function l(n){var e=i[n.depth],r=n.x0+e,s=n.y0+e,l=n.x1-e,h=n.y1-e;l<r&&(r=l=(r+l)/2),h<s&&(s=h=(s+h)/2),n.x0=r,n.y0=s,n.x1=l,n.y1=h,n.children&&(e=i[n.depth+1]=o(n)/2,r+=f(n)-e,s+=a(n)-e,(l-=u(n)-e)<r&&(r=l=(r+l)/2),(h-=c(n)-e)<s&&(s=h=(s+h)/2),t(n,r,s,l,h))}return s.round=function(t){return arguments.length?(n=!!t,s):n},s.size=function(t){return arguments.length?(e=+t[0],r=+t[1],s):[e,r]},s.tile=function(n){return arguments.length?(t=tp(n),s):t},s.padding=function(t){return arguments.length?s.paddingInner(t).paddingOuter(t):s.paddingInner()},s.paddingInner=function(t){return arguments.length?(o="function"==typeof t?t:ep(+t),s):o},s.paddingOuter=function(t){return arguments.length?s.paddingTop(t).paddingRight(t).paddingBottom(t).paddingLeft(t):s.paddingTop()},s.paddingTop=function(t){return arguments.length?(a="function"==typeof t?t:ep(+t),s):a},s.paddingRight=function(t){return arguments.length?(u="function"==typeof t?t:ep(+t),s):u},s.paddingBottom=function(t){return arguments.length?(c="function"==typeof t?t:ep(+t),s):c},s.paddingLeft=function(t){return arguments.length?(f="function"==typeof t?t:ep(+t),s):f},s},t.treemapBinary=function(t,n,e,r,i){var o,a,u=t.children,c=u.length,f=new Array(c+1);for(f[0]=a=o=0;o<c;++o)f[o+1]=a+=u[o].value;!function t(n,e,r,i,o,a,c){if(n>=e-1){var s=u[n];return s.x0=i,s.y0=o,s.x1=a,void(s.y1=c)}var l=f[n],h=r/2+l,d=n+1,p=e-1;for(;d<p;){var g=d+p>>>1;f[g]<h?d=g+1:p=g}h-f[d-1]<f[d]-h&&n+1<d&&--d;var y=f[d]-l,v=r-y;if(a-i>c-o){var _=r?(i*v+a*y)/r:a;t(n,d,y,i,o,_,c),t(d,e,v,_,o,a,c)}else{var b=r?(o*v+c*y)/r:c;t(n,d,y,i,o,a,b),t(d,e,v,i,b,a,c)}}(0,c,t.value,n,e,r,i)},t.treemapDice=Ap,t.treemapResquarify=Lp,t.treemapSlice=Ip,t.treemapSliceDice=function(t,n,e,r,i){(1&t.depth?Ip:Ap)(t,n,e,r,i)},t.treemapSquarify=Yp,t.tsv=Mc,t.tsvFormat=lc,t.tsvFormatBody=hc,t.tsvFormatRow=pc,t.tsvFormatRows=dc,t.tsvFormatValue=gc,t.tsvParse=fc,t.tsvParseRows=sc,t.union=function(...t){const n=new InternSet;for(const e of t)for(const t of e)n.add(t);return n},t.unixDay=_y,t.unixDays=by,t.utcDay=yy,t.utcDays=vy,t.utcFriday=By,t.utcFridays=Vy,t.utcHour=hy,t.utcHours=dy,t.utcMillisecond=Wg,t.utcMilliseconds=Zg,t.utcMinute=cy,t.utcMinutes=fy,t.utcMonday=qy,t.utcMondays=jy,t.utcMonth=Qy,t.utcMonths=Jy,t.utcSaturday=Yy,t.utcSaturdays=Wy,t.utcSecond=iy,t.utcSeconds=oy,t.utcSunday=Fy,t.utcSundays=Ly,t.utcThursday=Oy,t.utcThursdays=Gy,t.utcTickInterval=av,t.utcTicks=ov,t.utcTuesday=Uy,t.utcTuesdays=Hy,t.utcWednesday=Iy,t.utcWednesdays=Xy,t.utcWeek=Fy,t.utcWeeks=Ly,t.utcYear=ev,t.utcYears=rv,t.variance=x,t.version="7.9.0",t.window=pn,t.xml=Sc,t.zip=function(){return gt(arguments)},t.zoom=function(){var t,n,e,r=Ew,i=Nw,o=zw,a=Cw,u=Pw,c=[0,1/0],f=[[-1/0,-1/0],[1/0,1/0]],s=250,l=ri,h=$t("start","zoom","end"),d=500,p=150,g=0,y=10;function v(t){t.property("__zoom",kw).on("wheel.zoom",T,{passive:!1}).on("mousedown.zoom",A).on("dblclick.zoom",S).filter(u).on("touchstart.zoom",E).on("touchmove.zoom",N).on("touchend.zoom touchcancel.zoom",k).style("-webkit-tap-highlight-color","rgba(0,0,0,0)")}function _(t,n){return(n=Math.max(c[0],Math.min(c[1],n)))===t.k?t:new ww(n,t.x,t.y)}function b(t,n,e){var r=n[0]-e[0]*t.k,i=n[1]-e[1]*t.k;return r===t.x&&i===t.y?t:new ww(t.k,r,i)}function m(t){return[(+t[0][0]+ +t[1][0])/2,(+t[0][1]+ +t[1][1])/2]}function x(t,n,e,r){t.on("start.zoom",(function(){w(this,arguments).event(r).start()})).on("interrupt.zoom end.zoom",(function(){w(this,arguments).event(r).end()})).tween("zoom",(function(){var t=this,o=arguments,a=w(t,o).event(r),u=i.apply(t,o),c=null==e?m(u):"function"==typeof e?e.apply(t,o):e,f=Math.max(u[1][0]-u[0][0],u[1][1]-u[0][1]),s=t.__zoom,h="function"==typeof n?n.apply(t,o):n,d=l(s.invert(c).concat(f/s.k),h.invert(c).concat(f/h.k));return function(t){if(1===t)t=h;else{var n=d(t),e=f/n[2];t=new ww(e,c[0]-n[0]*e,c[1]-n[1]*e)}a.zoom(null,t)}}))}function w(t,n,e){return!e&&t.__zooming||new M(t,n)}function M(t,n){this.that=t,this.args=n,this.active=0,this.sourceEvent=null,this.extent=i.apply(t,n),this.taps=0}function T(t,...n){if(r.apply(this,arguments)){var e=w(this,n).event(t),i=this.__zoom,u=Math.max(c[0],Math.min(c[1],i.k*Math.pow(2,a.apply(this,arguments)))),s=ne(t);if(e.wheel)e.mouse[0][0]===s[0]&&e.mouse[0][1]===s[1]||(e.mouse[1]=i.invert(e.mouse[0]=s)),clearTimeout(e.wheel);else{if(i.k===u)return;e.mouse=[s,i.invert(s)],Gi(this),e.start()}Sw(t),e.wheel=setTimeout((function(){e.wheel=null,e.end()}),p),e.zoom("mouse",o(b(_(i,u),e.mouse[0],e.mouse[1]),e.extent,f))}}function A(t,...n){if(!e&&r.apply(this,arguments)){var i=t.currentTarget,a=w(this,n,!0).event(t),u=Zn(t.view).on("mousemove.zoom",(function(t){if(Sw(t),!a.moved){var n=t.clientX-s,e=t.clientY-l;a.moved=n*n+e*e>g}a.event(t).zoom("mouse",o(b(a.that.__zoom,a.mouse[0]=ne(t,i),a.mouse[1]),a.extent,f))}),!0).on("mouseup.zoom",(function(t){u.on("mousemove.zoom mouseup.zoom",null),ue(t.view,a.moved),Sw(t),a.event(t).end()}),!0),c=ne(t,i),s=t.clientX,l=t.clientY;ae(t.view),Aw(t),a.mouse=[c,this.__zoom.invert(c)],Gi(this),a.start()}}function S(t,...n){if(r.apply(this,arguments)){var e=this.__zoom,a=ne(t.changedTouches?t.changedTouches[0]:t,this),u=e.invert(a),c=e.k*(t.shiftKey?.5:2),l=o(b(_(e,c),a,u),i.apply(this,n),f);Sw(t),s>0?Zn(this).transition().duration(s).call(x,l,a,t):Zn(this).call(v.transform,l,a,t)}}function E(e,...i){if(r.apply(this,arguments)){var o,a,u,c,f=e.touches,s=f.length,l=w(this,i,e.changedTouches.length===s).event(e);for(Aw(e),a=0;a<s;++a)c=[c=ne(u=f[a],this),this.__zoom.invert(c),u.identifier],l.touch0?l.touch1||l.touch0[2]===c[2]||(l.touch1=c,l.taps=0):(l.touch0=c,o=!0,l.taps=1+!!t);t&&(t=clearTimeout(t)),o&&(l.taps<2&&(n=c[0],t=setTimeout((function(){t=null}),d)),Gi(this),l.start())}}function N(t,...n){if(this.__zooming){var e,r,i,a,u=w(this,n).event(t),c=t.changedTouches,s=c.length;for(Sw(t),e=0;e<s;++e)i=ne(r=c[e],this),u.touch0&&u.touch0[2]===r.identifier?u.touch0[0]=i:u.touch1&&u.touch1[2]===r.identifier&&(u.touch1[0]=i);if(r=u.that.__zoom,u.touch1){var l=u.touch0[0],h=u.touch0[1],d=u.touch1[0],p=u.touch1[1],g=(g=d[0]-l[0])*g+(g=d[1]-l[1])*g,y=(y=p[0]-h[0])*y+(y=p[1]-h[1])*y;r=_(r,Math.sqrt(g/y)),i=[(l[0]+d[0])/2,(l[1]+d[1])/2],a=[(h[0]+p[0])/2,(h[1]+p[1])/2]}else{if(!u.touch0)return;i=u.touch0[0],a=u.touch0[1]}u.zoom("touch",o(b(r,i,a),u.extent,f))}}function k(t,...r){if(this.__zooming){var i,o,a=w(this,r).event(t),u=t.changedTouches,c=u.length;for(Aw(t),e&&clearTimeout(e),e=setTimeout((function(){e=null}),d),i=0;i<c;++i)o=u[i],a.touch0&&a.touch0[2]===o.identifier?delete a.touch0:a.touch1&&a.touch1[2]===o.identifier&&delete a.touch1;if(a.touch1&&!a.touch0&&(a.touch0=a.touch1,delete a.touch1),a.touch0)a.touch0[1]=this.__zoom.invert(a.touch0[0]);else if(a.end(),2===a.taps&&(o=ne(o,this),Math.hypot(n[0]-o[0],n[1]-o[1])<y)){var f=Zn(this).on("dblclick.zoom");f&&f.apply(this,arguments)}}}return v.transform=function(t,n,e,r){var i=t.selection?t.selection():t;i.property("__zoom",kw),t!==i?x(t,n,e,r):i.interrupt().each((function(){w(this,arguments).event(r).start().zoom(null,"function"==typeof n?n.apply(this,arguments):n).end()}))},v.scaleBy=function(t,n,e,r){v.scaleTo(t,(function(){return this.__zoom.k*("function"==typeof n?n.apply(this,arguments):n)}),e,r)},v.scaleTo=function(t,n,e,r){v.transform(t,(function(){var t=i.apply(this,arguments),r=this.__zoom,a=null==e?m(t):"function"==typeof e?e.apply(this,arguments):e,u=r.invert(a),c="function"==typeof n?n.apply(this,arguments):n;return o(b(_(r,c),a,u),t,f)}),e,r)},v.translateBy=function(t,n,e,r){v.transform(t,(function(){return o(this.__zoom.translate("function"==typeof n?n.apply(this,arguments):n,"function"==typeof e?e.apply(this,arguments):e),i.apply(this,arguments),f)}),null,r)},v.translateTo=function(t,n,e,r,a){v.transform(t,(function(){var t=i.apply(this,arguments),a=this.__zoom,u=null==r?m(t):"function"==typeof r?r.apply(this,arguments):r;return o(Mw.translate(u[0],u[1]).scale(a.k).translate("function"==typeof n?-n.apply(this,arguments):-n,"function"==typeof e?-e.apply(this,arguments):-e),t,f)}),r,a)},M.prototype={event:function(t){return t&&(this.sourceEvent=t),this},start:function(){return 1==++this.active&&(this.that.__zooming=this,this.emit("start")),this},zoom:function(t,n){return this.mouse&&"mouse"!==t&&(this.mouse[1]=n.invert(this.mouse[0])),this.touch0&&"touch"!==t&&(this.touch0[1]=n.invert(this.touch0[0])),this.touch1&&"touch"!==t&&(this.touch1[1]=n.invert(this.touch1[0])),this.that.__zoom=n,this.emit("zoom"),this},end:function(){return 0==--this.active&&(delete this.that.__zooming,this.emit("end")),this},emit:function(t){var n=Zn(this.that).datum();h.call(t,this.that,new xw(t,{sourceEvent:this.sourceEvent,target:v,type:t,transform:this.that.__zoom,dispatch:h}),n)}},v.wheelDelta=function(t){return arguments.length?(a="function"==typeof t?t:mw(+t),v):a},v.filter=function(t){return arguments.length?(r="function"==typeof t?t:mw(!!t),v):r},v.touchable=function(t){return arguments.length?(u="function"==typeof t?t:mw(!!t),v):u},v.extent=function(t){return arguments.length?(i="function"==typeof t?t:mw([[+t[0][0],+t[0][1]],[+t[1][0],+t[1][1]]]),v):i},v.scaleExtent=function(t){return arguments.length?(c[0]=+t[0],c[1]=+t[1],v):[c[0],c[1]]},v.translateExtent=function(t){return arguments.length?(f[0][0]=+t[0][0],f[1][0]=+t[1][0],f[0][1]=+t[0][1],f[1][1]=+t[1][1],v):[[f[0][0],f[0][1]],[f[1][0],f[1][1]]]},v.constrain=function(t){return arguments.length?(o=t,v):o},v.duration=function(t){return arguments.length?(s=+t,v):s},v.interpolate=function(t){return arguments.length?(l=t,v):l},v.on=function(){var t=h.on.apply(h,arguments);return t===h?v:t},v.clickDistance=function(t){return arguments.length?(g=(t=+t)*t,v):Math.sqrt(g)},v.tapDistance=function(t){return arguments.length?(y=+t,v):y},v},t.zoomIdentity=Mw,t.zoomTransform=Tw}));
 
+"use strict";
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusUrl = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function isNumericId(value) {
-    return /^\d+$/.test(String(value || "").trim());
-  }
-
-  function normalizeToPath(input) {
-    if (typeof input !== "string") {
-      return "";
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
     }
-
-    if (input.startsWith("http://") || input.startsWith("https://")) {
-      try {
-        return new URL(input).pathname;
-      } catch (_) {
+    else {
+        root.GrailedPlusUrl = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function isNumericId(value) {
+        return /^\d+$/.test(String(value || "").trim());
+    }
+    function normalizeToPath(input) {
+        if (typeof input !== "string") {
+            return "";
+        }
+        if (input.startsWith("http://") || input.startsWith("https://")) {
+            try {
+                return new URL(input).pathname;
+            }
+            catch (_) {
+                return input;
+            }
+        }
         return input;
-      }
     }
-
-    return input;
-  }
-
-  function parseListingIdFromUrl(input) {
-    if (isNumericId(input)) {
-      return String(input).trim();
-    }
-
-    var source = normalizeToPath(String(input || ""));
-    var match = source.match(/\/listings\/(\d+)(?:[^\d]|$)/);
-    if (match && match[1]) {
-      return match[1];
-    }
-
-    return null;
-  }
-
-  function isListingPath(pathname) {
-    if (typeof pathname !== "string") {
-      return false;
-    }
-    return pathname.indexOf("/listings/") !== -1;
-  }
-
-  return {
-    parseListingIdFromUrl: parseListingIdFromUrl,
-    isListingPath: isListingPath
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusNormalize = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function getNestedValue(input, paths, fallback) {
-    var i;
-    var path;
-    var value;
-    var cursor;
-    var j;
-
-    for (i = 0; i < paths.length; i += 1) {
-      path = paths[i];
-      cursor = input;
-
-      for (j = 0; j < path.length; j += 1) {
-        if (cursor == null || typeof cursor !== "object") {
-          cursor = undefined;
-          break;
+    function parseListingIdFromUrl(input) {
+        if (isNumericId(input)) {
+            return String(input).trim();
         }
-        cursor = cursor[path[j]];
-      }
-
-      value = cursor;
-      if (value !== undefined && value !== null) {
-        return value;
-      }
-    }
-
-    return fallback;
-  }
-
-  function normalizeDate(value) {
-    if (!value) {
-      return null;
-    }
-
-    var date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date.toISOString();
-  }
-
-  function normalizeString(value, fallback) {
-    if (typeof value === "string") {
-      return value;
-    }
-    if (value == null) {
-      return fallback;
-    }
-
-    try {
-      return String(value);
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  function normalizeListingId(value) {
-    if (typeof value === "number" && Number.isInteger(value) && value > 0) {
-      return value;
-    }
-
-    if (typeof value === "string" && /^\d+$/.test(value.trim())) {
-      var parsed = Number(value.trim());
-      return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-    }
-
-    return null;
-  }
-
-  function normalizePriceDrops(value) {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-
-    return value
-      .map(function (entry) {
-        if (typeof entry === "object" && entry !== null) {
-          return Number(entry.amount || entry.price || entry.value);
+        const source = normalizeToPath(String(input || ""));
+        const match = source.match(/\/listings\/(\d+)(?:[^\d]|$)/);
+        if (match && match[1]) {
+            return match[1];
         }
-        return Number(entry);
-      })
-      .filter(function (entry) {
-        return Number.isFinite(entry) && entry > 0;
-      });
-  }
-
-  return {
-    getNestedValue: getNestedValue,
-    normalizeDate: normalizeDate,
-    normalizeString: normalizeString,
-    normalizeListingId: normalizeListingId,
-    normalizePriceDrops: normalizePriceDrops
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusListingModel = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var Normalize = null;
-  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusNormalize) {
-    Normalize = globalThis.GrailedPlusNormalize;
-  }
-  if (!Normalize && typeof require === "function") {
-    try {
-      Normalize = require("../domain/normalize.js");
-    } catch (_) {
-      Normalize = null;
-    }
-  }
-
-  function getNormalizeHelpers() {
-    if (!Normalize || typeof Normalize !== "object") {
-      return null;
-    }
-
-    if (
-      typeof Normalize.getNestedValue !== "function" ||
-      typeof Normalize.normalizeDate !== "function" ||
-      typeof Normalize.normalizeString !== "function" ||
-      typeof Normalize.normalizeListingId !== "function" ||
-      typeof Normalize.normalizePriceDrops !== "function"
-    ) {
-      return null;
-    }
-
-    return Normalize;
-  }
-
-  function getNestedValue(input, paths, fallback) {
-    var helpers = getNormalizeHelpers();
-    if (helpers) {
-      return helpers.getNestedValue(input, paths, fallback);
-    }
-
-    var i;
-    var path;
-    var value;
-    var cursor;
-    var j;
-
-    for (i = 0; i < paths.length; i += 1) {
-      path = paths[i];
-      cursor = input;
-
-      for (j = 0; j < path.length; j += 1) {
-        if (cursor == null || typeof cursor !== "object") {
-          cursor = undefined;
-          break;
-        }
-        cursor = cursor[path[j]];
-      }
-
-      value = cursor;
-      if (value !== undefined && value !== null) {
-        return value;
-      }
-    }
-
-    return fallback;
-  }
-
-  function normalizeDate(value) {
-    var helpers = getNormalizeHelpers();
-    if (helpers) {
-      return helpers.normalizeDate(value);
-    }
-
-    if (!value) {
-      return null;
-    }
-
-    var date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date.toISOString();
-  }
-
-  function normalizeString(value, fallback) {
-    var helpers = getNormalizeHelpers();
-    if (helpers) {
-      return helpers.normalizeString(value, fallback);
-    }
-
-    if (typeof value === "string") {
-      return value;
-    }
-    if (value == null) {
-      return fallback;
-    }
-
-    try {
-      return String(value);
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  function normalizeListingId(value) {
-    var helpers = getNormalizeHelpers();
-    if (helpers) {
-      return helpers.normalizeListingId(value);
-    }
-
-    if (typeof value === "number" && Number.isInteger(value) && value > 0) {
-      return value;
-    }
-
-    if (typeof value === "string" && /^\d+$/.test(value.trim())) {
-      var parsed = Number(value.trim());
-      return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-    }
-
-    return null;
-  }
-
-  function normalizePriceDrops(value) {
-    var helpers = getNormalizeHelpers();
-    if (helpers) {
-      return helpers.normalizePriceDrops(value);
-    }
-
-    if (!Array.isArray(value)) {
-      return [];
-    }
-
-    return value
-      .map(function (entry) {
-        if (typeof entry === "object" && entry !== null) {
-          return Number(entry.amount || entry.price || entry.value);
-        }
-        return Number(entry);
-      })
-      .filter(function (entry) {
-        return Number.isFinite(entry) && entry > 0;
-      });
-  }
-
-  function createDefaultListing(sourceStatus) {
-    return {
-      id: null,
-      title: "",
-      createdAt: null,
-      pricing: {
-        history: [],
-        updatedAt: null
-      },
-      seller: {
-        createdAt: null
-      },
-      prettyPath: null,
-      sold: false,
-      rawListing: null,
-      sourceStatus: sourceStatus || "missing_listing"
-    };
-  }
-
-  function getRawListing(rawNextData) {
-    return getNestedValue(
-      rawNextData,
-      [
-        ["props", "pageProps", "listing"],
-        ["pageProps", "listing"],
-        ["props", "listing"],
-        ["listing"]
-      ],
-      null
-    );
-  }
-
-  function mapRawListingToModel(rawListing) {
-    if (!rawListing || typeof rawListing !== "object") {
-      return createDefaultListing("missing_listing");
-    }
-
-    var seller = getNestedValue(rawListing, [["seller"]], {});
-    var model = createDefaultListing("ok");
-
-    model.id = normalizeListingId(getNestedValue(rawListing, [["id"]], null));
-    model.title = normalizeString(getNestedValue(rawListing, [["title"]], ""), "");
-    model.pricing.history = normalizePriceDrops(
-      getNestedValue(rawListing, [["priceDrops"], ["price_drops"]], [])
-    );
-    model.createdAt = normalizeDate(
-      getNestedValue(rawListing, [["createdAt"], ["created_at"], ["trueCreatedAt"], ["true_created_at"]], null)
-    );
-    model.pricing.updatedAt = normalizeDate(
-      getNestedValue(rawListing, [["priceUpdatedAt"], ["price_updated_at"]], null)
-    );
-    model.seller.createdAt = normalizeDate(
-      getNestedValue(seller, [["createdAt"], ["created_at"]], null)
-    );
-
-    model.prettyPath = normalizeString(
-      getNestedValue(rawListing, [["prettyPath"], ["pretty_path"]], null),
-      null
-    );
-    model.sold = Boolean(getNestedValue(rawListing, [["sold"]], false));
-    model.rawListing = rawListing;
-
-    if (!model.id) {
-      model.sourceStatus = "missing_listing_id";
-    }
-
-    return model;
-  }
-
-  function fromNextData(rawNextData) {
-    var rawListing = getRawListing(rawNextData);
-    return mapRawListingToModel(rawListing);
-  }
-
-  return {
-    createDefaultListing: createDefaultListing,
-    fromNextData: fromNextData,
-    mapRawListingToModel: mapRawListingToModel
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusListingExtractor = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var ListingModel = null;
-  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusListingModel) {
-    ListingModel = globalThis.GrailedPlusListingModel;
-  }
-  if (!ListingModel && typeof require === "function") {
-    try {
-      ListingModel = require("./listingModel.js");
-    } catch (_) {
-      ListingModel = null;
-    }
-  }
-
-  function safeParseJson(text) {
-    if (!text || typeof text !== "string") {
-      return null;
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function readNextDataFromDocument(doc) {
-    if (!doc || typeof doc.getElementById !== "function") {
-      return null;
-    }
-
-    var node = doc.getElementById("__NEXT_DATA__");
-    if (!node || !node.textContent) {
-      return null;
-    }
-
-    return safeParseJson(node.textContent);
-  }
-
-  function extractListing(rawNextData) {
-    if (ListingModel && typeof ListingModel.fromNextData === "function") {
-      return ListingModel.fromNextData(rawNextData);
-    }
-
-    // Fallback defaults if the listing model module fails to load.
-    return {
-      id: null,
-      title: "",
-      createdAt: null,
-      pricing: {
-        history: [],
-        updatedAt: null
-      },
-      seller: {
-        createdAt: null
-      },
-      prettyPath: null,
-      sold: false,
-      rawListing: null,
-      sourceStatus: "listing_model_unavailable"
-    };
-  }
-
-  return {
-    readNextDataFromDocument: readNextDataFromDocument,
-    extractListing: extractListing
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusPricingInsights = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var DAY_MS = 24 * 60 * 60 * 1000;
-
-  function computeAverageDropAmount(priceDrops) {
-    if (!Array.isArray(priceDrops) || priceDrops.length < 2) {
-      return null;
-    }
-
-    var deltas = [];
-    var i;
-    var sum = 0;
-
-    for (i = 0; i < priceDrops.length - 1; i += 1) {
-      deltas.push(Number(priceDrops[i]) - Number(priceDrops[i + 1]));
-    }
-
-    for (i = 0; i < deltas.length; i += 1) {
-      if (!Number.isFinite(deltas[i])) {
         return null;
-      }
-      sum += deltas[i];
     }
-
-    return sum / deltas.length;
-  }
-
-  function computeAverageDropPercent(priceDrops) {
-    if (!Array.isArray(priceDrops) || priceDrops.length < 2) {
-      return null;
+    function isListingPath(pathname) {
+        if (typeof pathname !== "string") {
+            return false;
+        }
+        return pathname.indexOf("/listings/") !== -1;
     }
-
-    var percents = [];
-    var i;
-    var current;
-    var next;
-    var sum = 0;
-
-    for (i = 0; i < priceDrops.length - 1; i += 1) {
-      current = Number(priceDrops[i]);
-      next = Number(priceDrops[i + 1]);
-      if (!Number.isFinite(current) || !Number.isFinite(next) || current <= 0) {
-        return null;
-      }
-      percents.push(100 - (next / current) * 100);
-    }
-
-    for (i = 0; i < percents.length; i += 1) {
-      sum += percents[i];
-    }
-
-    return Math.floor(sum / percents.length);
-  }
-
-  function parseDate(value) {
-    if (!value) {
-      return null;
-    }
-    var date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-    return date;
-  }
-
-  function computeExpectedDrop(listing, nowMs) {
-    var history =
-      listing && listing.pricing && Array.isArray(listing.pricing.history)
-        ? listing.pricing.history
-        : [];
-    if (history.length < 1) {
-      return {
-        expectedNextDropDays: null,
-        expectedDropState: "insufficient_data"
-      };
-    }
-
-    var createdAt = parseDate(listing.createdAt);
-    var updatedAt = parseDate(listing && listing.pricing ? listing.pricing.updatedAt : null);
-    if (!createdAt || !updatedAt) {
-      return {
-        expectedNextDropDays: null,
-        expectedDropState: "insufficient_data"
-      };
-    }
-
-    var dropIntervalMs = (updatedAt.getTime() - createdAt.getTime()) / history.length;
-    if (!Number.isFinite(dropIntervalMs) || dropIntervalMs <= 0) {
-      return {
-        expectedNextDropDays: null,
-        expectedDropState: "insufficient_data"
-      };
-    }
-
-    var msUntilNextDrop = dropIntervalMs - (nowMs - updatedAt.getTime());
-    var expectedNextDropDays = Math.round(msUntilNextDrop / DAY_MS);
-
-    if (expectedNextDropDays < -30) {
-      return {
-        expectedNextDropDays: expectedNextDropDays,
-        expectedDropState: "inactive"
-      };
-    }
-
     return {
-      expectedNextDropDays: expectedNextDropDays,
-      expectedDropState: "scheduled"
+        parseListingIdFromUrl,
+        isListingPath
     };
-  }
-
-  function computePricingInsights(listing, nowMs) {
-    var now = Number.isFinite(nowMs) ? nowMs : Date.now();
-    var expected = computeExpectedDrop(listing, now);
-    var history =
-      listing && listing.pricing && Array.isArray(listing.pricing.history)
-        ? listing.pricing.history
-        : [];
-
-    return {
-      averageDropAmountUsd: computeAverageDropAmount(history),
-      averageDropPercent: computeAverageDropPercent(history),
-      expectedNextDropDays: expected.expectedNextDropDays,
-      expectedDropState: expected.expectedDropState,
-      totalDrops: history.length
-    };
-  }
-
-  return {
-    computeAverageDropAmount: computeAverageDropAmount,
-    computeAverageDropPercent: computeAverageDropPercent,
-    computeExpectedDrop: computeExpectedDrop,
-    computePricingInsights: computePricingInsights
-  };
 });
 
+"use strict";
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusSettings = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var DEFAULT_CURRENCY = "USD";
-  var DEFAULT_CONVERSION_ENABLED = false;
-  var DEFAULT_LISTING_INSIGHTS_ENABLED = true;
-  var DEFAULT_DARK_MODE_ENABLED = true;
-  var DEFAULT_DARK_MODE_BEHAVIOR = "system";
-  var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
-  var CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
-  var CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
-  var CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
-  var LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
-  var DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
-  var DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
-  var DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
-
-  function normalizeCurrencyCode(input) {
-    if (typeof input !== "string") {
-      return null;
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
     }
-
-    var trimmed = input.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(trimmed)) {
-      return null;
+    else {
+        root.GrailedPlusNormalize = factory();
     }
-
-    return trimmed;
-  }
-
-  function normalizeHexColor(input) {
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
-    if (shortMatch && shortMatch[1]) {
-      var shortHex = shortMatch[1].toUpperCase();
-      return (
-        "#" +
-        shortHex.charAt(0) +
-        shortHex.charAt(0) +
-        shortHex.charAt(1) +
-        shortHex.charAt(1) +
-        shortHex.charAt(2) +
-        shortHex.charAt(2)
-      );
-    }
-
-    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
-    if (longMatch && longMatch[1]) {
-      return "#" + longMatch[1].toUpperCase();
-    }
-
-    return null;
-  }
-
-  function normalizeDarkModeBehavior(input) {
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim().toLowerCase();
-    if (trimmed !== "system" && trimmed !== "permanent") {
-      return null;
-    }
-
-    return trimmed;
-  }
-
-  function getStorageLocal() {
-    if (
-      typeof chrome !== "undefined" &&
-      chrome.storage &&
-      chrome.storage.local &&
-      typeof chrome.storage.local.get === "function" &&
-      typeof chrome.storage.local.set === "function"
-    ) {
-      return chrome.storage.local;
-    }
-
-    if (
-      typeof browser !== "undefined" &&
-      browser.storage &&
-      browser.storage.local &&
-      typeof browser.storage.local.get === "function" &&
-      typeof browser.storage.local.set === "function"
-    ) {
-      return browser.storage.local;
-    }
-
-    return null;
-  }
-
-  function storageGet(storage, key) {
-    if (!storage) {
-      return Promise.resolve({});
-    }
-
-    try {
-      var result = storage.get(key);
-      if (result && typeof result.then === "function") {
-        return result;
-      }
-    } catch (_) {
-      // Try callback style below.
-    }
-
-    return new Promise(function (resolve) {
-      try {
-        storage.get(key, function (data) {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-            resolve({});
-            return;
-          }
-          resolve(data || {});
-        });
-      } catch (_) {
-        resolve({});
-      }
-    });
-  }
-
-  function storageSet(storage, payload) {
-    if (!storage) {
-      return Promise.resolve(false);
-    }
-
-    try {
-      var result = storage.set(payload);
-      if (result && typeof result.then === "function") {
-        return result.then(function () {
-          return true;
-        });
-      }
-    } catch (_) {
-      // Try callback style below.
-    }
-
-    return new Promise(function (resolve) {
-      try {
-        storage.set(payload, function () {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-            resolve(false);
-            return;
-          }
-          resolve(true);
-        });
-      } catch (_) {
-        resolve(false);
-      }
-    });
-  }
-
-  function getSelectedCurrency() {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve(DEFAULT_CURRENCY);
-    }
-
-    return storageGet(storage, CURRENCY_STORAGE_KEY)
-      .then(function (data) {
-        var normalized = normalizeCurrencyCode(data && data[CURRENCY_STORAGE_KEY]);
-        return normalized || DEFAULT_CURRENCY;
-      })
-      .catch(function () {
-        return DEFAULT_CURRENCY;
-      });
-  }
-
-  function setSelectedCurrency(code) {
-    var normalized = normalizeCurrencyCode(code);
-    if (!normalized) {
-      return Promise.resolve({
-        ok: false,
-        error: "Currency must be a 3-letter code."
-      });
-    }
-
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[CURRENCY_STORAGE_KEY] = normalized;
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist currency."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist currency."
-        };
-      });
-  }
-
-  function _persistBooleanSetting(storageKey, enabled, settingDescription) {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[storageKey] = Boolean(enabled);
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist " + settingDescription + "."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist " + settingDescription + "."
-        };
-      });
-  }
-
-  function getCurrencyConversionEnabled() {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve(DEFAULT_CONVERSION_ENABLED);
-    }
-
-    return storageGet(storage, CONVERSION_ENABLED_STORAGE_KEY)
-      .then(function (data) {
-        return Boolean(data && data[CONVERSION_ENABLED_STORAGE_KEY]);
-      })
-      .catch(function () {
-        return DEFAULT_CONVERSION_ENABLED;
-      });
-  }
-
-  function setCurrencyConversionEnabled(enabled) {
-    return _persistBooleanSetting(
-      CONVERSION_ENABLED_STORAGE_KEY,
-      enabled,
-      "conversion status"
-    );
-  }
-
-  function getListingInsightsEnabled() {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve(DEFAULT_LISTING_INSIGHTS_ENABLED);
-    }
-
-    return storageGet(storage, LISTING_INSIGHTS_ENABLED_STORAGE_KEY)
-      .then(function (data) {
-        var storedValue = data && data[LISTING_INSIGHTS_ENABLED_STORAGE_KEY];
-        return typeof storedValue === "boolean" ? storedValue : DEFAULT_LISTING_INSIGHTS_ENABLED;
-      })
-      .catch(function () {
-        return DEFAULT_LISTING_INSIGHTS_ENABLED;
-      });
-  }
-
-  function setListingInsightsEnabled(enabled) {
-    return _persistBooleanSetting(
-      LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
-      enabled,
-      "listing insights status"
-    );
-  }
-
-  function getDarkModeEnabled() {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve(DEFAULT_DARK_MODE_ENABLED);
-    }
-
-    return storageGet(storage, DARK_MODE_ENABLED_STORAGE_KEY)
-      .then(function (data) {
-        var storedValue = data && data[DARK_MODE_ENABLED_STORAGE_KEY];
-        return typeof storedValue === "boolean" ? storedValue : DEFAULT_DARK_MODE_ENABLED;
-      })
-      .catch(function () {
-        return DEFAULT_DARK_MODE_ENABLED;
-      });
-  }
-
-  function setDarkModeEnabled(enabled) {
-    return _persistBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, enabled, "dark mode status");
-  }
-
-  function getDarkModePrimaryColor() {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve(DEFAULT_DARK_MODE_PRIMARY_COLOR);
-    }
-
-    return storageGet(storage, DARK_MODE_PRIMARY_COLOR_STORAGE_KEY)
-      .then(function (data) {
-        var normalized = normalizeHexColor(data && data[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY]);
-        return normalized || DEFAULT_DARK_MODE_PRIMARY_COLOR;
-      })
-      .catch(function () {
-        return DEFAULT_DARK_MODE_PRIMARY_COLOR;
-      });
-  }
-
-  function getDarkModeBehavior() {
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve(DEFAULT_DARK_MODE_BEHAVIOR);
-    }
-
-    return storageGet(storage, DARK_MODE_BEHAVIOR_STORAGE_KEY)
-      .then(function (data) {
-        var normalized = normalizeDarkModeBehavior(data && data[DARK_MODE_BEHAVIOR_STORAGE_KEY]);
-        return normalized || DEFAULT_DARK_MODE_BEHAVIOR;
-      })
-      .catch(function () {
-        return DEFAULT_DARK_MODE_BEHAVIOR;
-      });
-  }
-
-  function setDarkModeBehavior(behavior) {
-    var normalized = normalizeDarkModeBehavior(behavior);
-    if (!normalized) {
-      return Promise.resolve({
-        ok: false,
-        error: "Dark mode behavior must be either 'system' or 'permanent'."
-      });
-    }
-
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[DARK_MODE_BEHAVIOR_STORAGE_KEY] = normalized;
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist dark mode behavior."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist dark mode behavior."
-        };
-      });
-  }
-
-  function setDarkModePrimaryColor(color) {
-    var normalized = normalizeHexColor(color);
-    if (!normalized) {
-      return Promise.resolve({
-        ok: false,
-        error: "Primary color must be a valid hex value."
-      });
-    }
-
-    var storage = getStorageLocal();
-    if (!storage) {
-      return Promise.resolve({
-        ok: false,
-        error: "Storage unavailable."
-      });
-    }
-
-    var payload = {};
-    payload[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY] = normalized;
-
-    return storageSet(storage, payload)
-      .then(function (ok) {
-        if (!ok) {
-          return {
-            ok: false,
-            error: "Failed to persist dark mode primary color."
-          };
-        }
-        return {
-          ok: true
-        };
-      })
-      .catch(function () {
-        return {
-          ok: false,
-          error: "Failed to persist dark mode primary color."
-        };
-      });
-  }
-
-  return {
-    DEFAULT_CURRENCY: DEFAULT_CURRENCY,
-    DEFAULT_CONVERSION_ENABLED: DEFAULT_CONVERSION_ENABLED,
-    DEFAULT_LISTING_INSIGHTS_ENABLED: DEFAULT_LISTING_INSIGHTS_ENABLED,
-    DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
-    DEFAULT_DARK_MODE_BEHAVIOR: DEFAULT_DARK_MODE_BEHAVIOR,
-    DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
-    CURATED_CURRENCIES: CURATED_CURRENCIES,
-    CURRENCY_STORAGE_KEY: CURRENCY_STORAGE_KEY,
-    CONVERSION_ENABLED_STORAGE_KEY: CONVERSION_ENABLED_STORAGE_KEY,
-    LISTING_INSIGHTS_ENABLED_STORAGE_KEY: LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
-    DARK_MODE_ENABLED_STORAGE_KEY: DARK_MODE_ENABLED_STORAGE_KEY,
-    DARK_MODE_BEHAVIOR_STORAGE_KEY: DARK_MODE_BEHAVIOR_STORAGE_KEY,
-    DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
-    STORAGE_KEY: CURRENCY_STORAGE_KEY,
-    normalizeCurrencyCode: normalizeCurrencyCode,
-    normalizeHexColor: normalizeHexColor,
-    normalizeDarkModeBehavior: normalizeDarkModeBehavior,
-    getSelectedCurrency: getSelectedCurrency,
-    setSelectedCurrency: setSelectedCurrency,
-    getCurrencyConversionEnabled: getCurrencyConversionEnabled,
-    setCurrencyConversionEnabled: setCurrencyConversionEnabled,
-    getListingInsightsEnabled: getListingInsightsEnabled,
-    setListingInsightsEnabled: setListingInsightsEnabled,
-    getDarkModeEnabled: getDarkModeEnabled,
-    setDarkModeEnabled: setDarkModeEnabled,
-    getDarkModeBehavior: getDarkModeBehavior,
-    setDarkModeBehavior: setDarkModeBehavior,
-    getDarkModePrimaryColor: getDarkModePrimaryColor,
-    setDarkModePrimaryColor: setDarkModePrimaryColor
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusCurrency = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var CACHE_KEY = "grailed_plus_exchange_rates_v1";
-  var CACHE_TTL_MS = 60 * 60 * 1000;
-
-  function normalizeCurrencyCode(input) {
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(trimmed)) {
-      return null;
-    }
-
-    return trimmed;
-  }
-
-  function getStorageLocal() {
-    if (
-      typeof chrome !== "undefined" &&
-      chrome.storage &&
-      chrome.storage.local &&
-      typeof chrome.storage.local.get === "function" &&
-      typeof chrome.storage.local.set === "function"
-    ) {
-      return chrome.storage.local;
-    }
-
-    if (
-      typeof browser !== "undefined" &&
-      browser.storage &&
-      browser.storage.local &&
-      typeof browser.storage.local.get === "function" &&
-      typeof browser.storage.local.set === "function"
-    ) {
-      return browser.storage.local;
-    }
-
-    return null;
-  }
-
-  function storageGet(storage, key) {
-    if (!storage) {
-      return Promise.resolve({});
-    }
-
-    try {
-      var result = storage.get(key);
-      if (result && typeof result.then === "function") {
-        return result;
-      }
-    } catch (_) {
-      // Try callback style below.
-    }
-
-    return new Promise(function (resolve) {
-      try {
-        storage.get(key, function (data) {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-            resolve({});
-            return;
-          }
-          resolve(data || {});
-        });
-      } catch (_) {
-        resolve({});
-      }
-    });
-  }
-
-  function storageSet(storage, payload) {
-    if (!storage) {
-      return Promise.resolve(false);
-    }
-
-    try {
-      var result = storage.set(payload);
-      if (result && typeof result.then === "function") {
-        return result.then(function () {
-          return true;
-        });
-      }
-    } catch (_) {
-      // Try callback style below.
-    }
-
-    return new Promise(function (resolve) {
-      try {
-        storage.set(payload, function () {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-            resolve(false);
-            return;
-          }
-          resolve(true);
-        });
-      } catch (_) {
-        resolve(false);
-      }
-    });
-  }
-
-  function isCacheUsable(cache, baseCurrency, nowMs) {
-    if (!isCacheStaleButCompatible(cache, baseCurrency)) {
-      return false;
-    }
-
-    if (!Number.isFinite(cache.timestamp) || cache.timestamp <= 0) {
-      return false;
-    }
-
-    return nowMs - cache.timestamp < CACHE_TTL_MS;
-  }
-
-  function isCacheStaleButCompatible(cache, baseCurrency) {
-    if (!cache || typeof cache !== "object") {
-      return false;
-    }
-    if (cache.base !== baseCurrency) {
-      return false;
-    }
-    if (!cache.rates || typeof cache.rates !== "object") {
-      return false;
-    }
-    return true;
-  }
-
-  function buildPayload(baseCurrency, timestamp, rates) {
-    return {
-      base: baseCurrency,
-      timestamp: timestamp,
-      rates: rates
-    };
-  }
-
-  function buildResponse(payload, source) {
-    var safePayload = payload || {};
-    return {
-      rates: safePayload.rates && typeof safePayload.rates === "object" ? safePayload.rates : {},
-      base: safePayload.base || "USD",
-      timestamp: Number.isFinite(safePayload.timestamp) ? safePayload.timestamp : Date.now(),
-      source: source || "unknown"
-    };
-  }
-
-  function fetchLatestRates(baseCurrency) {
-    if (typeof fetch !== "function") {
-      return Promise.reject(new Error("fetch unavailable"));
-    }
-
-    var endpoint = "https://api.frankfurter.app/latest?base=" + encodeURIComponent(baseCurrency);
-    return fetch(endpoint)
-      .then(function (res) {
-        if (!res || !res.ok) {
-          throw new Error("failed to fetch currency rates");
-        }
-        return res.json();
-      })
-      .then(function (json) {
-        var rates = json && json.rates && typeof json.rates === "object" ? json.rates : {};
-        return buildPayload(baseCurrency, Date.now(), rates);
-      });
-  }
-
-  function getRates(baseCurrency) {
-    var normalizedBase = normalizeCurrencyCode(baseCurrency) || "USD";
-    var nowMs = Date.now();
-    var storage = getStorageLocal();
-
-    return storageGet(storage, CACHE_KEY)
-      .then(function (data) {
-        var cache = data && data[CACHE_KEY];
-        if (isCacheUsable(cache, normalizedBase, nowMs)) {
-          return buildResponse(cache, "cache_fresh");
-        }
-
-        return fetchLatestRates(normalizedBase)
-          .then(function (payload) {
-            var wrapper = {};
-            wrapper[CACHE_KEY] = payload;
-            return storageSet(storage, wrapper).then(function () {
-              return buildResponse(payload, "network");
-            });
-          })
-          .catch(function () {
-            if (isCacheStaleButCompatible(cache, normalizedBase)) {
-              return buildResponse(cache, "cache_stale");
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function getNestedValue(input, paths, fallback) {
+        for (let i = 0; i < paths.length; i += 1) {
+            const path = paths[i];
+            let cursor = input;
+            for (let j = 0; j < path.length; j += 1) {
+                if (cursor == null || typeof cursor !== "object") {
+                    cursor = undefined;
+                    break;
+                }
+                cursor = cursor[path[j]];
             }
-            return buildResponse(buildPayload(normalizedBase, nowMs, {}), "fallback_empty");
-          });
-      })
-      .catch(function () {
-        return fetchLatestRates(normalizedBase)
-          .then(function (payload) {
-            return buildResponse(payload, "network");
-          })
-          .catch(function () {
-            return buildResponse(buildPayload(normalizedBase, nowMs, {}), "fallback_empty");
-          });
-      });
-  }
-
-  function hasCurrencyCode(code, rates) {
-    var normalized = normalizeCurrencyCode(code);
-    if (!normalized || !rates || typeof rates !== "object") {
-      return false;
-    }
-
-    return Number.isFinite(Number(rates[normalized])) && Number(rates[normalized]) > 0;
-  }
-
-  function convert(amount, from, to) {
-    var amountNumber = Number(amount);
-    var fromCurrency = normalizeCurrencyCode(from);
-    var toCurrency = normalizeCurrencyCode(to);
-
-    if (!Number.isFinite(amountNumber) || !fromCurrency || !toCurrency) {
-      return Promise.resolve(null);
-    }
-
-    if (fromCurrency === toCurrency) {
-      return Promise.resolve(amountNumber);
-    }
-
-    return getRates(fromCurrency).then(function (result) {
-      var rates = result && result.rates ? result.rates : {};
-      if (!hasCurrencyCode(toCurrency, rates)) {
-        return null;
-      }
-
-      return amountNumber * Number(rates[toCurrency]);
-    });
-  }
-
-  return {
-    CACHE_KEY: CACHE_KEY,
-    CACHE_TTL_MS: CACHE_TTL_MS,
-    normalizeCurrencyCode: normalizeCurrencyCode,
-    getRates: getRates,
-    convert: convert,
-    hasCurrencyCode: hasCurrencyCode
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusQuerySynthesis = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  // Shared clothing taxonomy terms commonly present across Grailed and Depop listing metadata.
-  var DEFAULT_CATEGORY_KEYWORDS = [
-    "outerwear",
-    "jacket",
-    "coat",
-    "hoodie",
-    "fleece",
-    "parka",
-    "bomber",
-    "anorak",
-    "sweater",
-    "knitwear",
-    "cardigan",
-    "crewneck",
-    "sweatshirt",
-    "shirt",
-    "flannel",
-    "polo",
-    "tee",
-    "t-shirt",
-    "long sleeve",
-    "longsleeve",
-    "denim",
-    "jeans",
-    "pants",
-    "trousers",
-    "cargo",
-    "shorts",
-    "sneakers",
-    "shoes",
-    "boots",
-    "loafers",
-    "sandals",
-    "bags",
-    "bag",
-    "backpack",
-    "wallet",
-    "accessories",
-    "accessory",
-    "belt",
-    "hat",
-    "beanie",
-    "cap",
-    "scarf",
-    "jewelry",
-    "watch",
-    "sunglasses"
-  ];
-  var STOPWORDS = {
-    the: true,
-    and: true,
-    with: true,
-    for: true,
-    from: true,
-    this: true,
-    that: true,
-    grailed: true,
-    depop: true,
-    listing: true,
-    item: true,
-    size: true
-  };
-
-  function normalizeString(value) {
-    if (typeof value !== "string") {
-      return "";
-    }
-    return value.trim();
-  }
-
-  function normalizeToken(value) {
-    return normalizeString(value)
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function tokenize(value, maxTokens) {
-    var normalized = normalizeToken(value);
-    if (!normalized) {
-      return [];
-    }
-
-    var tokens = normalized.split(" ").filter(function (token) {
-      return token && !STOPWORDS[token] && token.length <= 24;
-    });
-
-    tokens = collapseRepeatedTokenSequences(tokens);
-
-    if (!Number.isFinite(maxTokens) || maxTokens <= 0 || tokens.length <= maxTokens) {
-      return tokens;
-    }
-
-    return tokens.slice(0, maxTokens);
-  }
-
-  function collapseRepeatedTokenSequences(tokens) {
-    var output = Array.isArray(tokens) ? tokens.slice() : [];
-    if (!output.length) {
-      return output;
-    }
-
-    // First collapse immediate repeated words (for example: "tee tee").
-    output = output.filter(function (token, index) {
-      return index === 0 || token !== output[index - 1];
-    });
-
-    // Then collapse adjacent repeated phrases (for example: "drain gang drain gang").
-    var changed = true;
-    while (changed) {
-      changed = false;
-      for (var size = Math.min(4, Math.floor(output.length / 2)); size >= 1; size -= 1) {
-        for (var start = 0; start + size * 2 <= output.length; start += 1) {
-          var isRepeat = true;
-          for (var i = 0; i < size; i += 1) {
-            if (output[start + i] !== output[start + size + i]) {
-              isRepeat = false;
-              break;
+            if (cursor !== undefined && cursor !== null) {
+                return cursor;
             }
-          }
-
-          if (isRepeat) {
-            output.splice(start + size, size);
-            changed = true;
-            break;
-          }
         }
-        if (changed) {
-          break;
+        return fallback;
+    }
+    function normalizeDate(value) {
+        if (!value) {
+            return null;
         }
-      }
-    }
-
-    return output;
-  }
-
-  function normalizeQueryPhrase(value) {
-    var normalized = normalizeToken(value);
-    if (!normalized) {
-      return "";
-    }
-
-    var tokens = normalized.split(" ").filter(Boolean);
-    return collapseRepeatedTokenSequences(tokens).join(" ");
-  }
-
-  function uniqueStrings(values) {
-    var seen = Object.create(null);
-    var output = [];
-    values.forEach(function (value) {
-      var normalized = normalizeQueryPhrase(value);
-      if (!normalized || seen[normalized]) {
-        return;
-      }
-      seen[normalized] = true;
-      output.push(normalized);
-    });
-    return output;
-  }
-
-  function toSignalFragment(value) {
-    if (typeof value === "string") {
-      return normalizeString(value);
-    }
-
-    if (Array.isArray(value)) {
-      return value
-        .map(toSignalFragment)
-        .filter(Boolean)
-        .join(" ");
-    }
-
-    if (value && typeof value === "object") {
-      var label = normalizeString(value.name || value.label || value.slug || value.title || "");
-      if (label) {
-        return label;
-      }
-    }
-
-    return "";
-  }
-
-  function getFirstNonEmpty(values) {
-    var i;
-    var value;
-    for (i = 0; i < values.length; i += 1) {
-      value = toSignalFragment(values[i]);
-      if (value) {
-        return value;
-      }
-    }
-    return "";
-  }
-
-  function collectCategorySignals(listing) {
-    var raw = listing && listing.rawListing && typeof listing.rawListing === "object"
-      ? listing.rawListing
-      : null;
-
-    return [
-      listing && listing.category,
-      listing && listing.subcategory,
-      raw && raw.category,
-      raw && raw.subcategory,
-      raw && raw.department,
-      raw && raw.productType,
-      raw && raw.product_type,
-      raw && raw.categoryPath,
-      raw && raw.category_path,
-      raw && raw.taxonomy,
-      raw && raw.breadcrumbs,
-      raw && raw.style,
-      raw && raw.tags,
-      listing && listing.title
-    ]
-      .map(toSignalFragment)
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  function containsKeyword(signal, keyword) {
-    var normalizedSignal = normalizeToken(signal);
-    var normalizedKeyword = normalizeToken(keyword);
-    if (!normalizedSignal || !normalizedKeyword) {
-      return false;
-    }
-
-    var signalTokens = normalizedSignal.split(" ").filter(Boolean);
-    var keywordTokens = normalizedKeyword.split(" ").filter(Boolean);
-    if (!signalTokens.length || !keywordTokens.length) {
-      return false;
-    }
-
-    if (keywordTokens.length === 1) {
-      return signalTokens.indexOf(keywordTokens[0]) !== -1;
-    }
-
-    return normalizedSignal.indexOf(normalizedKeyword) !== -1;
-  }
-
-  function inferCategorySignal(listing) {
-    return normalizeToken(collectCategorySignals(listing));
-  }
-
-  function isAllowedCategory(listing, allowedKeywords) {
-    var signal = inferCategorySignal(listing);
-    if (!signal) {
-      return false;
-    }
-
-    var list = Array.isArray(allowedKeywords) && allowedKeywords.length
-      ? allowedKeywords
-      : DEFAULT_CATEGORY_KEYWORDS;
-
-    return list.some(function (keyword) {
-      return containsKeyword(signal, keyword);
-    });
-  }
-
-  function buildQueries(listing, options) {
-    var settings = options && typeof options === "object" ? options : {};
-    var maxQueries = Number.isFinite(Number(settings.maxQueries)) ? Number(settings.maxQueries) : 4;
-    var maxTokens = Number.isFinite(Number(settings.maxTokens)) ? Number(settings.maxTokens) : 6;
-
-    var allowCategoryFallback = settings.allowCategoryFallback !== false;
-    var categoryAllowed = isAllowedCategory(listing, settings.allowedCategoryKeywords);
-    if (!categoryAllowed && !allowCategoryFallback) {
-      return {
-        ok: false,
-        errorCode: "MISSING_LISTING_DATA",
-        reason: "unsupported_category",
-        queries: []
-      };
-    }
-
-    var raw = listing && listing.rawListing && typeof listing.rawListing === "object"
-      ? listing.rawListing
-      : null;
-
-    var brand = normalizeString(listing && listing.brand) ||
-      normalizeString(listing && listing.rawListing && listing.rawListing.designers && listing.rawListing.designers[0] && listing.rawListing.designers[0].name);
-    var size = normalizeString(listing && listing.size) ||
-      normalizeString(listing && listing.rawListing && listing.rawListing.size);
-    var category = getFirstNonEmpty([
-      listing && listing.category,
-      listing && listing.subcategory,
-      raw && raw.category,
-      raw && raw.subcategory,
-      raw && raw.department,
-      raw && raw.productType,
-      raw && raw.product_type,
-      raw && raw.categoryPath,
-      raw && raw.category_path
-    ]);
-    var title = normalizeString(listing && listing.title);
-
-    var titleTokens = tokenize(title, maxTokens);
-    var descriptor = titleTokens.slice(0, 3).join(" ");
-    var coreTitle = titleTokens.slice(0, Math.min(titleTokens.length, 5)).join(" ");
-
-    var candidates = [
-      [brand, descriptor].filter(Boolean).join(" "),
-      [brand, coreTitle].filter(Boolean).join(" "),
-      [coreTitle, size].filter(Boolean).join(" "),
-      [brand, size, category].filter(Boolean).join(" ")
-    ];
-
-    if (!categoryAllowed) {
-      // Safe fallback: keep searching without category constraints when mapping is incomplete.
-      candidates = [
-        [brand, coreTitle].filter(Boolean).join(" "),
-        [coreTitle, size].filter(Boolean).join(" "),
-        [brand, descriptor].filter(Boolean).join(" "),
-        coreTitle || title
-      ];
-    }
-
-    if (!brand && title) {
-      candidates.unshift(coreTitle || title);
-    }
-
-    var queries = uniqueStrings(candidates).slice(0, Math.max(1, maxQueries));
-
-    if (!queries.length) {
-      return {
-        ok: false,
-        errorCode: "MISSING_LISTING_DATA",
-        reason: "no_queries",
-        queries: []
-      };
-    }
-
-    return {
-      ok: true,
-      queries: queries,
-      reason: categoryAllowed ? "ok" : "category_fallback"
-    };
-  }
-
-  return {
-    DEFAULT_CATEGORY_KEYWORDS: DEFAULT_CATEGORY_KEYWORDS,
-    tokenize: tokenize,
-    isAllowedCategory: isAllowedCategory,
-    buildQueries: buildQueries
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusProviderFilters = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function normalizeString(value) {
-    if (typeof value !== "string") {
-      return "";
-    }
-    return value.trim();
-  }
-
-  function normalizeList(values) {
-    if (!Array.isArray(values)) {
-      return [];
-    }
-
-    return values
-      .map(function (value) {
-        return normalizeString(value).toLowerCase();
-      })
-      .filter(Boolean);
-  }
-
-  function applyCandidateFilters(candidates, filters) {
-    var list = Array.isArray(candidates) ? candidates.slice() : [];
-    var rules = filters && typeof filters === "object" ? filters : {};
-    var blockedTerms = normalizeList(rules.blockedTerms);
-    var blockedSellers = normalizeList(rules.blockedSellers);
-    var allowSizes = normalizeList(rules.allowSizes);
-    var minPrice = Number(rules.minPrice);
-    var maxPrice = Number(rules.maxPrice);
-
-    return list.filter(function (candidate) {
-      var title = normalizeString(candidate && candidate.title).toLowerCase();
-      var description = normalizeString(candidate && candidate.description).toLowerCase();
-      var seller = normalizeString(candidate && candidate.seller).toLowerCase();
-      var size = normalizeString(candidate && candidate.size).toLowerCase();
-      var price = Number(candidate && candidate.price);
-
-      if (blockedTerms.some(function (term) { return title.indexOf(term) !== -1 || description.indexOf(term) !== -1; })) {
-        return false;
-      }
-
-      if (blockedSellers.length && seller && blockedSellers.indexOf(seller) !== -1) {
-        return false;
-      }
-
-      if (allowSizes.length && size && allowSizes.indexOf(size) === -1) {
-        return false;
-      }
-
-      if (Number.isFinite(minPrice) && Number.isFinite(price) && price < minPrice) {
-        return false;
-      }
-
-      if (Number.isFinite(maxPrice) && Number.isFinite(price) && price > maxPrice) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  return {
-    applyCandidateFilters: applyCandidateFilters
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusDepopProvider = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var PARSER_VERSION = "depop-hybrid-v2";
-
-  var KNOWN_CURRENCY_CODES = {
-    USD: true,
-    EUR: true,
-    GBP: true,
-    CAD: true,
-    AUD: true,
-    JPY: true,
-    SEK: true,
-    NOK: true,
-    DKK: true,
-    CHF: true,
-    PLN: true
-  };
-
-  var CURRENCY_SYMBOL_MAP = {
-    "$": "USD",
-    "€": "EUR",
-    "£": "GBP",
-    "¥": "JPY",
-    "A$": "AUD",
-    "C$": "CAD"
-  };
-  var RUNTIME_FETCH_MESSAGE_TYPE = "grailed-plus:depop-search-fetch";
-
-  function normalizeString(value, fallback) {
-    if (typeof value === "string") {
-      var trimmed = value.trim();
-      return trimmed || fallback;
-    }
-    return fallback;
-  }
-
-  function normalizeNumber(value) {
-    if (value == null) {
-      return null;
-    }
-    if (typeof value === "number") {
-      return Number.isFinite(value) ? value : null;
-    }
-    if (typeof value !== "string") {
-      return null;
-    }
-    if (value.trim() === "") {
-      return null;
-    }
-    var parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  function normalizeCurrencyCode(value) {
-    if (typeof value !== "string") {
-      return null;
-    }
-
-    var upper = value.trim().toUpperCase();
-    if (!upper || !KNOWN_CURRENCY_CODES[upper]) {
-      return null;
-    }
-    return upper;
-  }
-
-  function inferCurrencyFromLabel(label) {
-    var text = normalizeString(label, "");
-    if (!text) {
-      return null;
-    }
-
-    var codeMatch = text.match(/\b([A-Z]{3})\b/);
-    if (codeMatch && codeMatch[1]) {
-      var byCode = normalizeCurrencyCode(codeMatch[1]);
-      if (byCode) {
-        return byCode;
-      }
-    }
-
-    var symbolCandidates = ["A$", "C$", "€", "£", "¥", "$"];
-    for (var i = 0; i < symbolCandidates.length; i += 1) {
-      if (text.indexOf(symbolCandidates[i]) !== -1 && CURRENCY_SYMBOL_MAP[symbolCandidates[i]]) {
-        return CURRENCY_SYMBOL_MAP[symbolCandidates[i]];
-      }
-    }
-
-    return null;
-  }
-
-  function parseAmountFromLabel(label) {
-    var text = normalizeString(label, "");
-    if (!text) {
-      return null;
-    }
-
-    var cleaned = text.replace(/,/g, "");
-    var amountMatch = cleaned.match(/-?\d+(?:\.\d+)?/);
-    if (!amountMatch) {
-      return null;
-    }
-
-    var parsed = Number(amountMatch[0]);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  function tryParseJsonLenient(text) {
-    var raw = normalizeString(text, "");
-    if (!raw) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(raw);
-    } catch (_) {
-      // Continue with lenient parsing.
-    }
-
-    var cleaned = raw.replace(/^\uFEFF/, "").trim();
-
-    // Handle common XSSI prefixes like )]}', and for(;;);
-    cleaned = cleaned.replace(/^\)\]\}',?\s*/, "");
-    cleaned = cleaned.replace(/^for\s*\(\s*;\s*;\s*\)\s*;?\s*/, "");
-
-    var firstBrace = cleaned.indexOf("{");
-    var firstBracket = cleaned.indexOf("[");
-    var start = -1;
-    if (firstBrace !== -1 && firstBracket !== -1) {
-      start = Math.min(firstBrace, firstBracket);
-    } else if (firstBrace !== -1) {
-      start = firstBrace;
-    } else if (firstBracket !== -1) {
-      start = firstBracket;
-    }
-
-    if (start > 0) {
-      cleaned = cleaned.slice(start);
-    }
-
-    try {
-      return JSON.parse(cleaned);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function sleep(ms) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, Math.max(0, Number(ms) || 0));
-    });
-  }
-
-  function normalizeBoolean(value) {
-    if (typeof value === "boolean") {
-      return value;
-    }
-    if (typeof value === "string") {
-      var text = value.trim().toLowerCase();
-      if (text === "true") {
-        return true;
-      }
-      if (text === "false") {
-        return false;
-      }
-    }
-    return null;
-  }
-
-  function withJitter(ms) {
-    var base = Math.max(0, Number(ms) || 0);
-    var variance = base * 0.1;
-    var delta = (Math.random() * variance * 2) - variance;
-    return Math.max(0, Math.round(base + delta));
-  }
-
-  function mapHttpError(status) {
-    if (status === 403 || status === 401) {
-      return { errorCode: "FORBIDDEN_OR_BLOCKED", retryAfterMs: 120000 };
-    }
-    if (status === 429) {
-      return { errorCode: "RATE_LIMITED", retryAfterMs: 2000 };
-    }
-    if (status >= 500) {
-      return { errorCode: "NETWORK_ERROR", retryAfterMs: 1500 };
-    }
-    return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
-  }
-
-  function normalizeProductCandidate(candidate) {
-    var input = candidate && typeof candidate === "object" ? candidate : {};
-    var isHrefFallback = Boolean(input && input.raw && input.raw.source === "href_fallback");
-    var id = normalizeString(input.id, null);
-    var title = normalizeString(input.title, "Untitled");
-    var url = normalizeString(input.url, "");
-    var imageUrl = normalizeString(input.imageUrl, "");
-    var inferredAmount = parseAmountFromLabel(input.priceLabel);
-    var price = normalizeNumber(input.price);
-    if (price == null) {
-      price = inferredAmount;
-    }
-
-    if (price != null && price <= 0) {
-      price = null;
-    }
-
-    var currency =
-      normalizeCurrencyCode(input.currency) ||
-      inferCurrencyFromLabel(input.priceLabel) ||
-      "USD";
-
-    if (!id || !url || (price == null && !isHrefFallback)) {
-      return null;
-    }
-
-    return {
-      market: "depop",
-      id: id,
-      title: title,
-      url: url,
-      imageUrl: imageUrl,
-      price: price,
-      currency: currency,
-      raw: input.raw || null
-    };
-  }
-
-  function extractFromJsonLd(html) {
-    var matches = [];
-    var scriptRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-    var scriptMatch = scriptRegex.exec(html);
-
-    while (scriptMatch) {
-      try {
-        var payload = JSON.parse(scriptMatch[1]);
-        var queue = Array.isArray(payload) ? payload.slice() : [payload];
-
-        while (queue.length) {
-          var node = queue.shift();
-          if (!node || typeof node !== "object") {
-            continue;
-          }
-
-          if (Array.isArray(node)) {
-            node.forEach(function (entry) {
-              queue.push(entry);
-            });
-            continue;
-          }
-
-          if (node["@type"] === "Product") {
-            var offer = node.offers && typeof node.offers === "object" ? node.offers : {};
-            var candidate = normalizeProductCandidate({
-              id: normalizeString(node.sku, null) || normalizeString(node.productID, null) || normalizeString(node.url, "").split("/").filter(Boolean).pop(),
-              title: normalizeString(node.name, "Untitled"),
-              url: normalizeString(node.url, ""),
-              imageUrl: Array.isArray(node.image) ? normalizeString(node.image[0], "") : normalizeString(node.image, ""),
-              price: normalizeNumber(offer.price),
-              currency: normalizeCurrencyCode(normalizeString(offer.priceCurrency, "")) || "USD",
-              priceLabel: normalizeString(offer.priceCurrency, "") + " " + normalizeString(offer.price, ""),
-              raw: node
-            });
-            if (candidate) {
-              matches.push(candidate);
-            }
-          }
-
-          Object.keys(node).forEach(function (key) {
-            if (node[key] && typeof node[key] === "object") {
-              queue.push(node[key]);
-            }
-          });
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return null;
         }
-      } catch (_) {
-        // Ignore malformed JSON-LD blocks.
-      }
-
-      scriptMatch = scriptRegex.exec(html);
+        return date.toISOString();
     }
-
-    return matches;
-  }
-
-  function getNestedValue(source, paths) {
-    var i;
-    var j;
-    var path;
-    var current;
-    for (i = 0; i < paths.length; i += 1) {
-      path = paths[i];
-      current = source;
-      for (j = 0; j < path.length; j += 1) {
-        if (!current || typeof current !== "object" || !(path[j] in current)) {
-          current = null;
-          break;
+    function normalizeString(value, fallback) {
+        if (typeof value === "string") {
+            return value;
         }
-        current = current[path[j]];
-      }
-      if (current != null) {
-        return current;
-      }
-    }
-    return null;
-  }
-
-  function readBalancedJsonArray(text, startIndex) {
-    var inString = false;
-    var escaped = false;
-    var depth = 0;
-    var i;
-    var ch;
-    for (i = startIndex; i < text.length; i += 1) {
-      ch = text[i];
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-        } else if (ch === "\\") {
-          escaped = true;
-        } else if (ch === '"') {
-          inString = false;
+        if (value == null) {
+            return fallback;
         }
-        continue;
-      }
-
-      if (ch === '"') {
-        inString = true;
-        continue;
-      }
-
-      if (ch === "[") {
-        depth += 1;
-        continue;
-      }
-
-      if (ch === "]") {
-        depth -= 1;
-        if (depth === 0) {
-          return text.slice(startIndex, i + 1);
-        }
-      }
-    }
-
-    return "";
-  }
-
-  function normalizeFlightText(raw) {
-    if (!raw) {
-      return "";
-    }
-    return raw
-      .replace(/\\\"/g, '"')
-      .replace(/\\n/g, " ")
-      .replace(/\\t/g, " ");
-  }
-
-  function mapFlightProduct(product) {
-    var input = product && typeof product === "object" ? product : {};
-    var slug = normalizeString(getNestedValue(input, [["slug"], ["seo", "slug"]]), "");
-    var url =
-      normalizeString(getNestedValue(input, [["url"], ["path"], ["route"]]), "") ||
-      normalizeString(getNestedValue(input, [["permalink"]]), "");
-
-    if (!url && slug) {
-      url = "https://www.depop.com/products/" + slug + "/";
-    }
-
-    if (url && url.indexOf("/") === 0) {
-      url = "https://www.depop.com" + url;
-    }
-
-    var id =
-      normalizeString(getNestedValue(input, [["id"], ["productId"], ["product_id"], ["slug"]]), null) ||
-      (url ? normalizeString(url.split("/").filter(Boolean).pop(), null) : null);
-
-    var imageUrl =
-      normalizeString(
-        getNestedValue(input, [
-          ["imageUrl"],
-          ["image", "url"],
-          ["pictures", 0, "url"],
-          ["photos", 0, "url"]
-        ]),
-        ""
-      ) || "";
-
-    var amount = normalizeNumber(input.price);
-    if (amount == null) {
-      amount =
-        normalizeNumber(
-          getNestedValue(input, [
-            ["priceAmount"],
-            ["price_amount"],
-            ["price", "amount"],
-            ["priceInfo", "amount"],
-            ["price_info", "amount"],
-            ["pricing", "amount"],
-            ["pricing", "priceAmount"],
-            ["pricing", "price", "amount"],
-            ["pricing", "price", "display_amount"],
-            ["pricing", "display_price", "amount"],
-            ["pricing", "discounted_price", "amount"],
-            ["pricing", "discountedPrice", "amount"]
-          ])
-        );
-    }
-
-    var cents = normalizeNumber(
-      getNestedValue(input, [
-        ["priceCents"],
-        ["price_cents"],
-        ["price", "amountCents"],
-        ["price", "amount_cents"],
-        ["pricing", "price", "amount_cents"],
-        ["pricing", "discounted_price", "amount_cents"],
-        ["pricing", "discountedPrice", "amount_cents"]
-      ])
-    );
-
-    if (amount == null && cents != null) {
-      amount = cents / 100;
-    }
-
-    return normalizeProductCandidate({
-      id: id,
-      title: normalizeString(getNestedValue(input, [["title"], ["name"], ["description"]]), "Untitled"),
-      url: url,
-      imageUrl: imageUrl,
-      price: amount,
-      currency: normalizeString(
-        getNestedValue(input, [
-          ["currency"],
-          ["price", "currency"],
-          ["priceInfo", "currency"],
-          ["pricing", "currency"],
-          ["pricing", "price", "currency"],
-          ["pricing", "discounted_price", "currency"],
-          ["pricing", "discountedPrice", "currency"]
-        ]),
-        "USD"
-      ),
-      raw: input
-    });
-  }
-
-  function walkJsonTree(node, visitor) {
-    if (node == null) {
-      return;
-    }
-    visitor(node);
-    if (Array.isArray(node)) {
-      for (var i = 0; i < node.length; i += 1) {
-        walkJsonTree(node[i], visitor);
-      }
-      return;
-    }
-    if (typeof node === "object") {
-      var keys = Object.keys(node);
-      for (var k = 0; k < keys.length; k += 1) {
-        walkJsonTree(node[keys[k]], visitor);
-      }
-    }
-  }
-
-  function parseCandidatesFromApiPayload(payload) {
-    var candidates = [];
-    var seen = Object.create(null);
-
-    walkJsonTree(payload, function (node) {
-      if (!node || typeof node !== "object" || Array.isArray(node)) {
-        return;
-      }
-
-      var maybeId = getNestedValue(node, [["id"], ["product_id"], ["productId"], ["slug"]]);
-      var maybeUrl = getNestedValue(node, [["url"], ["path"], ["permalink"], ["route"]]);
-      var maybePrice = getNestedValue(node, [["price"], ["price_amount"], ["priceAmount"], ["price", "amount"]]);
-
-      if (maybeId == null && maybeUrl == null && maybePrice == null) {
-        return;
-      }
-
-      var normalized = mapFlightProduct(node);
-      if (!normalized || !normalized.id || seen[normalized.id]) {
-        return;
-      }
-
-      seen[normalized.id] = true;
-      candidates.push(normalized);
-    });
-
-    return candidates;
-  }
-
-  function hasNoResultsInApiPayload(payload) {
-    var foundZero = false;
-
-    walkJsonTree(payload, function (node) {
-      if (!node || typeof node !== "object" || Array.isArray(node)) {
-        return;
-      }
-
-      var totalCount = normalizeNumber(node.total_count);
-      var resultCount = normalizeNumber(node.result_count);
-      var total = normalizeNumber(node.total);
-      var count = normalizeNumber(node.count);
-
-      if (totalCount === 0 || resultCount === 0 || total === 0 || count === 0) {
-        foundZero = true;
-      }
-    });
-
-    return foundZero;
-  }
-
-  function extractFromNextFlightPayload(html) {
-    var scripts = [];
-    var scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
-    var scriptMatch = scriptRegex.exec(html);
-    while (scriptMatch) {
-      if (scriptMatch[1] && scriptMatch[1].indexOf("self.__next_f.push") !== -1) {
-        scripts.push(scriptMatch[1]);
-      }
-      scriptMatch = scriptRegex.exec(html);
-    }
-
-    if (!scripts.length) {
-      return [];
-    }
-
-    var decodedChunks = [];
-    var pushRegex = /self\.__next_f\.push\(\[1,\s*"((?:\\.|[^"\\])*)"\]\)/g;
-    var i;
-    var pushMatch;
-    for (i = 0; i < scripts.length; i += 1) {
-      pushMatch = pushRegex.exec(scripts[i]);
-      while (pushMatch) {
         try {
-          decodedChunks.push(JSON.parse('"' + pushMatch[1] + '"'));
-        } catch (_) {
-          decodedChunks.push(pushMatch[1]);
+            return String(value);
         }
-        pushMatch = pushRegex.exec(scripts[i]);
-      }
-      pushRegex.lastIndex = 0;
+        catch (_) {
+            return fallback;
+        }
     }
-
-    var allText = normalizeFlightText(decodedChunks.join("\n"));
-    if (!allText) {
-      return [];
+    function normalizeListingId(value) {
+        if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+            return value;
+        }
+        if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+            const parsed = Number(value.trim());
+            return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+        }
+        return null;
     }
+    function normalizePriceDrops(value) {
+        if (!Array.isArray(value)) {
+            return [];
+        }
+        return value
+            .map(function (entry) {
+            if (typeof entry === "object" && entry !== null) {
+                const objectEntry = entry;
+                return Number(objectEntry.amount || objectEntry.price || objectEntry.value);
+            }
+            return Number(entry);
+        })
+            .filter(function (entry) {
+            return Number.isFinite(entry) && entry > 0;
+        });
+    }
+    return {
+        getNestedValue,
+        normalizeDate,
+        normalizeString,
+        normalizeListingId,
+        normalizePriceDrops
+    };
+});
 
-    var candidates = [];
-    var searchToken = '"products":[';
-    var offset = allText.indexOf(searchToken);
-    while (offset !== -1) {
-      var arrayStart = offset + searchToken.length - 1;
-      var jsonArray = readBalancedJsonArray(allText, arrayStart);
-      if (jsonArray) {
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusListingModel = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    let Normalize = null;
+    const globalScope = typeof globalThis !== "undefined" ? globalThis : null;
+    if (globalScope && globalScope.GrailedPlusNormalize) {
+        Normalize = globalScope.GrailedPlusNormalize;
+    }
+    if (!Normalize && typeof require === "function") {
         try {
-          var products = JSON.parse(jsonArray);
-          if (Array.isArray(products)) {
-            products.forEach(function (product) {
-              var normalized = mapFlightProduct(product);
-              if (normalized) {
-                candidates.push(normalized);
-              }
-            });
-          }
-        } catch (_) {
-          // Ignore malformed slices and continue scanning.
+            const normalizeModule = require("../domain/normalize");
+            Normalize = isNormalizeHelpers(normalizeModule) ? normalizeModule : null;
         }
-      }
-
-      offset = allText.indexOf(searchToken, offset + searchToken.length);
-    }
-
-    return candidates;
-  }
-
-  function extractFromNextDataPayload(html) {
-    var match = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
-    if (!match || !match[1]) {
-      return [];
-    }
-
-    var parsed = tryParseJsonLenient(match[1]);
-    if (!parsed || typeof parsed !== "object") {
-      return [];
-    }
-
-    return parseCandidatesFromApiPayload(parsed)
-      .map(normalizeProductCandidate)
-      .filter(Boolean);
-  }
-
-  function extractFromHrefFallback(html) {
-    var output = [];
-    var seen = Object.create(null);
-    var hrefRegex = /href=["'](\/products\/[^"'#?]+)["']/gi;
-    var match = hrefRegex.exec(html);
-
-    while (match) {
-      var path = normalizeString(match[1], "");
-      if (path && !seen[path]) {
-        seen[path] = true;
-        var slug = path.split("/").filter(Boolean).pop() || "item";
-        var start = Math.max(0, (match.index || 0) - 500);
-        var end = Math.min(html.length, (match.index || 0) + 900);
-        var snippet = html.slice(start, end);
-
-        var titleMatch = snippet.match(/aria-label=["']([^"']+)["']/i);
-        if (!titleMatch) {
-          titleMatch = snippet.match(/alt=["']([^"']+)["']/i);
+        catch (_) {
+            Normalize = null;
         }
-
-        var amountMatch = snippet.match(/(?:\$|€|£|¥|USD\s+|EUR\s+|GBP\s+|CAD\s+|AUD\s+)(\d+(?:\.\d+)?)/i);
-        var inferredPrice = amountMatch ? normalizeNumber(amountMatch[1]) : null;
-        if (inferredPrice != null && inferredPrice <= 0) {
-          inferredPrice = null;
+    }
+    function isNormalizeHelpers(input) {
+        if (!input || typeof input !== "object") {
+            return false;
         }
-        var inferredCurrency = inferCurrencyFromLabel(snippet) || "USD";
-
-        output.push({
-          market: "depop",
-          id: slug,
-          title: normalizeString(titleMatch && titleMatch[1], slug.replace(/-/g, " ")),
-          url: "https://www.depop.com" + path,
-          imageUrl: "",
-          price: inferredPrice,
-          currency: inferredCurrency,
-          raw: {
-            source: "href_fallback"
-          }
-        });
-      }
-      match = hrefRegex.exec(html);
+        const candidate = input;
+        return (typeof candidate.getNestedValue === "function" &&
+            typeof candidate.normalizeDate === "function" &&
+            typeof candidate.normalizeString === "function" &&
+            typeof candidate.normalizeListingId === "function" &&
+            typeof candidate.normalizePriceDrops === "function");
     }
-
-    return output;
-  }
-
-  function parseCandidates(html) {
-    if (typeof html !== "string" || !html.trim()) {
-      return {
-        candidates: [],
-        parserMismatchLikely: true
-      };
-    }
-
-    var jsonCandidates = extractFromJsonLd(html);
-    if (jsonCandidates.length) {
-      return {
-        candidates: jsonCandidates,
-        parserMismatchLikely: false
-      };
-    }
-
-    var nextFlightCandidates = extractFromNextFlightPayload(html);
-    if (nextFlightCandidates.length) {
-      return {
-        candidates: nextFlightCandidates,
-        parserMismatchLikely: false
-      };
-    }
-
-    var nextDataCandidates = extractFromNextDataPayload(html);
-    if (nextDataCandidates.length) {
-      return {
-        candidates: nextDataCandidates,
-        parserMismatchLikely: false
-      };
-    }
-
-    // Keep href-derived candidates even when price is unavailable.
-    // Search fallback pages can still provide valid listing URLs.
-    var hrefCandidates = extractFromHrefFallback(html);
-
-    return {
-      candidates: hrefCandidates,
-      parserMismatchLikely: true
-    };
-  }
-
-  function hasProductResultsMarker(html) {
-    var text = normalizeString(html, "").toLowerCase();
-    if (!text) {
-      return false;
-    }
-
-    return (
-      text.indexOf("styles_productgrid__") !== -1 ||
-      text.indexOf("styles_productcardroot__") !== -1 ||
-      text.indexOf("/products/") !== -1
-    );
-  }
-
-  function isBlockedHtml(html) {
-    var text = normalizeString(html, "").toLowerCase();
-    if (!text) {
-      return false;
-    }
-
-    var blockedMarkers = [
-      "attention required! | cloudflare",
-      "sorry, you have been blocked",
-      "cloudflare ray id",
-      "cf-error-details",
-      "captcha"
-    ];
-
-    for (var i = 0; i < blockedMarkers.length; i += 1) {
-      if (text.indexOf(blockedMarkers[i]) !== -1) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function isLikelyLoadingShellHtml(html) {
-    var text = normalizeString(html, "").toLowerCase();
-    if (!text) {
-      return false;
-    }
-
-    var loadingMarkers = [
-      "loading results",
-      "styles_shimmerstyles",
-      "_outerbounce_"
-    ];
-
-    for (var i = 0; i < loadingMarkers.length; i += 1) {
-      if (text.indexOf(loadingMarkers[i]) !== -1) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function hasNoResultsMarker(html) {
-    var text = normalizeString(html, "");
-    if (!text) {
-      return false;
-    }
-
-    // Depop Next.js flight payload often embeds backend search totals.
-    return (
-      text.indexOf('"total_count":0') !== -1 ||
-      text.indexOf('"result_count":0') !== -1 ||
-      text.indexOf('\\"total_count\\":0') !== -1 ||
-      text.indexOf('\\"result_count\\":0') !== -1 ||
-      text.indexOf('"NoMatchingResults"') !== -1
-    );
-  }
-
-  function shouldReturnNoResults(html) {
-    var text = normalizeString(html, "");
-    if (!text) {
-      return false;
-    }
-
-    // Depop can show a local no-results banner while still rendering
-    // valid cross-border listings in the product grid.
-    if (hasProductResultsMarker(text)) {
-      return false;
-    }
-
-    // Some Next.js search shells include loading placeholders while also
-    // embedding definitive dehydrated empty search state.
-    var hasEmbeddedEmptySearch =
-      text.indexOf("product_search") !== -1 &&
-      (text.indexOf('"products":[]') !== -1 || text.indexOf('\\"products\\":[]') !== -1);
-
-    if (hasEmbeddedEmptySearch && hasNoResultsMarker(text)) {
-      return true;
-    }
-
-    // Next.js flight payloads can carry transient zero-count markers while
-    // the page is still in a loading shell state.
-    return hasNoResultsMarker(text) && !isLikelyLoadingShellHtml(text);
-  }
-
-  function dedupeById(candidates) {
-    var seen = Object.create(null);
-    return candidates.filter(function (candidate) {
-      var id = normalizeString(candidate && candidate.id, "");
-      if (!id || seen[id]) {
-        return false;
-      }
-      seen[id] = true;
-      return true;
-    });
-  }
-
-  function hasMeaningfulPrice(candidate) {
-    var price = normalizeNumber(candidate && candidate.price);
-    return price != null && price > 0;
-  }
-
-  function hasAnyUsableCandidate(candidates) {
-    return Array.isArray(candidates) && candidates.some(function (candidate) {
-      return Boolean(candidate && normalizeString(candidate.id, "") && normalizeString(candidate.url, ""));
-    });
-  }
-
-  function buildBroadFallbackQuery(query) {
-    var text = normalizeString(query, "").toLowerCase();
-    if (!text) {
-      return "";
-    }
-
-    var tokens = text
-      .replace(/[^a-z0-9\s-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .split(" ")
-      .filter(function (token) {
-        return token && token.length > 1;
-      });
-
-    if (!tokens.length) {
-      return "";
-    }
-
-    return tokens.slice(0, 2).join(" ");
-  }
-
-  function resolveRuntimeSendMessage() {
-    if (typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.sendMessage === "function") {
-      return function (payload) {
-        return new Promise(function (resolve) {
-          try {
-            chrome.runtime.sendMessage(payload, function (response) {
-              resolve(response || null);
-            });
-          } catch (_) {
-            resolve(null);
-          }
-        });
-      };
-    }
-
-    if (typeof browser !== "undefined" && browser.runtime && typeof browser.runtime.sendMessage === "function") {
-      return function (payload) {
-        return Promise.resolve(browser.runtime.sendMessage(payload)).catch(function () {
-          return null;
-        });
-      };
-    }
-
-    return null;
-  }
-
-  function buildApiSearchUrl(query, payload) {
-    var input = payload && typeof payload === "object" ? payload : {};
-    var params = new URLSearchParams();
-    params.set("what", normalizeString(query, ""));
-
-    var country = normalizeString(input.country, "");
-    if (country) {
-      params.set("country", country.toLowerCase());
-    }
-
-    var currency = normalizeCurrencyCode(input.currency || "") || "USD";
-    params.set("currency", currency);
-
-    var searchFrom = normalizeString(input.from, "");
-    if (searchFrom) {
-      params.set("from", searchFrom);
-    }
-
-    var gender = normalizeString(input.gender, "");
-    if (gender) {
-      params.set("gender", gender);
-    }
-
-    var group = normalizeString(input.group, "");
-    if (group) {
-      params.set("groups", group);
-    }
-
-    var productTypes = Array.isArray(input.productTypes) ? input.productTypes.filter(Boolean) : [];
-    if (productTypes.length) {
-      params.set("product_types", productTypes.join(","));
-    }
-
-    var isKids = normalizeBoolean(input.isKids);
-    if (isKids != null) {
-      params.set("is_kids", String(isKids));
-    }
-
-    return "https://www.depop.com/api/v3/search/products/?" + params.toString();
-  }
-
-  async function fetchSearchPage(url, fetchImpl, runtimeSendMessage, acceptHeader) {
-    var accept = normalizeString(acceptHeader, "") || "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-
-    if (typeof runtimeSendMessage === "function") {
-      var runtimeResponse = await runtimeSendMessage({
-        type: RUNTIME_FETCH_MESSAGE_TYPE,
-        url: url,
-        accept: accept
-      });
-
-      if (runtimeResponse && typeof runtimeResponse === "object") {
-        return {
-          ok: Boolean(runtimeResponse.ok),
-          status: Number(runtimeResponse.status) || 0,
-          text: normalizeString(runtimeResponse.text, ""),
-          source: "runtime"
-        };
-      }
-    }
-
-    if (typeof fetchImpl !== "function") {
-      return {
-        ok: false,
-        status: 0,
-        text: "",
-        source: "none"
-      };
-    }
-
-    try {
-      var response = await fetchImpl(url, {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-        headers: {
-          Accept: accept
+    function getNormalizeHelpers() {
+        if (isNormalizeHelpers(Normalize)) {
+            return Normalize;
         }
-      });
-      var text = "";
-      try {
-        text = await response.text();
-      } catch (_) {
-        text = "";
-      }
-
-      return {
-        ok: Boolean(response && response.ok),
-        status: response ? Number(response.status) : 0,
-        text: text,
-        source: "fetch"
-      };
-    } catch (_) {
-      return {
-        ok: false,
-        status: 0,
-        text: "",
-        source: "fetch"
-      };
+        return null;
     }
-  }
-
-  async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage) {
-    var apiUrl = buildApiSearchUrl(query, payload);
-    var fetched = await fetchSearchPage(
-      apiUrl,
-      fetchImpl,
-      runtimeSendMessage,
-      "application/json,text/plain,*/*"
-    );
-
-    if (!fetched.ok) {
-      if (fetched.status === 0) {
-        return {
-          ok: false,
-          requestCount: 1,
-          errorCode: "NETWORK_ERROR",
-          retryAfterMs: 1500
-        };
-      }
-
-      var mappedError = mapHttpError(fetched.status);
-      return {
-        ok: false,
-        requestCount: 1,
-        errorCode: mappedError.errorCode,
-        retryAfterMs: mappedError.retryAfterMs
-      };
-    }
-
-    var text = normalizeString(fetched.text, "");
-    if (!text) {
-      return {
-        ok: false,
-        requestCount: 1,
-        errorCode: "PARSE_ERROR",
-        retryAfterMs: 0
-      };
-    }
-
-    var parsed = tryParseJsonLenient(text);
-    if (!parsed) {
-      // Some edge responses are HTML/challenge content even on API routes.
-      // Reuse HTML parser before treating it as a hard parse failure.
-      var htmlParsed = parseCandidates(text);
-      var htmlCandidates = dedupeById(htmlParsed.candidates || [])
-        .map(normalizeProductCandidate)
-        .filter(Boolean);
-
-      if (htmlCandidates.length) {
-        return {
-          ok: true,
-          requestCount: 1,
-          candidates: htmlCandidates
-        };
-      }
-
-      return {
-        ok: false,
-        requestCount: 1,
-        errorCode: "PARSE_ERROR",
-        retryAfterMs: 0
-      };
-    }
-
-    var candidates = dedupeById(parseCandidatesFromApiPayload(parsed) || [])
-      .map(normalizeProductCandidate)
-      .filter(Boolean);
-
-    if (candidates.length) {
-      return {
-        ok: true,
-        requestCount: 1,
-        candidates: candidates
-      };
-    }
-
-    if (hasNoResultsInApiPayload(parsed)) {
-      return {
-        ok: false,
-        requestCount: 1,
-        errorCode: "NO_RESULTS",
-        retryAfterMs: 0
-      };
-    }
-
-    return {
-      ok: false,
-      requestCount: 1,
-      errorCode: "PARSE_ERROR",
-      retryAfterMs: 0
-    };
-  }
-
-  async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches) {
-    var list = Array.isArray(candidates) ? candidates : [];
-    var fetchBudget = Math.max(0, Number(maxFetches) || 0);
-    if (!list.length || fetchBudget < 1) {
-      return {
-        candidates: [],
-        requestCount: 0
-      };
-    }
-
-    var output = [];
-    var seenIds = Object.create(null);
-    var requestCount = 0;
-
-    for (var i = 0; i < list.length && requestCount < fetchBudget; i += 1) {
-      var candidate = list[i];
-      var url = normalizeString(candidate && candidate.url, "");
-      if (!url) {
-        continue;
-      }
-
-      var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
-      requestCount += 1;
-      if (!fetched.ok || !fetched.text) {
-        continue;
-      }
-
-      var parsed = parseCandidates(fetched.text);
-      var normalized = dedupeById(parsed.candidates || [])
-        .map(normalizeProductCandidate)
-        .filter(Boolean)
-        .filter(hasMeaningfulPrice);
-
-      if (!normalized.length) {
-        continue;
-      }
-
-      var best = normalized[0];
-      var id = normalizeString(best && best.id, "");
-      if (!id || seenIds[id]) {
-        continue;
-      }
-
-      seenIds[id] = true;
-      output.push(best);
-    }
-
-    return {
-      candidates: output,
-      requestCount: requestCount
-    };
-  }
-
-  async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs) {
-    var fallbackQuery = normalizeString(query, "");
-    if (!fallbackQuery) {
-      return {
-        ok: false,
-        candidates: [],
-        requestCount: 0,
-        errorCode: "FORBIDDEN_OR_BLOCKED",
-        retryAfterMs: 120000,
-        partial: true
-      };
-    }
-
-    await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
-
-    var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
-    var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
-
-    if (!fetched.ok && fetched.status === 0) {
-      return {
-        ok: false,
-        candidates: [],
-        requestCount: 0,
-        errorCode: "NETWORK_ERROR",
-        retryAfterMs: 2000,
-        partial: true
-      };
-    }
-
-    if (!fetched.ok) {
-      var mapped = mapHttpError(fetched.status);
-      return {
-        ok: false,
-        candidates: [],
-        requestCount: 1,
-        errorCode: mapped.errorCode,
-        retryAfterMs: mapped.retryAfterMs,
-        partial: true
-      };
-    }
-
-    var html = fetched.text;
-    if (!html) {
-      return {
-        ok: false,
-        candidates: [],
-        requestCount: 1,
-        errorCode: "PARSE_ERROR",
-        retryAfterMs: 0,
-        partial: true
-      };
-    }
-
-    var parsed = parseCandidates(html);
-    var normalized = dedupeById(parsed.candidates || [])
-      .map(normalizeProductCandidate)
-      .filter(Boolean);
-    var normalizedWithPrice = normalized.filter(hasMeaningfulPrice);
-
-    var latestHtml = html;
-    if (!normalizedWithPrice.length && isLikelyLoadingShellHtml(latestHtml)) {
-      var loadingAttempts = 0;
-      var maxLoadingRetries = 2;
-
-      while (!normalizedWithPrice.length && loadingAttempts < maxLoadingRetries) {
-        await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
-        var retryFetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
-        if (!retryFetched.ok || !retryFetched.text) {
-          break;
+    function getNestedValue(input, paths, fallback) {
+        const helpers = getNormalizeHelpers();
+        if (helpers) {
+            return helpers.getNestedValue(input, paths, fallback);
         }
-
-        latestHtml = retryFetched.text;
-        var retryParsed = parseCandidates(latestHtml);
-        normalized = dedupeById(retryParsed.candidates || [])
-          .map(normalizeProductCandidate)
-          .filter(Boolean);
-        normalizedWithPrice = normalized.filter(hasMeaningfulPrice);
-
-        if (!isLikelyLoadingShellHtml(latestHtml)) {
-          break;
-        }
-
-        loadingAttempts += 1;
-      }
-    }
-
-    if (!normalizedWithPrice.length) {
-      if (shouldReturnNoResults(latestHtml)) {
-        return {
-          ok: false,
-          candidates: [],
-          requestCount: 1,
-          errorCode: "NO_RESULTS",
-          retryAfterMs: 0,
-          partial: true
-        };
-      }
-
-      return {
-        ok: false,
-        candidates: [],
-        requestCount: 1,
-        errorCode: "PARSE_ERROR",
-        retryAfterMs: 0,
-        partial: true
-      };
-    }
-
-    return {
-      ok: true,
-      candidates: normalizedWithPrice,
-      requestCount: 1,
-      partial: true
-    };
-  }
-
-  function createDepopProvider(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var fetchImpl = typeof config.fetchImpl === "function" ? config.fetchImpl : (typeof fetch === "function" ? fetch : null);
-    var runtimeSendMessage =
-      typeof config.runtimeSendMessage === "function"
-        ? config.runtimeSendMessage
-        : resolveRuntimeSendMessage();
-    var maxRequests = Number.isFinite(Number(config.maxRequests)) ? Number(config.maxRequests) : 3;
-    var cooldownMs = Number.isFinite(Number(config.cooldownMs)) ? Number(config.cooldownMs) : 1200;
-
-    return {
-      market: "depop",
-      search: async function (input) {
-        if (!fetchImpl && !runtimeSendMessage) {
-          return {
-            ok: false,
-            candidates: [],
-            fetchedAt: Date.now(),
-            partial: false,
-            sourceType: "html",
-            parserVersion: PARSER_VERSION,
-            errorCode: "NETWORK_ERROR",
-            retryAfterMs: 1500
-          };
-        }
-
-        var payload = input && typeof input === "object" ? input : {};
-        var queries = Array.isArray(payload.queries) ? payload.queries.filter(Boolean) : [];
-        var limit = Number.isFinite(Number(payload.limit)) ? Number(payload.limit) : 12;
-        var requestTotal = 0;
-        var partial = false;
-        var merged = [];
-        var blockedFallbackAttempted = false;
-        var sourceType = "html";
-        var sawNoResults = false;
-
-        if (!queries.length) {
-          return {
-            ok: false,
-            candidates: [],
-            fetchedAt: Date.now(),
-            partial: false,
-            sourceType: "html",
-            parserVersion: PARSER_VERSION,
-            errorCode: "MISSING_LISTING_DATA",
-            retryAfterMs: 0
-          };
-        }
-
-        for (var i = 0; i < queries.length && requestTotal < maxRequests; i += 1) {
-          var query = queries[i];
-          var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
-
-          var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
-          if (!fetched.ok && fetched.status === 0) {
-            partial = true;
-            continue;
-          }
-
-          requestTotal += 1;
-
-          if (!fetched.ok) {
-            if (requestTotal < maxRequests) {
-              var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
-              requestTotal += apiOnHttpError.requestCount || 0;
-
-              if (apiOnHttpError.ok) {
-                merged = merged.concat(apiOnHttpError.candidates || []);
-                partial = true;
-                sourceType = "json";
-                continue;
-              }
-
-              if (apiOnHttpError.errorCode === "NO_RESULTS") {
-                sawNoResults = true;
-                continue;
-              }
+        for (let i = 0; i < paths.length; i += 1) {
+            const path = paths[i];
+            let cursor = input;
+            for (let j = 0; j < path.length; j += 1) {
+                if (!cursor || typeof cursor !== "object") {
+                    cursor = undefined;
+                    break;
+                }
+                cursor = cursor[path[j]];
             }
-
-            var mapped = mapHttpError(fetched.status);
-            if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !blockedFallbackAttempted) {
-              blockedFallbackAttempted = true;
-              var fallbackAttempt = await trySingleQueryFallback(
-                fetchImpl,
-                runtimeSendMessage,
-                queries[0],
-                cooldownMs
-              );
-              requestTotal += fallbackAttempt.requestCount || 0;
-
-              if (fallbackAttempt.ok) {
-                merged = merged.concat(fallbackAttempt.candidates || []);
-                partial = true;
-                break;
-              }
-
-              return {
-                ok: false,
-                candidates: [],
-                fetchedAt: Date.now(),
-                partial: true,
-                sourceType: "html",
-                parserVersion: PARSER_VERSION,
-                errorCode: fallbackAttempt.errorCode || mapped.errorCode,
-                retryAfterMs: normalizeNumber(fallbackAttempt.retryAfterMs) || mapped.retryAfterMs
-              };
+            if (cursor !== undefined && cursor !== null) {
+                return cursor;
             }
-
-            if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
-              return {
-                ok: false,
-                candidates: [],
-                fetchedAt: Date.now(),
-                partial: partial,
-                sourceType: "html",
-                parserVersion: PARSER_VERSION,
-                errorCode: mapped.errorCode,
-                retryAfterMs: mapped.retryAfterMs
-              };
+        }
+        return fallback;
+    }
+    function normalizeDate(value) {
+        const helpers = getNormalizeHelpers();
+        if (helpers) {
+            return helpers.normalizeDate(value);
+        }
+        if (!value) {
+            return null;
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+        return date.toISOString();
+    }
+    function normalizeString(value, fallback) {
+        const helpers = getNormalizeHelpers();
+        if (helpers) {
+            return helpers.normalizeString(value, fallback);
+        }
+        if (typeof value === "string") {
+            return value;
+        }
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return String(value);
+        }
+        catch (_) {
+            return fallback;
+        }
+    }
+    function normalizeListingId(value) {
+        const helpers = getNormalizeHelpers();
+        if (helpers) {
+            return helpers.normalizeListingId(value);
+        }
+        if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+            return value;
+        }
+        if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+            const parsed = Number(value.trim());
+            return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+        }
+        return null;
+    }
+    function normalizePriceDrops(value) {
+        const helpers = getNormalizeHelpers();
+        if (helpers) {
+            return helpers.normalizePriceDrops(value);
+        }
+        if (!Array.isArray(value)) {
+            return [];
+        }
+        return value
+            .map(function (entry) {
+            if (typeof entry === "object" && entry !== null) {
+                const objectEntry = entry;
+                return Number(objectEntry.amount || objectEntry.price || objectEntry.value);
             }
-            partial = true;
-            continue;
-          }
+            return Number(entry);
+        })
+            .filter(function (entry) {
+            return Number.isFinite(entry) && entry > 0;
+        });
+    }
+    function createDefaultListing(sourceStatus) {
+        return {
+            id: null,
+            title: "",
+            createdAt: null,
+            pricing: {
+                history: [],
+                updatedAt: null
+            },
+            seller: {
+                createdAt: null
+            },
+            prettyPath: null,
+            sold: false,
+            rawListing: null,
+            sourceStatus: sourceStatus || "missing_listing"
+        };
+    }
+    function getRawListing(rawNextData) {
+        return getNestedValue(rawNextData, [
+            ["props", "pageProps", "listing"],
+            ["pageProps", "listing"],
+            ["props", "listing"],
+            ["listing"]
+        ], null);
+    }
+    function mapRawListingToModel(rawListing) {
+        if (!rawListing || typeof rawListing !== "object") {
+            return createDefaultListing("missing_listing");
+        }
+        const typedRawListing = rawListing;
+        const seller = getNestedValue(typedRawListing, [["seller"]], {});
+        const model = createDefaultListing("ok");
+        model.id = normalizeListingId(getNestedValue(typedRawListing, [["id"]], null));
+        model.title = (normalizeString(getNestedValue(typedRawListing, [["title"]], ""), "") || "");
+        model.pricing.history = normalizePriceDrops(getNestedValue(typedRawListing, [["priceDrops"], ["price_drops"]], []));
+        model.createdAt = normalizeDate(getNestedValue(typedRawListing, [["createdAt"], ["created_at"], ["trueCreatedAt"], ["true_created_at"]], null));
+        model.pricing.updatedAt = normalizeDate(getNestedValue(typedRawListing, [["priceUpdatedAt"], ["price_updated_at"]], null));
+        model.seller.createdAt = normalizeDate(getNestedValue(seller, [["createdAt"], ["created_at"]], null));
+        model.prettyPath = normalizeString(getNestedValue(typedRawListing, [["prettyPath"], ["pretty_path"]], null), null);
+        model.sold = Boolean(getNestedValue(typedRawListing, [["sold"]], false));
+        model.rawListing = typedRawListing;
+        if (!model.id) {
+            model.sourceStatus = "missing_listing_id";
+        }
+        return model;
+    }
+    function fromNextData(rawNextData) {
+        const rawListing = getRawListing(rawNextData);
+        return mapRawListingToModel(rawListing);
+    }
+    return {
+        createDefaultListing,
+        fromNextData,
+        mapRawListingToModel
+    };
+});
 
-          var html = fetched.text;
-          if (!html) {
-            partial = true;
-            continue;
-          }
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusListingExtractor = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    let ListingModel = null;
+    const globalScope = typeof globalThis !== "undefined" ? globalThis : null;
+    if (globalScope && globalScope.GrailedPlusListingModel) {
+        ListingModel = globalScope.GrailedPlusListingModel;
+    }
+    if (!ListingModel && typeof require === "function") {
+        try {
+            const listingModelModule = require("./listingModel");
+            ListingModel = isListingModelModule(listingModelModule) ? listingModelModule : null;
+        }
+        catch (_) {
+            ListingModel = null;
+        }
+    }
+    function isListingModelModule(input) {
+        if (!input || typeof input !== "object") {
+            return false;
+        }
+        return typeof input.fromNextData === "function";
+    }
+    function safeParseJson(text) {
+        if (!text || typeof text !== "string") {
+            return null;
+        }
+        try {
+            return JSON.parse(text);
+        }
+        catch (_) {
+            return null;
+        }
+    }
+    function readNextDataFromDocument(doc) {
+        if (!doc || typeof doc.getElementById !== "function") {
+            return null;
+        }
+        const node = doc.getElementById("__NEXT_DATA__");
+        if (!node || !node.textContent) {
+            return null;
+        }
+        return safeParseJson(node.textContent);
+    }
+    function extractListing(rawNextData) {
+        if (ListingModel && typeof ListingModel.fromNextData === "function") {
+            return ListingModel.fromNextData(rawNextData);
+        }
+        // Fallback defaults if the listing model module fails to load.
+        return {
+            id: null,
+            title: "",
+            createdAt: null,
+            pricing: {
+                history: [],
+                updatedAt: null
+            },
+            seller: {
+                createdAt: null
+            },
+            prettyPath: null,
+            sold: false,
+            rawListing: null,
+            sourceStatus: "listing_model_unavailable"
+        };
+    }
+    return {
+        readNextDataFromDocument,
+        extractListing
+    };
+});
 
-          var latestHtml = html;
-
-          var parsed = parseCandidates(html);
-          if (isBlockedHtml(html)) {
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusPricingInsights = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    function toHistory(value) {
+        if (!Array.isArray(value)) {
+            return [];
+        }
+        return value.map(function (entry) {
+            return Number(entry);
+        });
+    }
+    function computeAverageDropAmount(priceDrops) {
+        const history = toHistory(priceDrops);
+        if (history.length < 2) {
+            return null;
+        }
+        const deltas = [];
+        let sum = 0;
+        for (let i = 0; i < history.length - 1; i += 1) {
+            deltas.push(Number(history[i]) - Number(history[i + 1]));
+        }
+        for (let i = 0; i < deltas.length; i += 1) {
+            if (!Number.isFinite(deltas[i])) {
+                return null;
+            }
+            sum += deltas[i];
+        }
+        return sum / deltas.length;
+    }
+    function computeAverageDropPercent(priceDrops) {
+        const history = toHistory(priceDrops);
+        if (history.length < 2) {
+            return null;
+        }
+        const percents = [];
+        let sum = 0;
+        for (let i = 0; i < history.length - 1; i += 1) {
+            const current = Number(history[i]);
+            const next = Number(history[i + 1]);
+            if (!Number.isFinite(current) || !Number.isFinite(next) || current <= 0) {
+                return null;
+            }
+            percents.push(100 - (next / current) * 100);
+        }
+        for (let i = 0; i < percents.length; i += 1) {
+            sum += percents[i];
+        }
+        return Math.floor(sum / percents.length);
+    }
+    function parseDate(value) {
+        if (!value) {
+            return null;
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+        return date;
+    }
+    function computeExpectedDrop(listing, nowMs) {
+        const history = listing && listing.pricing && Array.isArray(listing.pricing.history)
+            ? toHistory(listing.pricing.history)
+            : [];
+        if (history.length < 1) {
             return {
-              ok: false,
-              candidates: [],
-              fetchedAt: Date.now(),
-              partial: partial,
-              sourceType: "html",
-              parserVersion: PARSER_VERSION,
-              errorCode: "FORBIDDEN_OR_BLOCKED",
-              retryAfterMs: 120000
+                expectedNextDropDays: null,
+                expectedDropState: "insufficient_data"
             };
-          }
+        }
+        const createdAt = parseDate(listing && listing.createdAt);
+        const updatedAt = parseDate(listing && listing.pricing ? listing.pricing.updatedAt : null);
+        if (!createdAt || !updatedAt) {
+            return {
+                expectedNextDropDays: null,
+                expectedDropState: "insufficient_data"
+            };
+        }
+        const dropIntervalMs = (updatedAt.getTime() - createdAt.getTime()) / history.length;
+        if (!Number.isFinite(dropIntervalMs) || dropIntervalMs <= 0) {
+            return {
+                expectedNextDropDays: null,
+                expectedDropState: "insufficient_data"
+            };
+        }
+        const msUntilNextDrop = dropIntervalMs - (nowMs - updatedAt.getTime());
+        const expectedNextDropDays = Math.round(msUntilNextDrop / DAY_MS);
+        if (expectedNextDropDays < -30) {
+            return {
+                expectedNextDropDays,
+                expectedDropState: "inactive"
+            };
+        }
+        return {
+            expectedNextDropDays,
+            expectedDropState: "scheduled"
+        };
+    }
+    function computePricingInsights(listing, nowMs) {
+        const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+        const expected = computeExpectedDrop(listing, now);
+        const history = listing && listing.pricing && Array.isArray(listing.pricing.history)
+            ? toHistory(listing.pricing.history)
+            : [];
+        return {
+            averageDropAmountUsd: computeAverageDropAmount(history),
+            averageDropPercent: computeAverageDropPercent(history),
+            expectedNextDropDays: expected.expectedNextDropDays,
+            expectedDropState: expected.expectedDropState,
+            totalDrops: history.length
+        };
+    }
+    return {
+        computeAverageDropAmount,
+        computeAverageDropPercent,
+        computeExpectedDrop,
+        computePricingInsights
+    };
+});
 
-          var parsedCandidates = dedupeById(parsed.candidates || [])
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusSettings = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    const DEFAULT_CURRENCY = "USD";
+    const DEFAULT_CONVERSION_ENABLED = false;
+    const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
+    const DEFAULT_DARK_MODE_ENABLED = true;
+    const DEFAULT_DARK_MODE_BEHAVIOR = "system";
+    const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
+    const CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
+    const CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
+    const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
+    const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
+    const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
+    const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
+    const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
+    function normalizeCurrencyCode(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        const trimmed = input.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(trimmed)) {
+            return null;
+        }
+        return trimmed;
+    }
+    function normalizeHexColor(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        const trimmed = input.trim();
+        if (!trimmed) {
+            return null;
+        }
+        const shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+        if (shortMatch && shortMatch[1]) {
+            const shortHex = shortMatch[1].toUpperCase();
+            return ("#" +
+                shortHex.charAt(0) +
+                shortHex.charAt(0) +
+                shortHex.charAt(1) +
+                shortHex.charAt(1) +
+                shortHex.charAt(2) +
+                shortHex.charAt(2));
+        }
+        const longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+        if (longMatch && longMatch[1]) {
+            return "#" + longMatch[1].toUpperCase();
+        }
+        return null;
+    }
+    function normalizeDarkModeBehavior(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        const trimmed = input.trim().toLowerCase();
+        if (trimmed !== "system" && trimmed !== "permanent") {
+            return null;
+        }
+        return trimmed;
+    }
+    function getStorageLocal() {
+        if (typeof chrome !== "undefined" &&
+            chrome.storage &&
+            chrome.storage.local &&
+            typeof chrome.storage.local.get === "function" &&
+            typeof chrome.storage.local.set === "function") {
+            return chrome.storage.local;
+        }
+        if (typeof browser !== "undefined" &&
+            browser.storage &&
+            browser.storage.local &&
+            typeof browser.storage.local.get === "function" &&
+            typeof browser.storage.local.set === "function") {
+            return browser.storage.local;
+        }
+        return null;
+    }
+    function storageGet(storage, key) {
+        if (!storage) {
+            return Promise.resolve({});
+        }
+        try {
+            const result = storage.get(key);
+            if (result && typeof result.then === "function") {
+                return result;
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.get(key, function (data) {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve({});
+                        return;
+                    }
+                    resolve(data || {});
+                });
+            }
+            catch (_) {
+                resolve({});
+            }
+        });
+    }
+    function storageSet(storage, payload) {
+        if (!storage) {
+            return Promise.resolve(false);
+        }
+        try {
+            const result = storage.set(payload);
+            if (result && typeof result.then === "function") {
+                return result.then(function () {
+                    return true;
+                });
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.set(payload, function () {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve(false);
+                        return;
+                    }
+                    resolve(true);
+                });
+            }
+            catch (_) {
+                resolve(false);
+            }
+        });
+    }
+    function getSelectedCurrency() {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve(DEFAULT_CURRENCY);
+        }
+        return storageGet(storage, CURRENCY_STORAGE_KEY)
+            .then(function (data) {
+            const normalized = normalizeCurrencyCode(data && data[CURRENCY_STORAGE_KEY]);
+            return normalized || DEFAULT_CURRENCY;
+        })
+            .catch(function () {
+            return DEFAULT_CURRENCY;
+        });
+    }
+    function setSelectedCurrency(code) {
+        const normalized = normalizeCurrencyCode(code);
+        if (!normalized) {
+            return Promise.resolve({
+                ok: false,
+                error: "Currency must be a 3-letter code."
+            });
+        }
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve({
+                ok: false,
+                error: "Storage unavailable."
+            });
+        }
+        const payload = {};
+        payload[CURRENCY_STORAGE_KEY] = normalized;
+        return storageSet(storage, payload)
+            .then(function (ok) {
+            if (!ok) {
+                return {
+                    ok: false,
+                    error: "Failed to persist currency."
+                };
+            }
+            return {
+                ok: true
+            };
+        })
+            .catch(function () {
+            return {
+                ok: false,
+                error: "Failed to persist currency."
+            };
+        });
+    }
+    function _persistBooleanSetting(storageKey, enabled, settingDescription) {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve({
+                ok: false,
+                error: "Storage unavailable."
+            });
+        }
+        const payload = {};
+        payload[storageKey] = Boolean(enabled);
+        return storageSet(storage, payload)
+            .then(function (ok) {
+            if (!ok) {
+                return {
+                    ok: false,
+                    error: "Failed to persist " + settingDescription + "."
+                };
+            }
+            return {
+                ok: true
+            };
+        })
+            .catch(function () {
+            return {
+                ok: false,
+                error: "Failed to persist " + settingDescription + "."
+            };
+        });
+    }
+    function getCurrencyConversionEnabled() {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve(DEFAULT_CONVERSION_ENABLED);
+        }
+        return storageGet(storage, CONVERSION_ENABLED_STORAGE_KEY)
+            .then(function (data) {
+            return Boolean(data && data[CONVERSION_ENABLED_STORAGE_KEY]);
+        })
+            .catch(function () {
+            return DEFAULT_CONVERSION_ENABLED;
+        });
+    }
+    function setCurrencyConversionEnabled(enabled) {
+        return _persistBooleanSetting(CONVERSION_ENABLED_STORAGE_KEY, enabled, "conversion status");
+    }
+    function getListingInsightsEnabled() {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve(DEFAULT_LISTING_INSIGHTS_ENABLED);
+        }
+        return storageGet(storage, LISTING_INSIGHTS_ENABLED_STORAGE_KEY)
+            .then(function (data) {
+            const storedValue = data && data[LISTING_INSIGHTS_ENABLED_STORAGE_KEY];
+            return typeof storedValue === "boolean" ? storedValue : DEFAULT_LISTING_INSIGHTS_ENABLED;
+        })
+            .catch(function () {
+            return DEFAULT_LISTING_INSIGHTS_ENABLED;
+        });
+    }
+    function setListingInsightsEnabled(enabled) {
+        return _persistBooleanSetting(LISTING_INSIGHTS_ENABLED_STORAGE_KEY, enabled, "listing insights status");
+    }
+    function getDarkModeEnabled() {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve(DEFAULT_DARK_MODE_ENABLED);
+        }
+        return storageGet(storage, DARK_MODE_ENABLED_STORAGE_KEY)
+            .then(function (data) {
+            const storedValue = data && data[DARK_MODE_ENABLED_STORAGE_KEY];
+            return typeof storedValue === "boolean" ? storedValue : DEFAULT_DARK_MODE_ENABLED;
+        })
+            .catch(function () {
+            return DEFAULT_DARK_MODE_ENABLED;
+        });
+    }
+    function setDarkModeEnabled(enabled) {
+        return _persistBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, enabled, "dark mode status");
+    }
+    function getDarkModePrimaryColor() {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve(DEFAULT_DARK_MODE_PRIMARY_COLOR);
+        }
+        return storageGet(storage, DARK_MODE_PRIMARY_COLOR_STORAGE_KEY)
+            .then(function (data) {
+            const normalized = normalizeHexColor(data && data[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY]);
+            return normalized || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+        })
+            .catch(function () {
+            return DEFAULT_DARK_MODE_PRIMARY_COLOR;
+        });
+    }
+    function getDarkModeBehavior() {
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve(DEFAULT_DARK_MODE_BEHAVIOR);
+        }
+        return storageGet(storage, DARK_MODE_BEHAVIOR_STORAGE_KEY)
+            .then(function (data) {
+            const normalized = normalizeDarkModeBehavior(data && data[DARK_MODE_BEHAVIOR_STORAGE_KEY]);
+            return normalized || DEFAULT_DARK_MODE_BEHAVIOR;
+        })
+            .catch(function () {
+            return DEFAULT_DARK_MODE_BEHAVIOR;
+        });
+    }
+    function setDarkModeBehavior(behavior) {
+        const normalized = normalizeDarkModeBehavior(behavior);
+        if (!normalized) {
+            return Promise.resolve({
+                ok: false,
+                error: "Dark mode behavior must be either 'system' or 'permanent'."
+            });
+        }
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve({
+                ok: false,
+                error: "Storage unavailable."
+            });
+        }
+        const payload = {};
+        payload[DARK_MODE_BEHAVIOR_STORAGE_KEY] = normalized;
+        return storageSet(storage, payload)
+            .then(function (ok) {
+            if (!ok) {
+                return {
+                    ok: false,
+                    error: "Failed to persist dark mode behavior."
+                };
+            }
+            return {
+                ok: true
+            };
+        })
+            .catch(function () {
+            return {
+                ok: false,
+                error: "Failed to persist dark mode behavior."
+            };
+        });
+    }
+    function setDarkModePrimaryColor(color) {
+        const normalized = normalizeHexColor(color);
+        if (!normalized) {
+            return Promise.resolve({
+                ok: false,
+                error: "Primary color must be a valid hex value."
+            });
+        }
+        const storage = getStorageLocal();
+        if (!storage) {
+            return Promise.resolve({
+                ok: false,
+                error: "Storage unavailable."
+            });
+        }
+        const payload = {};
+        payload[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY] = normalized;
+        return storageSet(storage, payload)
+            .then(function (ok) {
+            if (!ok) {
+                return {
+                    ok: false,
+                    error: "Failed to persist dark mode primary color."
+                };
+            }
+            return {
+                ok: true
+            };
+        })
+            .catch(function () {
+            return {
+                ok: false,
+                error: "Failed to persist dark mode primary color."
+            };
+        });
+    }
+    return {
+        DEFAULT_CURRENCY,
+        DEFAULT_CONVERSION_ENABLED,
+        DEFAULT_LISTING_INSIGHTS_ENABLED,
+        DEFAULT_DARK_MODE_ENABLED,
+        DEFAULT_DARK_MODE_BEHAVIOR,
+        DEFAULT_DARK_MODE_PRIMARY_COLOR,
+        CURATED_CURRENCIES,
+        CURRENCY_STORAGE_KEY,
+        CONVERSION_ENABLED_STORAGE_KEY,
+        LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+        DARK_MODE_ENABLED_STORAGE_KEY,
+        DARK_MODE_BEHAVIOR_STORAGE_KEY,
+        DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
+        STORAGE_KEY: CURRENCY_STORAGE_KEY,
+        normalizeCurrencyCode,
+        normalizeHexColor,
+        normalizeDarkModeBehavior,
+        getSelectedCurrency,
+        setSelectedCurrency,
+        getCurrencyConversionEnabled,
+        setCurrencyConversionEnabled,
+        getListingInsightsEnabled,
+        setListingInsightsEnabled,
+        getDarkModeEnabled,
+        setDarkModeEnabled,
+        getDarkModeBehavior,
+        setDarkModeBehavior,
+        getDarkModePrimaryColor,
+        setDarkModePrimaryColor
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusCurrency = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    const CACHE_KEY = "grailed_plus_exchange_rates_v1";
+    const CACHE_TTL_MS = 60 * 60 * 1000;
+    function normalizeCurrencyCode(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        const trimmed = input.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(trimmed)) {
+            return null;
+        }
+        return trimmed;
+    }
+    function getStorageLocal() {
+        if (typeof chrome !== "undefined" &&
+            chrome.storage &&
+            chrome.storage.local &&
+            typeof chrome.storage.local.get === "function" &&
+            typeof chrome.storage.local.set === "function") {
+            return chrome.storage.local;
+        }
+        if (typeof browser !== "undefined" &&
+            browser.storage &&
+            browser.storage.local &&
+            typeof browser.storage.local.get === "function" &&
+            typeof browser.storage.local.set === "function") {
+            return browser.storage.local;
+        }
+        return null;
+    }
+    function storageGet(storage, key) {
+        if (!storage) {
+            return Promise.resolve({});
+        }
+        try {
+            const result = storage.get(key);
+            if (result && typeof result.then === "function") {
+                return result;
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.get(key, function (data) {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve({});
+                        return;
+                    }
+                    resolve(data || {});
+                });
+            }
+            catch (_) {
+                resolve({});
+            }
+        });
+    }
+    function storageSet(storage, payload) {
+        if (!storage) {
+            return Promise.resolve(false);
+        }
+        try {
+            const result = storage.set(payload);
+            if (result && typeof result.then === "function") {
+                return result.then(function () {
+                    return true;
+                });
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.set(payload, function () {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve(false);
+                        return;
+                    }
+                    resolve(true);
+                });
+            }
+            catch (_) {
+                resolve(false);
+            }
+        });
+    }
+    function isCacheUsable(cache, baseCurrency, nowMs) {
+        if (!isCacheStaleButCompatible(cache, baseCurrency)) {
+            return false;
+        }
+        const typedCache = cache;
+        if (!Number.isFinite(typedCache.timestamp) || typedCache.timestamp <= 0) {
+            return false;
+        }
+        return nowMs - typedCache.timestamp < CACHE_TTL_MS;
+    }
+    function isCacheStaleButCompatible(cache, baseCurrency) {
+        if (!cache || typeof cache !== "object") {
+            return false;
+        }
+        const typedCache = cache;
+        if (typedCache.base !== baseCurrency) {
+            return false;
+        }
+        if (!typedCache.rates || typeof typedCache.rates !== "object") {
+            return false;
+        }
+        return true;
+    }
+    function buildPayload(baseCurrency, timestamp, rates) {
+        return {
+            base: baseCurrency,
+            timestamp: timestamp,
+            rates: rates
+        };
+    }
+    function buildResponse(payload, source) {
+        const safePayload = payload || buildPayload("USD", Date.now(), {});
+        return {
+            rates: safePayload.rates && typeof safePayload.rates === "object" ? safePayload.rates : {},
+            base: safePayload.base || "USD",
+            timestamp: Number.isFinite(safePayload.timestamp) ? safePayload.timestamp : Date.now(),
+            source: source || "unknown"
+        };
+    }
+    function fetchLatestRates(baseCurrency) {
+        if (typeof fetch !== "function") {
+            return Promise.reject(new Error("fetch unavailable"));
+        }
+        const endpoint = "https://api.frankfurter.app/latest?base=" + encodeURIComponent(baseCurrency);
+        return fetch(endpoint)
+            .then(function (res) {
+            if (!res || !res.ok) {
+                throw new Error("failed to fetch currency rates");
+            }
+            return res.json();
+        })
+            .then(function (json) {
+            const rates = json && json.rates && typeof json.rates === "object" ? json.rates : {};
+            return buildPayload(baseCurrency, Date.now(), rates);
+        });
+    }
+    function getRates(baseCurrency) {
+        const normalizedBase = normalizeCurrencyCode(baseCurrency) || "USD";
+        const nowMs = Date.now();
+        const storage = getStorageLocal();
+        return storageGet(storage, CACHE_KEY)
+            .then(function (data) {
+            const cache = data && data[CACHE_KEY];
+            if (isCacheUsable(cache, normalizedBase, nowMs)) {
+                return buildResponse(cache, "cache_fresh");
+            }
+            return fetchLatestRates(normalizedBase)
+                .then(function (payload) {
+                const wrapper = {};
+                wrapper[CACHE_KEY] = payload;
+                return storageSet(storage, wrapper).then(function () {
+                    return buildResponse(payload, "network");
+                });
+            })
+                .catch(function () {
+                if (isCacheStaleButCompatible(cache, normalizedBase)) {
+                    return buildResponse(cache, "cache_stale");
+                }
+                return buildResponse(buildPayload(normalizedBase, nowMs, {}), "fallback_empty");
+            });
+        })
+            .catch(function () {
+            return fetchLatestRates(normalizedBase)
+                .then(function (payload) {
+                return buildResponse(payload, "network");
+            })
+                .catch(function () {
+                return buildResponse(buildPayload(normalizedBase, nowMs, {}), "fallback_empty");
+            });
+        });
+    }
+    function hasCurrencyCode(code, rates) {
+        const normalized = normalizeCurrencyCode(code);
+        if (!normalized || !rates || typeof rates !== "object") {
+            return false;
+        }
+        const typedRates = rates;
+        return Number.isFinite(Number(typedRates[normalized])) && Number(typedRates[normalized]) > 0;
+    }
+    function convert(amount, from, to) {
+        const amountNumber = Number(amount);
+        const fromCurrency = normalizeCurrencyCode(from);
+        const toCurrency = normalizeCurrencyCode(to);
+        if (!Number.isFinite(amountNumber) || !fromCurrency || !toCurrency) {
+            return Promise.resolve(null);
+        }
+        if (fromCurrency === toCurrency) {
+            return Promise.resolve(amountNumber);
+        }
+        return getRates(fromCurrency).then(function (result) {
+            const rates = result && result.rates ? result.rates : {};
+            if (!hasCurrencyCode(toCurrency, rates)) {
+                return null;
+            }
+            return amountNumber * Number(rates[toCurrency]);
+        });
+    }
+    return {
+        CACHE_KEY: CACHE_KEY,
+        CACHE_TTL_MS: CACHE_TTL_MS,
+        normalizeCurrencyCode: normalizeCurrencyCode,
+        getRates: getRates,
+        convert: convert,
+        hasCurrencyCode: hasCurrencyCode
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusQuerySynthesis = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    const DEFAULT_CATEGORY_KEYWORDS = [
+        "outerwear",
+        "jacket",
+        "coat",
+        "hoodie",
+        "fleece",
+        "parka",
+        "bomber",
+        "anorak",
+        "sweater",
+        "knitwear",
+        "cardigan",
+        "crewneck",
+        "sweatshirt",
+        "shirt",
+        "flannel",
+        "polo",
+        "tee",
+        "t-shirt",
+        "long sleeve",
+        "longsleeve",
+        "denim",
+        "jeans",
+        "pants",
+        "trousers",
+        "cargo",
+        "shorts",
+        "sneakers",
+        "shoes",
+        "boots",
+        "loafers",
+        "sandals",
+        "bags",
+        "bag",
+        "backpack",
+        "wallet",
+        "accessories",
+        "accessory",
+        "belt",
+        "hat",
+        "beanie",
+        "cap",
+        "scarf",
+        "jewelry",
+        "watch",
+        "sunglasses"
+    ];
+    const STOPWORDS = {
+        the: true,
+        and: true,
+        with: true,
+        for: true,
+        from: true,
+        this: true,
+        that: true,
+        grailed: true,
+        depop: true,
+        listing: true,
+        item: true,
+        size: true
+    };
+    function normalizeString(value) {
+        if (typeof value !== "string") {
+            return "";
+        }
+        return value.trim();
+    }
+    function normalizeToken(value) {
+        return normalizeString(value)
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+    function collapseRepeatedTokenSequences(tokens) {
+        let output = Array.isArray(tokens) ? tokens.slice() : [];
+        if (!output.length) {
+            return output;
+        }
+        output = output.filter(function (token, index) {
+            return index === 0 || token !== output[index - 1];
+        });
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (let size = Math.min(4, Math.floor(output.length / 2)); size >= 1; size -= 1) {
+                for (let start = 0; start + size * 2 <= output.length; start += 1) {
+                    let isRepeat = true;
+                    for (let i = 0; i < size; i += 1) {
+                        if (output[start + i] !== output[start + size + i]) {
+                            isRepeat = false;
+                            break;
+                        }
+                    }
+                    if (isRepeat) {
+                        output.splice(start + size, size);
+                        changed = true;
+                        break;
+                    }
+                }
+                if (changed) {
+                    break;
+                }
+            }
+        }
+        return output;
+    }
+    function tokenize(value, maxTokens) {
+        const normalized = normalizeToken(value);
+        if (!normalized) {
+            return [];
+        }
+        let tokens = normalized.split(" ").filter(function (token) {
+            return token && !STOPWORDS[token] && token.length <= 24;
+        });
+        tokens = collapseRepeatedTokenSequences(tokens);
+        if (!Number.isFinite(maxTokens) || maxTokens <= 0 || tokens.length <= maxTokens) {
+            return tokens;
+        }
+        return tokens.slice(0, maxTokens);
+    }
+    function normalizeQueryPhrase(value) {
+        const normalized = normalizeToken(value);
+        if (!normalized) {
+            return "";
+        }
+        const tokens = normalized.split(" ").filter(Boolean);
+        return collapseRepeatedTokenSequences(tokens).join(" ");
+    }
+    function uniqueStrings(values) {
+        const seen = Object.create(null);
+        const output = [];
+        values.forEach(function (value) {
+            const normalized = normalizeQueryPhrase(value);
+            if (!normalized || seen[normalized]) {
+                return;
+            }
+            seen[normalized] = true;
+            output.push(normalized);
+        });
+        return output;
+    }
+    function toSignalFragment(value) {
+        if (typeof value === "string") {
+            return normalizeString(value);
+        }
+        if (Array.isArray(value)) {
+            return value.map(toSignalFragment).filter(Boolean).join(" ");
+        }
+        if (value && typeof value === "object") {
+            const typed = value;
+            const label = normalizeString(typed.name || typed.label || typed.slug || typed.title || "");
+            if (label) {
+                return label;
+            }
+        }
+        return "";
+    }
+    function getFirstNonEmpty(values) {
+        for (let i = 0; i < values.length; i += 1) {
+            const value = toSignalFragment(values[i]);
+            if (value) {
+                return value;
+            }
+        }
+        return "";
+    }
+    function collectCategorySignals(listing) {
+        const raw = listing && listing.rawListing && typeof listing.rawListing === "object"
+            ? listing.rawListing
+            : null;
+        return [
+            listing && listing.category,
+            listing && listing.subcategory,
+            raw && raw.category,
+            raw && raw.subcategory,
+            raw && raw.department,
+            raw && raw.productType,
+            raw && raw.product_type,
+            raw && raw.categoryPath,
+            raw && raw.category_path,
+            raw && raw.taxonomy,
+            raw && raw.breadcrumbs,
+            raw && raw.style,
+            raw && raw.tags,
+            listing && listing.title
+        ]
+            .map(toSignalFragment)
+            .filter(Boolean)
+            .join(" ");
+    }
+    function containsKeyword(signal, keyword) {
+        const normalizedSignal = normalizeToken(signal);
+        const normalizedKeyword = normalizeToken(keyword);
+        if (!normalizedSignal || !normalizedKeyword) {
+            return false;
+        }
+        const signalTokens = normalizedSignal.split(" ").filter(Boolean);
+        const keywordTokens = normalizedKeyword.split(" ").filter(Boolean);
+        if (!signalTokens.length || !keywordTokens.length) {
+            return false;
+        }
+        if (keywordTokens.length === 1) {
+            return signalTokens.indexOf(keywordTokens[0]) !== -1;
+        }
+        return normalizedSignal.indexOf(normalizedKeyword) !== -1;
+    }
+    function inferCategorySignal(listing) {
+        return normalizeToken(collectCategorySignals(listing));
+    }
+    function isAllowedCategory(listing, allowedKeywords) {
+        const signal = inferCategorySignal(listing);
+        if (!signal) {
+            return false;
+        }
+        const list = Array.isArray(allowedKeywords) && allowedKeywords.length
+            ? allowedKeywords
+            : DEFAULT_CATEGORY_KEYWORDS;
+        return list.some(function (keyword) {
+            return containsKeyword(signal, keyword);
+        });
+    }
+    function buildQueries(listing, options) {
+        const settings = options && typeof options === "object" ? options : {};
+        const maxQueries = Number.isFinite(Number(settings.maxQueries)) ? Number(settings.maxQueries) : 4;
+        const maxTokens = Number.isFinite(Number(settings.maxTokens)) ? Number(settings.maxTokens) : 6;
+        const allowCategoryFallback = settings.allowCategoryFallback !== false;
+        const categoryAllowed = isAllowedCategory(listing, settings.allowedCategoryKeywords);
+        if (!categoryAllowed && !allowCategoryFallback) {
+            return {
+                ok: false,
+                errorCode: "MISSING_LISTING_DATA",
+                reason: "unsupported_category",
+                queries: []
+            };
+        }
+        const raw = listing && listing.rawListing && typeof listing.rawListing === "object"
+            ? listing.rawListing
+            : null;
+        const brand = normalizeString(listing && listing.brand) ||
+            normalizeString(listing && raw && raw.designers && raw.designers[0] && raw.designers[0].name);
+        const size = normalizeString(listing && listing.size) ||
+            normalizeString(listing && raw && raw.size);
+        const category = getFirstNonEmpty([
+            listing && listing.category,
+            listing && listing.subcategory,
+            raw && raw.category,
+            raw && raw.subcategory,
+            raw && raw.department,
+            raw && raw.productType,
+            raw && raw.product_type,
+            raw && raw.categoryPath,
+            raw && raw.category_path
+        ]);
+        const title = normalizeString(listing && listing.title);
+        const titleTokens = tokenize(title, maxTokens);
+        const descriptor = titleTokens.slice(0, 3).join(" ");
+        const coreTitle = titleTokens.slice(0, Math.min(titleTokens.length, 5)).join(" ");
+        let candidates = [
+            [brand, descriptor].filter(Boolean).join(" "),
+            [brand, coreTitle].filter(Boolean).join(" "),
+            [coreTitle, size].filter(Boolean).join(" "),
+            [brand, size, category].filter(Boolean).join(" ")
+        ];
+        if (!categoryAllowed) {
+            candidates = [
+                [brand, coreTitle].filter(Boolean).join(" "),
+                [coreTitle, size].filter(Boolean).join(" "),
+                [brand, descriptor].filter(Boolean).join(" "),
+                coreTitle || title
+            ];
+        }
+        if (!brand && title) {
+            candidates.unshift(coreTitle || title);
+        }
+        const queries = uniqueStrings(candidates).slice(0, Math.max(1, maxQueries));
+        if (!queries.length) {
+            return {
+                ok: false,
+                errorCode: "MISSING_LISTING_DATA",
+                reason: "no_queries",
+                queries: []
+            };
+        }
+        return {
+            ok: true,
+            queries,
+            reason: categoryAllowed ? "ok" : "category_fallback"
+        };
+    }
+    return {
+        DEFAULT_CATEGORY_KEYWORDS,
+        tokenize,
+        isAllowedCategory,
+        buildQueries
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusProviderFilters = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function normalizeString(value) {
+        if (typeof value !== "string") {
+            return "";
+        }
+        return value.trim();
+    }
+    function normalizeList(values) {
+        if (!Array.isArray(values)) {
+            return [];
+        }
+        return values
+            .map(function (value) {
+            return normalizeString(value).toLowerCase();
+        })
+            .filter(Boolean);
+    }
+    function applyCandidateFilters(candidates, filters) {
+        const list = Array.isArray(candidates) ? candidates.slice() : [];
+        const rules = filters && typeof filters === "object" ? filters : {};
+        const blockedTerms = normalizeList(rules.blockedTerms);
+        const blockedSellers = normalizeList(rules.blockedSellers);
+        const allowSizes = normalizeList(rules.allowSizes);
+        const minPrice = Number(rules.minPrice);
+        const maxPrice = Number(rules.maxPrice);
+        return list.filter(function (candidate) {
+            const title = normalizeString(candidate && candidate.title).toLowerCase();
+            const description = normalizeString(candidate && candidate.description).toLowerCase();
+            const seller = normalizeString(candidate && candidate.seller).toLowerCase();
+            const size = normalizeString(candidate && candidate.size).toLowerCase();
+            const price = Number(candidate && candidate.price);
+            if (blockedTerms.some(function (term) {
+                return title.indexOf(term) !== -1 || description.indexOf(term) !== -1;
+            })) {
+                return false;
+            }
+            if (blockedSellers.length && seller && blockedSellers.indexOf(seller) !== -1) {
+                return false;
+            }
+            if (allowSizes.length && size && allowSizes.indexOf(size) === -1) {
+                return false;
+            }
+            if (Number.isFinite(minPrice) && Number.isFinite(price) && price < minPrice) {
+                return false;
+            }
+            if (Number.isFinite(maxPrice) && Number.isFinite(price) && price > maxPrice) {
+                return false;
+            }
+            return true;
+        });
+    }
+    return {
+        applyCandidateFilters
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusDepopProvider = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+    "use strict";
+    var PARSER_VERSION = "depop-hybrid-v2";
+    var KNOWN_CURRENCY_CODES = {
+        USD: true,
+        EUR: true,
+        GBP: true,
+        CAD: true,
+        AUD: true,
+        JPY: true,
+        SEK: true,
+        NOK: true,
+        DKK: true,
+        CHF: true,
+        PLN: true
+    };
+    var CURRENCY_SYMBOL_MAP = {
+        "$": "USD",
+        "€": "EUR",
+        "£": "GBP",
+        "¥": "JPY",
+        "A$": "AUD",
+        "C$": "CAD"
+    };
+    var RUNTIME_FETCH_MESSAGE_TYPE = "grailed-plus:depop-search-fetch";
+    var RUNTIME_FETCH_MESSAGE_VERSION = 1;
+    function isObjectRecord(value) {
+        return Boolean(value) && typeof value === "object";
+    }
+    function normalizeString(value, fallback) {
+        if (typeof value === "string") {
+            var trimmed = value.trim();
+            return trimmed || fallback;
+        }
+        return fallback;
+    }
+    function normalizeNumber(value) {
+        if (value == null) {
+            return null;
+        }
+        if (typeof value === "number") {
+            return Number.isFinite(value) ? value : null;
+        }
+        if (typeof value !== "string") {
+            return null;
+        }
+        if (value.trim() === "") {
+            return null;
+        }
+        var parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    function normalizeCurrencyCode(value) {
+        if (typeof value !== "string") {
+            return null;
+        }
+        var upper = value.trim().toUpperCase();
+        if (!upper || !KNOWN_CURRENCY_CODES[upper]) {
+            return null;
+        }
+        return upper;
+    }
+    function inferCurrencyFromLabel(label) {
+        var text = normalizeString(label, "");
+        if (!text) {
+            return null;
+        }
+        var codeMatch = text.match(/\b([A-Z]{3})\b/);
+        if (codeMatch && codeMatch[1]) {
+            var byCode = normalizeCurrencyCode(codeMatch[1]);
+            if (byCode) {
+                return byCode;
+            }
+        }
+        var symbolCandidates = ["A$", "C$", "€", "£", "¥", "$"];
+        for (var i = 0; i < symbolCandidates.length; i += 1) {
+            if (text.indexOf(symbolCandidates[i]) !== -1 && CURRENCY_SYMBOL_MAP[symbolCandidates[i]]) {
+                return CURRENCY_SYMBOL_MAP[symbolCandidates[i]];
+            }
+        }
+        return null;
+    }
+    function parseAmountFromLabel(label) {
+        var text = normalizeString(label, "");
+        if (!text) {
+            return null;
+        }
+        var cleaned = text.replace(/,/g, "");
+        var amountMatch = cleaned.match(/-?\d+(?:\.\d+)?/);
+        if (!amountMatch) {
+            return null;
+        }
+        var parsed = Number(amountMatch[0]);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    function tryParseJsonLenient(text) {
+        var raw = normalizeString(text, "");
+        if (!raw) {
+            return null;
+        }
+        try {
+            return JSON.parse(raw);
+        }
+        catch (_) {
+            // Continue with lenient parsing.
+        }
+        var cleaned = raw.replace(/^\uFEFF/, "").trim();
+        // Handle common XSSI prefixes like )]}', and for(;;);
+        cleaned = cleaned.replace(/^\)\]\}',?\s*/, "");
+        cleaned = cleaned.replace(/^for\s*\(\s*;\s*;\s*\)\s*;?\s*/, "");
+        var firstBrace = cleaned.indexOf("{");
+        var firstBracket = cleaned.indexOf("[");
+        var start = -1;
+        if (firstBrace !== -1 && firstBracket !== -1) {
+            start = Math.min(firstBrace, firstBracket);
+        }
+        else if (firstBrace !== -1) {
+            start = firstBrace;
+        }
+        else if (firstBracket !== -1) {
+            start = firstBracket;
+        }
+        if (start > 0) {
+            cleaned = cleaned.slice(start);
+        }
+        try {
+            return JSON.parse(cleaned);
+        }
+        catch (_) {
+            return null;
+        }
+    }
+    function sleep(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, Math.max(0, Number(ms) || 0));
+        });
+    }
+    function normalizeBoolean(value) {
+        if (typeof value === "boolean") {
+            return value;
+        }
+        if (typeof value === "string") {
+            var text = value.trim().toLowerCase();
+            if (text === "true") {
+                return true;
+            }
+            if (text === "false") {
+                return false;
+            }
+        }
+        return null;
+    }
+    function withJitter(ms) {
+        var base = Math.max(0, Number(ms) || 0);
+        var variance = base * 0.1;
+        var delta = (Math.random() * variance * 2) - variance;
+        return Math.max(0, Math.round(base + delta));
+    }
+    function mapHttpError(status) {
+        if (status === 403 || status === 401) {
+            return { errorCode: "FORBIDDEN_OR_BLOCKED", retryAfterMs: 120000 };
+        }
+        if (status === 429) {
+            return { errorCode: "RATE_LIMITED", retryAfterMs: 2000 };
+        }
+        if (status >= 500) {
+            return { errorCode: "NETWORK_ERROR", retryAfterMs: 1500 };
+        }
+        return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
+    }
+    function normalizeProductCandidate(candidate) {
+        var input = candidate && typeof candidate === "object" ? candidate : {};
+        var isHrefFallback = Boolean(input && input.raw && input.raw.source === "href_fallback");
+        var id = normalizeString(input.id, null);
+        var title = normalizeString(input.title, "Untitled");
+        var url = normalizeString(input.url, "");
+        var imageUrl = normalizeString(input.imageUrl, "");
+        var inferredAmount = parseAmountFromLabel(input.priceLabel);
+        var price = normalizeNumber(input.price);
+        if (price == null) {
+            price = inferredAmount;
+        }
+        if (price != null && price <= 0) {
+            price = null;
+        }
+        var currency = normalizeCurrencyCode(input.currency) ||
+            inferCurrencyFromLabel(input.priceLabel) ||
+            "USD";
+        if (!id || !url || (price == null && !isHrefFallback)) {
+            return null;
+        }
+        return {
+            market: "depop",
+            id: id,
+            title: title,
+            url: url,
+            imageUrl: imageUrl,
+            price: price,
+            currency: currency,
+            raw: input.raw || null
+        };
+    }
+    function extractFromJsonLd(html) {
+        var matches = [];
+        var scriptRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+        var scriptMatch = scriptRegex.exec(html);
+        while (scriptMatch) {
+            try {
+                var payload = JSON.parse(scriptMatch[1]);
+                var queue = Array.isArray(payload) ? payload.slice() : [payload];
+                while (queue.length) {
+                    var node = queue.shift();
+                    if (!node || typeof node !== "object") {
+                        continue;
+                    }
+                    if (Array.isArray(node)) {
+                        node.forEach(function (entry) {
+                            queue.push(entry);
+                        });
+                        continue;
+                    }
+                    if (node["@type"] === "Product") {
+                        var offer = node.offers && typeof node.offers === "object" ? node.offers : {};
+                        var candidate = normalizeProductCandidate({
+                            id: normalizeString(node.sku, null) || normalizeString(node.productID, null) || normalizeString(node.url, "").split("/").filter(Boolean).pop(),
+                            title: normalizeString(node.name, "Untitled"),
+                            url: normalizeString(node.url, ""),
+                            imageUrl: Array.isArray(node.image) ? normalizeString(node.image[0], "") : normalizeString(node.image, ""),
+                            price: normalizeNumber(offer.price),
+                            currency: normalizeCurrencyCode(normalizeString(offer.priceCurrency, "")) || "USD",
+                            priceLabel: normalizeString(offer.priceCurrency, "") + " " + normalizeString(offer.price, ""),
+                            raw: node
+                        });
+                        if (candidate) {
+                            matches.push(candidate);
+                        }
+                    }
+                    Object.keys(node).forEach(function (key) {
+                        if (node[key] && typeof node[key] === "object") {
+                            queue.push(node[key]);
+                        }
+                    });
+                }
+            }
+            catch (_) {
+                // Ignore malformed JSON-LD blocks.
+            }
+            scriptMatch = scriptRegex.exec(html);
+        }
+        return matches;
+    }
+    function getNestedValue(source, paths) {
+        var i;
+        var j;
+        var path;
+        var current;
+        for (i = 0; i < paths.length; i += 1) {
+            path = paths[i];
+            current = source;
+            for (j = 0; j < path.length; j += 1) {
+                if (!current || typeof current !== "object" || !(path[j] in current)) {
+                    current = null;
+                    break;
+                }
+                current = current[path[j]];
+            }
+            if (current != null) {
+                return current;
+            }
+        }
+        return null;
+    }
+    function readBalancedJsonArray(text, startIndex) {
+        var inString = false;
+        var escaped = false;
+        var depth = 0;
+        var i;
+        var ch;
+        for (i = startIndex; i < text.length; i += 1) {
+            ch = text[i];
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                }
+                else if (ch === "\\") {
+                    escaped = true;
+                }
+                else if (ch === '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (ch === '"') {
+                inString = true;
+                continue;
+            }
+            if (ch === "[") {
+                depth += 1;
+                continue;
+            }
+            if (ch === "]") {
+                depth -= 1;
+                if (depth === 0) {
+                    return text.slice(startIndex, i + 1);
+                }
+            }
+        }
+        return "";
+    }
+    function normalizeFlightText(raw) {
+        if (!raw) {
+            return "";
+        }
+        return raw
+            .replace(/\\\"/g, '"')
+            .replace(/\\n/g, " ")
+            .replace(/\\t/g, " ");
+    }
+    function mapFlightProduct(product) {
+        var input = product && typeof product === "object" ? product : {};
+        var slug = normalizeString(getNestedValue(input, [["slug"], ["seo", "slug"]]), "");
+        var url = normalizeString(getNestedValue(input, [["url"], ["path"], ["route"]]), "") ||
+            normalizeString(getNestedValue(input, [["permalink"]]), "");
+        if (!url && slug) {
+            url = "https://www.depop.com/products/" + slug + "/";
+        }
+        if (url && url.indexOf("/") === 0) {
+            url = "https://www.depop.com" + url;
+        }
+        var id = normalizeString(getNestedValue(input, [["id"], ["productId"], ["product_id"], ["slug"]]), null) ||
+            (url ? normalizeString(url.split("/").filter(Boolean).pop(), null) : null);
+        var imageUrl = normalizeString(getNestedValue(input, [
+            ["imageUrl"],
+            ["image", "url"],
+            ["pictures", 0, "url"],
+            ["photos", 0, "url"]
+        ]), "") || "";
+        var amount = normalizeNumber(input.price);
+        if (amount == null) {
+            amount =
+                normalizeNumber(getNestedValue(input, [
+                    ["priceAmount"],
+                    ["price_amount"],
+                    ["price", "amount"],
+                    ["priceInfo", "amount"],
+                    ["price_info", "amount"],
+                    ["pricing", "amount"],
+                    ["pricing", "priceAmount"],
+                    ["pricing", "price", "amount"],
+                    ["pricing", "price", "display_amount"],
+                    ["pricing", "display_price", "amount"],
+                    ["pricing", "discounted_price", "amount"],
+                    ["pricing", "discountedPrice", "amount"]
+                ]));
+        }
+        var cents = normalizeNumber(getNestedValue(input, [
+            ["priceCents"],
+            ["price_cents"],
+            ["price", "amountCents"],
+            ["price", "amount_cents"],
+            ["pricing", "price", "amount_cents"],
+            ["pricing", "discounted_price", "amount_cents"],
+            ["pricing", "discountedPrice", "amount_cents"]
+        ]));
+        if (amount == null && cents != null) {
+            amount = cents / 100;
+        }
+        return normalizeProductCandidate({
+            id: id,
+            title: normalizeString(getNestedValue(input, [["title"], ["name"], ["description"]]), "Untitled"),
+            url: url,
+            imageUrl: imageUrl,
+            price: amount,
+            currency: normalizeString(getNestedValue(input, [
+                ["currency"],
+                ["price", "currency"],
+                ["priceInfo", "currency"],
+                ["pricing", "currency"],
+                ["pricing", "price", "currency"],
+                ["pricing", "discounted_price", "currency"],
+                ["pricing", "discountedPrice", "currency"]
+            ]), "USD"),
+            raw: input
+        });
+    }
+    function walkJsonTree(node, visitor) {
+        if (node == null) {
+            return;
+        }
+        visitor(node);
+        if (Array.isArray(node)) {
+            for (var i = 0; i < node.length; i += 1) {
+                walkJsonTree(node[i], visitor);
+            }
+            return;
+        }
+        if (typeof node === "object") {
+            var keys = Object.keys(node);
+            for (var k = 0; k < keys.length; k += 1) {
+                walkJsonTree(node[keys[k]], visitor);
+            }
+        }
+    }
+    function parseCandidatesFromApiPayload(payload) {
+        var candidates = [];
+        var seen = Object.create(null);
+        walkJsonTree(payload, function (node) {
+            if (!node || typeof node !== "object" || Array.isArray(node)) {
+                return;
+            }
+            var maybeId = getNestedValue(node, [["id"], ["product_id"], ["productId"], ["slug"]]);
+            var maybeUrl = getNestedValue(node, [["url"], ["path"], ["permalink"], ["route"]]);
+            var maybePrice = getNestedValue(node, [["price"], ["price_amount"], ["priceAmount"], ["price", "amount"]]);
+            if (maybeId == null && maybeUrl == null && maybePrice == null) {
+                return;
+            }
+            var normalized = mapFlightProduct(node);
+            if (!normalized || !normalized.id || seen[normalized.id]) {
+                return;
+            }
+            seen[normalized.id] = true;
+            candidates.push(normalized);
+        });
+        return candidates;
+    }
+    function hasNoResultsInApiPayload(payload) {
+        var foundZero = false;
+        walkJsonTree(payload, function (node) {
+            if (!node || typeof node !== "object" || Array.isArray(node)) {
+                return;
+            }
+            var totalCount = normalizeNumber(node.total_count);
+            var resultCount = normalizeNumber(node.result_count);
+            var total = normalizeNumber(node.total);
+            var count = normalizeNumber(node.count);
+            if (totalCount === 0 || resultCount === 0 || total === 0 || count === 0) {
+                foundZero = true;
+            }
+        });
+        return foundZero;
+    }
+    function extractFromNextFlightPayload(html) {
+        var scripts = [];
+        var scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+        var scriptMatch = scriptRegex.exec(html);
+        while (scriptMatch) {
+            if (scriptMatch[1] && scriptMatch[1].indexOf("self.__next_f.push") !== -1) {
+                scripts.push(scriptMatch[1]);
+            }
+            scriptMatch = scriptRegex.exec(html);
+        }
+        if (!scripts.length) {
+            return [];
+        }
+        var decodedChunks = [];
+        var pushRegex = /self\.__next_f\.push\(\[1,\s*"((?:\\.|[^"\\])*)"\]\)/g;
+        var i;
+        var pushMatch;
+        for (i = 0; i < scripts.length; i += 1) {
+            pushMatch = pushRegex.exec(scripts[i]);
+            while (pushMatch) {
+                try {
+                    decodedChunks.push(JSON.parse('"' + pushMatch[1] + '"'));
+                }
+                catch (_) {
+                    decodedChunks.push(pushMatch[1]);
+                }
+                pushMatch = pushRegex.exec(scripts[i]);
+            }
+            pushRegex.lastIndex = 0;
+        }
+        var allText = normalizeFlightText(decodedChunks.join("\n"));
+        if (!allText) {
+            return [];
+        }
+        var candidates = [];
+        var searchToken = '"products":[';
+        var offset = allText.indexOf(searchToken);
+        while (offset !== -1) {
+            var arrayStart = offset + searchToken.length - 1;
+            var jsonArray = readBalancedJsonArray(allText, arrayStart);
+            if (jsonArray) {
+                try {
+                    var products = JSON.parse(jsonArray);
+                    if (Array.isArray(products)) {
+                        products.forEach(function (product) {
+                            var normalized = mapFlightProduct(product);
+                            if (normalized) {
+                                candidates.push(normalized);
+                            }
+                        });
+                    }
+                }
+                catch (_) {
+                    // Ignore malformed slices and continue scanning.
+                }
+            }
+            offset = allText.indexOf(searchToken, offset + searchToken.length);
+        }
+        return candidates;
+    }
+    function extractFromNextDataPayload(html) {
+        var match = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+        if (!match || !match[1]) {
+            return [];
+        }
+        var parsed = tryParseJsonLenient(match[1]);
+        if (!parsed || typeof parsed !== "object") {
+            return [];
+        }
+        return parseCandidatesFromApiPayload(parsed)
             .map(normalizeProductCandidate)
             .filter(Boolean);
-          var pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
-
-          if (
-            !pricedParsedCandidates.length &&
-            isLikelyLoadingShellHtml(latestHtml) &&
-            requestTotal + 1 < maxRequests
-          ) {
+    }
+    function extractFromHrefFallback(html) {
+        var output = [];
+        var seen = Object.create(null);
+        var hrefRegex = /href=["'](\/products\/[^"'#?]+)["']/gi;
+        var match = hrefRegex.exec(html);
+        while (match) {
+            var path = normalizeString(match[1], "");
+            if (path && !seen[path]) {
+                seen[path] = true;
+                var slug = path.split("/").filter(Boolean).pop() || "item";
+                var start = Math.max(0, (match.index || 0) - 500);
+                var end = Math.min(html.length, (match.index || 0) + 900);
+                var snippet = html.slice(start, end);
+                var titleMatch = snippet.match(/aria-label=["']([^"']+)["']/i);
+                if (!titleMatch) {
+                    titleMatch = snippet.match(/alt=["']([^"']+)["']/i);
+                }
+                var amountMatch = snippet.match(/(?:\$|€|£|¥|USD\s+|EUR\s+|GBP\s+|CAD\s+|AUD\s+)(\d+(?:\.\d+)?)/i);
+                var inferredPrice = amountMatch ? normalizeNumber(amountMatch[1]) : null;
+                if (inferredPrice != null && inferredPrice <= 0) {
+                    inferredPrice = null;
+                }
+                var inferredCurrency = inferCurrencyFromLabel(snippet) || "USD";
+                output.push({
+                    market: "depop",
+                    id: slug,
+                    title: normalizeString(titleMatch && titleMatch[1], slug.replace(/-/g, " ")),
+                    url: "https://www.depop.com" + path,
+                    imageUrl: "",
+                    price: inferredPrice,
+                    currency: inferredCurrency,
+                    raw: {
+                        source: "href_fallback"
+                    }
+                });
+            }
+            match = hrefRegex.exec(html);
+        }
+        return output;
+    }
+    function parseCandidates(html) {
+        if (typeof html !== "string" || !html.trim()) {
+            return {
+                candidates: [],
+                parserMismatchLikely: true
+            };
+        }
+        var jsonCandidates = extractFromJsonLd(html);
+        if (jsonCandidates.length) {
+            return {
+                candidates: jsonCandidates,
+                parserMismatchLikely: false
+            };
+        }
+        var nextFlightCandidates = extractFromNextFlightPayload(html);
+        if (nextFlightCandidates.length) {
+            return {
+                candidates: nextFlightCandidates,
+                parserMismatchLikely: false
+            };
+        }
+        var nextDataCandidates = extractFromNextDataPayload(html);
+        if (nextDataCandidates.length) {
+            return {
+                candidates: nextDataCandidates,
+                parserMismatchLikely: false
+            };
+        }
+        // Keep href-derived candidates even when price is unavailable.
+        // Search fallback pages can still provide valid listing URLs.
+        var hrefCandidates = extractFromHrefFallback(html);
+        return {
+            candidates: hrefCandidates,
+            parserMismatchLikely: true
+        };
+    }
+    function hasProductResultsMarker(html) {
+        var text = normalizeString(html, "").toLowerCase();
+        if (!text) {
+            return false;
+        }
+        return (text.indexOf("styles_productgrid__") !== -1 ||
+            text.indexOf("styles_productcardroot__") !== -1 ||
+            text.indexOf("/products/") !== -1);
+    }
+    function isBlockedHtml(html) {
+        var text = normalizeString(html, "").toLowerCase();
+        if (!text) {
+            return false;
+        }
+        var blockedMarkers = [
+            "attention required! | cloudflare",
+            "sorry, you have been blocked",
+            "cloudflare ray id",
+            "cf-error-details",
+            "captcha"
+        ];
+        for (var i = 0; i < blockedMarkers.length; i += 1) {
+            if (text.indexOf(blockedMarkers[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function isLikelyLoadingShellHtml(html) {
+        var text = normalizeString(html, "").toLowerCase();
+        if (!text) {
+            return false;
+        }
+        var loadingMarkers = [
+            "loading results",
+            "styles_shimmerstyles",
+            "_outerbounce_"
+        ];
+        for (var i = 0; i < loadingMarkers.length; i += 1) {
+            if (text.indexOf(loadingMarkers[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function hasNoResultsMarker(html) {
+        var text = normalizeString(html, "");
+        if (!text) {
+            return false;
+        }
+        // Depop Next.js flight payload often embeds backend search totals.
+        return (text.indexOf('"total_count":0') !== -1 ||
+            text.indexOf('"result_count":0') !== -1 ||
+            text.indexOf('\\"total_count\\":0') !== -1 ||
+            text.indexOf('\\"result_count\\":0') !== -1 ||
+            text.indexOf('"NoMatchingResults"') !== -1);
+    }
+    function shouldReturnNoResults(html) {
+        var text = normalizeString(html, "");
+        if (!text) {
+            return false;
+        }
+        // Depop can show a local no-results banner while still rendering
+        // valid cross-border listings in the product grid.
+        if (hasProductResultsMarker(text)) {
+            return false;
+        }
+        // Some Next.js search shells include loading placeholders while also
+        // embedding definitive dehydrated empty search state.
+        var hasEmbeddedEmptySearch = text.indexOf("product_search") !== -1 &&
+            (text.indexOf('"products":[]') !== -1 || text.indexOf('\\"products\\":[]') !== -1);
+        if (hasEmbeddedEmptySearch && hasNoResultsMarker(text)) {
+            return true;
+        }
+        // Next.js flight payloads can carry transient zero-count markers while
+        // the page is still in a loading shell state.
+        return hasNoResultsMarker(text) && !isLikelyLoadingShellHtml(text);
+    }
+    function dedupeById(candidates) {
+        var seen = Object.create(null);
+        return candidates.filter(function (candidate) {
+            var id = normalizeString(candidate && candidate.id, "");
+            if (!id || seen[id]) {
+                return false;
+            }
+            seen[id] = true;
+            return true;
+        });
+    }
+    function hasMeaningfulPrice(candidate) {
+        var price = normalizeNumber(candidate && candidate.price);
+        return price != null && price > 0;
+    }
+    function hasAnyUsableCandidate(candidates) {
+        return Array.isArray(candidates) && candidates.some(function (candidate) {
+            return Boolean(candidate && normalizeString(candidate.id, "") && normalizeString(candidate.url, ""));
+        });
+    }
+    function buildBroadFallbackQuery(query) {
+        var text = normalizeString(query, "").toLowerCase();
+        if (!text) {
+            return "";
+        }
+        var tokens = text
+            .replace(/[^a-z0-9\s-]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .split(" ")
+            .filter(function (token) {
+            return token && token.length > 1;
+        });
+        if (!tokens.length) {
+            return "";
+        }
+        return tokens.slice(0, 2).join(" ");
+    }
+    function resolveRuntimeSendMessage() {
+        var chromeRuntime = typeof chrome !== "undefined" && chrome && chrome.runtime ? chrome.runtime : null;
+        if (chromeRuntime && typeof chromeRuntime.sendMessage === "function") {
+            return function (payload) {
+                return new Promise(function (resolve) {
+                    try {
+                        chromeRuntime.sendMessage(payload, function (response) {
+                            resolve(response || null);
+                        });
+                    }
+                    catch (_) {
+                        resolve(null);
+                    }
+                });
+            };
+        }
+        var browserRuntime = typeof browser !== "undefined" && browser && browser.runtime ? browser.runtime : null;
+        if (browserRuntime && typeof browserRuntime.sendMessage === "function") {
+            return function (payload) {
+                return Promise.resolve(browserRuntime.sendMessage(payload)).catch(function () {
+                    return null;
+                });
+            };
+        }
+        return null;
+    }
+    function isValidRuntimeFetchResponse(value) {
+        if (!isObjectRecord(value)) {
+            return false;
+        }
+        if (typeof value.ok !== "boolean") {
+            return false;
+        }
+        if (!Number.isFinite(Number(value.status))) {
+            return false;
+        }
+        if (typeof value.text !== "string") {
+            return false;
+        }
+        if (value.error != null && typeof value.error !== "string") {
+            return false;
+        }
+        return true;
+    }
+    function buildApiSearchUrl(query, payload) {
+        var input = payload && typeof payload === "object" ? payload : {};
+        var params = new URLSearchParams();
+        params.set("what", normalizeString(query, ""));
+        var country = normalizeString(input.country, "");
+        if (country) {
+            params.set("country", country.toLowerCase());
+        }
+        var currency = normalizeCurrencyCode(input.currency || "") || "USD";
+        params.set("currency", currency);
+        var searchFrom = normalizeString(input.from, "");
+        if (searchFrom) {
+            params.set("from", searchFrom);
+        }
+        var gender = normalizeString(input.gender, "");
+        if (gender) {
+            params.set("gender", gender);
+        }
+        var group = normalizeString(input.group, "");
+        if (group) {
+            params.set("groups", group);
+        }
+        var productTypes = Array.isArray(input.productTypes) ? input.productTypes.filter(Boolean) : [];
+        if (productTypes.length) {
+            params.set("product_types", productTypes.join(","));
+        }
+        var isKids = normalizeBoolean(input.isKids);
+        if (isKids != null) {
+            params.set("is_kids", String(isKids));
+        }
+        return "https://www.depop.com/api/v3/search/products/?" + params.toString();
+    }
+    async function fetchSearchPage(url, fetchImpl, runtimeSendMessage, acceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8") {
+        var accept = normalizeString(acceptHeader, "") || "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+        if (typeof runtimeSendMessage === "function") {
+            var runtimeResponse = await runtimeSendMessage({
+                type: RUNTIME_FETCH_MESSAGE_TYPE,
+                v: RUNTIME_FETCH_MESSAGE_VERSION,
+                url: url,
+                accept: accept
+            });
+            if (isValidRuntimeFetchResponse(runtimeResponse)) {
+                return {
+                    ok: Boolean(runtimeResponse.ok),
+                    status: Number(runtimeResponse.status) || 0,
+                    text: normalizeString(runtimeResponse.text, ""),
+                    source: "runtime"
+                };
+            }
+        }
+        if (typeof fetchImpl !== "function") {
+            return {
+                ok: false,
+                status: 0,
+                text: "",
+                source: "none"
+            };
+        }
+        try {
+            var response = await fetchImpl(url, {
+                method: "GET",
+                credentials: "include",
+                cache: "no-store",
+                headers: {
+                    Accept: accept
+                }
+            });
+            var text = "";
+            try {
+                text = await response.text();
+            }
+            catch (_) {
+                text = "";
+            }
+            return {
+                ok: Boolean(response && response.ok),
+                status: response ? Number(response.status) : 0,
+                text: text,
+                source: "fetch"
+            };
+        }
+        catch (_) {
+            return {
+                ok: false,
+                status: 0,
+                text: "",
+                source: "fetch"
+            };
+        }
+    }
+    async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage) {
+        var apiUrl = buildApiSearchUrl(query, payload);
+        var fetched = await fetchSearchPage(apiUrl, fetchImpl, runtimeSendMessage, "application/json,text/plain,*/*");
+        if (!fetched.ok) {
+            if (fetched.status === 0) {
+                return {
+                    ok: false,
+                    requestCount: 1,
+                    errorCode: "NETWORK_ERROR",
+                    retryAfterMs: 1500
+                };
+            }
+            var mappedError = mapHttpError(fetched.status);
+            return {
+                ok: false,
+                requestCount: 1,
+                errorCode: mappedError.errorCode,
+                retryAfterMs: mappedError.retryAfterMs
+            };
+        }
+        var text = normalizeString(fetched.text, "");
+        if (!text) {
+            return {
+                ok: false,
+                requestCount: 1,
+                errorCode: "PARSE_ERROR",
+                retryAfterMs: 0
+            };
+        }
+        var parsed = tryParseJsonLenient(text);
+        if (!parsed) {
+            // Some edge responses are HTML/challenge content even on API routes.
+            // Reuse HTML parser before treating it as a hard parse failure.
+            var htmlParsed = parseCandidates(text);
+            var htmlCandidates = dedupeById(htmlParsed.candidates || [])
+                .map(normalizeProductCandidate)
+                .filter(Boolean);
+            if (htmlCandidates.length) {
+                return {
+                    ok: true,
+                    requestCount: 1,
+                    candidates: htmlCandidates
+                };
+            }
+            return {
+                ok: false,
+                requestCount: 1,
+                errorCode: "PARSE_ERROR",
+                retryAfterMs: 0
+            };
+        }
+        var candidates = dedupeById(parseCandidatesFromApiPayload(parsed) || [])
+            .map(normalizeProductCandidate)
+            .filter(Boolean);
+        if (candidates.length) {
+            return {
+                ok: true,
+                requestCount: 1,
+                candidates: candidates
+            };
+        }
+        if (hasNoResultsInApiPayload(parsed)) {
+            return {
+                ok: false,
+                requestCount: 1,
+                errorCode: "NO_RESULTS",
+                retryAfterMs: 0
+            };
+        }
+        return {
+            ok: false,
+            requestCount: 1,
+            errorCode: "PARSE_ERROR",
+            retryAfterMs: 0
+        };
+    }
+    async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches) {
+        var list = Array.isArray(candidates) ? candidates : [];
+        var fetchBudget = Math.max(0, Number(maxFetches) || 0);
+        if (!list.length || fetchBudget < 1) {
+            return {
+                candidates: [],
+                requestCount: 0
+            };
+        }
+        var output = [];
+        var seenIds = Object.create(null);
+        var requestCount = 0;
+        for (var i = 0; i < list.length && requestCount < fetchBudget; i += 1) {
+            var candidate = list[i];
+            var url = normalizeString(candidate && candidate.url, "");
+            if (!url) {
+                continue;
+            }
+            var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+            requestCount += 1;
+            if (!fetched.ok || !fetched.text) {
+                continue;
+            }
+            var parsed = parseCandidates(fetched.text);
+            var normalized = dedupeById(parsed.candidates || [])
+                .map(normalizeProductCandidate)
+                .filter(Boolean)
+                .filter(hasMeaningfulPrice);
+            if (!normalized.length) {
+                continue;
+            }
+            var best = normalized[0];
+            var id = normalizeString(best && best.id, "");
+            if (!id || seenIds[id]) {
+                continue;
+            }
+            seenIds[id] = true;
+            output.push(best);
+        }
+        return {
+            candidates: output,
+            requestCount: requestCount
+        };
+    }
+    async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs) {
+        var fallbackQuery = normalizeString(query, "");
+        if (!fallbackQuery) {
+            return {
+                ok: false,
+                candidates: [],
+                requestCount: 0,
+                errorCode: "FORBIDDEN_OR_BLOCKED",
+                retryAfterMs: 120000,
+                partial: true
+            };
+        }
+        await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
+        var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
+        var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
+        if (!fetched.ok && fetched.status === 0) {
+            return {
+                ok: false,
+                candidates: [],
+                requestCount: 0,
+                errorCode: "NETWORK_ERROR",
+                retryAfterMs: 2000,
+                partial: true
+            };
+        }
+        if (!fetched.ok) {
+            var mapped = mapHttpError(fetched.status);
+            return {
+                ok: false,
+                candidates: [],
+                requestCount: 1,
+                errorCode: mapped.errorCode,
+                retryAfterMs: mapped.retryAfterMs,
+                partial: true
+            };
+        }
+        var html = fetched.text;
+        if (!html) {
+            return {
+                ok: false,
+                candidates: [],
+                requestCount: 1,
+                errorCode: "PARSE_ERROR",
+                retryAfterMs: 0,
+                partial: true
+            };
+        }
+        var parsed = parseCandidates(html);
+        var normalized = dedupeById(parsed.candidates || [])
+            .map(normalizeProductCandidate)
+            .filter(Boolean);
+        var normalizedWithPrice = normalized.filter(hasMeaningfulPrice);
+        var latestHtml = html;
+        if (!normalizedWithPrice.length && isLikelyLoadingShellHtml(latestHtml)) {
             var loadingAttempts = 0;
             var maxLoadingRetries = 2;
-
-            while (
-              !pricedParsedCandidates.length &&
-              loadingAttempts < maxLoadingRetries &&
-              requestTotal + 1 < maxRequests
-            ) {
-              await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
-              var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
-              requestTotal += 1;
-
-              if (!retryFetched.ok || !retryFetched.text) {
-                partial = true;
-                break;
-              }
-
-              latestHtml = retryFetched.text;
-              if (isBlockedHtml(latestHtml)) {
-                return {
-                  ok: false,
-                  candidates: [],
-                  fetchedAt: Date.now(),
-                  partial: partial,
-                  sourceType: "html",
-                  parserVersion: PARSER_VERSION,
-                  errorCode: "FORBIDDEN_OR_BLOCKED",
-                  retryAfterMs: 120000
-                };
-              }
-
-              var retryParsed = parseCandidates(latestHtml);
-              parsedCandidates = dedupeById(retryParsed.candidates || [])
-                .map(normalizeProductCandidate)
-                .filter(Boolean);
-              pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
-
-              if (!isLikelyLoadingShellHtml(latestHtml)) {
-                break;
-              }
-
-              loadingAttempts += 1;
+            while (!normalizedWithPrice.length && loadingAttempts < maxLoadingRetries) {
+                await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
+                var retryFetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage);
+                if (!retryFetched.ok || !retryFetched.text) {
+                    break;
+                }
+                latestHtml = retryFetched.text;
+                var retryParsed = parseCandidates(latestHtml);
+                normalized = dedupeById(retryParsed.candidates || [])
+                    .map(normalizeProductCandidate)
+                    .filter(Boolean);
+                normalizedWithPrice = normalized.filter(hasMeaningfulPrice);
+                if (!isLikelyLoadingShellHtml(latestHtml)) {
+                    break;
+                }
+                loadingAttempts += 1;
             }
-          }
-
-          if (!pricedParsedCandidates.length && requestTotal < maxRequests) {
-            var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
-            requestTotal += apiFallback.requestCount || 0;
-
-            if (apiFallback.ok) {
-              parsedCandidates = dedupeById(apiFallback.candidates || [])
-                .map(normalizeProductCandidate)
-                .filter(Boolean);
-              pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
-              sourceType = sourceType === "html" ? "hybrid" : sourceType;
-            } else if (apiFallback.errorCode === "NO_RESULTS") {
-              sawNoResults = true;
-              continue;
-            }
-          }
-
-          if (!pricedParsedCandidates.length && parsedCandidates.length && requestTotal < maxRequests) {
-            var remainingBudget = Math.max(0, maxRequests - requestTotal);
-            var enriched = await enrichHrefFallbackCandidates(
-              parsedCandidates,
-              fetchImpl,
-              runtimeSendMessage,
-              remainingBudget
-            );
-
-            requestTotal += enriched.requestCount || 0;
-            pricedParsedCandidates = dedupeById(enriched.candidates || [])
-              .map(normalizeProductCandidate)
-              .filter(Boolean)
-              .filter(hasMeaningfulPrice);
-          }
-
-          if (!pricedParsedCandidates.length && !hasAnyUsableCandidate(parsedCandidates) && shouldReturnNoResults(latestHtml)) {
-            sawNoResults = true;
-            continue;
-          }
-
-          if (!pricedParsedCandidates.length && hasAnyUsableCandidate(parsedCandidates)) {
-            // Prefer priced candidates when available, but keep unpriced matches as a
-            // better fallback than a false NO_RESULTS state.
-            pricedParsedCandidates = parsedCandidates.filter(function (candidate) {
-              var price = normalizeNumber(candidate && candidate.price);
-              return price == null || price > 0;
-            });
-          }
-
-          merged = merged.concat(pricedParsedCandidates);
-
-          if (requestTotal < maxRequests && i < queries.length - 1) {
-            await sleep(withJitter(cooldownMs));
-          }
         }
-
-        var normalized = dedupeById(merged)
-          .slice(0, Math.max(1, limit));
-
-        if (!normalized.length) {
-          if (sawNoResults && queries.length) {
-            var broadQuery = buildBroadFallbackQuery(queries[0]);
-            if (broadQuery && broadQuery !== normalizeString(queries[0], "").toLowerCase()) {
-              var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
-              var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage);
-              requestTotal += 1;
-
-              if (broadFetched.ok && broadFetched.text) {
-                var broadParsed = parseCandidates(broadFetched.text);
-                var broadCandidates = dedupeById(broadParsed.candidates || [])
-                  .map(normalizeProductCandidate)
-                  .filter(Boolean)
-                  .filter(function (candidate) {
-                    var price = normalizeNumber(candidate && candidate.price);
-                    return price == null || price > 0;
-                  });
-
-                if (broadCandidates.length) {
-                  return {
+        if (!normalizedWithPrice.length) {
+            if (shouldReturnNoResults(latestHtml)) {
+                return {
+                    ok: false,
+                    candidates: [],
+                    requestCount: 1,
+                    errorCode: "NO_RESULTS",
+                    retryAfterMs: 0,
+                    partial: true
+                };
+            }
+            return {
+                ok: false,
+                candidates: [],
+                requestCount: 1,
+                errorCode: "PARSE_ERROR",
+                retryAfterMs: 0,
+                partial: true
+            };
+        }
+        return {
+            ok: true,
+            candidates: normalizedWithPrice,
+            requestCount: 1,
+            partial: true
+        };
+    }
+    function createDepopProvider(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var fetchImpl = typeof config.fetchImpl === "function" ? config.fetchImpl : (typeof fetch === "function" ? fetch : null);
+        var runtimeSendMessage = typeof config.runtimeSendMessage === "function"
+            ? config.runtimeSendMessage
+            : resolveRuntimeSendMessage();
+        var maxRequests = Number.isFinite(Number(config.maxRequests)) ? Number(config.maxRequests) : 3;
+        var cooldownMs = Number.isFinite(Number(config.cooldownMs)) ? Number(config.cooldownMs) : 1200;
+        return {
+            market: "depop",
+            search: async function (input) {
+                if (!fetchImpl && !runtimeSendMessage) {
+                    return {
+                        ok: false,
+                        candidates: [],
+                        fetchedAt: Date.now(),
+                        partial: false,
+                        sourceType: "html",
+                        parserVersion: PARSER_VERSION,
+                        errorCode: "NETWORK_ERROR",
+                        retryAfterMs: 1500
+                    };
+                }
+                var payload = input && typeof input === "object" ? input : {};
+                var queries = Array.isArray(payload.queries) ? payload.queries.filter(Boolean) : [];
+                var limit = Number.isFinite(Number(payload.limit)) ? Number(payload.limit) : 12;
+                var requestTotal = 0;
+                var partial = false;
+                var merged = [];
+                var blockedFallbackAttempted = false;
+                var sourceType = "html";
+                var sawNoResults = false;
+                if (!queries.length) {
+                    return {
+                        ok: false,
+                        candidates: [],
+                        fetchedAt: Date.now(),
+                        partial: false,
+                        sourceType: "html",
+                        parserVersion: PARSER_VERSION,
+                        errorCode: "MISSING_LISTING_DATA",
+                        retryAfterMs: 0
+                    };
+                }
+                for (var i = 0; i < queries.length && requestTotal < maxRequests; i += 1) {
+                    var query = queries[i];
+                    var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
+                    var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+                    if (!fetched.ok && fetched.status === 0) {
+                        partial = true;
+                        continue;
+                    }
+                    requestTotal += 1;
+                    if (!fetched.ok) {
+                        if (requestTotal < maxRequests) {
+                            var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
+                            requestTotal += apiOnHttpError.requestCount || 0;
+                            if (apiOnHttpError.ok) {
+                                merged = merged.concat(apiOnHttpError.candidates || []);
+                                partial = true;
+                                sourceType = "json";
+                                continue;
+                            }
+                            if (apiOnHttpError.errorCode === "NO_RESULTS") {
+                                sawNoResults = true;
+                                continue;
+                            }
+                        }
+                        var mapped = mapHttpError(fetched.status);
+                        if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !blockedFallbackAttempted) {
+                            blockedFallbackAttempted = true;
+                            var fallbackAttempt = await trySingleQueryFallback(fetchImpl, runtimeSendMessage, queries[0], cooldownMs);
+                            requestTotal += fallbackAttempt.requestCount || 0;
+                            if (fallbackAttempt.ok) {
+                                merged = merged.concat(fallbackAttempt.candidates || []);
+                                partial = true;
+                                break;
+                            }
+                            return {
+                                ok: false,
+                                candidates: [],
+                                fetchedAt: Date.now(),
+                                partial: true,
+                                sourceType: "html",
+                                parserVersion: PARSER_VERSION,
+                                errorCode: fallbackAttempt.errorCode || mapped.errorCode,
+                                retryAfterMs: normalizeNumber(fallbackAttempt.retryAfterMs) || mapped.retryAfterMs
+                            };
+                        }
+                        if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+                            return {
+                                ok: false,
+                                candidates: [],
+                                fetchedAt: Date.now(),
+                                partial: partial,
+                                sourceType: "html",
+                                parserVersion: PARSER_VERSION,
+                                errorCode: mapped.errorCode,
+                                retryAfterMs: mapped.retryAfterMs
+                            };
+                        }
+                        partial = true;
+                        continue;
+                    }
+                    var html = fetched.text;
+                    if (!html) {
+                        partial = true;
+                        continue;
+                    }
+                    var latestHtml = html;
+                    var parsed = parseCandidates(html);
+                    if (isBlockedHtml(html)) {
+                        return {
+                            ok: false,
+                            candidates: [],
+                            fetchedAt: Date.now(),
+                            partial: partial,
+                            sourceType: "html",
+                            parserVersion: PARSER_VERSION,
+                            errorCode: "FORBIDDEN_OR_BLOCKED",
+                            retryAfterMs: 120000
+                        };
+                    }
+                    var parsedCandidates = dedupeById(parsed.candidates || [])
+                        .map(normalizeProductCandidate)
+                        .filter(Boolean);
+                    var pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
+                    if (!pricedParsedCandidates.length &&
+                        isLikelyLoadingShellHtml(latestHtml) &&
+                        requestTotal + 1 < maxRequests) {
+                        var loadingAttempts = 0;
+                        var maxLoadingRetries = 2;
+                        while (!pricedParsedCandidates.length &&
+                            loadingAttempts < maxLoadingRetries &&
+                            requestTotal + 1 < maxRequests) {
+                            await sleep(withJitter(Math.max(cooldownMs, 1200) * (loadingAttempts + 1)));
+                            var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage);
+                            requestTotal += 1;
+                            if (!retryFetched.ok || !retryFetched.text) {
+                                partial = true;
+                                break;
+                            }
+                            latestHtml = retryFetched.text;
+                            if (isBlockedHtml(latestHtml)) {
+                                return {
+                                    ok: false,
+                                    candidates: [],
+                                    fetchedAt: Date.now(),
+                                    partial: partial,
+                                    sourceType: "html",
+                                    parserVersion: PARSER_VERSION,
+                                    errorCode: "FORBIDDEN_OR_BLOCKED",
+                                    retryAfterMs: 120000
+                                };
+                            }
+                            var retryParsed = parseCandidates(latestHtml);
+                            parsedCandidates = dedupeById(retryParsed.candidates || [])
+                                .map(normalizeProductCandidate)
+                                .filter(Boolean);
+                            pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
+                            if (!isLikelyLoadingShellHtml(latestHtml)) {
+                                break;
+                            }
+                            loadingAttempts += 1;
+                        }
+                    }
+                    if (!pricedParsedCandidates.length && requestTotal < maxRequests) {
+                        var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage);
+                        requestTotal += apiFallback.requestCount || 0;
+                        if (apiFallback.ok) {
+                            parsedCandidates = dedupeById(apiFallback.candidates || [])
+                                .map(normalizeProductCandidate)
+                                .filter(Boolean);
+                            pricedParsedCandidates = parsedCandidates.filter(hasMeaningfulPrice);
+                            sourceType = sourceType === "html" ? "hybrid" : sourceType;
+                        }
+                        else if (apiFallback.errorCode === "NO_RESULTS") {
+                            sawNoResults = true;
+                            continue;
+                        }
+                    }
+                    if (!pricedParsedCandidates.length && parsedCandidates.length && requestTotal < maxRequests) {
+                        var remainingBudget = Math.max(0, maxRequests - requestTotal);
+                        var enriched = await enrichHrefFallbackCandidates(parsedCandidates, fetchImpl, runtimeSendMessage, remainingBudget);
+                        requestTotal += enriched.requestCount || 0;
+                        pricedParsedCandidates = dedupeById(enriched.candidates || [])
+                            .map(normalizeProductCandidate)
+                            .filter(Boolean)
+                            .filter(hasMeaningfulPrice);
+                    }
+                    if (!pricedParsedCandidates.length && !hasAnyUsableCandidate(parsedCandidates) && shouldReturnNoResults(latestHtml)) {
+                        sawNoResults = true;
+                        continue;
+                    }
+                    if (!pricedParsedCandidates.length && hasAnyUsableCandidate(parsedCandidates)) {
+                        // Prefer priced candidates when available, but keep unpriced matches as a
+                        // better fallback than a false NO_RESULTS state.
+                        pricedParsedCandidates = parsedCandidates.filter(function (candidate) {
+                            var price = normalizeNumber(candidate && candidate.price);
+                            return price == null || price > 0;
+                        });
+                    }
+                    merged = merged.concat(pricedParsedCandidates);
+                    if (requestTotal < maxRequests && i < queries.length - 1) {
+                        await sleep(withJitter(cooldownMs));
+                    }
+                }
+                var normalized = dedupeById(merged)
+                    .slice(0, Math.max(1, limit));
+                if (!normalized.length) {
+                    if (sawNoResults && queries.length) {
+                        var broadQuery = buildBroadFallbackQuery(queries[0]);
+                        if (broadQuery && broadQuery !== normalizeString(queries[0], "").toLowerCase()) {
+                            var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
+                            var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage);
+                            requestTotal += 1;
+                            if (broadFetched.ok && broadFetched.text) {
+                                var broadParsed = parseCandidates(broadFetched.text);
+                                var broadCandidates = dedupeById(broadParsed.candidates || [])
+                                    .map(normalizeProductCandidate)
+                                    .filter(Boolean)
+                                    .filter(function (candidate) {
+                                    var price = normalizeNumber(candidate && candidate.price);
+                                    return price == null || price > 0;
+                                });
+                                if (broadCandidates.length) {
+                                    return {
+                                        ok: true,
+                                        candidates: broadCandidates.slice(0, Math.max(1, limit)),
+                                        fetchedAt: Date.now(),
+                                        partial: true,
+                                        sourceType: sourceType,
+                                        parserVersion: PARSER_VERSION,
+                                        requestCount: requestTotal
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    if (sawNoResults) {
+                        return {
+                            ok: false,
+                            candidates: [],
+                            fetchedAt: Date.now(),
+                            partial: partial,
+                            sourceType: "html",
+                            parserVersion: PARSER_VERSION,
+                            errorCode: "NO_RESULTS",
+                            retryAfterMs: 0
+                        };
+                    }
+                    return {
+                        ok: false,
+                        candidates: [],
+                        fetchedAt: Date.now(),
+                        partial: partial,
+                        sourceType: "html",
+                        parserVersion: PARSER_VERSION,
+                        errorCode: "PARSE_ERROR",
+                        retryAfterMs: 0
+                    };
+                }
+                return {
                     ok: true,
-                    candidates: broadCandidates.slice(0, Math.max(1, limit)),
+                    candidates: normalized,
                     fetchedAt: Date.now(),
-                    partial: true,
+                    partial: partial,
                     sourceType: sourceType,
                     parserVersion: PARSER_VERSION,
                     requestCount: requestTotal
-                  };
-                }
-              }
+                };
             }
-          }
-
-          if (sawNoResults) {
-            return {
-              ok: false,
-              candidates: [],
-              fetchedAt: Date.now(),
-              partial: partial,
-              sourceType: "html",
-              parserVersion: PARSER_VERSION,
-              errorCode: "NO_RESULTS",
-              retryAfterMs: 0
-            };
-          }
-
-          return {
-            ok: false,
-            candidates: [],
-            fetchedAt: Date.now(),
-            partial: partial,
-            sourceType: "html",
-            parserVersion: PARSER_VERSION,
-            errorCode: "PARSE_ERROR",
-            retryAfterMs: 0
-          };
-        }
-
-        return {
-          ok: true,
-          candidates: normalized,
-          fetchedAt: Date.now(),
-          partial: partial,
-          sourceType: sourceType,
-          parserVersion: PARSER_VERSION,
-          requestCount: requestTotal
         };
-      }
+    }
+    return {
+        PARSER_VERSION: PARSER_VERSION,
+        parseCandidates: parseCandidates,
+        createDepopProvider: createDepopProvider,
+        mapHttpError: mapHttpError
     };
-  }
-
-  return {
-    PARSER_VERSION: PARSER_VERSION,
-    parseCandidates: parseCandidates,
-    createDepopProvider: createDepopProvider,
-    mapHttpError: mapHttpError
-  };
 });
 
+"use strict";
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusMarketProviders = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function normalizeString(value, fallback) {
-    if (typeof value === "string") {
-      var trimmed = value.trim();
-      return trimmed || fallback;
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
     }
-
-    return fallback;
-  }
-
-  function normalizeNumber(value) {
-    var parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  function normalizeCandidate(candidate, market) {
-    var input = candidate && typeof candidate === "object" ? candidate : {};
-    var normalizedMarket = normalizeString(input.market, market || "unknown");
-    var normalizedCurrency = normalizeString(input.currency, "USD");
-    var normalizedId = normalizeString(input.id, null);
-    var normalizedTitle = normalizeString(input.title, "Untitled");
-    var normalizedUrl = normalizeString(input.url, "");
-    var normalizedPrice = normalizeNumber(input.price);
-
-    if (!normalizedId || !normalizedUrl || normalizedPrice == null || normalizedPrice < 0) {
-      return null;
+    else {
+        root.GrailedPlusMarketProviders = factory();
     }
-
-    return {
-      market: normalizedMarket,
-      id: normalizedId,
-      title: normalizedTitle,
-      url: normalizedUrl,
-      imageUrl: normalizeString(input.imageUrl, ""),
-      price: normalizedPrice,
-      currency: normalizedCurrency,
-      score: normalizeNumber(input.score),
-      deltaAbsolute: normalizeNumber(input.deltaAbsolute),
-      deltaPercent: normalizeNumber(input.deltaPercent),
-      raw: input.raw || null
-    };
-  }
-
-  function normalizeProviderResult(result, market) {
-    var input = result && typeof result === "object" ? result : {};
-    var rawCandidates = Array.isArray(input.candidates) ? input.candidates : [];
-    var candidates = rawCandidates
-      .map(function (candidate) {
-        return normalizeCandidate(candidate, market);
-      })
-      .filter(Boolean);
-
-    return {
-      ok: Boolean(input.ok),
-      candidates: candidates,
-      fetchedAt: Number.isFinite(Number(input.fetchedAt)) ? Number(input.fetchedAt) : Date.now(),
-      partial: Boolean(input.partial),
-      sourceType: normalizeString(input.sourceType, "mock"),
-      parserVersion: normalizeString(input.parserVersion, ""),
-      parserMismatchLikely: Boolean(input.parserMismatchLikely),
-      requestCount: Number.isFinite(Number(input.requestCount)) ? Number(input.requestCount) : 0,
-      errorCode: normalizeString(input.errorCode, ""),
-      retryAfterMs: normalizeNumber(input.retryAfterMs)
-    };
-  }
-
-  function createRegistry() {
-    var providersByMarket = Object.create(null);
-
-    function register(provider) {
-      if (!provider || typeof provider !== "object") {
-        throw new Error("Provider must be an object.");
-      }
-
-      var market = normalizeString(provider.market, "");
-      if (!market) {
-        throw new Error("Provider must include a non-empty market.");
-      }
-
-      if (typeof provider.search !== "function") {
-        throw new Error("Provider must implement search(input).");
-      }
-
-      providersByMarket[market] = {
-        market: market,
-        search: provider.search
-      };
-
-      return providersByMarket[market];
-    }
-
-    function get(market) {
-      var key = normalizeString(market, "");
-      return key ? providersByMarket[key] || null : null;
-    }
-
-    function search(market, input) {
-      var provider = get(market);
-      if (!provider) {
-        return Promise.resolve({
-          ok: false,
-          candidates: [],
-          fetchedAt: Date.now(),
-          partial: false,
-          sourceType: "mock",
-          errorCode: "PROVIDER_NOT_FOUND"
-        });
-      }
-
-      return Promise.resolve(provider.search(input)).then(function (result) {
-        return normalizeProviderResult(result, provider.market);
-      });
-    }
-
-    function listMarkets() {
-      return Object.keys(providersByMarket);
-    }
-
-    return {
-      register: register,
-      get: get,
-      search: search,
-      listMarkets: listMarkets
-    };
-  }
-
-  function createMockDepopProvider() {
-    return {
-      market: "depop",
-      search: function (input) {
-        var payload = input && typeof input === "object" ? input : {};
-        var title = normalizeString(payload.title, "");
-        var listingPrice = normalizeNumber(payload.listingPrice);
-
-        if (!title) {
-          return {
-            ok: true,
-            candidates: [],
-            fetchedAt: Date.now(),
-            partial: false,
-            sourceType: "mock"
-          };
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function normalizeString(value, fallback) {
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            return trimmed || fallback;
         }
-
-        var basePrice = listingPrice == null ? 120 : listingPrice;
-        var candidateOnePrice = Math.max(1, basePrice * 0.88);
-        var candidateTwoPrice = Math.max(1, basePrice * 1.07);
-
+        return fallback;
+    }
+    function normalizeNumber(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    function normalizeCandidate(candidate, market) {
+        const input = candidate && typeof candidate === "object" ? candidate : {};
+        const normalizedMarket = normalizeString(input.market, market || "unknown");
+        const normalizedCurrency = normalizeString(input.currency, "USD");
+        const normalizedId = normalizeString(input.id, "");
+        const normalizedTitle = normalizeString(input.title, "Untitled");
+        const normalizedUrl = normalizeString(input.url, "");
+        const normalizedPrice = normalizeNumber(input.price);
+        if (!normalizedId || !normalizedUrl || normalizedPrice == null || normalizedPrice < 0) {
+            return null;
+        }
         return {
-          ok: true,
-          candidates: [
-            {
-              market: "depop",
-              id: "mock-depop-1",
-              title: title + " (similar)",
-              url: "https://www.depop.com/search/?q=" + encodeURIComponent(title),
-              imageUrl: "",
-              price: candidateOnePrice,
-              currency: normalizeString(payload.currency, "USD"),
-              score: 78,
-              deltaAbsolute: candidateOnePrice - basePrice,
-              deltaPercent: ((candidateOnePrice - basePrice) / basePrice) * 100
-            },
-            {
-              market: "depop",
-              id: "mock-depop-2",
-              title: title + " (alt)",
-              url: "https://www.depop.com/search/?q=" + encodeURIComponent(title + " used"),
-              imageUrl: "",
-              price: candidateTwoPrice,
-              currency: normalizeString(payload.currency, "USD"),
-              score: 64,
-              deltaAbsolute: candidateTwoPrice - basePrice,
-              deltaPercent: ((candidateTwoPrice - basePrice) / basePrice) * 100
-            }
-          ],
-          fetchedAt: Date.now(),
-          partial: false,
-          sourceType: "mock"
+            market: normalizedMarket,
+            id: normalizedId,
+            title: normalizedTitle,
+            url: normalizedUrl,
+            imageUrl: normalizeString(input.imageUrl, ""),
+            price: normalizedPrice,
+            currency: normalizedCurrency,
+            score: normalizeNumber(input.score),
+            deltaAbsolute: normalizeNumber(input.deltaAbsolute),
+            deltaPercent: normalizeNumber(input.deltaPercent),
+            raw: input.raw || null
         };
-      }
-    };
-  }
-
-  return {
-    normalizeCandidate: normalizeCandidate,
-    normalizeProviderResult: normalizeProviderResult,
-    createRegistry: createRegistry,
-    createMockDepopProvider: createMockDepopProvider
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusMatchScoring = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function normalizeString(value, fallback) {
-    if (typeof value === "string") {
-      var trimmed = value.trim();
-      return trimmed || fallback;
     }
-    return fallback;
-  }
-
-  function normalizeNumber(value) {
-    if (value == null) {
-      return null;
-    }
-    if (typeof value === "number") {
-      return Number.isFinite(value) ? value : null;
-    }
-    if (typeof value !== "string") {
-      return null;
-    }
-    if (value.trim() === "") {
-      return null;
-    }
-    var parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  function normalizeCurrencyCode(value, fallback) {
-    if (typeof value !== "string") {
-      return fallback;
-    }
-
-    var upper = value.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(upper)) {
-      return fallback;
-    }
-    return upper;
-  }
-
-  function tokenize(value) {
-    var normalized = normalizeString(value, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (!normalized) {
-      return [];
-    }
-
-    return normalized.split(" ").filter(Boolean);
-  }
-
-  function overlapScore(leftValue, rightValue) {
-    var leftTokens = tokenize(leftValue);
-    var rightTokens = tokenize(rightValue);
-    if (!leftTokens.length || !rightTokens.length) {
-      return 0;
-    }
-
-    var rightSet = Object.create(null);
-    rightTokens.forEach(function (token) {
-      rightSet[token] = true;
-    });
-
-    var overlap = 0;
-    leftTokens.forEach(function (token) {
-      if (rightSet[token]) {
-        overlap += 1;
-      }
-    });
-
-    var denom = Math.max(leftTokens.length, rightTokens.length);
-    if (!denom) {
-      return 0;
-    }
-
-    return (overlap / denom) * 100;
-  }
-
-  function getUrlTitleHint(url) {
-    var raw = normalizeString(url, "");
-    if (!raw) {
-      return "";
-    }
-
-    var withoutHash = raw.split("#")[0] || "";
-    var withoutQuery = withoutHash.split("?")[0] || "";
-    var segments = withoutQuery.split("/").filter(Boolean);
-    if (!segments.length) {
-      return "";
-    }
-
-    var last = segments[segments.length - 1] || "";
-    var prev = segments.length > 1 ? segments[segments.length - 2] : "";
-    var slug = last.toLowerCase() === "products" ? "" : last;
-
-    if (!slug && prev.toLowerCase() !== "products") {
-      slug = prev;
-    }
-
-    return String(slug)
-      .replace(/[-_]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function imageHeuristicScore(listingImageUrl, candidateImageUrl) {
-    var left = normalizeString(listingImageUrl, "");
-    var right = normalizeString(candidateImageUrl, "");
-
-    if (!left || !right) {
-      return {
-        score: null,
-        usedImage: false,
-        reason: "missing_url"
-      };
-    }
-
-    var score = overlapScore(left, right);
-    return {
-      score: Math.max(0, Math.min(100, Math.round(score))),
-      usedImage: true,
-      reason: "ok"
-    };
-  }
-
-  function scoreBrand(listing, candidate) {
-    var left = normalizeString(listing && (listing.brand || (listing.rawListing && listing.rawListing.brand)), "").toLowerCase();
-    var right = normalizeString(candidate && candidate.brand, "").toLowerCase();
-
-    if (!left || !right) {
-      return 0;
-    }
-
-    return left === right ? 100 : 0;
-  }
-
-  function scoreSize(listing, candidate) {
-    var left = normalizeString(listing && (listing.size || (listing.rawListing && listing.rawListing.size)), "").toLowerCase();
-    var right = normalizeString(candidate && candidate.size, "").toLowerCase();
-
-    if (!left || !right) {
-      return 0;
-    }
-
-    return left === right ? 100 : 0;
-  }
-
-  function scoreCondition(listing, candidate) {
-    var left = normalizeString(
-      listing && listing.rawListing && listing.rawListing.condition,
-      ""
-    ).toLowerCase();
-    var right = normalizeString(candidate && candidate.condition, "").toLowerCase();
-
-    if (!left || !right) {
-      return 0;
-    }
-
-    return left === right ? 100 : overlapScore(left, right);
-  }
-
-  function getRateForCurrency(currencyCode, ratesByUsd) {
-    if (!ratesByUsd || typeof ratesByUsd !== "object") {
-      return null;
-    }
-
-    if (currencyCode === "USD") {
-      return 1;
-    }
-
-    var value = normalizeNumber(ratesByUsd[currencyCode]);
-    return value != null && value > 0 ? value : null;
-  }
-
-  function convertBetweenCurrencies(amount, fromCurrency, toCurrency, ratesByUsd) {
-    var amountValue = normalizeNumber(amount);
-    if (amountValue == null) {
-      return null;
-    }
-
-    var from = normalizeCurrencyCode(fromCurrency, "USD");
-    var to = normalizeCurrencyCode(toCurrency, "USD");
-
-    if (from === to) {
-      return amountValue;
-    }
-
-    var fromRate = getRateForCurrency(from, ratesByUsd);
-    var toRate = getRateForCurrency(to, ratesByUsd);
-    if (fromRate == null || toRate == null || fromRate <= 0 || toRate <= 0) {
-      return null;
-    }
-
-    var amountUsd = from === "USD" ? amountValue : amountValue / fromRate;
-    if (!Number.isFinite(amountUsd)) {
-      return null;
-    }
-
-    return to === "USD" ? amountUsd : amountUsd * toRate;
-  }
-
-  function convertUsdPrice(amountUsd, selectedCurrency, rate) {
-    var amount = normalizeNumber(amountUsd);
-    if (amount == null) {
-      return null;
-    }
-
-    var currency = normalizeCurrencyCode(selectedCurrency, "USD");
-    if (currency === "USD") {
-      return amount;
-    }
-
-    var normalizedRate = normalizeNumber(rate);
-    if (normalizedRate == null || normalizedRate <= 0) {
-      return amount;
-    }
-
-    return amount * normalizedRate;
-  }
-
-  function scoreCandidate(listing, candidate, options) {
-    var config = options && typeof options === "object" ? options : {};
-    var listingTitle = normalizeString(listing && listing.title, "");
-    var candidateTitle = normalizeString(candidate && candidate.title, "");
-    var candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
-    var candidateTitleForScore = [candidateTitle, candidateTitleHint]
-      .filter(Boolean)
-      .join(" ");
-    var listingImageUrl =
-      normalizeString(listing && listing.imageUrl, "") ||
-      normalizeString(
-        listing && listing.rawListing && listing.rawListing.coverPhoto && listing.rawListing.coverPhoto.url,
-        ""
-      ) ||
-      normalizeString(
-        listing && listing.rawListing && listing.rawListing.photo && listing.rawListing.photo.url,
-        ""
-      );
-
-    var imageResult = imageHeuristicScore(listingImageUrl, candidate && candidate.imageUrl);
-    var imageScore = imageResult.score;
-    var titleScore = Math.max(
-      overlapScore(listingTitle, candidateTitle),
-      overlapScore(listingTitle, candidateTitleForScore)
-    );
-    var brandScore = scoreBrand(listing, candidate);
-    var sizeScore = scoreSize(listing, candidate);
-    var conditionScore = scoreCondition(listing, candidate);
-
-    var weightedScore;
-    if (imageScore == null) {
-      weightedScore = titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09;
-      weightedScore = weightedScore * 0.95;
-    } else {
-      weightedScore =
-        imageScore * 0.45 +
-        titleScore * 0.25 +
-        brandScore * 0.15 +
-        sizeScore * 0.1 +
-        conditionScore * 0.05;
-    }
-
-    var finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
-
-    var listingPriceUsd = normalizeNumber(config.listingPriceUsd);
-    var candidateAmount = normalizeNumber(candidate && candidate.price);
-    var candidateCurrency = normalizeCurrencyCode(candidate && candidate.currency, "USD");
-    var selectedCurrency = normalizeCurrencyCode(config.selectedCurrency, "USD");
-    var rate = normalizeNumber(config.rate);
-    var ratesByUsd = config && config.ratesByUsd && typeof config.ratesByUsd === "object"
-      ? config.ratesByUsd
-      : null;
-
-    var listingComparable = convertUsdPrice(listingPriceUsd, selectedCurrency, rate);
-    var candidateComparable = convertBetweenCurrencies(
-      candidateAmount,
-      candidateCurrency,
-      selectedCurrency,
-      ratesByUsd
-    );
-
-    if (candidateComparable == null) {
-      candidateComparable = convertUsdPrice(candidateAmount, selectedCurrency, rate);
-    }
-
-    var deltaAbsolute = null;
-    var deltaPercent = null;
-    if (listingComparable != null && candidateComparable != null && listingComparable !== 0) {
-      deltaAbsolute = candidateComparable - listingComparable;
-      deltaPercent = (deltaAbsolute / listingComparable) * 100;
-    }
-
-    return {
-      id: candidate.id,
-      title: candidate.title,
-      url: candidate.url,
-      imageUrl: candidate.imageUrl || "",
-      market: candidate.market || "depop",
-      currency: selectedCurrency,
-      price: candidateComparable != null ? candidateComparable : candidateAmount,
-      originalCurrency: candidateCurrency,
-      originalPrice: candidateAmount,
-      score: finalScore,
-      usedImage: imageResult.usedImage,
-      imageUnavailableReason: imageResult.usedImage ? "" : imageResult.reason,
-      components: {
-        imageScore: imageScore,
-        titleScore: Math.round(titleScore),
-        brandScore: Math.round(brandScore),
-        sizeScore: Math.round(sizeScore),
-        conditionScore: Math.round(conditionScore)
-      },
-      deltaAbsolute: deltaAbsolute,
-      deltaPercent: deltaPercent,
-      raw: candidate.raw || null
-    };
-  }
-
-  function rankCandidates(listing, candidates, options) {
-    var list = Array.isArray(candidates) ? candidates : [];
-    var config = options && typeof options === "object" ? options : {};
-    var minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 40;
-
-    var scored = list
-      .map(function (candidate) {
-        return scoreCandidate(listing, candidate, config);
-      })
-      .filter(function (entry) {
-        return Number.isFinite(entry.score) && entry.score >= minScore;
-      })
-      .sort(function (a, b) {
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-
-        if (Number.isFinite(a.price) && Number.isFinite(b.price) && a.price !== b.price) {
-          return a.price - b.price;
-        }
-
-        return String(a.id).localeCompare(String(b.id));
-      });
-
-    return scored;
-  }
-
-  return {
-    rankCandidates: rankCandidates,
-    scoreCandidate: scoreCandidate,
-    overlapScore: overlapScore,
-    convertBetweenCurrencies: convertBetweenCurrencies
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusMarketCompareController = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var MarketProviders = null;
-  var QuerySynthesis = null;
-  var ProviderFilters = null;
-  var MatchScoring = null;
-  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusMarketProviders) {
-    MarketProviders = globalThis.GrailedPlusMarketProviders;
-  }
-  if (!MarketProviders && typeof require === "function") {
-    try {
-      MarketProviders = require("./marketProviders.js");
-    } catch (_) {
-      MarketProviders = null;
-    }
-  }
-  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusQuerySynthesis) {
-    QuerySynthesis = globalThis.GrailedPlusQuerySynthesis;
-  }
-  if (!QuerySynthesis && typeof require === "function") {
-    try {
-      QuerySynthesis = require("./querySynthesis.js");
-    } catch (_) {
-      QuerySynthesis = null;
-    }
-  }
-  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusProviderFilters) {
-    ProviderFilters = globalThis.GrailedPlusProviderFilters;
-  }
-  if (!ProviderFilters && typeof require === "function") {
-    try {
-      ProviderFilters = require("./providerFilters.js");
-    } catch (_) {
-      ProviderFilters = null;
-    }
-  }
-  if (typeof globalThis !== "undefined" && globalThis.GrailedPlusMatchScoring) {
-    MatchScoring = globalThis.GrailedPlusMatchScoring;
-  }
-  if (!MatchScoring && typeof require === "function") {
-    try {
-      MatchScoring = require("./matchScoring.js");
-    } catch (_) {
-      MatchScoring = null;
-    }
-  }
-
-  function normalizeString(value, fallback) {
-    if (typeof value === "string") {
-      var trimmed = value.trim();
-      return trimmed || fallback;
-    }
-    return fallback;
-  }
-
-  function normalizeNumber(value) {
-    var parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  function roundTo(value, decimals) {
-    var factor = Math.pow(10, decimals);
-    return Math.round(value * factor) / factor;
-  }
-
-  function formatDeltaLabel(candidate) {
-    var deltaPercent = normalizeNumber(candidate && candidate.deltaPercent);
-    if (deltaPercent == null) {
-      return "";
-    }
-
-    var rounded = roundTo(Math.abs(deltaPercent), 1);
-    if (deltaPercent < 0) {
-      return "-" + String(rounded) + "% cheaper";
-    }
-
-    if (deltaPercent > 0) {
-      return "+" + String(rounded) + "% higher";
-    }
-
-    return "same price";
-  }
-
-  function createInitialState() {
-    return {
-      status: "idle",
-      provider: "Depop",
-      listingId: null,
-      lastCheckedAt: null,
-      errorCode: "",
-      retryable: false,
-      cooldownMs: null,
-      message: "",
-      sourceType: "",
-      results: []
-    };
-  }
-
-  function getSearchModeHint(queryReason) {
-    if (queryReason === "category_fallback") {
-      return "Using broad search due to unknown category mapping.";
-    }
-    return "";
-  }
-
-  function toErrorModel(errorCode, retryAfterMs, parserMismatchLikely) {
-    var code = normalizeString(errorCode, "NETWORK_ERROR");
-    var retryMs = normalizeNumber(retryAfterMs);
-
-    if (code === "MISSING_LISTING_DATA") {
-      return {
-        status: "error",
-        errorCode: code,
-        retryable: false,
-        cooldownMs: 0,
-        message: "Listing does not match the currently supported category subset."
-      };
-    }
-
-    if (code === "NO_RESULTS") {
-      return {
-        status: "no-results",
-        errorCode: code,
-        retryable: true,
-        cooldownMs: 0,
-        message: "No similar Depop listings found."
-      };
-    }
-
-    if (code === "RATE_LIMITED") {
-      return {
-        status: "error",
-        errorCode: code,
-        retryable: true,
-        cooldownMs: retryMs == null ? 2000 : retryMs,
-        message: "Rate limited by Depop. Wait and try again."
-      };
-    }
-
-    if (code === "FORBIDDEN_OR_BLOCKED") {
-      return {
-        status: "error",
-        errorCode: code,
-        retryable: true,
-        cooldownMs: retryMs == null ? 120000 : retryMs,
-        message: "Depop temporarily blocked automated search. Try again in a couple of minutes."
-      };
-    }
-
-    if (code === "PARSE_ERROR") {
-      return {
-        status: "error",
-        errorCode: code,
-        retryable: true,
-        cooldownMs: 0,
-        message: parserMismatchLikely
-          ? "Depop page format changed. Try again later."
-          : "Depop results could not be parsed."
-      };
-    }
-
-    return {
-      status: "error",
-      errorCode: code,
-      retryable: true,
-      cooldownMs: retryMs == null ? 1500 : retryMs,
-      message: "Depop search failed. Try again."
-    };
-  }
-
-  function pickListingPrice(listing) {
-    var history =
-      listing && listing.pricing && Array.isArray(listing.pricing.history)
-        ? listing.pricing.history
-        : [];
-
-    if (!history.length) {
-      return null;
-    }
-
-    var latest = Number(history[history.length - 1]);
-    return Number.isFinite(latest) ? latest : null;
-  }
-
-  function createController(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var hasExternalRegistry = Boolean(
-      config.providerRegistry && typeof config.providerRegistry.search === "function"
-    );
-    var providerRegistry =
-      hasExternalRegistry
-        ? config.providerRegistry
-        : MarketProviders && typeof MarketProviders.createRegistry === "function"
-        ? MarketProviders.createRegistry()
-        : null;
-
-    var listeners = [];
-    var state = createInitialState();
-    var currentListingKey = null;
-    var activeRequestToken = 0;
-    var inFlightPromise = null;
-    var synthesizeQueries =
-      typeof config.synthesizeQueries === "function"
-        ? config.synthesizeQueries
-        : QuerySynthesis && typeof QuerySynthesis.buildQueries === "function"
-        ? QuerySynthesis.buildQueries
-        : null;
-    var candidateFilterFn =
-      typeof config.applyCandidateFilters === "function"
-        ? config.applyCandidateFilters
-        : ProviderFilters && typeof ProviderFilters.applyCandidateFilters === "function"
-        ? ProviderFilters.applyCandidateFilters
-        : null;
-    var rankCandidates =
-      typeof config.rankCandidates === "function"
-        ? config.rankCandidates
-        : MatchScoring && typeof MatchScoring.rankCandidates === "function"
-        ? MatchScoring.rankCandidates
-        : null;
-
-    if (
-      providerRegistry &&
-      typeof providerRegistry.register === "function" &&
-      config.provider &&
-      typeof config.provider.search === "function"
-    ) {
-      providerRegistry.register(config.provider);
-    }
-
-    if (
-      !hasExternalRegistry &&
-      providerRegistry &&
-      typeof providerRegistry.register === "function" &&
-      (!config.provider || typeof config.provider.search !== "function") &&
-      MarketProviders &&
-      typeof MarketProviders.createMockDepopProvider === "function"
-    ) {
-      providerRegistry.register(MarketProviders.createMockDepopProvider());
-    }
-
-    function notify() {
-      listeners.forEach(function (listener) {
-        try {
-          listener(getState());
-        } catch (_) {
-          // Listener failures should not break controller flow.
-        }
-      });
-    }
-
-    function updateState(patch) {
-      state = Object.assign({}, state, patch || {});
-      notify();
-    }
-
-    function toListingKey(listing) {
-      if (!listing || typeof listing !== "object") {
-        return null;
-      }
-
-      if (listing.id != null) {
-        return String(listing.id);
-      }
-
-      return normalizeString(listing.title, "") || null;
-    }
-
-    function resetForListing(listing) {
-      var listingKey = toListingKey(listing);
-      if (listingKey === currentListingKey) {
-        return;
-      }
-
-      currentListingKey = listingKey;
-      activeRequestToken += 1;
-      inFlightPromise = null;
-      state = createInitialState();
-      state.listingId = listingKey;
-      notify();
-    }
-
-    function getState() {
-      return {
-        status: state.status,
-        provider: state.provider,
-        listingId: state.listingId,
-        lastCheckedAt: state.lastCheckedAt,
-        errorCode: state.errorCode,
-        retryable: state.retryable,
-        cooldownMs: state.cooldownMs,
-        message: state.message,
-        sourceType: state.sourceType,
-        results: state.results.slice()
-      };
-    }
-
-    function subscribe(listener) {
-      if (typeof listener !== "function") {
-        return function () {};
-      }
-
-      listeners.push(listener);
-      return function () {
-        var index = listeners.indexOf(listener);
-        if (index >= 0) {
-          listeners.splice(index, 1);
-        }
-      };
-    }
-
-    function compare(input) {
-      var payload = input && typeof input === "object" ? input : {};
-      var listing = payload.listing && typeof payload.listing === "object" ? payload.listing : null;
-      resetForListing(listing);
-
-      if (!currentListingKey) {
-        var missingContext = toErrorModel("MISSING_LISTING_DATA");
-        updateState({
-          status: missingContext.status,
-          errorCode: missingContext.errorCode,
-          retryable: missingContext.retryable,
-          cooldownMs: missingContext.cooldownMs,
-          message: missingContext.message,
-          results: [],
-          lastCheckedAt: Date.now()
-        });
-        return Promise.resolve(getState());
-      }
-
-      if (!providerRegistry || typeof providerRegistry.search !== "function") {
-        var missingProvider = toErrorModel("NETWORK_ERROR");
-        updateState({
-          status: missingProvider.status,
-          errorCode: missingProvider.errorCode,
-          retryable: missingProvider.retryable,
-          cooldownMs: missingProvider.cooldownMs,
-          message: missingProvider.message,
-          results: [],
-          lastCheckedAt: Date.now()
-        });
-        return Promise.resolve(getState());
-      }
-
-      if (state.status === "loading" && inFlightPromise) {
-        return inFlightPromise;
-      }
-
-      var requestToken = activeRequestToken + 1;
-      activeRequestToken = requestToken;
-      var listingPrice = pickListingPrice(listing);
-      var queryResult =
-        synthesizeQueries && listing
-          ? synthesizeQueries(listing, {
-              maxQueries: 4,
-              maxTokens: 6
-            })
-          : {
-              ok: true,
-              queries: [normalizeString(listing && listing.title, "")]
-            };
-          var searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
-
-      if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
-        var queryError = toErrorModel(
-          queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA"
-        );
-        updateState({
-          status: queryError.status,
-          errorCode: queryError.errorCode,
-          retryable: queryError.retryable,
-          cooldownMs: queryError.cooldownMs,
-          message: queryError.message,
-          results: [],
-          lastCheckedAt: Date.now()
-        });
-        return Promise.resolve(getState());
-      }
-
-      updateState({
-        status: "loading",
-        errorCode: "",
-        retryable: false,
-        cooldownMs: null,
-        message: "Searching Depop...",
-        sourceType: "",
-        results: []
-      });
-
-      inFlightPromise = providerRegistry
-        .search("depop", {
-          listingId: currentListingKey,
-          title: normalizeString(listing && listing.title, ""),
-          brand: normalizeString(listing && listing.brand, ""),
-          size: normalizeString(listing && listing.size, ""),
-          category: normalizeString(listing && listing.category, ""),
-          queries: queryResult.queries,
-          limit: 12,
-          listingPrice: listingPrice,
-          currency: normalizeString(payload.currency, "USD")
+    function normalizeProviderResult(result, market) {
+        const input = result && typeof result === "object" ? result : {};
+        const rawCandidates = Array.isArray(input.candidates) ? input.candidates : [];
+        const candidates = rawCandidates
+            .map(function (candidate) {
+            return normalizeCandidate(candidate, market);
         })
-        .then(function (result) {
-          if (requestToken !== activeRequestToken) {
-            return getState();
-          }
-
-          if (!result.ok) {
-            var mappedError = toErrorModel(
-              result.errorCode || "NETWORK_ERROR",
-              result.retryAfterMs,
-              Boolean(result.parserMismatchLikely)
-            );
-            updateState({
-              status: mappedError.status,
-              errorCode: mappedError.errorCode,
-              retryable: mappedError.retryable,
-              cooldownMs: mappedError.cooldownMs,
-              message: mappedError.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
+            .filter(function (candidate) {
+            return Boolean(candidate);
+        });
+        return {
+            ok: Boolean(input.ok),
+            candidates: candidates,
+            fetchedAt: Number.isFinite(Number(input.fetchedAt)) ? Number(input.fetchedAt) : Date.now(),
+            partial: Boolean(input.partial),
+            sourceType: normalizeString(input.sourceType, "mock"),
+            parserVersion: normalizeString(input.parserVersion, ""),
+            parserMismatchLikely: Boolean(input.parserMismatchLikely),
+            requestCount: Number.isFinite(Number(input.requestCount)) ? Number(input.requestCount) : 0,
+            errorCode: normalizeString(input.errorCode, ""),
+            retryAfterMs: normalizeNumber(input.retryAfterMs)
+        };
+    }
+    function stableSerialize(value) {
+        if (value == null) {
+            return "null";
+        }
+        if (typeof value === "number" || typeof value === "boolean") {
+            return JSON.stringify(value);
+        }
+        if (typeof value === "string") {
+            return JSON.stringify(value);
+        }
+        if (Array.isArray(value)) {
+            return "[" + value.map(stableSerialize).join(",") + "]";
+        }
+        if (typeof value === "object") {
+            const record = value;
+            const keys = Object.keys(record).sort();
+            const serializedPairs = keys.map(function (key) {
+                return JSON.stringify(key) + ":" + stableSerialize(record[key]);
             });
-            return getState();
-          }
-
-          var filteredCandidates = Array.isArray(result.candidates) ? result.candidates.slice() : [];
-          if (candidateFilterFn) {
-            filteredCandidates = candidateFilterFn(filteredCandidates, payload.filters || {});
-          }
-
-          var pricedCandidates = filteredCandidates.filter(function (candidate) {
-            var price = normalizeNumber(candidate && candidate.price);
-            return price != null && price > 0;
-          });
-          if (pricedCandidates.length) {
-            filteredCandidates = pricedCandidates;
-          }
-
-          if (!Array.isArray(filteredCandidates) || filteredCandidates.length === 0) {
-            var noResults = toErrorModel("NO_RESULTS");
-            updateState({
-              status: noResults.status,
-              errorCode: noResults.errorCode,
-              retryable: noResults.retryable,
-              cooldownMs: noResults.cooldownMs,
-              message: searchModeHint ? noResults.message + " " + searchModeHint : noResults.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
-            });
-            return getState();
-          }
-
-          var selectedCurrency = normalizeString(payload.currency, "USD");
-          var ratesByUsd =
-            payload && payload.currencyRates && typeof payload.currencyRates === "object"
-              ? payload.currencyRates
-              : null;
-          var strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
-
-          var rankedCandidates = rankCandidates
-            ? rankCandidates(listing, filteredCandidates, {
-                listingPriceUsd: listingPrice,
-                selectedCurrency: selectedCurrency,
-                rate: normalizeNumber(payload.currencyRate),
-                ratesByUsd: ratesByUsd,
-                minScore: strictMinScore
-              })
-            : filteredCandidates;
-
-          if (
-            rankCandidates &&
-            (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) &&
-            Array.isArray(filteredCandidates) &&
-            filteredCandidates.length > 0
-          ) {
-            var depopOnlyCandidates = filteredCandidates.every(function (candidate) {
-              return normalizeString(candidate && candidate.market, "depop") === "depop";
-            });
-
-            if (depopOnlyCandidates) {
-              // Depop can return valid cross-border fallback listings that score
-              // below strict similarity thresholds.
-              rankedCandidates = rankCandidates(listing, filteredCandidates, {
-                listingPriceUsd: listingPrice,
-                selectedCurrency: selectedCurrency,
-                rate: normalizeNumber(payload.currencyRate),
-                ratesByUsd: ratesByUsd,
-                minScore: 0
-              });
+            return "{" + serializedPairs.join(",") + "}";
+        }
+        return JSON.stringify(String(value));
+    }
+    function createSearchCacheKey(market, input) {
+        try {
+            return market + "::" + stableSerialize(input);
+        }
+        catch (_) {
+            return "";
+        }
+    }
+    function createRegistry(options) {
+        const providersByMarket = Object.create(null);
+        const inFlightByKey = Object.create(null);
+        const cacheByKey = Object.create(null);
+        const cacheKeyOrder = [];
+        const cacheTtlMs = options && Number.isFinite(Number(options.cacheTtlMs))
+            ? Math.max(0, Number(options.cacheTtlMs))
+            : 45000;
+        const cacheMaxEntries = options && Number.isFinite(Number(options.cacheMaxEntries))
+            ? Math.max(1, Math.floor(Number(options.cacheMaxEntries)))
+            : 100;
+        const diagnosticsEnabled = Boolean(options && options.enableDiagnostics);
+        const diagnostics = {
+            searchCalls: 0,
+            cacheHits: 0,
+            cacheMisses: 0,
+            inFlightHits: 0,
+            cacheStores: 0,
+            evictions: 0,
+            expiredRemovals: 0
+        };
+        function incrementDiagnostic(key) {
+            if (!diagnosticsEnabled) {
+                return;
             }
-          }
-
-          if (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) {
-            var noRankedResults = toErrorModel("NO_RESULTS");
-            updateState({
-              status: noRankedResults.status,
-              errorCode: noRankedResults.errorCode,
-              retryable: noRankedResults.retryable,
-              cooldownMs: noRankedResults.cooldownMs,
-              message: searchModeHint
-                ? noRankedResults.message + " " + searchModeHint
-                : noRankedResults.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
-            });
-            return getState();
-          }
-
-          var normalizedResults = rankedCandidates.map(function (candidate) {
-            var normalizedPrice = normalizeNumber(candidate && candidate.price);
-            if (normalizedPrice != null && normalizedPrice <= 0) {
-              normalizedPrice = null;
+            diagnostics[key] += 1;
+        }
+        function getDiagnostics() {
+            if (!diagnosticsEnabled) {
+                return null;
             }
-
-            var deltaLabel = normalizeString(candidate && candidate.deltaLabel, "");
-            if (normalizedPrice == null) {
-              deltaLabel = "";
-            }
-
             return {
-              id: candidate.id,
-              title: candidate.title,
-              url: candidate.url,
-              imageUrl: candidate.imageUrl || "",
-              price: normalizedPrice,
-              currency: candidate.currency || "USD",
-              originalCurrency: candidate.originalCurrency || candidate.currency || "USD",
-              originalPrice: normalizeNumber(candidate.originalPrice),
-              score: normalizeNumber(candidate.score),
-              usedImage: Boolean(candidate.usedImage),
-              imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
-              deltaLabel: deltaLabel || formatDeltaLabel(candidate)
+                searchCalls: diagnostics.searchCalls,
+                cacheHits: diagnostics.cacheHits,
+                cacheMisses: diagnostics.cacheMisses,
+                inFlightHits: diagnostics.inFlightHits,
+                cacheStores: diagnostics.cacheStores,
+                evictions: diagnostics.evictions,
+                expiredRemovals: diagnostics.expiredRemovals
             };
-          }).filter(function (entry) {
-            return normalizeNumber(entry && entry.score) > 0;
-          }).slice(0, 5);
-
-          if (!normalizedResults.length) {
-            var noDisplayableResults = toErrorModel("NO_RESULTS");
-            updateState({
-              status: noDisplayableResults.status,
-              errorCode: noDisplayableResults.errorCode,
-              retryable: noDisplayableResults.retryable,
-              cooldownMs: noDisplayableResults.cooldownMs,
-              message: searchModeHint
-                ? noDisplayableResults.message + " " + searchModeHint
-                : noDisplayableResults.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
+        }
+        function resetDiagnostics() {
+            if (!diagnosticsEnabled) {
+                return false;
+            }
+            diagnostics.searchCalls = 0;
+            diagnostics.cacheHits = 0;
+            diagnostics.cacheMisses = 0;
+            diagnostics.inFlightHits = 0;
+            diagnostics.cacheStores = 0;
+            diagnostics.evictions = 0;
+            diagnostics.expiredRemovals = 0;
+            return true;
+        }
+        function removeCacheEntry(cacheKey) {
+            if (!cacheKey) {
+                return;
+            }
+            if (cacheByKey[cacheKey]) {
+                delete cacheByKey[cacheKey];
+            }
+            const orderIndex = cacheKeyOrder.indexOf(cacheKey);
+            if (orderIndex >= 0) {
+                cacheKeyOrder.splice(orderIndex, 1);
+            }
+        }
+        function upsertCacheEntry(cacheKey, value) {
+            if (!cacheKey) {
+                return;
+            }
+            const existingIndex = cacheKeyOrder.indexOf(cacheKey);
+            if (existingIndex >= 0) {
+                cacheKeyOrder.splice(existingIndex, 1);
+            }
+            cacheByKey[cacheKey] = {
+                expiresAt: Date.now() + cacheTtlMs,
+                value: value
+            };
+            cacheKeyOrder.push(cacheKey);
+            while (cacheKeyOrder.length > cacheMaxEntries) {
+                const evictedKey = cacheKeyOrder.shift();
+                if (evictedKey) {
+                    delete cacheByKey[evictedKey];
+                    incrementDiagnostic("evictions");
+                }
+            }
+        }
+        function register(provider) {
+            if (!provider || typeof provider !== "object") {
+                throw new Error("Provider must be an object.");
+            }
+            const market = normalizeString(provider.market, "");
+            if (!market) {
+                throw new Error("Provider must include a non-empty market.");
+            }
+            if (typeof provider.search !== "function") {
+                throw new Error("Provider must implement search(input).");
+            }
+            providersByMarket[market] = {
+                market: market,
+                search: provider.search
+            };
+            return providersByMarket[market];
+        }
+        function get(market) {
+            const key = normalizeString(market, "");
+            return key ? providersByMarket[key] || null : null;
+        }
+        function search(market, input) {
+            incrementDiagnostic("searchCalls");
+            const provider = get(market);
+            if (!provider) {
+                return Promise.resolve({
+                    ok: false,
+                    candidates: [],
+                    fetchedAt: Date.now(),
+                    partial: false,
+                    sourceType: "mock",
+                    parserVersion: "",
+                    parserMismatchLikely: false,
+                    requestCount: 0,
+                    errorCode: "PROVIDER_NOT_FOUND",
+                    retryAfterMs: null
+                });
+            }
+            const cacheKey = createSearchCacheKey(provider.market, input);
+            if (cacheKey) {
+                const cached = cacheByKey[cacheKey];
+                if (cached && cached.expiresAt > Date.now()) {
+                    incrementDiagnostic("cacheHits");
+                    return Promise.resolve(normalizeProviderResult(cached.value, provider.market));
+                }
+                incrementDiagnostic("cacheMisses");
+                if (cached && cached.expiresAt <= Date.now()) {
+                    removeCacheEntry(cacheKey);
+                    incrementDiagnostic("expiredRemovals");
+                }
+                if (inFlightByKey[cacheKey]) {
+                    incrementDiagnostic("inFlightHits");
+                    return inFlightByKey[cacheKey];
+                }
+            }
+            const executeSearchPromise = Promise.resolve(provider.search(input)).then(function (result) {
+                const normalized = normalizeProviderResult(result, provider.market);
+                if (cacheKey && cacheTtlMs > 0 && normalized.ok) {
+                    upsertCacheEntry(cacheKey, normalized);
+                    incrementDiagnostic("cacheStores");
+                }
+                return normalized;
             });
-            return getState();
-          }
+            if (cacheKey) {
+                inFlightByKey[cacheKey] = executeSearchPromise.finally(function () {
+                    delete inFlightByKey[cacheKey];
+                });
+                return inFlightByKey[cacheKey];
+            }
+            return executeSearchPromise;
+        }
+        function listMarkets() {
+            return Object.keys(providersByMarket);
+        }
+        return {
+            register: register,
+            get: get,
+            search: search,
+            listMarkets: listMarkets,
+            getDiagnostics: getDiagnostics,
+            resetDiagnostics: resetDiagnostics
+        };
+    }
+    function createMockDepopProvider() {
+        return {
+            market: "depop",
+            search: function (input) {
+                const payload = input && typeof input === "object" ? input : {};
+                const title = normalizeString(payload.title, "");
+                const listingPrice = normalizeNumber(payload.listingPrice);
+                if (!title) {
+                    return {
+                        ok: true,
+                        candidates: [],
+                        fetchedAt: Date.now(),
+                        partial: false,
+                        sourceType: "mock",
+                        parserVersion: "",
+                        parserMismatchLikely: false,
+                        requestCount: 0,
+                        errorCode: "",
+                        retryAfterMs: null
+                    };
+                }
+                const basePrice = listingPrice == null ? 120 : listingPrice;
+                const candidateOnePrice = Math.max(1, basePrice * 0.88);
+                const candidateTwoPrice = Math.max(1, basePrice * 1.07);
+                const currency = normalizeString(payload.currency, "USD");
+                return {
+                    ok: true,
+                    candidates: [
+                        {
+                            market: "depop",
+                            id: "mock-depop-1",
+                            title: title + " (similar)",
+                            url: "https://www.depop.com/search/?q=" + encodeURIComponent(title),
+                            imageUrl: "",
+                            price: candidateOnePrice,
+                            currency: currency,
+                            score: 78,
+                            deltaAbsolute: candidateOnePrice - basePrice,
+                            deltaPercent: ((candidateOnePrice - basePrice) / basePrice) * 100,
+                            raw: null
+                        },
+                        {
+                            market: "depop",
+                            id: "mock-depop-2",
+                            title: title + " (alt)",
+                            url: "https://www.depop.com/search/?q=" + encodeURIComponent(title + " used"),
+                            imageUrl: "",
+                            price: candidateTwoPrice,
+                            currency: currency,
+                            score: 64,
+                            deltaAbsolute: candidateTwoPrice - basePrice,
+                            deltaPercent: ((candidateTwoPrice - basePrice) / basePrice) * 100,
+                            raw: null
+                        }
+                    ],
+                    fetchedAt: Date.now(),
+                    partial: false,
+                    sourceType: "mock",
+                    parserVersion: "",
+                    parserMismatchLikely: false,
+                    requestCount: 0,
+                    errorCode: "",
+                    retryAfterMs: null
+                };
+            }
+        };
+    }
+    return {
+        normalizeCandidate: normalizeCandidate,
+        normalizeProviderResult: normalizeProviderResult,
+        createRegistry: createRegistry,
+        createMockDepopProvider: createMockDepopProvider
+    };
+});
 
-          updateState({
-            status: "results",
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusMatchScoring = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function normalizeString(value, fallback) {
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            return trimmed || fallback;
+        }
+        return fallback;
+    }
+    function normalizeNumber(value) {
+        if (value == null) {
+            return null;
+        }
+        if (typeof value === "number") {
+            return Number.isFinite(value) ? value : null;
+        }
+        if (typeof value !== "string") {
+            return null;
+        }
+        if (value.trim() === "") {
+            return null;
+        }
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    function normalizeCurrencyCode(value, fallback) {
+        if (typeof value !== "string") {
+            return fallback;
+        }
+        const upper = value.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(upper)) {
+            return fallback;
+        }
+        return upper;
+    }
+    function tokenize(value) {
+        const normalized = normalizeString(value, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        if (!normalized) {
+            return [];
+        }
+        return normalized.split(" ").filter(Boolean);
+    }
+    function overlapScore(leftValue, rightValue) {
+        const leftTokens = tokenize(leftValue);
+        const rightTokens = tokenize(rightValue);
+        if (!leftTokens.length || !rightTokens.length) {
+            return 0;
+        }
+        const rightSet = Object.create(null);
+        rightTokens.forEach(function (token) {
+            rightSet[token] = true;
+        });
+        let overlap = 0;
+        leftTokens.forEach(function (token) {
+            if (rightSet[token]) {
+                overlap += 1;
+            }
+        });
+        const denom = Math.max(leftTokens.length, rightTokens.length);
+        if (!denom) {
+            return 0;
+        }
+        return (overlap / denom) * 100;
+    }
+    function getUrlTitleHint(url) {
+        const raw = normalizeString(url, "");
+        if (!raw) {
+            return "";
+        }
+        const withoutHash = raw.split("#")[0] || "";
+        const withoutQuery = withoutHash.split("?")[0] || "";
+        const segments = withoutQuery.split("/").filter(Boolean);
+        if (!segments.length) {
+            return "";
+        }
+        const last = segments[segments.length - 1] || "";
+        const prev = segments.length > 1 ? segments[segments.length - 2] : "";
+        let slug = last.toLowerCase() === "products" ? "" : last;
+        if (!slug && prev.toLowerCase() !== "products") {
+            slug = prev;
+        }
+        return String(slug)
+            .replace(/[-_]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+    function imageHeuristicScore(listingImageUrl, candidateImageUrl) {
+        const left = normalizeString(listingImageUrl, "");
+        const right = normalizeString(candidateImageUrl, "");
+        if (!left || !right) {
+            return {
+                score: null,
+                usedImage: false,
+                reason: "missing_url"
+            };
+        }
+        const score = overlapScore(left, right);
+        return {
+            score: Math.max(0, Math.min(100, Math.round(score))),
+            usedImage: true,
+            reason: "ok"
+        };
+    }
+    function scoreBrand(listing, candidate) {
+        const left = normalizeString(listing && (listing.brand || (listing.rawListing && listing.rawListing.brand)), "").toLowerCase();
+        const right = normalizeString(candidate && candidate.brand, "").toLowerCase();
+        if (!left || !right) {
+            return 0;
+        }
+        return left === right ? 100 : 0;
+    }
+    function scoreSize(listing, candidate) {
+        const left = normalizeString(listing && (listing.size || (listing.rawListing && listing.rawListing.size)), "").toLowerCase();
+        const right = normalizeString(candidate && candidate.size, "").toLowerCase();
+        if (!left || !right) {
+            return 0;
+        }
+        return left === right ? 100 : 0;
+    }
+    function scoreCondition(listing, candidate) {
+        const left = normalizeString(listing && listing.rawListing && listing.rawListing.condition, "").toLowerCase();
+        const right = normalizeString(candidate && candidate.condition, "").toLowerCase();
+        if (!left || !right) {
+            return 0;
+        }
+        return left === right ? 100 : overlapScore(left, right);
+    }
+    function getRateForCurrency(currencyCode, ratesByUsd) {
+        if (!ratesByUsd || typeof ratesByUsd !== "object") {
+            return null;
+        }
+        if (currencyCode === "USD") {
+            return 1;
+        }
+        const value = normalizeNumber(ratesByUsd[currencyCode]);
+        return value != null && value > 0 ? value : null;
+    }
+    function convertBetweenCurrencies(amount, fromCurrency, toCurrency, ratesByUsd) {
+        const amountValue = normalizeNumber(amount);
+        if (amountValue == null) {
+            return null;
+        }
+        const from = normalizeCurrencyCode(fromCurrency, "USD");
+        const to = normalizeCurrencyCode(toCurrency, "USD");
+        if (from === to) {
+            return amountValue;
+        }
+        const fromRate = getRateForCurrency(from, ratesByUsd);
+        const toRate = getRateForCurrency(to, ratesByUsd);
+        if (fromRate == null || toRate == null || fromRate <= 0 || toRate <= 0) {
+            return null;
+        }
+        const amountUsd = from === "USD" ? amountValue : amountValue / fromRate;
+        if (!Number.isFinite(amountUsd)) {
+            return null;
+        }
+        return to === "USD" ? amountUsd : amountUsd * toRate;
+    }
+    function convertUsdPrice(amountUsd, selectedCurrency, rate) {
+        const amount = normalizeNumber(amountUsd);
+        if (amount == null) {
+            return null;
+        }
+        const currency = normalizeCurrencyCode(selectedCurrency, "USD");
+        if (currency === "USD") {
+            return amount;
+        }
+        const normalizedRate = normalizeNumber(rate);
+        if (normalizedRate == null || normalizedRate <= 0) {
+            return amount;
+        }
+        return amount * normalizedRate;
+    }
+    function scoreCandidate(listing, candidate, options) {
+        const config = options && typeof options === "object" ? options : {};
+        const listingTitle = normalizeString(listing && listing.title, "");
+        const candidateTitle = normalizeString(candidate && candidate.title, "");
+        const candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
+        const candidateTitleForScore = [candidateTitle, candidateTitleHint].filter(Boolean).join(" ");
+        const listingImageUrl = normalizeString(listing && listing.imageUrl, "") ||
+            normalizeString(listing && listing.rawListing && listing.rawListing.coverPhoto && listing.rawListing.coverPhoto.url, "") ||
+            normalizeString(listing && listing.rawListing && listing.rawListing.photo && listing.rawListing.photo.url, "");
+        const imageResult = imageHeuristicScore(listingImageUrl, candidate && candidate.imageUrl);
+        const imageScore = imageResult.score;
+        const titleScore = Math.max(overlapScore(listingTitle, candidateTitle), overlapScore(listingTitle, candidateTitleForScore));
+        const brandScore = scoreBrand(listing, candidate);
+        const sizeScore = scoreSize(listing, candidate);
+        const conditionScore = scoreCondition(listing, candidate);
+        let weightedScore;
+        if (imageScore == null) {
+            weightedScore = titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09;
+            weightedScore = weightedScore * 0.95;
+        }
+        else {
+            weightedScore =
+                imageScore * 0.45 +
+                    titleScore * 0.25 +
+                    brandScore * 0.15 +
+                    sizeScore * 0.1 +
+                    conditionScore * 0.05;
+        }
+        const finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
+        const listingPriceUsd = normalizeNumber(config.listingPriceUsd);
+        const candidateAmount = normalizeNumber(candidate && candidate.price);
+        const candidateCurrency = normalizeCurrencyCode(candidate && candidate.currency, "USD");
+        const selectedCurrency = normalizeCurrencyCode(config.selectedCurrency, "USD");
+        const rate = normalizeNumber(config.rate);
+        const ratesByUsd = config && config.ratesByUsd && typeof config.ratesByUsd === "object"
+            ? config.ratesByUsd
+            : null;
+        const listingComparable = convertUsdPrice(listingPriceUsd, selectedCurrency, rate);
+        let candidateComparable = convertBetweenCurrencies(candidateAmount, candidateCurrency, selectedCurrency, ratesByUsd);
+        if (candidateComparable == null) {
+            candidateComparable = convertUsdPrice(candidateAmount, selectedCurrency, rate);
+        }
+        let deltaAbsolute = null;
+        let deltaPercent = null;
+        if (listingComparable != null && candidateComparable != null && listingComparable !== 0) {
+            deltaAbsolute = candidateComparable - listingComparable;
+            deltaPercent = (deltaAbsolute / listingComparable) * 100;
+        }
+        return {
+            id: candidate.id,
+            title: candidate.title,
+            url: candidate.url,
+            imageUrl: normalizeString(candidate.imageUrl, ""),
+            market: normalizeString(candidate.market, "depop"),
+            currency: selectedCurrency,
+            price: candidateComparable != null ? candidateComparable : candidateAmount,
+            originalCurrency: candidateCurrency,
+            originalPrice: candidateAmount,
+            score: finalScore,
+            usedImage: imageResult.usedImage,
+            imageUnavailableReason: imageResult.usedImage ? "" : imageResult.reason,
+            components: {
+                imageScore: imageScore,
+                titleScore: Math.round(titleScore),
+                brandScore: Math.round(brandScore),
+                sizeScore: Math.round(sizeScore),
+                conditionScore: Math.round(conditionScore)
+            },
+            deltaAbsolute: deltaAbsolute,
+            deltaPercent: deltaPercent,
+            raw: candidate.raw || null
+        };
+    }
+    function rankCandidates(listing, candidates, options) {
+        const list = Array.isArray(candidates) ? candidates : [];
+        const config = options && typeof options === "object" ? options : {};
+        const minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 40;
+        const scored = list
+            .map(function (candidate) {
+            return scoreCandidate(listing, candidate, config);
+        })
+            .filter(function (entry) {
+            return Number.isFinite(entry.score) && entry.score >= minScore;
+        })
+            .sort(function (a, b) {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            if (Number.isFinite(a.price) && Number.isFinite(b.price) && a.price !== b.price) {
+                return a.price - b.price;
+            }
+            return String(a.id).localeCompare(String(b.id));
+        });
+        return scored;
+    }
+    return {
+        rankCandidates: rankCandidates,
+        scoreCandidate: scoreCandidate,
+        overlapScore: overlapScore,
+        convertBetweenCurrencies: convertBetweenCurrencies
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusMarketCompareController = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    let MarketProviders = null;
+    let QuerySynthesis = null;
+    let ProviderFilters = null;
+    let MatchScoring = null;
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusMarketProviders) {
+        MarketProviders = globalThis.GrailedPlusMarketProviders || null;
+    }
+    if (!MarketProviders && typeof require === "function") {
+        try {
+            MarketProviders = require("./marketProviders");
+        }
+        catch (_) {
+            MarketProviders = null;
+        }
+    }
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusQuerySynthesis) {
+        QuerySynthesis = globalThis.GrailedPlusQuerySynthesis || null;
+    }
+    if (!QuerySynthesis && typeof require === "function") {
+        try {
+            QuerySynthesis = require("./querySynthesis");
+        }
+        catch (_) {
+            QuerySynthesis = null;
+        }
+    }
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusProviderFilters) {
+        ProviderFilters = globalThis.GrailedPlusProviderFilters || null;
+    }
+    if (!ProviderFilters && typeof require === "function") {
+        try {
+            ProviderFilters = require("./providerFilters");
+        }
+        catch (_) {
+            ProviderFilters = null;
+        }
+    }
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusMatchScoring) {
+        MatchScoring = globalThis.GrailedPlusMatchScoring || null;
+    }
+    if (!MatchScoring && typeof require === "function") {
+        try {
+            MatchScoring = require("./matchScoring");
+        }
+        catch (_) {
+            MatchScoring = null;
+        }
+    }
+    function normalizeString(value, fallback) {
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            return trimmed || fallback;
+        }
+        return fallback;
+    }
+    function normalizeNumber(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    function roundTo(value, decimals) {
+        const factor = Math.pow(10, decimals);
+        return Math.round(value * factor) / factor;
+    }
+    function formatDeltaLabel(candidate) {
+        const deltaPercent = normalizeNumber(candidate && candidate.deltaPercent);
+        if (deltaPercent == null) {
+            return "";
+        }
+        const rounded = roundTo(Math.abs(deltaPercent), 1);
+        if (deltaPercent < 0) {
+            return "-" + String(rounded) + "% cheaper";
+        }
+        if (deltaPercent > 0) {
+            return "+" + String(rounded) + "% higher";
+        }
+        return "same price";
+    }
+    function createInitialState() {
+        return {
+            status: "idle",
+            provider: "Depop",
+            listingId: null,
+            lastCheckedAt: null,
             errorCode: "",
             retryable: false,
             cooldownMs: null,
-            message: searchModeHint,
-            sourceType: normalizeString(result && result.sourceType, "html"),
-            results: normalizedResults,
-            lastCheckedAt: Date.now()
-          });
-
-          return getState();
-        })
-        .catch(function () {
-          if (requestToken !== activeRequestToken) {
-            return getState();
-          }
-
-          var fallbackError = toErrorModel("NETWORK_ERROR");
-
-          updateState({
-            status: fallbackError.status,
-            errorCode: fallbackError.errorCode,
-            retryable: fallbackError.retryable,
-            cooldownMs: fallbackError.cooldownMs,
-            message: fallbackError.message,
+            message: "",
             sourceType: "",
-            results: [],
-            lastCheckedAt: Date.now()
-          });
-          return getState();
-        })
-        .finally(function () {
-          if (requestToken === activeRequestToken) {
-            inFlightPromise = null;
-          }
-        });
-
-      return inFlightPromise;
+            results: []
+        };
     }
-
-    return {
-      getState: getState,
-      subscribe: subscribe,
-      resetForListing: resetForListing,
-      compare: compare
-    };
-  }
-
-  return {
-    createController: createController,
-    createInitialState: createInitialState
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusInsightsPanel = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var PANEL_ATTR = "data-grailed-plus-panel";
-  var PANEL_ATTR_VALUE = "1";
-  var PRICE_SELECTORS = ['div[class*="Sidebar_price"]', 'div[class*="sidebar__price_"]'];
-  var CARD_PRICE_CONTAINER_SELECTOR =
-    'div[class*="Price_root"], div[class*="Price-module__root"]';
-  var CARD_PRICE_CURRENT_SELECTOR =
-    'div[class*="Price_root"] [data-testid="Current"], ' +
-    'div[class*="Price-module__root"] [data-testid="Current"]';
-  var MONEY_ROOT_PRICE_SELECTOR =
-    'span[class*="Money_root_"], span[class*="Money-module__root"]';
-  var CARD_PRICE_TARGET_SELECTOR =
-    CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR + ", " + MONEY_ROOT_PRICE_SELECTOR;
-  var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-original-price-text";
-  var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-original-price-value";
-  var TREND_EMPTY_TEXT = "no price history data";
-  var TREND_CHART_WIDTH = 296;
-  var TREND_CHART_HEIGHT = 108;
-  var TREND_MARGIN = {
-    top: 8,
-    right: 8,
-    bottom: 14,
-    left: 8
-  };
-  var TREND_CLIP_ID_PREFIX = "grailed-plus__trend-clip-";
-  var trendClipIdCounter = 0;
-
-  function normalizeCurrencyCode(input) {
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(trimmed)) {
-      return null;
-    }
-
-    return trimmed;
-  }
-
-  function formatCurrencyByCode(value, currencyCode) {
-    if (!Number.isFinite(value)) {
-      return "N/A";
-    }
-
-    var normalizedCode = normalizeCurrencyCode(currencyCode) || "USD";
-
-    try {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: normalizedCode,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }).format(value);
-    } catch (_) {
-      return normalizedCode + " " + Number(value).toFixed(2);
-    }
-  }
-
-  function normalizeCurrencyContext(currencyContext) {
-    var selectedCurrency = normalizeCurrencyCode(
-      currencyContext && currencyContext.selectedCurrency
-    );
-    var rate = Number(currencyContext && currencyContext.rate);
-
-    return {
-      selectedCurrency: selectedCurrency || "USD",
-      rate: Number.isFinite(rate) ? rate : null,
-      mode: "dual"
-    };
-  }
-
-  function formatCurrency(value) {
-    return formatCurrencyByCode(value, "USD");
-  }
-
-  function formatMoney(valueUsd, currencyContext) {
-    if (!Number.isFinite(valueUsd)) {
-      return "N/A";
-    }
-
-    var usdText = formatCurrency(valueUsd);
-    var normalizedContext = normalizeCurrencyContext(currencyContext);
-    if (
-      normalizedContext.selectedCurrency === "USD" ||
-      !Number.isFinite(normalizedContext.rate) ||
-      normalizedContext.rate <= 0
-    ) {
-      return usdText;
-    }
-
-    var converted = valueUsd * normalizedContext.rate;
-    var convertedText = formatCurrencyByCode(converted, normalizedContext.selectedCurrency);
-    if (convertedText === "N/A") {
-      return usdText;
-    }
-
-    return convertedText;
-  }
-
-  function buildMoneyDisplay(valueUsd, currencyContext) {
-    if (!Number.isFinite(valueUsd)) {
-      return {
-        text: "N/A",
-        isConverted: false,
-        originalUsdText: ""
-      };
-    }
-
-    var usdText = formatCurrency(valueUsd);
-    var normalizedContext = normalizeCurrencyContext(currencyContext);
-    if (
-      normalizedContext.selectedCurrency === "USD" ||
-      !Number.isFinite(normalizedContext.rate) ||
-      normalizedContext.rate <= 0
-    ) {
-      return {
-        text: usdText,
-        isConverted: false,
-        originalUsdText: usdText
-      };
-    }
-
-    var converted = valueUsd * normalizedContext.rate;
-    var convertedText = formatCurrencyByCode(converted, normalizedContext.selectedCurrency);
-    if (convertedText === "N/A") {
-      return {
-        text: usdText,
-        isConverted: false,
-        originalUsdText: usdText
-      };
-    }
-
-    return {
-      text: convertedText,
-      isConverted: true,
-      originalUsdText: usdText
-    };
-  }
-
-  function normalizeMaxFractionDigits(value, fallback) {
-    if (!Number.isFinite(value)) {
-      return fallback;
-    }
-
-    var rounded = Math.floor(value);
-    if (rounded < 0) {
-      return fallback;
-    }
-
-    return rounded;
-  }
-
-  function formatAmountWithoutCurrency(value, maxFractionDigits) {
-    if (!Number.isFinite(value)) {
-      return "N/A";
-    }
-
-    var digits = normalizeMaxFractionDigits(maxFractionDigits, 2);
-
-    try {
-      return new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: digits
-      }).format(value);
-    } catch (_) {
-      return Number(value).toFixed(digits);
-    }
-  }
-
-  function formatDate(isoValue) {
-    if (!isoValue) {
-      return "Unknown";
-    }
-    var date = new Date(isoValue);
-    if (Number.isNaN(date.getTime())) {
-      return "Unknown";
-    }
-    return date.toDateString();
-  }
-
-  function getD3() {
-    if (typeof globalThis !== "undefined" && globalThis && globalThis.d3) {
-      return globalThis.d3;
-    }
-
-    return null;
-  }
-
-  function parseDateMs(value) {
-    if (!value) {
-      return null;
-    }
-
-    var date = new Date(value);
-    var ms = date.getTime();
-    if (!Number.isFinite(ms)) {
-      return null;
-    }
-
-    return ms;
-  }
-
-  function normalizeTrendPoints(listing) {
-    var history =
-      listing && listing.pricing && Array.isArray(listing.pricing.history)
-        ? listing.pricing.history
-        : [];
-
-    if (!Array.isArray(history) || history.length <= 1) {
-      return [];
-    }
-
-    var createdAtMs = parseDateMs(listing ? listing.createdAt : null);
-    var updatedAtMs = parseDateMs(listing && listing.pricing ? listing.pricing.updatedAt : null);
-    if (!Number.isFinite(createdAtMs) || !Number.isFinite(updatedAtMs) || updatedAtMs <= createdAtMs) {
-      return [];
-    }
-
-    var intervalMs = (updatedAtMs - createdAtMs) / (history.length - 1);
-    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
-      return [];
-    }
-
-    var points = [];
-    var i;
-    var price;
-    var ts;
-    for (i = 0; i < history.length; i += 1) {
-      price = Number(history[i]);
-      if (!Number.isFinite(price) || price <= 0) {
-        continue;
-      }
-
-      ts = createdAtMs + intervalMs * i;
-      points.push({
-        key: String(Math.round(ts)) + ":" + String(price) + ":" + String(i),
-        index: i,
-        timestampMs: Math.round(ts),
-        date: new Date(ts),
-        priceUsd: price
-      });
-    }
-
-    points.sort(function (a, b) {
-      return a.timestampMs - b.timestampMs;
-    });
-
-    return points;
-  }
-
-  function createTrendChartRow(doc, listing, currencyContext) {
-    var row = doc.createElement("div");
-    row.className = "grailed-plus__trend-row";
-
-    var chart = doc.createElement("div");
-    chart.className = "grailed-plus__trend-chart";
-    chart.setAttribute("role", "img");
-    chart.setAttribute("aria-label", "Price trend");
-    row.appendChild(chart);
-
-    var points = normalizeTrendPoints(listing);
-    var d3 = getD3();
-    if (!d3 || points.length <= 1) {
-      var emptyNode = doc.createElement("div");
-      emptyNode.className = "grailed-plus__trend-empty";
-      emptyNode.textContent = TREND_EMPTY_TEXT;
-      chart.appendChild(emptyNode);
-      return row;
-    }
-
-    var width = TREND_CHART_WIDTH;
-    var height = TREND_CHART_HEIGHT;
-    var innerWidth = Math.max(1, width - TREND_MARGIN.left - TREND_MARGIN.right);
-    var innerHeight = Math.max(1, height - TREND_MARGIN.top - TREND_MARGIN.bottom);
-
-    var svg = d3
-      .select(chart)
-      .append("svg")
-      .attr("class", "grailed-plus__trend-svg")
-      .attr("viewBox", "0 0 " + String(width) + " " + String(height))
-      .attr("preserveAspectRatio", "xMidYMid meet")
-      .attr("aria-hidden", "true");
-
-    var root = svg
-      .append("g")
-      .attr("class", "grailed-plus__trend-root")
-      .attr("transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
-
-    var clipPathId = TREND_CLIP_ID_PREFIX + String(trendClipIdCounter);
-    trendClipIdCounter += 1;
-
-    svg
-      .append("defs")
-      .append("clipPath")
-      .attr("id", clipPathId)
-      .attr("clipPathUnits", "userSpaceOnUse")
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", innerWidth)
-      .attr("height", innerHeight);
-
-    var trendLineLayer = root
-      .append("g")
-      .attr("class", "grailed-plus__trend-line-layer")
-      .attr("clip-path", "url(#" + clipPathId + ")");
-
-    var trendPointLayer = root
-      .append("g")
-      .attr("class", "grailed-plus__trend-point-layer")
-      .attr("clip-path", "url(#" + clipPathId + ")");
-
-    var x = d3
-      .scaleTime()
-      .domain(d3.extent(points, function (d) {
-        return d.date;
-      }))
-      .range([0, innerWidth]);
-
-    var yExtent = d3.extent(points, function (d) {
-      return d.priceUsd;
-    });
-    var yMin = yExtent[0];
-    var yMax = yExtent[1];
-    if (yMin === yMax) {
-      yMin = yMin - 1;
-      yMax = yMax + 1;
-    }
-
-    var y = d3.scaleLinear().domain([yMin, yMax]).nice(3).range([innerHeight, 0]);
-
-    var line = d3
-      .line()
-      .defined(function (d) {
-        return Number.isFinite(d.priceUsd) && d.date instanceof Date;
-      })
-      .curve(d3.curveMonotoneX)
-      .x(function (d) {
-        return x(d.date);
-      })
-      .y(function (d) {
-        return y(d.priceUsd);
-      });
-
-    trendLineLayer
-      .selectAll("path.grailed-plus__trend-line")
-      .data([points])
-      .join("path")
-      .attr("class", "grailed-plus__trend-line")
-      .attr("d", line);
-
-    var tooltip = d3
-      .select(chart)
-      .append("div")
-      .attr("class", "grailed-plus__trend-tooltip")
-      .attr("aria-hidden", "true");
-
-    function showTooltip(event, point) {
-      var display = buildMoneyDisplay(point.priceUsd, currencyContext);
-      var tooltipText = display.text + " - " + formatDate(point.date.toISOString());
-
-      tooltip.text(tooltipText);
-      if (display.isConverted) {
-        tooltip.attr("title", "USD: " + display.originalUsdText);
-      } else {
-        tooltip.attr("title", "");
-      }
-
-      var xPos = Number(event && event.offsetX);
-      var yPos = Number(event && event.offsetY);
-      if (!Number.isFinite(xPos) || !Number.isFinite(yPos)) {
-        xPos = x(point.date) + TREND_MARGIN.left;
-        yPos = y(point.priceUsd) + TREND_MARGIN.top;
-      }
-
-      tooltip
-        .style("opacity", "1")
-        .style("left", String(xPos + 10) + "px")
-        .style("top", String(yPos - 12) + "px")
-        .attr("aria-hidden", "false");
-    }
-
-    function hideTooltip() {
-      tooltip.style("opacity", "0").attr("aria-hidden", "true");
-    }
-
-    var pointNodes = trendPointLayer
-      .selectAll("circle.grailed-plus__trend-point")
-      .data(points, function (d) {
-        return d.key;
-      })
-      .join("circle")
-      .attr("class", "grailed-plus__trend-point")
-      .attr("cx", function (d) {
-        return x(d.date);
-      })
-      .attr("cy", function (d) {
-        return y(d.priceUsd);
-      })
-      .attr("r", 3)
-      .attr("tabindex", 0)
-      .on("focus", function (event, point) {
-        pointNodes.classed("is-active", false);
-        d3.select(this).classed("is-active", true);
-        showTooltip(event, point);
-      })
-      .on("blur", function () {
-        pointNodes.classed("is-active", false);
-        hideTooltip();
-      });
-
-    var bisectByDate = d3.bisector(function (d) {
-      return d.date;
-    }).center;
-
-    function findNearestPoint(event) {
-      var pointer = d3.pointer(event, root.node());
-      var px = Number(pointer && pointer[0]);
-      if (!Number.isFinite(px)) {
-        return points[points.length - 1];
-      }
-
-      var clampedPx = Math.max(0, Math.min(innerWidth, px));
-      var hoverDate = x.invert(clampedPx);
-      var index = bisectByDate(points, hoverDate);
-      if (!Number.isFinite(index)) {
-        return points[points.length - 1];
-      }
-
-      index = Math.max(0, Math.min(points.length - 1, index));
-      return points[index];
-    }
-
-    function syncHoverState(event) {
-      var nearest = findNearestPoint(event);
-      pointNodes.classed("is-active", function (d) {
-        return d.key === nearest.key;
-      });
-      showTooltip(event, nearest);
-    }
-
-    root
-      .selectAll("rect.grailed-plus__trend-hit-area")
-      .data([null])
-      .join("rect")
-      .attr("class", "grailed-plus__trend-hit-area")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", innerWidth)
-      .attr("height", innerHeight)
-      .on("mouseenter", syncHoverState)
-      .on("mousemove", syncHoverState)
-      .on("mouseleave", function () {
-        pointNodes.classed("is-active", false);
-        hideTooltip();
-      });
-
-    return row;
-  }
-
-  function createRow(doc, label, value, extraClass, valueTitle) {
-    var row = doc.createElement("div");
-    row.className = "grailed-plus__row" + (extraClass ? " " + extraClass : "");
-
-    var labelNode = doc.createElement("span");
-    labelNode.className = "grailed-plus__label";
-    labelNode.textContent = label;
-
-    var valueNode = doc.createElement("span");
-    valueNode.className = "grailed-plus__value";
-    valueNode.textContent = value;
-    if (valueTitle && typeof valueNode.setAttribute === "function") {
-      valueNode.setAttribute("title", valueTitle);
-    }
-
-    row.appendChild(labelNode);
-    row.appendChild(valueNode);
-    return row;
-  }
-
-  function setNodeTitle(node, title) {
-    if (!node) {
-      return;
-    }
-
-    if (title && typeof node.setAttribute === "function") {
-      node.setAttribute("title", title);
-      return;
-    }
-
-    if (typeof node.removeAttribute === "function") {
-      node.removeAttribute("title");
-      return;
-    }
-
-    if (typeof node.setAttribute === "function") {
-      node.setAttribute("title", "");
-    }
-  }
-
-  function removeExistingPanels(doc) {
-    if (!doc || typeof doc.querySelectorAll !== "function") {
-      return;
-    }
-
-    var existingPanels = doc.querySelectorAll("[" + PANEL_ATTR + '="' + PANEL_ATTR_VALUE + '"]');
-    Array.prototype.forEach.call(existingPanels, function (panel) {
-      if (panel && typeof panel.remove === "function") {
-        panel.remove();
-      } else if (panel && panel.parentNode) {
-        panel.parentNode.removeChild(panel);
-      }
-    });
-  }
-
-  function getClassName(node) {
-    if (!node) {
-      return "";
-    }
-    if (typeof node.className === "string") {
-      return node.className;
-    }
-    if (typeof node.getAttribute === "function") {
-      return node.getAttribute("class") || "";
-    }
-    return "";
-  }
-
-  function findFirstBySelectors(root, selectors) {
-    if (!root || typeof root.querySelector !== "function" || !Array.isArray(selectors)) {
-      return null;
-    }
-
-    var i;
-    var node;
-    for (i = 0; i < selectors.length; i += 1) {
-      node = root.querySelector(selectors[i]);
-      if (node) {
-        return node;
-      }
-    }
-
-    return null;
-  }
-
-  function collectCtaCandidates(root) {
-    if (!root || typeof root.querySelectorAll !== "function") {
-      return [];
-    }
-
-    var allCandidates = root.querySelectorAll("button, a");
-    var matches = [];
-    var i;
-    var candidate;
-    var text;
-    for (i = 0; i < allCandidates.length; i += 1) {
-      candidate = allCandidates[i];
-      if (!candidate || typeof candidate.textContent !== "string") {
-        continue;
-      }
-
-      text = candidate.textContent.replace(/\s+/g, " ").trim();
-      if (/Purchase|Offer/i.test(text)) {
-        matches.push(candidate);
-      }
-    }
-
-    return matches;
-  }
-
-  function appendUniqueNodes(target, source) {
-    if (!Array.isArray(target) || !Array.isArray(source)) {
-      return;
-    }
-
-    var i;
-    var j;
-    var candidate;
-    var exists;
-    for (i = 0; i < source.length; i += 1) {
-      candidate = source[i];
-      exists = false;
-
-      for (j = 0; j < target.length; j += 1) {
-        if (target[j] === candidate) {
-          exists = true;
-          break;
+    function getSearchModeHint(queryReason) {
+        if (queryReason === "category_fallback") {
+            return "Using broad search due to unknown category mapping.";
         }
-      }
-
-      if (!exists) {
-        target.push(candidate);
-      }
-    }
-  }
-
-  function isCardPriceContainer(node) {
-    if (!node) {
-      return false;
-    }
-
-    var className = getClassName(node);
-    if (
-      typeof className !== "string" ||
-      (className.indexOf("Price_root") === -1 && className.indexOf("Price-module__root") === -1)
-    ) {
-      return false;
-    }
-
-    var tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
-    return tagName === "DIV";
-  }
-
-  function findClosestCardPriceContainer(node) {
-    if (!node) {
-      return null;
-    }
-
-    if (typeof node.closest === "function") {
-      var scoped = node.closest(CARD_PRICE_CONTAINER_SELECTOR);
-      if (scoped) {
-        return scoped;
-      }
-    }
-
-    var current = node;
-    while (current) {
-      if (isCardPriceContainer(current)) {
-        return current;
-      }
-      current = current.parentNode;
-    }
-
-    return null;
-  }
-
-  function collectCardPriceContainers(doc) {
-    if (!doc || typeof doc.querySelectorAll !== "function") {
-      return [];
-    }
-
-    var currentNodes = doc.querySelectorAll(CARD_PRICE_CURRENT_SELECTOR);
-    var containers = [];
-    var i;
-    var container;
-
-    for (i = 0; i < currentNodes.length; i += 1) {
-      container = findClosestCardPriceContainer(currentNodes[i]);
-      if (container) {
-        appendUniqueNodes(containers, [container]);
-      }
-    }
-
-    return containers;
-  }
-
-  function collectMoneyRootPriceNodes(doc) {
-    if (!doc || typeof doc.querySelectorAll !== "function") {
-      return [];
-    }
-
-    var nodes = doc.querySelectorAll(MONEY_ROOT_PRICE_SELECTOR);
-    var matches = [];
-    var i;
-    for (i = 0; i < nodes.length; i += 1) {
-      appendUniqueNodes(matches, [nodes[i]]);
-    }
-
-    return matches;
-  }
-
-  function isNodeWithinAnyTarget(node, targets) {
-    if (!node || !Array.isArray(targets) || targets.length === 0) {
-      return false;
-    }
-
-    var current = node;
-    var i;
-    while (current) {
-      for (i = 0; i < targets.length; i += 1) {
-        if (targets[i] === current) {
-          return true;
-        }
-      }
-      current = current.parentNode;
-    }
-
-    return false;
-  }
-
-  function collectCardPriceTargets(doc) {
-    var targets = collectCardPriceContainers(doc);
-    var moneyNodes = collectMoneyRootPriceNodes(doc);
-    var i;
-
-    for (i = 0; i < moneyNodes.length; i += 1) {
-      if (!isNodeWithinAnyTarget(moneyNodes[i], targets)) {
-        appendUniqueNodes(targets, [moneyNodes[i]]);
-      }
-    }
-
-    return targets;
-  }
-
-  function nodeContainsCardPriceTarget(node) {
-    if (!node) {
-      return false;
-    }
-
-    if (typeof node.matches === "function" && node.matches(CARD_PRICE_TARGET_SELECTOR)) {
-      return true;
-    }
-
-    if (typeof node.querySelector === "function") {
-      return Boolean(node.querySelector(CARD_PRICE_TARGET_SELECTOR));
-    }
-
-    return false;
-  }
-
-  function findSidebarScope(priceNode) {
-    if (!priceNode) {
-      return null;
-    }
-
-    if (typeof priceNode.closest === "function") {
-      var scoped = priceNode.closest('[class*="sidebar"], aside');
-      if (scoped) {
-        return scoped;
-      }
-    }
-
-    var current = priceNode;
-    var className;
-    while (current) {
-      className = getClassName(current);
-      if (typeof className === "string" && /sidebar/i.test(className)) {
-        return current;
-      }
-      current = current.parentNode;
-    }
-
-    return priceNode.parentNode || null;
-  }
-
-  function getRootNode(node) {
-    var current = node;
-    while (current && current.parentNode) {
-      current = current.parentNode;
-    }
-    return current;
-  }
-
-  function getChildIndex(node) {
-    if (!node || !node.parentNode || !node.parentNode.children) {
-      return -1;
-    }
-
-    var siblings = node.parentNode.children;
-    var i;
-    for (i = 0; i < siblings.length; i += 1) {
-      if (siblings[i] === node) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
-  function buildNodePath(node) {
-    if (!node) {
-      return null;
-    }
-
-    var path = [];
-    var current = node;
-    var index;
-    while (current && current.parentNode) {
-      index = getChildIndex(current);
-      if (index < 0) {
-        return null;
-      }
-      path.unshift(index);
-      current = current.parentNode;
-    }
-
-    return path;
-  }
-
-  function compareNodeOrder(left, right) {
-    if (!left || !right || left === right) {
-      return 0;
-    }
-
-    if (typeof left.compareDocumentPosition === "function") {
-      var relation = left.compareDocumentPosition(right);
-      if (relation & 4) {
-        return -1;
-      }
-      if (relation & 2) {
-        return 1;
-      }
-    }
-
-    if (getRootNode(left) !== getRootNode(right)) {
-      return 0;
-    }
-
-    var leftPath = buildNodePath(left);
-    var rightPath = buildNodePath(right);
-    if (!leftPath || !rightPath) {
-      return 0;
-    }
-
-    var minLength = Math.min(leftPath.length, rightPath.length);
-    var i;
-    for (i = 0; i < minLength; i += 1) {
-      if (leftPath[i] < rightPath[i]) {
-        return -1;
-      }
-      if (leftPath[i] > rightPath[i]) {
-        return 1;
-      }
-    }
-
-    if (leftPath.length < rightPath.length) {
-      return -1;
-    }
-    if (leftPath.length > rightPath.length) {
-      return 1;
-    }
-
-    return 0;
-  }
-
-  function findCtaNode(doc, priceNode) {
-    var candidates = [];
-
-    if (priceNode) {
-      appendUniqueNodes(candidates, collectCtaCandidates(findSidebarScope(priceNode)));
-      appendUniqueNodes(candidates, collectCtaCandidates(priceNode.parentNode));
-    }
-    appendUniqueNodes(candidates, collectCtaCandidates(doc));
-
-    if (candidates.length === 0) {
-      return null;
-    }
-
-    if (!priceNode) {
-      return candidates[0];
-    }
-
-    var i;
-    var candidate;
-    for (i = 0; i < candidates.length; i += 1) {
-      candidate = candidates[i];
-      if (compareNodeOrder(priceNode, candidate) === -1) {
-        return candidate;
-      }
-    }
-
-    return candidates[0];
-  }
-
-  function findMountTarget(doc) {
-    if (!doc || typeof doc.querySelector !== "function") {
-      return null;
-    }
-
-    var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
-    var fallbackNode;
-
-    if (priceNode) {
-      return {
-        mountNode: priceNode,
-        mountPosition: "afterend",
-        strategy: "sidebar_price"
-      };
-    }
-
-    fallbackNode = doc.querySelector("main") || doc.body || null;
-    if (!fallbackNode) {
-      return null;
-    }
-
-    return {
-      mountNode: fallbackNode,
-      mountPosition: "afterend",
-      strategy: fallbackNode === doc.body ? "fallback_body" : "fallback_main"
-    };
-  }
-
-  function findMountNode(doc) {
-    var mountTarget = findMountTarget(doc);
-    return mountTarget && mountTarget.mountNode ? mountTarget.mountNode : null;
-  }
-
-  function parseUsdAmount(text) {
-    if (typeof text !== "string") {
-      return null;
-    }
-
-    var normalized = text.replace(/,/g, "");
-    var match = normalized.match(/-?\d+(?:\.\d+)?/);
-    if (!match) {
-      return null;
-    }
-
-    var amount = Number(match[0]);
-    return Number.isFinite(amount) ? amount : null;
-  }
-
-  function parseStoredAmount(value) {
-    if (value == null) {
-      return null;
-    }
-
-    if (typeof value === "string" && value.trim() === "") {
-      return null;
-    }
-
-    var parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  function getNodeText(node) {
-    if (!node || typeof node.textContent !== "string") {
-      return "";
-    }
-    return node.textContent.trim();
-  }
-
-  function getNodePrimaryText(node) {
-    var fallback = getNodeText(node);
-    if (!node || !node.childNodes || node.childNodes.length === 0) {
-      return fallback;
-    }
-
-    var i;
-    var child;
-    var text;
-    for (i = 0; i < node.childNodes.length; i += 1) {
-      child = node.childNodes[i];
-      if (!child || child.nodeType !== 3) {
-        continue;
-      }
-
-      text = String(child.textContent || "").trim();
-      if (text) {
-        return text;
-      }
-    }
-
-    return fallback;
-  }
-
-  function setNodePrimaryText(node, text) {
-    if (!node || typeof text !== "string") {
-      return;
-    }
-
-    if (node.childNodes && node.childNodes.length > 0) {
-      var i;
-      var child;
-      for (i = 0; i < node.childNodes.length; i += 1) {
-        child = node.childNodes[i];
-        if (!child || child.nodeType !== 3) {
-          continue;
-        }
-
-        child.textContent = text;
-        return;
-      }
-    }
-
-    node.textContent = text;
-  }
-
-  function isDescendantOf(node, potentialAncestor) {
-    var current = node && node.parentNode;
-    while (current) {
-      if (current === potentialAncestor) {
-        return true;
-      }
-      current = current.parentNode;
-    }
-    return false;
-  }
-
-  function hasConvertibleDescendant(node, candidates) {
-    if (!node || !Array.isArray(candidates) || candidates.length === 0) {
-      return false;
-    }
-
-    var i;
-    for (i = 0; i < candidates.length; i += 1) {
-      if (candidates[i] === node) {
-        continue;
-      }
-
-      if (isDescendantOf(candidates[i], node)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function isUsdPriceText(text) {
-    if (typeof text !== "string") {
-      return false;
-    }
-
-    // Convert USD-like price text (e.g. "$500", "US $500", "$500 (Offer Price)").
-    // This intentionally excludes percentage/label strings like "23% off".
-    return /^\s*(?:[A-Z]{0,3}\s*)?\$\s*-?\d[\d,]*(?:\.\d+)?\s*(?:\([^)]*\))?\s*$/i.test(text);
-  }
-
-  function hasStoredOriginalPrice(node) {
-    if (!node || typeof node.getAttribute !== "function") {
-      return false;
-    }
-
-    return Boolean(node.getAttribute(SIDEBAR_USD_TEXT_ATTR));
-  }
-
-  function isStrikethroughNode(node) {
-    if (!node) {
-      return false;
-    }
-
-    var tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
-    if (tagName === "DEL" || tagName === "S") {
-      return true;
-    }
-
-    var className = getClassName(node).toLowerCase();
-    if (/(line[-_ ]?through|strik|cross|previous|old|original|was|before|compare)/i.test(className)) {
-      return true;
-    }
-
-    var styleText = "";
-    if (typeof node.getAttribute === "function") {
-      styleText = String(node.getAttribute("style") || "").toLowerCase();
-    }
-
-    if (!styleText && node.style) {
-      styleText = String(
-        node.style.textDecorationLine || node.style.textDecoration || ""
-      ).toLowerCase();
-    }
-
-    return styleText.indexOf("line-through") !== -1;
-  }
-
-  function collectPriceTextCandidates(priceNode) {
-    if (!priceNode) {
-      return [];
-    }
-
-    var candidates = [priceNode];
-    if (typeof priceNode.querySelectorAll === "function") {
-      var descendants = priceNode.querySelectorAll("*");
-      Array.prototype.forEach.call(descendants, function (node) {
-        candidates.push(node);
-      });
-    }
-
-    return candidates.filter(function (node) {
-      var text = getNodePrimaryText(node);
-      if (!text && !hasStoredOriginalPrice(node)) {
-        return false;
-      }
-
-      if (hasStoredOriginalPrice(node)) {
-        return true;
-      }
-
-      if (!isUsdPriceText(text)) {
-        return false;
-      }
-      return Number.isFinite(parseUsdAmount(text));
-    });
-  }
-
-  function getPriceTextTargets(priceNode) {
-    var candidates = collectPriceTextCandidates(priceNode);
-    if (candidates.length === 0) {
-      return priceNode ? [priceNode] : [];
-    }
-
-    var terminalCandidates = candidates.filter(function (node) {
-      return !hasConvertibleDescendant(node, candidates);
-    });
-
-    if (terminalCandidates.length > 0) {
-      return terminalCandidates;
-    }
-
-    return [candidates[0]];
-  }
-
-  function choosePrimaryPriceIndex(entries) {
-    if (!Array.isArray(entries) || entries.length === 0) {
-      return -1;
-    }
-
-    var nonStrikeIndices = [];
-    var allConvertibleIndices = [];
-    var i;
-    for (i = 0; i < entries.length; i += 1) {
-      if (!entries[i] || !Number.isFinite(entries[i].usdValue)) {
-        continue;
-      }
-
-      allConvertibleIndices.push(i);
-      if (!entries[i].isStrikethrough) {
-        nonStrikeIndices.push(i);
-      }
-    }
-
-    var candidateIndices = nonStrikeIndices.length > 0 ? nonStrikeIndices : allConvertibleIndices;
-    if (candidateIndices.length === 0) {
-      return -1;
-    }
-
-    // In the common old-vs-current pair, the current price is usually the lower value.
-    if (candidateIndices.length === 2) {
-      var left = entries[candidateIndices[0]];
-      var right = entries[candidateIndices[1]];
-      if (Number.isFinite(left.usdValue) && Number.isFinite(right.usdValue)) {
-        return left.usdValue <= right.usdValue ? candidateIndices[0] : candidateIndices[1];
-      }
-    }
-
-    var bestIndex = -1;
-    var bestScore = Infinity;
-    var entry;
-    var className;
-    var score;
-
-    for (i = 0; i < candidateIndices.length; i += 1) {
-      entry = entries[candidateIndices[i]];
-
-      className = getClassName(entry.node).toLowerCase();
-      score = 0;
-
-      // Prefer nodes that usually represent current/live values.
-      if (/(value|current|now|final|amount|active)/i.test(className)) {
-        score -= 50;
-      }
-
-      // De-prioritize non-primary monetary labels (e.g. financing/monthly breakdowns).
-      if (/(month|monthly|installment|payment|finance|per)/i.test(className)) {
-        score += 20;
-      }
-
-      // Current price is usually the lower one.
-      score += entry.usdValue * 0.0001;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestIndex = candidateIndices[i];
-      }
-    }
-
-    return bestIndex;
-  }
-
-  function applyCurrencyToPriceContainer(priceNode, currencyContext, options) {
-    if (!priceNode) {
-      return {
-        handled: false,
-        convertedAny: false,
-        result: false
-      };
-    }
-
-    var priceTextTargets = getPriceTextTargets(priceNode);
-    if (!Array.isArray(priceTextTargets) || priceTextTargets.length === 0) {
-      return {
-        handled: false,
-        convertedAny: false,
-        result: false
-      };
-    }
-
-    var normalizedContext = normalizeCurrencyContext(currencyContext);
-    var handled = false;
-    var convertedAny = false;
-    var conversionEnabled =
-      normalizedContext.selectedCurrency !== "USD" &&
-      Number.isFinite(normalizedContext.rate) &&
-      normalizedContext.rate > 0;
-    var normalizedOptions = options || {};
-    var strikeMaxFractionDigits = normalizeMaxFractionDigits(
-      normalizedOptions.strikeMaxFractionDigits,
-      null
-    );
-    var targetEntries = [];
-    var i;
-    var priceTextTarget;
-    var existingText;
-    var storedUsdText;
-    var storedUsdValueRaw;
-    var usdValue;
-    var primaryIndex = -1;
-    var convertedText;
-
-    for (i = 0; i < priceTextTargets.length; i += 1) {
-      priceTextTarget = priceTextTargets[i];
-      if (!priceTextTarget || typeof priceTextTarget.textContent !== "string") {
-        continue;
-      }
-
-      existingText = getNodePrimaryText(priceTextTarget);
-      storedUsdText =
-        typeof priceTextTarget.getAttribute === "function"
-          ? priceTextTarget.getAttribute(SIDEBAR_USD_TEXT_ATTR) || ""
-          : "";
-
-      if (!storedUsdText && existingText && typeof priceTextTarget.setAttribute === "function") {
-        storedUsdText = existingText;
-        priceTextTarget.setAttribute(SIDEBAR_USD_TEXT_ATTR, existingText);
-      }
-
-      storedUsdValueRaw =
-        typeof priceTextTarget.getAttribute === "function"
-          ? priceTextTarget.getAttribute(SIDEBAR_USD_VALUE_ATTR)
-          : null;
-      usdValue = parseStoredAmount(storedUsdValueRaw);
-
-      if (usdValue == null) {
-        usdValue = parseUsdAmount(storedUsdText || existingText);
-        if (Number.isFinite(usdValue) && typeof priceTextTarget.setAttribute === "function") {
-          priceTextTarget.setAttribute(SIDEBAR_USD_VALUE_ATTR, String(usdValue));
-        }
-      }
-
-      handled = true;
-
-      targetEntries.push({
-        node: priceTextTarget,
-        storedUsdText: storedUsdText,
-        usdValue: usdValue,
-        isStrikethrough: isStrikethroughNode(priceTextTarget)
-      });
-    }
-
-    if (!conversionEnabled) {
-      for (i = 0; i < targetEntries.length; i += 1) {
-        if (targetEntries[i].storedUsdText) {
-          setNodePrimaryText(targetEntries[i].node, targetEntries[i].storedUsdText);
-        }
-        setNodeTitle(targetEntries[i].node, "");
-      }
-      return {
-        handled: handled,
-        convertedAny: false,
-        result: handled
-      };
-    }
-
-    primaryIndex = choosePrimaryPriceIndex(targetEntries);
-
-    for (i = 0; i < targetEntries.length; i += 1) {
-      if (!Number.isFinite(targetEntries[i].usdValue)) {
-        continue;
-      }
-
-      if (i === primaryIndex) {
-        convertedText = formatCurrencyByCode(
-          targetEntries[i].usdValue * normalizedContext.rate,
-          normalizedContext.selectedCurrency
-        );
-      } else {
-        convertedText = formatAmountWithoutCurrency(
-          targetEntries[i].usdValue * normalizedContext.rate,
-          targetEntries[i].isStrikethrough && strikeMaxFractionDigits != null
-            ? strikeMaxFractionDigits
-            : 2
-        );
-      }
-
-      if (convertedText === "N/A") {
-        setNodeTitle(targetEntries[i].node, "");
-        continue;
-      }
-
-      setNodePrimaryText(targetEntries[i].node, convertedText);
-      setNodeTitle(
-        targetEntries[i].node,
-        "USD: " + (targetEntries[i].storedUsdText || formatCurrency(targetEntries[i].usdValue))
-      );
-      convertedAny = true;
-    }
-
-    return {
-      handled: handled,
-      convertedAny: convertedAny,
-      result: convertedAny
-    };
-  }
-
-  function applySidebarCurrency(doc, currencyContext) {
-    if (!doc || typeof doc.querySelector !== "function") {
-      return false;
-    }
-
-    var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
-    if (!priceNode) {
-      return false;
-    }
-
-    return applyCurrencyToPriceContainer(priceNode, currencyContext).result;
-  }
-
-  function applyCardCurrency(doc, currencyContext) {
-    if (!doc || typeof doc.querySelectorAll !== "function") {
-      return false;
-    }
-
-    var targets = collectCardPriceTargets(doc);
-    if (!Array.isArray(targets) || targets.length === 0) {
-      return false;
-    }
-
-    var handledAny = false;
-    var i;
-    var outcome;
-    for (i = 0; i < targets.length; i += 1) {
-      outcome = applyCurrencyToPriceContainer(targets[i], currencyContext, {
-        strikeMaxFractionDigits: 0
-      });
-      if (outcome && outcome.handled) {
-        handledAny = true;
-      }
-    }
-
-    return handledAny;
-  }
-
-  function openMetadataInNewTab(rawListing, listing) {
-    var payload = rawListing || (listing && listing.rawListing) || listing || {};
-    var blob;
-    var objectUrl;
-    var newWindow;
-
-    try {
-      blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json"
-      });
-      objectUrl = URL.createObjectURL(blob);
-      newWindow = window.open(objectUrl, "_blank", "noopener,noreferrer");
-
-      if (!newWindow) {
-        var link = document.createElement("a");
-        link.href = objectUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.click();
-      }
-
-      setTimeout(function () {
-        URL.revokeObjectURL(objectUrl);
-      }, 60000);
-    } catch (_) {
-      // Intentionally silent. The metadata feature is non-blocking.
-    }
-  }
-
-  function buildExpectedDropText(listing, metrics) {
-    if (metrics.expectedDropState === "inactive") {
-      return (
-        "Listing appears inactive. Last update was " +
-        formatDate(listing && listing.pricing ? listing.pricing.updatedAt : null)
-      );
-    }
-
-    if (
-      metrics.expectedDropState === "scheduled" &&
-      Number.isFinite(metrics.expectedNextDropDays)
-    ) {
-      return String(metrics.expectedNextDropDays) + " days";
-    }
-
-    return "Not enough data to estimate";
-  }
-
-  function formatRelativeTimestamp(timestampMs) {
-    if (!Number.isFinite(Number(timestampMs))) {
-      return "";
-    }
-
-    var deltaMs = Date.now() - Number(timestampMs);
-    if (!Number.isFinite(deltaMs) || deltaMs < 0) {
-      return "";
-    }
-
-    var seconds = Math.floor(deltaMs / 1000);
-    if (seconds < 60) {
-      return "just now";
-    }
-
-    var minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-      return String(minutes) + "m ago";
-    }
-
-    var hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-      return String(hours) + "h ago";
-    }
-
-    var days = Math.floor(hours / 24);
-    return String(days) + "d ago";
-  }
-
-  function createMarketCompareSection(doc, marketCompare, onCompareClick) {
-    var state = marketCompare && typeof marketCompare === "object" ? marketCompare : {};
-    var status = typeof state.status === "string" ? state.status : "idle";
-    var provider = typeof state.provider === "string" ? state.provider : "Depop";
-    var message = typeof state.message === "string" ? state.message : "";
-    var results = Array.isArray(state.results) ? state.results : [];
-
-    var section = doc.createElement("div");
-    section.className = "grailed-plus__market";
-
-    var header = doc.createElement("div");
-    header.className = "grailed-plus__market-header";
-
-    var title = doc.createElement("span");
-    title.className = "grailed-plus__market-title";
-    title.textContent = "Other Markets";
-
-    var chip = doc.createElement("span");
-    chip.className = "grailed-plus__market-chip";
-
-    if (status === "loading") {
-      chip.textContent = "Searching";
-    } else if (status === "results") {
-      chip.textContent = "Results";
-    } else if (status === "no-results") {
-      chip.textContent = "No Results";
-    } else if (status === "error") {
-      chip.textContent = "Error";
-    } else {
-      chip.textContent = "Ready";
-    }
-
-    header.appendChild(title);
-    header.appendChild(chip);
-    section.appendChild(header);
-
-    var providerLabel = doc.createElement("div");
-    providerLabel.className = "grailed-plus__market-provider";
-    providerLabel.textContent = provider;
-    section.appendChild(providerLabel);
-
-    if (message) {
-      var messageNode = doc.createElement("div");
-      messageNode.className = "grailed-plus__market-message";
-      messageNode.textContent = message;
-      section.appendChild(messageNode);
-    }
-
-    if (status === "results" && results.length > 0) {
-      var list = doc.createElement("div");
-      list.className = "grailed-plus__market-list";
-
-      results.forEach(function (entry) {
-        var row = doc.createElement("div");
-        row.className = "grailed-plus__market-row";
-
-        var link = doc.createElement("a");
-        link.className = "grailed-plus__market-link";
-        link.href = entry.url || "#";
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = entry.title || "Listing";
-
-        var meta = doc.createElement("span");
-        meta.className = "grailed-plus__market-meta";
-        var parts = [];
-
-        if (Number.isFinite(entry.price)) {
-          parts.push(formatCurrencyByCode(entry.price, entry.currency || "USD"));
-        }
-        if (Number.isFinite(entry.score)) {
-          parts.push("score " + String(Math.round(entry.score)));
-        }
-        if (entry.deltaLabel) {
-          parts.push(entry.deltaLabel);
-        }
-
-        meta.textContent = parts.join(" | ");
-
-        row.appendChild(link);
-        row.appendChild(meta);
-        list.appendChild(row);
-      });
-
-      section.appendChild(list);
-    }
-
-    if (Number.isFinite(state.lastCheckedAt)) {
-      var stamp = doc.createElement("div");
-      stamp.className = "grailed-plus__market-stamp";
-      stamp.textContent = "Last checked " + formatRelativeTimestamp(state.lastCheckedAt);
-      section.appendChild(stamp);
-    }
-
-    var actions = doc.createElement("div");
-    actions.className = "grailed-plus__market-actions";
-
-    var compareButton = doc.createElement("button");
-    compareButton.type = "button";
-    compareButton.className = "grailed-plus__button gp-button grailed-plus__button--market-compare";
-    compareButton.textContent = status === "loading" ? "Searching..." : "Compare on Depop";
-    compareButton.disabled = status === "loading";
-    if (typeof compareButton.addEventListener === "function") {
-      compareButton.addEventListener("click", function () {
-        if (typeof onCompareClick === "function") {
-          onCompareClick();
-        }
-      });
-    }
-
-    actions.appendChild(compareButton);
-    section.appendChild(actions);
-
-    return section;
-  }
-
-  function renderInsightsPanel(options) {
-    var listing = options && options.listing ? options.listing : {};
-    var metrics = options && options.metrics ? options.metrics : {};
-    var mountNode = options && options.mountNode ? options.mountNode : null;
-    var mountPosition =
-      options && options.mountPosition === "beforebegin" ? "beforebegin" : "afterend";
-    var rawListing = options && options.rawListing ? options.rawListing : null;
-    var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
-    var currencyContext = options && options.currencyContext ? options.currencyContext : null;
-    var marketCompare = options && options.marketCompare ? options.marketCompare : null;
-    var onMarketCompareClick =
-      options && typeof options.onMarketCompareClick === "function"
-        ? options.onMarketCompareClick
-        : null;
-    var doc = (mountNode && mountNode.ownerDocument) || document;
-
-    if (!mountNode || !doc || typeof doc.createElement !== "function") {
-      return null;
-    }
-
-    removeExistingPanels(doc);
-
-    var panel = doc.createElement("section");
-    panel.className = "grailed-plus-panel";
-    panel.setAttribute(PANEL_ATTR, PANEL_ATTR_VALUE);
-
-    if (statusMessage) {
-      panel.appendChild(createRow(doc, "Status", statusMessage, "grailed-plus__row--status"));
-    }
-
-    var pricingHistory =
-      listing && listing.pricing && Array.isArray(listing.pricing.history)
-        ? listing.pricing.history
-        : [];
-    panel.appendChild(createTrendChartRow(doc, listing, currencyContext));
-
-    var avgText = "N/A";
-    var avgTitle = "";
-    if (
-      Number.isFinite(metrics.averageDropPercent) &&
-      Number.isFinite(metrics.averageDropAmountUsd)
-    ) {
-      var avgDisplay = buildMoneyDisplay(metrics.averageDropAmountUsd, currencyContext);
-      avgText = String(metrics.averageDropPercent) + "% (" + avgDisplay.text + ")";
-      if (avgDisplay.isConverted) {
-        avgTitle = "USD: " + avgDisplay.originalUsdText;
-      }
-    }
-
-    var avgClass = "";
-    if (metrics.averageDropPercent === 10 && pricingHistory.length > 2) {
-      avgClass = "grailed-plus__row--alert";
-    }
-
-    panel.appendChild(createRow(doc, "Avg. Price Drop", avgText, avgClass, avgTitle));
-    panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics)));
-    panel.appendChild(
-      createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt))
-    );
-    panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick));
-
-    var actions = doc.createElement("div");
-    actions.className = "grailed-plus__actions";
-
-    var metadataButton = doc.createElement("button");
-    metadataButton.type = "button";
-    metadataButton.className = "grailed-plus__button gp-button";
-    metadataButton.textContent = "Listing Metadata";
-    if (typeof metadataButton.addEventListener === "function") {
-      metadataButton.addEventListener("click", function () {
-        openMetadataInNewTab(rawListing, listing);
-      });
-    } else {
-      metadataButton.onclick = function () {
-        openMetadataInNewTab(rawListing, listing);
-      };
-    }
-
-    actions.appendChild(metadataButton);
-    panel.appendChild(actions);
-
-    if (mountNode.parentNode) {
-      if (mountPosition === "beforebegin") {
-        if (typeof mountNode.insertAdjacentElement === "function") {
-          mountNode.insertAdjacentElement("beforebegin", panel);
-        } else {
-          mountNode.parentNode.insertBefore(panel, mountNode);
-        }
-      } else if (typeof mountNode.insertAdjacentElement === "function") {
-        mountNode.insertAdjacentElement("afterend", panel);
-      } else if (mountNode.nextSibling) {
-        mountNode.parentNode.insertBefore(panel, mountNode.nextSibling);
-      } else {
-        mountNode.parentNode.appendChild(panel);
-      }
-    } else if (doc.body) {
-      doc.body.appendChild(panel);
-    }
-
-    return panel;
-  }
-
-  return {
-    PANEL_ATTR: PANEL_ATTR,
-    PANEL_ATTR_VALUE: PANEL_ATTR_VALUE,
-    findMountTarget: findMountTarget,
-    findMountNode: findMountNode,
-    applySidebarCurrency: applySidebarCurrency,
-    applyCardCurrency: applyCardCurrency,
-    nodeContainsCardPriceTarget: nodeContainsCardPriceTarget,
-    removeExistingPanels: removeExistingPanels,
-    renderInsightsPanel: renderInsightsPanel,
-    formatCurrency: formatCurrency,
-    formatMoney: formatMoney
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusTheme = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  var DEFAULT_DARK_MODE_ENABLED = true;
-  var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
-  var DEFAULT_DARK_MODE_BASE_TONE = "#FFFFFF";
-  var ROOT_ATTR = "data-grailed-plus-dark-mode";
-  var ROOT_ATTR_VALUE = "1";
-  var CUSTOM_COLOR_ATTR = "data-grailed-plus-custom-color";
-  var CUSTOM_COLOR_ATTR_VALUE = "1";
-  var BLACK_BASE_ATTR = "data-grailed-plus-black-base";
-  var BLACK_BASE_ATTR_VALUE = "1";
-  var NEXT_ROOT_ATTR = "data-grailed-plus-next-root";
-  var NEXT_ROOT_ATTR_VALUE = "1";
-  var PRIMARY_COLOR_VAR = "--gp-dm-primary";
-  var PRIMARY_COLOR_USER_VAR = "--gp-dm-primary-user";
-  var PRIMARY_COLOR_SAFE_VAR = "--gp-dm-primary-safe";
-  var PRIMARY_COLOR_SAFE_RGB_VAR = "--gp-dm-primary-safe-rgb";
-  var DARK_MODE_TINT_SATURATION = 1;
-  var DARK_MODE_TINT_LIGHTNESS = 0.35;
-
-  function normalizeHexColor(input) {
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
-    if (shortMatch && shortMatch[1]) {
-      var shortHex = shortMatch[1].toUpperCase();
-      return (
-        "#" +
-        shortHex.charAt(0) +
-        shortHex.charAt(0) +
-        shortHex.charAt(1) +
-        shortHex.charAt(1) +
-        shortHex.charAt(2) +
-        shortHex.charAt(2)
-      );
-    }
-
-    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
-    if (longMatch && longMatch[1]) {
-      return "#" + longMatch[1].toUpperCase();
-    }
-
-    return null;
-  }
-
-  function toHexChannel(value) {
-    var hex = value.toString(16).toUpperCase();
-    return hex.length === 1 ? "0" + hex : hex;
-  }
-
-  function clampUnit(value) {
-    if (value < 0) {
-      return 0;
-    }
-    if (value > 1) {
-      return 1;
-    }
-    return value;
-  }
-
-  function rgbToHsl(red, green, blue) {
-    var r = red / 255;
-    var g = green / 255;
-    var b = blue / 255;
-    var max = Math.max(r, g, b);
-    var min = Math.min(r, g, b);
-    var hue = 0;
-    var saturation = 0;
-    var lightness = (max + min) / 2;
-
-    if (max !== min) {
-      var diff = max - min;
-      saturation = lightness > 0.5 ? diff / (2 - max - min) : diff / (max + min);
-
-      if (max === r) {
-        hue = (g - b) / diff + (g < b ? 6 : 0);
-      } else if (max === g) {
-        hue = (b - r) / diff + 2;
-      } else {
-        hue = (r - g) / diff + 4;
-      }
-
-      hue = hue / 6;
-    }
-
-    return {
-      h: hue,
-      s: saturation,
-      l: lightness
-    };
-  }
-
-  function hueToRgb(p, q, t) {
-    var temp = t;
-    if (temp < 0) {
-      temp += 1;
-    }
-    if (temp > 1) {
-      temp -= 1;
-    }
-    if (temp < 1 / 6) {
-      return p + (q - p) * 6 * temp;
-    }
-    if (temp < 1 / 2) {
-      return q;
-    }
-    if (temp < 2 / 3) {
-      return p + (q - p) * (2 / 3 - temp) * 6;
-    }
-    return p;
-  }
-
-  function hslToRgb(hue, saturation, lightness) {
-    var h = hue;
-    var s = clampUnit(saturation);
-    var l = clampUnit(lightness);
-    var red;
-    var green;
-    var blue;
-
-    if (s === 0) {
-      red = l;
-      green = l;
-      blue = l;
-    } else {
-      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      var p = 2 * l - q;
-      red = hueToRgb(p, q, h + 1 / 3);
-      green = hueToRgb(p, q, h);
-      blue = hueToRgb(p, q, h - 1 / 3);
-    }
-
-    return {
-      r: Math.round(red * 255),
-      g: Math.round(green * 255),
-      b: Math.round(blue * 255)
-    };
-  }
-
-  function rotateHexHue(normalizedHex, degrees) {
-    var normalized = normalizeHexColor(normalizedHex);
-    if (!normalized) {
-      return null;
-    }
-
-    var red = parseInt(normalized.slice(1, 3), 16);
-    var green = parseInt(normalized.slice(3, 5), 16);
-    var blue = parseInt(normalized.slice(5, 7), 16);
-    var hsl = rgbToHsl(red, green, blue);
-    var normalizedDegrees = ((degrees % 360) + 360) % 360;
-    var hue = (hsl.h + normalizedDegrees / 360) % 1;
-    var rotated = hslToRgb(hue, hsl.s, hsl.l);
-
-    return "#" + toHexChannel(rotated.r) + toHexChannel(rotated.g) + toHexChannel(rotated.b);
-  }
-
-  function lockHexToHueOnly(normalizedHex) {
-    var normalized = normalizeHexColor(normalizedHex);
-    if (!normalized) {
-      return null;
-    }
-
-    var red = parseInt(normalized.slice(1, 3), 16);
-    var green = parseInt(normalized.slice(3, 5), 16);
-    var blue = parseInt(normalized.slice(5, 7), 16);
-    var hsl = rgbToHsl(red, green, blue);
-    var locked = hslToRgb(hsl.h, DARK_MODE_TINT_SATURATION, DARK_MODE_TINT_LIGHTNESS);
-
-    return "#" + toHexChannel(locked.r) + toHexChannel(locked.g) + toHexChannel(locked.b);
-  }
-
-  function invertHexColor(normalizedHex) {
-    var normalized = normalizeHexColor(normalizedHex);
-    if (!normalized) {
-      return null;
-    }
-
-    var red = 255 - parseInt(normalized.slice(1, 3), 16);
-    var green = 255 - parseInt(normalized.slice(3, 5), 16);
-    var blue = 255 - parseInt(normalized.slice(5, 7), 16);
-    return "#" + toHexChannel(red) + toHexChannel(green) + toHexChannel(blue);
-  }
-
-  function hexToRgbChannels(normalizedHex) {
-    var normalized = normalizeHexColor(normalizedHex);
-    if (!normalized) {
-      return null;
-    }
-
-    var red = parseInt(normalized.slice(1, 3), 16);
-    var green = parseInt(normalized.slice(3, 5), 16);
-    var blue = parseInt(normalized.slice(5, 7), 16);
-    return red + ", " + green + ", " + blue;
-  }
-
-  function normalizeDarkModeContext(context) {
-    var normalizedPrimary = normalizeHexColor(context && context.primaryColor);
-    var primaryColor = normalizedPrimary || DEFAULT_DARK_MODE_PRIMARY_COLOR;
-    return {
-      enabled: Boolean(context && context.enabled),
-      primaryColor: primaryColor,
-      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR,
-      blackBaseEnabled: primaryColor === DEFAULT_DARK_MODE_PRIMARY_COLOR
-    };
-  }
-
-  function setAttribute(node, name, value) {
-    if (!node || typeof node.setAttribute !== "function") {
-      return;
-    }
-    node.setAttribute(name, value);
-  }
-
-  function removeAttribute(node, name) {
-    if (!node) {
-      return;
-    }
-    if (typeof node.removeAttribute === "function") {
-      node.removeAttribute(name);
-      return;
-    }
-    if (typeof node.setAttribute === "function") {
-      node.setAttribute(name, "");
-    }
-  }
-
-  function setCssVar(node, key, value) {
-    if (!node || !node.style || typeof node.style.setProperty !== "function") {
-      return;
-    }
-    node.style.setProperty(key, value);
-  }
-
-  function removeCssVar(node, key) {
-    if (!node || !node.style) {
-      return;
-    }
-    if (typeof node.style.removeProperty === "function") {
-      node.style.removeProperty(key);
-      return;
-    }
-    if (typeof node.style.setProperty === "function") {
-      node.style.setProperty(key, "");
-    }
-  }
-
-  function resolveRootNode(doc) {
-    if (!doc) {
-      return null;
-    }
-    return doc.documentElement || doc.body || null;
-  }
-
-  function hasNextRoot(doc) {
-    if (!doc || typeof doc.getElementById !== "function") {
-      return false;
-    }
-
-    return Boolean(doc.getElementById("__next"));
-  }
-
-  function applyDarkModeToDocument(doc, context) {
-    var rootNode = resolveRootNode(doc);
-    if (!rootNode) {
-      return false;
-    }
-
-    var normalizedContext = normalizeDarkModeContext(context);
-    if (!normalizedContext.enabled) {
-      removeAttribute(rootNode, ROOT_ATTR);
-      removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
-      removeAttribute(rootNode, BLACK_BASE_ATTR);
-      removeAttribute(rootNode, NEXT_ROOT_ATTR);
-      removeCssVar(rootNode, PRIMARY_COLOR_VAR);
-      removeCssVar(rootNode, PRIMARY_COLOR_USER_VAR);
-      removeCssVar(rootNode, PRIMARY_COLOR_SAFE_VAR);
-      removeCssVar(rootNode, PRIMARY_COLOR_SAFE_RGB_VAR);
-      return false;
-    }
-
-    setAttribute(rootNode, ROOT_ATTR, ROOT_ATTR_VALUE);
-    if (normalizedContext.customColorEnabled) {
-      setAttribute(rootNode, CUSTOM_COLOR_ATTR, CUSTOM_COLOR_ATTR_VALUE);
-    } else {
-      removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
-    }
-    if (normalizedContext.blackBaseEnabled) {
-      setAttribute(rootNode, BLACK_BASE_ATTR, BLACK_BASE_ATTR_VALUE);
-    } else {
-      removeAttribute(rootNode, BLACK_BASE_ATTR);
-    }
-    if (hasNextRoot(doc)) {
-      setAttribute(rootNode, NEXT_ROOT_ATTR, NEXT_ROOT_ATTR_VALUE);
-    } else {
-      removeAttribute(rootNode, NEXT_ROOT_ATTR);
-    }
-    setCssVar(rootNode, PRIMARY_COLOR_USER_VAR, normalizedContext.primaryColor);
-    var hueOnlyColor = lockHexToHueOnly(normalizedContext.primaryColor) || normalizedContext.primaryColor;
-    // Body uses "invert(1) hue-rotate(180deg)", so pre-transform custom color accordingly.
-    var hueRotatedColor = rotateHexHue(hueOnlyColor, 180) || hueOnlyColor;
-    var safeColor = invertHexColor(hueRotatedColor) || DEFAULT_DARK_MODE_BASE_TONE;
-    var safeColorRgb = hexToRgbChannels(safeColor) || "255, 255, 255";
-    setCssVar(rootNode, PRIMARY_COLOR_SAFE_VAR, safeColor);
-    setCssVar(rootNode, PRIMARY_COLOR_SAFE_RGB_VAR, safeColorRgb);
-    // Keep base tone stable; custom color is applied through targeted gradient accents.
-    setCssVar(rootNode, PRIMARY_COLOR_VAR, DEFAULT_DARK_MODE_BASE_TONE);
-    return true;
-  }
-
-  return {
-    DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
-    DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
-    ROOT_ATTR: ROOT_ATTR,
-    ROOT_ATTR_VALUE: ROOT_ATTR_VALUE,
-    CUSTOM_COLOR_ATTR: CUSTOM_COLOR_ATTR,
-    CUSTOM_COLOR_ATTR_VALUE: CUSTOM_COLOR_ATTR_VALUE,
-    BLACK_BASE_ATTR: BLACK_BASE_ATTR,
-    BLACK_BASE_ATTR_VALUE: BLACK_BASE_ATTR_VALUE,
-    NEXT_ROOT_ATTR: NEXT_ROOT_ATTR,
-    NEXT_ROOT_ATTR_VALUE: NEXT_ROOT_ATTR_VALUE,
-    PRIMARY_COLOR_VAR: PRIMARY_COLOR_VAR,
-    PRIMARY_COLOR_USER_VAR: PRIMARY_COLOR_USER_VAR,
-    PRIMARY_COLOR_SAFE_VAR: PRIMARY_COLOR_SAFE_VAR,
-    PRIMARY_COLOR_SAFE_RGB_VAR: PRIMARY_COLOR_SAFE_RGB_VAR,
-    normalizeHexColor: normalizeHexColor,
-    normalizeDarkModeContext: normalizeDarkModeContext,
-    applyDarkModeToDocument: applyDarkModeToDocument
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusContentRuntime = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function createRuntimeState() {
-    return {
-      // Start empty so first navigation pass always applies theme state on initial load.
-      lastUrl: "",
-      retryTimer: null,
-      urlPollTimer: null,
-      retryStartedAtMs: null,
-      mutationObserver: null,
-      renderToken: 0,
-      darkModeToken: 0,
-      darkModeMediaQuery: null,
-      darkModeMediaListener: null,
-      filterScopeTick: null,
-      filterScopeDelayTimers: [],
-      filterScopeObserver: null,
-      cardCurrencyObserver: null,
-      cardCurrencyTick: null,
-      cardCurrencyTickUsesAnimationFrame: false,
-      cardCurrencyContext: null,
-      marketCompareController: null,
-      marketCompareUnsubscribe: null,
-      latestPanelContext: null
-    };
-  }
-
-  function clearRetryTimer(state, resetWindow) {
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (state.retryTimer) {
-      clearTimeout(state.retryTimer);
-      state.retryTimer = null;
-    }
-
-    if (resetWindow) {
-      state.retryStartedAtMs = null;
-    }
-  }
-
-  function shouldStopRetryWindow(state, maxRetryWindowMs) {
-    if (!state || typeof state !== "object") {
-      return true;
-    }
-
-    if (state.retryStartedAtMs == null) {
-      state.retryStartedAtMs = Date.now();
-      return false;
-    }
-
-    return Date.now() - state.retryStartedAtMs > maxRetryWindowMs;
-  }
-
-  function scheduleHydrationObserver(options) {
-    if (!options || typeof options !== "object") {
-      return;
-    }
-
-    var state = options.state;
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (typeof MutationObserver !== "function") {
-      return;
-    }
-
-    if (state.mutationObserver) {
-      return;
-    }
-
-    var isListingPath =
-      typeof options.isListingPath === "function" ? options.isListingPath : function () {
-        return false;
-      };
-    var getPathname =
-      typeof options.getPathname === "function" ? options.getPathname : function () {
         return "";
-      };
-    var getNextDataNode =
-      typeof options.getNextDataNode === "function"
-        ? options.getNextDataNode
-        : function () {
-            return null;
-          };
-    var onHydrated =
-      typeof options.onHydrated === "function"
-        ? options.onHydrated
-        : function () {};
-    var log = typeof options.log === "function" ? options.log : null;
-
-    var obs = new MutationObserver(function () {
-      if (!isListingPath(getPathname())) {
-        return;
-      }
-
-      var nextDataNode = getNextDataNode();
-      if (nextDataNode && nextDataNode.textContent) {
-        if (log) {
-          log("hydration observer detected next data");
+    }
+    function toErrorModel(errorCode, retryAfterMs, parserMismatchLikely) {
+        const code = normalizeString(errorCode, "NETWORK_ERROR");
+        const retryMs = normalizeNumber(retryAfterMs);
+        if (code === "MISSING_LISTING_DATA") {
+            return {
+                status: "error",
+                errorCode: code,
+                retryable: false,
+                cooldownMs: 0,
+                message: "Listing does not match the currently supported category subset."
+            };
         }
-        onHydrated();
-      }
-    });
-
-    obs.observe(document.documentElement || document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    state.mutationObserver = obs;
-  }
-
-  function disconnectHydrationObserver(state) {
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (state.mutationObserver && typeof state.mutationObserver.disconnect === "function") {
-      state.mutationObserver.disconnect();
-    }
-    state.mutationObserver = null;
-  }
-
-  return {
-    createRuntimeState: createRuntimeState,
-    clearRetryTimer: clearRetryTimer,
-    shouldStopRetryWindow: shouldStopRetryWindow,
-    scheduleHydrationObserver: scheduleHydrationObserver,
-    disconnectHydrationObserver: disconnectHydrationObserver
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusNavigationLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function patchHistoryMethod(historyApi, methodName, dispatchNavigationEvent) {
-    if (!historyApi || typeof historyApi[methodName] !== "function") {
-      return;
-    }
-
-    var original = historyApi[methodName];
-    historyApi[methodName] = function () {
-      var result = original.apply(this, arguments);
-      dispatchNavigationEvent();
-      return result;
-    };
-  }
-
-  function setupNavigationListeners(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var onNavigation =
-      typeof config.onNavigation === "function" ? config.onNavigation : function () {};
-    var pollIntervalMs = Number(config.pollIntervalMs);
-    var historyApi = config.history || history;
-    var windowApi = config.window || window;
-    var locationApi = config.location || location;
-    var eventName =
-      typeof config.eventName === "string" && config.eventName.trim()
-        ? config.eventName.trim()
-        : "grailed-plus:navigation";
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0) {
-      pollIntervalMs = 1000;
-    }
-
-    var dispatchNavigationEvent = function () {
-      if (!windowApi || typeof windowApi.dispatchEvent !== "function") {
-        return;
-      }
-
-      try {
-        windowApi.dispatchEvent(new Event(eventName));
-      } catch (_) {
-        // Ignore environments that cannot construct Event directly.
-      }
-    };
-
-    patchHistoryMethod(historyApi, "pushState", dispatchNavigationEvent);
-    patchHistoryMethod(historyApi, "replaceState", dispatchNavigationEvent);
-
-    windowApi.addEventListener(eventName, function () {
-      onNavigation("history");
-    });
-
-    windowApi.addEventListener("popstate", function () {
-      onNavigation("popstate");
-    });
-
-    state.urlPollTimer = setInterval(function () {
-      if (locationApi.href !== state.lastUrl) {
-        onNavigation("url_poll");
-      }
-    }, pollIntervalMs);
-  }
-
-  return {
-    patchHistoryMethod: patchHistoryMethod,
-    setupNavigationListeners: setupNavigationListeners
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusDarkModeLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function normalizeHexColor(input, settings) {
-    if (settings && typeof settings.normalizeHexColor === "function") {
-      return settings.normalizeHexColor(input);
-    }
-
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
-    if (shortMatch && shortMatch[1]) {
-      var shortHex = shortMatch[1].toUpperCase();
-      return (
-        "#" +
-        shortHex.charAt(0) +
-        shortHex.charAt(0) +
-        shortHex.charAt(1) +
-        shortHex.charAt(1) +
-        shortHex.charAt(2) +
-        shortHex.charAt(2)
-      );
-    }
-
-    var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
-    if (longMatch && longMatch[1]) {
-      return "#" + longMatch[1].toUpperCase();
-    }
-
-    return null;
-  }
-
-  function normalizeDarkModeBehavior(input, settings) {
-    if (settings && typeof settings.normalizeDarkModeBehavior === "function") {
-      return settings.normalizeDarkModeBehavior(input);
-    }
-
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim().toLowerCase();
-    if (trimmed !== "system" && trimmed !== "permanent") {
-      return null;
-    }
-
-    return trimmed;
-  }
-
-  function getSystemDarkModeQuery() {
-    if (typeof globalThis.matchMedia !== "function") {
-      return null;
-    }
-
-    try {
-      return globalThis.matchMedia("(prefers-color-scheme: dark)");
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function getSystemPrefersDark() {
-    var query = getSystemDarkModeQuery();
-    return Boolean(query && query.matches);
-  }
-
-  function createDefaultDarkModeContext() {
-    return {
-      enabled: getSystemPrefersDark(),
-      behavior: "system",
-      primaryColor: "#000000"
-    };
-  }
-
-  function resolveDarkModeContext(settings) {
-    var defaultContext = createDefaultDarkModeContext();
-    if (!settings) {
-      return Promise.resolve(defaultContext);
-    }
-
-    var enabledPromise =
-      typeof settings.getDarkModeEnabled === "function"
-        ? settings.getDarkModeEnabled()
-        : Promise.resolve(defaultContext.enabled);
-    var behaviorPromise =
-      typeof settings.getDarkModeBehavior === "function"
-        ? settings.getDarkModeBehavior()
-        : Promise.resolve(defaultContext.behavior);
-    var colorPromise =
-      typeof settings.getDarkModePrimaryColor === "function"
-        ? settings.getDarkModePrimaryColor()
-        : Promise.resolve(defaultContext.primaryColor);
-
-    return Promise.all([enabledPromise, behaviorPromise, colorPromise])
-      .then(function (values) {
-        var configuredEnabled = Boolean(values[0]);
-        var behavior = normalizeDarkModeBehavior(values[1], settings) || defaultContext.behavior;
-        var primaryColor = normalizeHexColor(values[2], settings) || defaultContext.primaryColor;
-        var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
+        if (code === "NO_RESULTS") {
+            return {
+                status: "no-results",
+                errorCode: code,
+                retryable: true,
+                cooldownMs: 0,
+                message: "No similar Depop listings found."
+            };
+        }
+        if (code === "RATE_LIMITED") {
+            return {
+                status: "error",
+                errorCode: code,
+                retryable: true,
+                cooldownMs: retryMs == null ? 2000 : retryMs,
+                message: "Rate limited by Depop. Wait and try again."
+            };
+        }
+        if (code === "FORBIDDEN_OR_BLOCKED") {
+            return {
+                status: "error",
+                errorCode: code,
+                retryable: true,
+                cooldownMs: retryMs == null ? 120000 : retryMs,
+                message: "Depop temporarily blocked automated search. Try again in a couple of minutes."
+            };
+        }
+        if (code === "PARSE_ERROR") {
+            return {
+                status: "error",
+                errorCode: code,
+                retryable: true,
+                cooldownMs: 0,
+                message: parserMismatchLikely
+                    ? "Depop page format changed. Try again later."
+                    : "Depop results could not be parsed."
+            };
+        }
         return {
-          enabled: enabled,
-          behavior: behavior,
-          primaryColor: primaryColor
+            status: "error",
+            errorCode: code,
+            retryable: true,
+            cooldownMs: retryMs == null ? 1500 : retryMs,
+            message: "Depop search failed. Try again."
         };
-      })
-      .catch(function () {
-        return defaultContext;
-      });
-  }
-
-  function refreshDarkMode(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var settings = config.settings || null;
-    var onApply = typeof config.onApply === "function" ? config.onApply : function () {};
-
-    if (!state || typeof state !== "object") {
-      return;
     }
-
-    var darkModeToken = state.darkModeToken + 1;
-    state.darkModeToken = darkModeToken;
-
-    resolveDarkModeContext(settings).then(function (darkModeContext) {
-      if (darkModeToken !== state.darkModeToken) {
-        return;
-      }
-      onApply(darkModeContext);
-    });
-  }
-
-  function setupDarkModeMediaListener(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var onChange = typeof config.onChange === "function" ? config.onChange : function () {};
-
-    if (!state || typeof state !== "object" || state.darkModeMediaQuery) {
-      return;
-    }
-
-    var query = getSystemDarkModeQuery();
-    if (!query) {
-      return;
-    }
-
-    var listener = function () {
-      onChange();
-    };
-
-    if (typeof query.addEventListener === "function") {
-      query.addEventListener("change", listener);
-    } else if (typeof query.addListener === "function") {
-      query.addListener(listener);
-    } else {
-      return;
-    }
-
-    state.darkModeMediaQuery = query;
-    state.darkModeMediaListener = listener;
-  }
-
-  return {
-    normalizeHexColor: normalizeHexColor,
-    normalizeDarkModeBehavior: normalizeDarkModeBehavior,
-    getSystemDarkModeQuery: getSystemDarkModeQuery,
-    getSystemPrefersDark: getSystemPrefersDark,
-    createDefaultDarkModeContext: createDefaultDarkModeContext,
-    resolveDarkModeContext: resolveDarkModeContext,
-    refreshDarkMode: refreshDarkMode,
-    setupDarkModeMediaListener: setupDarkModeMediaListener
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusFilterScopeLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function getThemeAttrOrFallback(theme, key, fallback) {
-    if (!theme || typeof theme !== "object") {
-      return fallback;
-    }
-    return theme[key] || fallback;
-  }
-
-  function clearFilterTargets(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var documentObj = config.documentObj;
-    var filterTargetAttr = config.filterTargetAttr;
-    var filterScopeSkipAttr = config.filterScopeSkipAttr;
-
-    if (!documentObj || typeof documentObj.querySelectorAll !== "function") {
-      return;
-    }
-
-    var nodes = documentObj.querySelectorAll(
-      "[" + filterTargetAttr + "],[" + filterScopeSkipAttr + "]"
-    );
-    var i;
-    var node;
-
-    for (i = 0; i < nodes.length; i += 1) {
-      node = nodes[i];
-      if (typeof node.removeAttribute === "function") {
-        node.removeAttribute(filterTargetAttr);
-        node.removeAttribute(filterScopeSkipAttr);
-      }
-    }
-  }
-
-  function getDarkModeRootState(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var documentObj = config.documentObj;
-    var theme = config.theme;
-
-    var rootNode = documentObj.documentElement || null;
-    var bodyNode = documentObj.body || null;
-    var nextRoot =
-      typeof documentObj.getElementById === "function"
-        ? documentObj.getElementById("__next")
-        : null;
-    var rootAttr = getThemeAttrOrFallback(theme, "ROOT_ATTR", "data-grailed-plus-dark-mode");
-    var nextRootAttr = getThemeAttrOrFallback(
-      theme,
-      "NEXT_ROOT_ATTR",
-      "data-grailed-plus-next-root"
-    );
-    var rootEnabled = Boolean(rootNode && rootNode.getAttribute(rootAttr) === "1");
-    var nextRootEnabled = Boolean(rootNode && rootNode.getAttribute(nextRootAttr) === "1");
-    var filterRoot = null;
-    var mode = "none";
-
-    if (rootEnabled && nextRootEnabled && nextRoot) {
-      filterRoot = nextRoot;
-      mode = "next";
-    } else if (rootEnabled && bodyNode) {
-      filterRoot = bodyNode;
-      mode = "legacy";
-    }
-
-    return {
-      rootNode: rootNode,
-      bodyNode: bodyNode,
-      nextRoot: nextRoot,
-      enabled: Boolean(filterRoot),
-      mode: mode,
-      filterRoot: filterRoot
-    };
-  }
-
-  function containsHeaderBoundary(node, headerRoot, headerSelector, menuSelector) {
-    if (!node) {
-      return false;
-    }
-
-    if (headerRoot && node === headerRoot) {
-      return true;
-    }
-
-    if (typeof node.matches === "function") {
-      if (node.matches(headerSelector) || node.matches(menuSelector)) {
-        return true;
-      }
-    }
-
-    if (typeof node.querySelector === "function") {
-      return Boolean(node.querySelector(headerSelector + ", " + menuSelector));
-    }
-
-    return false;
-  }
-
-  function isDirectHeaderBoundary(node, headerRoot, headerSelector, menuSelector) {
-    if (!node) {
-      return false;
-    }
-
-    if (headerRoot && node === headerRoot) {
-      return true;
-    }
-
-    if (typeof node.matches !== "function") {
-      return false;
-    }
-
-    return Boolean(node.matches(headerSelector) || node.matches(menuSelector));
-  }
-
-  function markFilterTargetsWithin(boundaryNode, headerRoot, depth, options) {
-    var config = options && typeof options === "object" ? options : {};
-    var headerSelector = config.headerSelector;
-    var menuSelector = config.menuSelector;
-    var filterTargetAttr = config.filterTargetAttr;
-    var filterTargetAttrValue = config.filterTargetAttrValue;
-    var filterScopeSkipAttr = config.filterScopeSkipAttr;
-    var filterScopeSkipAttrValue = config.filterScopeSkipAttrValue;
-
-    if (!boundaryNode || !boundaryNode.children || depth > 6) {
-      return;
-    }
-
-    var children = boundaryNode.children;
-    var i;
-    var child;
-    var hasBoundary;
-    var isDirectBoundary;
-
-    for (i = 0; i < children.length; i += 1) {
-      child = children[i];
-      isDirectBoundary = isDirectHeaderBoundary(child, headerRoot, headerSelector, menuSelector);
-
-      if (isDirectBoundary) {
-        if (typeof child.setAttribute === "function") {
-          child.setAttribute(filterScopeSkipAttr, filterScopeSkipAttrValue);
+    function pickListingPrice(listing) {
+        const history = listing && typeof listing === "object" && listing.pricing && Array.isArray(listing.pricing?.history)
+            ? listing.pricing?.history
+            : [];
+        if (!history.length) {
+            return null;
         }
-        continue;
-      }
-
-      hasBoundary = containsHeaderBoundary(child, headerRoot, headerSelector, menuSelector);
-
-      if (hasBoundary) {
-        if (typeof child.setAttribute === "function") {
-          child.setAttribute(filterScopeSkipAttr, filterScopeSkipAttrValue);
+        const latest = Number(history[history.length - 1]);
+        return Number.isFinite(latest) ? latest : null;
+    }
+    function createController(options) {
+        const config = options && typeof options === "object" ? options : {};
+        const hasExternalRegistry = Boolean(config.providerRegistry && typeof config.providerRegistry.search === "function");
+        const providerRegistry = hasExternalRegistry
+            ? config.providerRegistry
+            : MarketProviders && typeof MarketProviders.createRegistry === "function"
+                ? MarketProviders.createRegistry()
+                : null;
+        const listeners = [];
+        let state = createInitialState();
+        let currentListingKey = null;
+        let activeRequestToken = 0;
+        let inFlightPromise = null;
+        const synthesizeQueries = typeof config.synthesizeQueries === "function"
+            ? config.synthesizeQueries
+            : QuerySynthesis && typeof QuerySynthesis.buildQueries === "function"
+                ? QuerySynthesis.buildQueries
+                : null;
+        const candidateFilterFn = typeof config.applyCandidateFilters === "function"
+            ? config.applyCandidateFilters
+            : ProviderFilters && typeof ProviderFilters.applyCandidateFilters === "function"
+                ? ProviderFilters.applyCandidateFilters
+                : null;
+        const rankCandidates = typeof config.rankCandidates === "function"
+            ? config.rankCandidates
+            : MatchScoring && typeof MatchScoring.rankCandidates === "function"
+                ? MatchScoring.rankCandidates
+                : null;
+        if (providerRegistry &&
+            typeof providerRegistry.register === "function" &&
+            config.provider &&
+            typeof config.provider.search === "function") {
+            providerRegistry.register(config.provider);
         }
-        markFilterTargetsWithin(child, headerRoot, depth + 1, options);
-        continue;
-      }
-
-      if (typeof child.setAttribute === "function") {
-        child.setAttribute(filterTargetAttr, filterTargetAttrValue);
-      }
-    }
-  }
-
-  function refreshFilterTargets(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var documentObj = config.documentObj;
-    var headerSelector = config.headerSelector;
-    var menuSelector = config.menuSelector;
-
-    clearFilterTargets(config);
-
-    var modeState = getDarkModeRootState({
-      documentObj: documentObj,
-      theme: config.theme
-    });
-
-    if (!modeState.enabled) {
-      return;
-    }
-
-    var filterRoot = modeState.filterRoot;
-    if (!filterRoot || !filterRoot.children) {
-      return;
-    }
-
-    var headerRoot =
-      typeof filterRoot.querySelector === "function"
-        ? filterRoot.querySelector(headerSelector)
-        : null;
-    var topChildren = filterRoot.children;
-    var i;
-    var topChild;
-    var hasBoundary;
-
-    for (i = 0; i < topChildren.length; i += 1) {
-      topChild = topChildren[i];
-      hasBoundary = containsHeaderBoundary(topChild, headerRoot, headerSelector, menuSelector);
-
-      if (hasBoundary) {
-        if (typeof topChild.setAttribute === "function") {
-          topChild.setAttribute(config.filterScopeSkipAttr, config.filterScopeSkipAttrValue);
+        if (!hasExternalRegistry &&
+            providerRegistry &&
+            typeof providerRegistry.register === "function" &&
+            (!config.provider || typeof config.provider.search !== "function") &&
+            MarketProviders &&
+            typeof MarketProviders.createMockDepopProvider === "function") {
+            providerRegistry.register(MarketProviders.createMockDepopProvider());
         }
-        markFilterTargetsWithin(topChild, headerRoot, 0, config);
-        continue;
-      }
-
-      if (typeof topChild.setAttribute === "function") {
-        topChild.setAttribute(config.filterTargetAttr, config.filterTargetAttrValue);
-      }
-    }
-  }
-
-  function scheduleFilterTargetsRefresh(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var onRefresh = typeof config.onRefresh === "function" ? config.onRefresh : function () {};
-
-    if (!state || typeof state !== "object" || state.filterScopeTick != null) {
-      return;
-    }
-
-    var run = function () {
-      state.filterScopeTick = null;
-      onRefresh();
-    };
-
-    if (typeof globalThis.requestAnimationFrame === "function") {
-      state.filterScopeTick = globalThis.requestAnimationFrame(run);
-      return;
-    }
-
-    state.filterScopeTick = globalThis.setTimeout(run, 16);
-  }
-
-  function clearFilterTargetsRefreshDelayTimers(state) {
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    var timers = state.filterScopeDelayTimers || [];
-    var i;
-    for (i = 0; i < timers.length; i += 1) {
-      clearTimeout(timers[i]);
-    }
-    state.filterScopeDelayTimers = [];
-  }
-
-  function scheduleFilterTargetsRefreshBurst(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var delays = Array.isArray(config.delays) ? config.delays : [];
-    var onScheduleRefresh =
-      typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () {};
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    var timers = [];
-    var i;
-    var delayMs;
-
-    clearFilterTargetsRefreshDelayTimers(state);
-    onScheduleRefresh();
-
-    for (i = 0; i < delays.length; i += 1) {
-      delayMs = delays[i];
-      timers.push(globalThis.setTimeout(onScheduleRefresh, delayMs));
-    }
-
-    state.filterScopeDelayTimers = timers;
-  }
-
-  function setupFilterScopeObserver(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var documentObj = config.documentObj;
-    var onScheduleRefresh =
-      typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () {};
-
-    if (!state || typeof state !== "object" || state.filterScopeObserver || typeof MutationObserver !== "function") {
-      return;
-    }
-
-    var root = documentObj.body || documentObj.documentElement;
-    if (!root) {
-      return;
-    }
-
-    var observer = new MutationObserver(function (mutations) {
-      var i;
-      var mutation;
-      var shouldRefresh = false;
-
-      for (i = 0; i < mutations.length; i += 1) {
-        mutation = mutations[i];
-        if (!mutation) {
-          continue;
+        function notify() {
+            listeners.forEach(function (listener) {
+                try {
+                    listener(getState());
+                }
+                catch (_) {
+                    // Listener failures should not break controller flow.
+                }
+            });
         }
-
-        if (mutation.type === "childList") {
-          if (
-            (mutation.addedNodes && mutation.addedNodes.length > 0) ||
-            (mutation.removedNodes && mutation.removedNodes.length > 0)
-          ) {
-            shouldRefresh = true;
-            break;
-          }
-          continue;
+        function updateState(patch) {
+            state = Object.assign({}, state, patch || {});
+            notify();
         }
-
-        if (mutation.type === "attributes") {
-          shouldRefresh = true;
-          break;
+        function toListingKey(listing) {
+            if (!listing || typeof listing !== "object") {
+                return null;
+            }
+            const typed = listing;
+            if (typed.id != null) {
+                return String(typed.id);
+            }
+            return normalizeString(typed.title, "") || null;
         }
-      }
-
-      if (shouldRefresh) {
-        onScheduleRefresh();
-      }
-    });
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class", "style", "id"]
-    });
-
-    state.filterScopeObserver = observer;
-  }
-
-  function disconnectFilterScopeObserver(state) {
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (state.filterScopeObserver && typeof state.filterScopeObserver.disconnect === "function") {
-      state.filterScopeObserver.disconnect();
-    }
-    state.filterScopeObserver = null;
-  }
-
-  function syncFilterScopeObserver(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var enabled = Boolean(config.enabled);
-    var onSetup = typeof config.onSetup === "function" ? config.onSetup : function () {};
-    var onDisconnect =
-      typeof config.onDisconnect === "function" ? config.onDisconnect : function () {};
-
-    if (!enabled) {
-      onDisconnect();
-      return;
-    }
-
-    onSetup();
-  }
-
-  return {
-    getThemeAttrOrFallback: getThemeAttrOrFallback,
-    clearFilterTargets: clearFilterTargets,
-    getDarkModeRootState: getDarkModeRootState,
-    refreshFilterTargets: refreshFilterTargets,
-    scheduleFilterTargetsRefresh: scheduleFilterTargetsRefresh,
-    clearFilterTargetsRefreshDelayTimers: clearFilterTargetsRefreshDelayTimers,
-    scheduleFilterTargetsRefreshBurst: scheduleFilterTargetsRefreshBurst,
-    setupFilterScopeObserver: setupFilterScopeObserver,
-    disconnectFilterScopeObserver: disconnectFilterScopeObserver,
-    syncFilterScopeObserver: syncFilterScopeObserver
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusCardCurrencyLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function isConversionContextEnabled(currencyContext, normalizeCurrencyCode) {
-    var selectedCurrency =
-      typeof normalizeCurrencyCode === "function"
-        ? normalizeCurrencyCode(currencyContext && currencyContext.selectedCurrency)
-        : null;
-    var rate = Number(currencyContext && currencyContext.rate);
-    return Boolean(selectedCurrency && selectedCurrency !== "USD" && Number.isFinite(rate) && rate > 0);
-  }
-
-  function isElementNode(node) {
-    if (!node) {
-      return false;
-    }
-
-    if (node.nodeType === 1) {
-      return true;
-    }
-
-    return typeof node.querySelector === "function";
-  }
-
-  function nodeContainsCardPriceTarget(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var node = config.node;
-    var insightsPanel = config.insightsPanel;
-    var selector = config.selector;
-
-    if (!isElementNode(node)) {
-      return false;
-    }
-
-    if (insightsPanel && typeof insightsPanel.nodeContainsCardPriceTarget === "function") {
-      try {
-        return Boolean(insightsPanel.nodeContainsCardPriceTarget(node));
-      } catch (_) {
-        // Fall through to local selector checks.
-      }
-    }
-
-    if (typeof node.matches === "function") {
-      if (node.matches(selector)) {
-        return true;
-      }
-    }
-
-    if (typeof node.querySelector === "function") {
-      return Boolean(node.querySelector(selector));
-    }
-
-    return false;
-  }
-
-  function clearCardCurrencyTick(state) {
-    if (!state || typeof state !== "object" || state.cardCurrencyTick == null) {
-      return;
-    }
-
-    if (
-      state.cardCurrencyTickUsesAnimationFrame &&
-      typeof globalThis.cancelAnimationFrame === "function"
-    ) {
-      globalThis.cancelAnimationFrame(state.cardCurrencyTick);
-    } else {
-      clearTimeout(state.cardCurrencyTick);
-    }
-
-    state.cardCurrencyTick = null;
-    state.cardCurrencyTickUsesAnimationFrame = false;
-  }
-
-  function disconnectCardCurrencyObserver(state) {
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (state.cardCurrencyObserver && typeof state.cardCurrencyObserver.disconnect === "function") {
-      state.cardCurrencyObserver.disconnect();
-    }
-    state.cardCurrencyObserver = null;
-    state.cardCurrencyContext = null;
-    clearCardCurrencyTick(state);
-  }
-
-  function scheduleCardCurrencyRefresh(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var onRefresh = typeof config.onRefresh === "function" ? config.onRefresh : function () {};
-
-    if (!state || typeof state !== "object" || state.cardCurrencyTick != null) {
-      return;
-    }
-
-    var run = function () {
-      state.cardCurrencyTick = null;
-      state.cardCurrencyTickUsesAnimationFrame = false;
-      onRefresh();
-    };
-
-    if (typeof globalThis.requestAnimationFrame === "function") {
-      state.cardCurrencyTickUsesAnimationFrame = true;
-      state.cardCurrencyTick = globalThis.requestAnimationFrame(run);
-      return;
-    }
-
-    state.cardCurrencyTickUsesAnimationFrame = false;
-    state.cardCurrencyTick = globalThis.setTimeout(run, 16);
-  }
-
-  function setupCardCurrencyObserver(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var documentObj = config.documentObj;
-    var selector = config.selector;
-    var insightsPanel = config.insightsPanel;
-    var onScheduleRefresh =
-      typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () {};
-
-    if (!state || typeof state !== "object" || state.cardCurrencyObserver || typeof MutationObserver !== "function") {
-      return;
-    }
-
-    var root = documentObj.body || documentObj.documentElement;
-    if (!root) {
-      return;
-    }
-
-    var observer = new MutationObserver(function (mutations) {
-      var i;
-      var j;
-      var mutation;
-      var addedNode;
-      var shouldRefresh = false;
-      var mutationTarget;
-
-      for (i = 0; i < mutations.length; i += 1) {
-        mutation = mutations[i];
-        if (!mutation) {
-          continue;
+        function resetForListing(listing) {
+            const listingKey = toListingKey(listing);
+            if (listingKey === currentListingKey) {
+                return;
+            }
+            currentListingKey = listingKey;
+            activeRequestToken += 1;
+            inFlightPromise = null;
+            state = createInitialState();
+            state.listingId = listingKey;
+            notify();
         }
-
-        mutationTarget = mutation.target || null;
-
-        if (mutation.type === "characterData") {
-          if (
-            nodeContainsCardPriceTarget({
-              node: mutationTarget && mutationTarget.parentNode,
-              insightsPanel: insightsPanel,
-              selector: selector
+        function getState() {
+            return {
+                status: state.status,
+                provider: state.provider,
+                listingId: state.listingId,
+                lastCheckedAt: state.lastCheckedAt,
+                errorCode: state.errorCode,
+                retryable: state.retryable,
+                cooldownMs: state.cooldownMs,
+                message: state.message,
+                sourceType: state.sourceType,
+                results: state.results.slice()
+            };
+        }
+        function subscribe(listener) {
+            if (typeof listener !== "function") {
+                return function () { };
+            }
+            listeners.push(listener);
+            return function () {
+                const index = listeners.indexOf(listener);
+                if (index >= 0) {
+                    listeners.splice(index, 1);
+                }
+            };
+        }
+        function compare(input) {
+            const payload = input && typeof input === "object" ? input : {};
+            const listing = payload.listing && typeof payload.listing === "object" ? payload.listing : null;
+            resetForListing(listing);
+            if (!currentListingKey) {
+                const missingContext = toErrorModel("MISSING_LISTING_DATA");
+                updateState({
+                    status: missingContext.status,
+                    errorCode: missingContext.errorCode,
+                    retryable: missingContext.retryable,
+                    cooldownMs: missingContext.cooldownMs,
+                    message: missingContext.message,
+                    results: [],
+                    lastCheckedAt: Date.now()
+                });
+                return Promise.resolve(getState());
+            }
+            if (!providerRegistry || typeof providerRegistry.search !== "function") {
+                const missingProvider = toErrorModel("NETWORK_ERROR");
+                updateState({
+                    status: missingProvider.status,
+                    errorCode: missingProvider.errorCode,
+                    retryable: missingProvider.retryable,
+                    cooldownMs: missingProvider.cooldownMs,
+                    message: missingProvider.message,
+                    results: [],
+                    lastCheckedAt: Date.now()
+                });
+                return Promise.resolve(getState());
+            }
+            if (state.status === "loading" && inFlightPromise) {
+                return inFlightPromise;
+            }
+            const requestToken = activeRequestToken + 1;
+            activeRequestToken = requestToken;
+            const listingPrice = pickListingPrice(listing);
+            const queryResult = synthesizeQueries && listing
+                ? synthesizeQueries(listing, {
+                    maxQueries: 4,
+                    maxTokens: 6
+                })
+                : {
+                    ok: true,
+                    queries: [normalizeString(listing && listing.title, "")]
+                };
+            const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
+            if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
+                const queryError = toErrorModel(queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA");
+                updateState({
+                    status: queryError.status,
+                    errorCode: queryError.errorCode,
+                    retryable: queryError.retryable,
+                    cooldownMs: queryError.cooldownMs,
+                    message: queryError.message,
+                    results: [],
+                    lastCheckedAt: Date.now()
+                });
+                return Promise.resolve(getState());
+            }
+            updateState({
+                status: "loading",
+                errorCode: "",
+                retryable: false,
+                cooldownMs: null,
+                message: "Searching Depop...",
+                sourceType: "",
+                results: []
+            });
+            inFlightPromise = providerRegistry
+                .search("depop", {
+                listingId: currentListingKey,
+                title: normalizeString(listing && listing.title, ""),
+                brand: normalizeString(listing && listing.brand, ""),
+                size: normalizeString(listing && listing.size, ""),
+                category: normalizeString(listing && listing.category, ""),
+                queries: queryResult.queries,
+                limit: 12,
+                listingPrice: listingPrice,
+                currency: normalizeString(payload.currency, "USD")
             })
-          ) {
-            shouldRefresh = true;
-            break;
-          }
-          continue;
-        }
-
-        if (mutation.type !== "childList") {
-          continue;
-        }
-
-        if (
-          nodeContainsCardPriceTarget({
-            node: mutationTarget,
-            insightsPanel: insightsPanel,
-            selector: selector
-          })
-        ) {
-          shouldRefresh = true;
-          break;
-        }
-
-        if (!mutation.addedNodes) {
-          continue;
-        }
-
-        for (j = 0; j < mutation.addedNodes.length; j += 1) {
-          addedNode = mutation.addedNodes[j];
-          if (addedNode && addedNode.nodeType === 3) {
-            if (
-              nodeContainsCardPriceTarget({
-                node: addedNode.parentNode,
-                insightsPanel: insightsPanel,
-                selector: selector
-              })
-            ) {
-              shouldRefresh = true;
-              break;
-            }
-            continue;
-          }
-
-          if (
-            nodeContainsCardPriceTarget({
-              node: addedNode,
-              insightsPanel: insightsPanel,
-              selector: selector
+                .then(function (result) {
+                if (requestToken !== activeRequestToken) {
+                    return getState();
+                }
+                if (!result.ok) {
+                    const mappedError = toErrorModel(result.errorCode || "NETWORK_ERROR", result.retryAfterMs, Boolean(result.parserMismatchLikely));
+                    updateState({
+                        status: mappedError.status,
+                        errorCode: mappedError.errorCode,
+                        retryable: mappedError.retryable,
+                        cooldownMs: mappedError.cooldownMs,
+                        message: mappedError.message,
+                        sourceType: normalizeString(result && result.sourceType, "html"),
+                        results: [],
+                        lastCheckedAt: Date.now()
+                    });
+                    return getState();
+                }
+                let filteredCandidates = Array.isArray(result.candidates) ? result.candidates.slice() : [];
+                if (candidateFilterFn) {
+                    filteredCandidates = candidateFilterFn(filteredCandidates, payload.filters || {});
+                }
+                const pricedCandidates = filteredCandidates.filter(function (candidate) {
+                    const price = normalizeNumber(candidate && candidate.price);
+                    return price != null && price > 0;
+                });
+                if (pricedCandidates.length) {
+                    filteredCandidates = pricedCandidates;
+                }
+                if (!Array.isArray(filteredCandidates) || filteredCandidates.length === 0) {
+                    const noResults = toErrorModel("NO_RESULTS");
+                    updateState({
+                        status: noResults.status,
+                        errorCode: noResults.errorCode,
+                        retryable: noResults.retryable,
+                        cooldownMs: noResults.cooldownMs,
+                        message: searchModeHint ? noResults.message + " " + searchModeHint : noResults.message,
+                        sourceType: normalizeString(result && result.sourceType, "html"),
+                        results: [],
+                        lastCheckedAt: Date.now()
+                    });
+                    return getState();
+                }
+                const selectedCurrency = normalizeString(payload.currency, "USD");
+                const ratesByUsd = payload && payload.currencyRates && typeof payload.currencyRates === "object"
+                    ? payload.currencyRates
+                    : null;
+                const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
+                let rankedCandidates = rankCandidates
+                    ? rankCandidates(listing, filteredCandidates, {
+                        listingPriceUsd: listingPrice,
+                        selectedCurrency: selectedCurrency,
+                        rate: normalizeNumber(payload.currencyRate),
+                        ratesByUsd: ratesByUsd,
+                        minScore: strictMinScore
+                    })
+                    : filteredCandidates;
+                if (rankCandidates &&
+                    (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) &&
+                    Array.isArray(filteredCandidates) &&
+                    filteredCandidates.length > 0) {
+                    const depopOnlyCandidates = filteredCandidates.every(function (candidate) {
+                        return normalizeString(candidate && candidate.market, "depop") === "depop";
+                    });
+                    if (depopOnlyCandidates) {
+                        // Depop can return valid cross-border fallback listings that score
+                        // below strict similarity thresholds.
+                        rankedCandidates = rankCandidates(listing, filteredCandidates, {
+                            listingPriceUsd: listingPrice,
+                            selectedCurrency: selectedCurrency,
+                            rate: normalizeNumber(payload.currencyRate),
+                            ratesByUsd: ratesByUsd,
+                            minScore: 0
+                        });
+                    }
+                }
+                if (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) {
+                    const noRankedResults = toErrorModel("NO_RESULTS");
+                    updateState({
+                        status: noRankedResults.status,
+                        errorCode: noRankedResults.errorCode,
+                        retryable: noRankedResults.retryable,
+                        cooldownMs: noRankedResults.cooldownMs,
+                        message: searchModeHint
+                            ? noRankedResults.message + " " + searchModeHint
+                            : noRankedResults.message,
+                        sourceType: normalizeString(result && result.sourceType, "html"),
+                        results: [],
+                        lastCheckedAt: Date.now()
+                    });
+                    return getState();
+                }
+                const normalizedResults = rankedCandidates
+                    .map(function (candidate) {
+                    let normalizedPrice = normalizeNumber(candidate && candidate.price);
+                    if (normalizedPrice != null && normalizedPrice <= 0) {
+                        normalizedPrice = null;
+                    }
+                    let deltaLabel = normalizeString(candidate && candidate.deltaLabel, "");
+                    if (normalizedPrice == null) {
+                        deltaLabel = "";
+                    }
+                    return {
+                        id: candidate.id,
+                        title: candidate.title,
+                        url: candidate.url,
+                        imageUrl: normalizeString(candidate.imageUrl, ""),
+                        price: normalizedPrice,
+                        currency: normalizeString(candidate.currency, "USD"),
+                        originalCurrency: normalizeString(candidate.originalCurrency || candidate.currency, "USD"),
+                        originalPrice: normalizeNumber(candidate.originalPrice),
+                        score: normalizeNumber(candidate.score),
+                        usedImage: Boolean(candidate.usedImage),
+                        imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
+                        deltaLabel: deltaLabel || formatDeltaLabel(candidate)
+                    };
+                })
+                    .filter(function (entry) {
+                    return normalizeNumber(entry && entry.score) != null && normalizeNumber(entry && entry.score) > 0;
+                })
+                    .slice(0, 5);
+                if (!normalizedResults.length) {
+                    const noDisplayableResults = toErrorModel("NO_RESULTS");
+                    updateState({
+                        status: noDisplayableResults.status,
+                        errorCode: noDisplayableResults.errorCode,
+                        retryable: noDisplayableResults.retryable,
+                        cooldownMs: noDisplayableResults.cooldownMs,
+                        message: searchModeHint
+                            ? noDisplayableResults.message + " " + searchModeHint
+                            : noDisplayableResults.message,
+                        sourceType: normalizeString(result && result.sourceType, "html"),
+                        results: [],
+                        lastCheckedAt: Date.now()
+                    });
+                    return getState();
+                }
+                updateState({
+                    status: "results",
+                    errorCode: "",
+                    retryable: false,
+                    cooldownMs: null,
+                    message: searchModeHint,
+                    sourceType: normalizeString(result && result.sourceType, "html"),
+                    results: normalizedResults,
+                    lastCheckedAt: Date.now()
+                });
+                return getState();
             })
-          ) {
-            shouldRefresh = true;
-            break;
-          }
+                .catch(function () {
+                if (requestToken !== activeRequestToken) {
+                    return getState();
+                }
+                const fallbackError = toErrorModel("NETWORK_ERROR");
+                updateState({
+                    status: fallbackError.status,
+                    errorCode: fallbackError.errorCode,
+                    retryable: fallbackError.retryable,
+                    cooldownMs: fallbackError.cooldownMs,
+                    message: fallbackError.message,
+                    sourceType: "",
+                    results: [],
+                    lastCheckedAt: Date.now()
+                });
+                return getState();
+            })
+                .finally(function () {
+                if (requestToken === activeRequestToken) {
+                    inFlightPromise = null;
+                }
+            });
+            return inFlightPromise;
         }
-
-        if (shouldRefresh) {
-          break;
-        }
-      }
-
-      if (shouldRefresh) {
-        onScheduleRefresh();
-      }
-    });
-
-    observer.observe(root, {
-      childList: true,
-      attributes: true,
-      attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-testid"],
-      characterData: true,
-      subtree: true
-    });
-
-    state.cardCurrencyObserver = observer;
-  }
-
-  function syncCardCurrencyObserver(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var currencyContext = config.currencyContext;
-    var createUsdCurrencyContext = config.createUsdCurrencyContext;
-    var normalizeCurrencyCode = config.normalizeCurrencyCode;
-    var onSetup = typeof config.onSetup === "function" ? config.onSetup : function () {};
-    var onDisconnect =
-      typeof config.onDisconnect === "function" ? config.onDisconnect : function () {};
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    state.cardCurrencyContext =
-      currencyContext ||
-      (typeof createUsdCurrencyContext === "function" ? createUsdCurrencyContext() : null);
-
-    if (!isConversionContextEnabled(state.cardCurrencyContext, normalizeCurrencyCode)) {
-      onDisconnect();
-      return;
-    }
-
-    onSetup();
-  }
-
-  return {
-    isConversionContextEnabled: isConversionContextEnabled,
-    nodeContainsCardPriceTarget: nodeContainsCardPriceTarget,
-    clearCardCurrencyTick: clearCardCurrencyTick,
-    disconnectCardCurrencyObserver: disconnectCardCurrencyObserver,
-    scheduleCardCurrencyRefresh: scheduleCardCurrencyRefresh,
-    setupCardCurrencyObserver: setupCardCurrencyObserver,
-    syncCardCurrencyObserver: syncCardCurrencyObserver
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusMarketCompareLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function ensureMarketCompareController(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var marketCompareControllerApi = config.marketCompareControllerApi;
-    var marketProviders = config.marketProviders;
-    var depopProviderFactory = config.depopProviderFactory;
-    var onStateUpdate =
-      typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () {};
-
-    if (!state || typeof state !== "object") {
-      return null;
-    }
-
-    if (state.marketCompareController) {
-      return state.marketCompareController;
-    }
-
-    if (
-      !marketCompareControllerApi ||
-      typeof marketCompareControllerApi.createController !== "function"
-    ) {
-      return null;
-    }
-
-    var registry =
-      marketProviders && typeof marketProviders.createRegistry === "function"
-        ? marketProviders.createRegistry()
-        : null;
-    var depopProvider =
-      depopProviderFactory && typeof depopProviderFactory.createDepopProvider === "function"
-        ? depopProviderFactory.createDepopProvider({
-            maxRequests: 5,
-            cooldownMs: 1200
-          })
-        : null;
-    var mockProvider =
-      !depopProvider &&
-      marketProviders &&
-      typeof marketProviders.createMockDepopProvider === "function"
-        ? marketProviders.createMockDepopProvider()
-        : null;
-
-    if (registry && typeof registry.register === "function") {
-      if (depopProvider) {
-        registry.register(depopProvider);
-      } else if (mockProvider) {
-        registry.register(mockProvider);
-      }
-    }
-
-    state.marketCompareController = marketCompareControllerApi.createController({
-      providerRegistry: registry,
-      provider: depopProvider || mockProvider
-    });
-
-    if (
-      state.marketCompareController &&
-      typeof state.marketCompareController.subscribe === "function"
-    ) {
-      state.marketCompareUnsubscribe = state.marketCompareController.subscribe(function (nextState) {
-        onStateUpdate(nextState);
-      });
-    }
-
-    return state.marketCompareController;
-  }
-
-  function triggerMarketCompare(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var ensureController =
-      typeof config.ensureController === "function" ? config.ensureController : function () {
-        return null;
-      };
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    var controller = ensureController();
-    var context = state.latestPanelContext;
-    if (!controller || !context || typeof controller.compare !== "function") {
-      return;
-    }
-
-    controller.compare({
-      listing: context.listing,
-      currency:
-        context.currencyContext && context.currencyContext.selectedCurrency
-          ? context.currencyContext.selectedCurrency
-          : "USD",
-      currencyRate:
-        context.currencyContext && Number.isFinite(Number(context.currencyContext.rate))
-          ? Number(context.currencyContext.rate)
-          : null,
-      currencyRates:
-        context.currencyContext &&
-        context.currencyContext.usdRates &&
-        typeof context.currencyContext.usdRates === "object"
-          ? context.currencyContext.usdRates
-          : null
-    });
-  }
-
-  function renderPanelWithMarketCompare(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var ensureController =
-      typeof config.ensureController === "function" ? config.ensureController : function () {
-        return null;
-      };
-    var renderListingInsightsPanel =
-      typeof config.renderListingInsightsPanel === "function"
-        ? config.renderListingInsightsPanel
-        : function () {
-            return null;
-          };
-    var onMarketCompareClick =
-      typeof config.onMarketCompareClick === "function" ? config.onMarketCompareClick : function () {};
-    var panelOptions = config.panelOptions && typeof config.panelOptions === "object" ? config.panelOptions : {};
-
-    if (!state || typeof state !== "object") {
-      return null;
-    }
-
-    var controller = ensureController();
-    if (controller && typeof controller.resetForListing === "function") {
-      controller.resetForListing(panelOptions.listing || null);
-    }
-
-    var marketCompareState =
-      controller && typeof controller.getState === "function" ? controller.getState() : null;
-
-    state.latestPanelContext = {
-      listing: panelOptions.listing || null,
-      metrics: panelOptions.metrics || null,
-      mountNode: panelOptions.mountNode || null,
-      mountPosition: panelOptions.mountPosition || "afterend",
-      rawListing: panelOptions.rawListing || null,
-      statusMessage: panelOptions.statusMessage || "",
-      currencyContext: panelOptions.currencyContext || null,
-      renderToken: state.renderToken
-    };
-
-    return renderListingInsightsPanel({
-      listing: state.latestPanelContext.listing,
-      metrics: state.latestPanelContext.metrics,
-      mountNode: state.latestPanelContext.mountNode,
-      mountPosition: state.latestPanelContext.mountPosition,
-      rawListing: state.latestPanelContext.rawListing,
-      statusMessage: state.latestPanelContext.statusMessage,
-      currencyContext: state.latestPanelContext.currencyContext,
-      marketCompare: marketCompareState,
-      onMarketCompareClick: onMarketCompareClick
-    });
-  }
-
-  return {
-    ensureMarketCompareController: ensureMarketCompareController,
-    triggerMarketCompare: triggerMarketCompare,
-    renderPanelWithMarketCompare: renderPanelWithMarketCompare
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusCurrencyLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function createUsdCurrencyContext() {
-    return {
-      selectedCurrency: "USD",
-      rate: null,
-      mode: "dual"
-    };
-  }
-
-  function normalizeCurrencyCode(input, settings) {
-    if (settings && typeof settings.normalizeCurrencyCode === "function") {
-      return settings.normalizeCurrencyCode(input);
-    }
-
-    if (typeof input !== "string") {
-      return null;
-    }
-
-    var trimmed = input.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(trimmed)) {
-      return null;
-    }
-    return trimmed;
-  }
-
-  function resolveCurrencyContext(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var settings = config.settings || null;
-    var currencyApi = config.currencyApi || null;
-    var normalizeCurrencyCodeFn =
-      typeof config.normalizeCurrencyCode === "function"
-        ? config.normalizeCurrencyCode
-        : function (value) {
-            return normalizeCurrencyCode(value, settings);
-          };
-
-    var defaultContext = createUsdCurrencyContext();
-
-    if (!settings || typeof settings.getSelectedCurrency !== "function") {
-      return Promise.resolve(defaultContext);
-    }
-
-    var enabledPromise =
-      typeof settings.getCurrencyConversionEnabled === "function"
-        ? settings.getCurrencyConversionEnabled()
-        : Promise.resolve(false);
-
-    return enabledPromise
-      .then(function (enabled) {
-        if (!enabled) {
-          return defaultContext;
-        }
-        return settings.getSelectedCurrency();
-      })
-      .then(function (savedCurrency) {
-        if (typeof savedCurrency !== "string") {
-          return defaultContext;
-        }
-
-        var selectedCurrency = normalizeCurrencyCodeFn(savedCurrency) || defaultContext.selectedCurrency;
-        var context = {
-          selectedCurrency: selectedCurrency,
-          rate: null,
-          mode: "dual"
+        return {
+            getState: getState,
+            subscribe: subscribe,
+            resetForListing: resetForListing,
+            compare: compare
         };
-
-        if (selectedCurrency === "USD") {
-          return context;
-        }
-
-        if (!currencyApi || typeof currencyApi.getRates !== "function") {
-          return context;
-        }
-
-        return currencyApi
-          .getRates("USD")
-          .then(function (result) {
-            var rates = result && result.rates && typeof result.rates === "object" ? result.rates : {};
-            var rate = Number(rates[selectedCurrency]);
-            if (Number.isFinite(rate) && rate > 0) {
-              context.rate = rate;
-            }
-            context.usdRates = rates;
-            return context;
-          })
-          .catch(function () {
-            return context;
-          });
-      })
-      .catch(function () {
-        return defaultContext;
-      });
-  }
-
-  function applySidebarCurrency(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var insightsPanel = config.insightsPanel;
-    var documentObj = config.documentObj;
-    var currencyContext = config.currencyContext;
-
-    if (!insightsPanel || typeof insightsPanel.applySidebarCurrency !== "function") {
-      return false;
     }
-
-    try {
-      return insightsPanel.applySidebarCurrency(
-        documentObj,
-        currencyContext || createUsdCurrencyContext()
-      );
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function applyCardCurrency(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var insightsPanel = config.insightsPanel;
-    var documentObj = config.documentObj;
-    var currencyContext = config.currencyContext;
-
-    if (!insightsPanel || typeof insightsPanel.applyCardCurrency !== "function") {
-      return false;
-    }
-
-    try {
-      return insightsPanel.applyCardCurrency(documentObj, currencyContext || createUsdCurrencyContext());
-    } catch (_) {
-      return false;
-    }
-  }
-
-  return {
-    createUsdCurrencyContext: createUsdCurrencyContext,
-    normalizeCurrencyCode: normalizeCurrencyCode,
-    resolveCurrencyContext: resolveCurrencyContext,
-    applySidebarCurrency: applySidebarCurrency,
-    applyCardCurrency: applyCardCurrency
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusListingInsightsLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function createDefaultListingModel() {
     return {
-      id: null,
-      title: "",
-      createdAt: null,
-      pricing: {
-        history: [],
-        updatedAt: null
-      },
-      seller: {
-        createdAt: null
-      },
-      prettyPath: null,
-      sold: false,
-      rawListing: null,
-      sourceStatus: "missing_listing"
+        createController: createController,
+        createInitialState: createInitialState
     };
-  }
-
-  function resolveMountTarget(insightsPanel, doc) {
-    if (!insightsPanel) {
-      return null;
-    }
-
-    if (typeof insightsPanel.findMountTarget === "function") {
-      return insightsPanel.findMountTarget(doc);
-    }
-
-    if (typeof insightsPanel.findMountNode === "function") {
-      var legacyMountNode = insightsPanel.findMountNode(doc);
-      if (!legacyMountNode) {
-        return null;
-      }
-      return {
-        mountNode: legacyMountNode,
-        mountPosition: "afterend",
-        strategy: "legacy_mount_node"
-      };
-    }
-
-    return null;
-  }
-
-  function normalizeListingModel(listing) {
-    if (!listing || typeof listing !== "object") {
-      return createDefaultListingModel();
-    }
-
-    var existingPricing = listing.pricing && typeof listing.pricing === "object" ? listing.pricing : {};
-    var history = Array.isArray(existingPricing.history)
-      ? existingPricing.history
-      : Array.isArray(listing.priceDrops)
-      ? listing.priceDrops
-      : [];
-    var updatedAt =
-      typeof existingPricing.updatedAt === "string" || existingPricing.updatedAt === null
-        ? existingPricing.updatedAt
-        : listing.priceUpdatedAt || null;
-
-    return {
-      id: listing.id || null,
-      title: typeof listing.title === "string" ? listing.title : "",
-      createdAt: listing.createdAt || null,
-      pricing: {
-        history: history,
-        updatedAt: updatedAt
-      },
-      seller:
-        listing.seller && typeof listing.seller === "object"
-          ? {
-              createdAt: listing.seller.createdAt || null
-            }
-          : {
-              createdAt: null
-            },
-      prettyPath: listing.prettyPath || null,
-      sold: Boolean(listing.sold),
-      rawListing: listing.rawListing || null,
-      sourceStatus: listing.sourceStatus || "ok"
-    };
-  }
-
-  function computeListingInsights(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var listing = config.listing;
-    var pricingInsights = config.pricingInsights;
-
-    if (pricingInsights && typeof pricingInsights.computePricingInsights === "function") {
-      return pricingInsights.computePricingInsights(listing);
-    }
-
-    if (pricingInsights && typeof pricingInsights.computeMetrics === "function") {
-      var legacy = pricingInsights.computeMetrics({
-        priceDrops: listing && listing.pricing ? listing.pricing.history : [],
-        createdAt: listing ? listing.createdAt : null,
-        priceUpdatedAt: listing && listing.pricing ? listing.pricing.updatedAt : null
-      });
-      return {
-        averageDropAmountUsd: legacy && Number.isFinite(legacy.avgDropAmount) ? legacy.avgDropAmount : null,
-        averageDropPercent: legacy && Number.isFinite(legacy.avgDropPercent) ? legacy.avgDropPercent : null,
-        expectedNextDropDays:
-          legacy && Number.isFinite(legacy.expectedDropDays) ? legacy.expectedDropDays : null,
-        expectedDropState:
-          legacy && typeof legacy.expectedDropState === "string"
-            ? legacy.expectedDropState
-            : "insufficient_data",
-        totalDrops: legacy && Number.isFinite(legacy.totalDrops) ? legacy.totalDrops : 0
-      };
-    }
-
-    return {
-      averageDropAmountUsd: null,
-      averageDropPercent: null,
-      expectedNextDropDays: null,
-      expectedDropState: "insufficient_data",
-      totalDrops: 0
-    };
-  }
-
-  function renderListingInsightsPanel(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var insightsPanel = config.insightsPanel;
-
-    if (insightsPanel && typeof insightsPanel.renderInsightsPanel === "function") {
-      return insightsPanel.renderInsightsPanel(config.panelOptions || {});
-    }
-
-    if (insightsPanel && typeof insightsPanel.renderPanel === "function") {
-      var panelOptions =
-        config.panelOptions && typeof config.panelOptions === "object" ? config.panelOptions : {};
-      var listing = normalizeListingModel(panelOptions.listing || null);
-      var metrics = panelOptions.metrics && typeof panelOptions.metrics === "object" ? panelOptions.metrics : {};
-      var legacyMetrics = {
-        avgDropAmount:
-          Number.isFinite(metrics.averageDropAmountUsd) ? metrics.averageDropAmountUsd : null,
-        avgDropPercent:
-          Number.isFinite(metrics.averageDropPercent) ? metrics.averageDropPercent : null,
-        expectedDropDays:
-          Number.isFinite(metrics.expectedNextDropDays) ? metrics.expectedNextDropDays : null,
-        expectedDropState:
-          typeof metrics.expectedDropState === "string"
-            ? metrics.expectedDropState
-            : "insufficient_data",
-        totalDrops: Number.isFinite(metrics.totalDrops) ? metrics.totalDrops : 0
-      };
-
-      return insightsPanel.renderPanel({
-        listing: {
-          id: listing.id,
-          title: listing.title,
-          priceDrops: listing.pricing.history,
-          createdAt: listing.createdAt,
-          priceUpdatedAt: listing.pricing.updatedAt,
-          seller: listing.seller,
-          prettyPath: listing.prettyPath,
-          sold: listing.sold,
-          rawListing: listing.rawListing
-        },
-        metrics: legacyMetrics,
-        mountNode: panelOptions.mountNode || null,
-        mountPosition: panelOptions.mountPosition || "afterend",
-        rawListing: panelOptions.rawListing || null,
-        statusMessage: panelOptions.statusMessage || "",
-        currencyContext: panelOptions.currencyContext || null,
-        marketCompare: panelOptions.marketCompare || null,
-        onMarketCompareClick:
-          typeof panelOptions.onMarketCompareClick === "function"
-            ? panelOptions.onMarketCompareClick
-            : function () {}
-      });
-    }
-
-    return null;
-  }
-
-  function resolveListingInsightsEnabled(settings) {
-    var defaultEnabled =
-      settings && typeof settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
-        ? settings.DEFAULT_LISTING_INSIGHTS_ENABLED
-        : true;
-
-    if (!settings || typeof settings.getListingInsightsEnabled !== "function") {
-      return Promise.resolve(defaultEnabled);
-    }
-
-    return settings
-      .getListingInsightsEnabled()
-      .then(function (enabled) {
-        return typeof enabled === "boolean" ? enabled : defaultEnabled;
-      })
-      .catch(function () {
-        return defaultEnabled;
-      });
-  }
-
-  return {
-    createDefaultListingModel: createDefaultListingModel,
-    resolveMountTarget: resolveMountTarget,
-    normalizeListingModel: normalizeListingModel,
-    computeListingInsights: computeListingInsights,
-    renderListingInsightsPanel: renderListingInsightsPanel,
-    resolveListingInsightsEnabled: resolveListingInsightsEnabled
-  };
 });
 
+"use strict";
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusUnavailableLifecycle = factory();
-  }
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusInsightsPanel = factory();
+    }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function createUnavailableListing() {
-    return {
-      id: "unknown",
-      title: "",
-      createdAt: null,
-      pricing: {
-        history: [],
-        updatedAt: null
-      },
-      seller: {
-        createdAt: null
-      },
-      rawListing: null
+    "use strict";
+    var PANEL_ATTR = "data-grailed-plus-panel";
+    var PANEL_ATTR_VALUE = "1";
+    var PRICE_SELECTORS = ['div[class*="Sidebar_price"]', 'div[class*="sidebar__price_"]'];
+    var CARD_PRICE_CONTAINER_SELECTOR = 'div[class*="Price_root"], div[class*="Price-module__root"]';
+    var CARD_PRICE_CURRENT_SELECTOR = 'div[class*="Price_root"] [data-testid="Current"], ' +
+        'div[class*="Price-module__root"] [data-testid="Current"]';
+    var MONEY_ROOT_PRICE_SELECTOR = 'span[class*="Money_root_"], span[class*="Money-module__root"]';
+    var CARD_PRICE_TARGET_SELECTOR = CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR + ", " + MONEY_ROOT_PRICE_SELECTOR;
+    var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-original-price-text";
+    var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-original-price-value";
+    var TREND_EMPTY_TEXT = "no price history data";
+    var TREND_CHART_WIDTH = 296;
+    var TREND_CHART_HEIGHT = 108;
+    var TREND_MARGIN = {
+        top: 8,
+        right: 8,
+        bottom: 14,
+        left: 8
     };
-  }
-
-  function createUnavailableMetrics() {
-    return {
-      averageDropAmountUsd: null,
-      averageDropPercent: null,
-      expectedNextDropDays: null,
-      expectedDropState: "insufficient_data"
-    };
-  }
-
-  function renderUnavailable(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var urlApi = config.urlApi;
-    var locationObj = config.locationObj;
-    var documentObj = config.documentObj;
-    var resolveMountTarget =
-      typeof config.resolveMountTarget === "function" ? config.resolveMountTarget : function () {
-        return null;
-      };
-    var resolveCurrencyContext =
-      typeof config.resolveCurrencyContext === "function"
-        ? config.resolveCurrencyContext
-        : function () {
-            return Promise.resolve(null);
-          };
-    var renderPanelWithMarketCompare =
-      typeof config.renderPanelWithMarketCompare === "function"
-        ? config.renderPanelWithMarketCompare
-        : function () {};
-    var applySidebarCurrency =
-      typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
-    var applyCardCurrency =
-      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
-    var syncCardCurrencyObserver =
-      typeof config.syncCardCurrencyObserver === "function"
-        ? config.syncCardCurrencyObserver
-        : function () {};
-    var statusMessage = typeof config.statusMessage === "string" ? config.statusMessage : "";
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-    if (!urlApi || typeof urlApi.isListingPath !== "function" || !urlApi.isListingPath(pathname)) {
-      return;
-    }
-
-    var renderToken = state.renderToken + 1;
-    state.renderToken = renderToken;
-
-    var mountTarget = resolveMountTarget(documentObj);
-    if (!mountTarget || !mountTarget.mountNode) {
-      return;
-    }
-
-    resolveCurrencyContext().then(function (currencyContext) {
-      var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-      if (renderToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
-        return;
-      }
-
-      renderPanelWithMarketCompare({
-        listing: createUnavailableListing(),
-        metrics: createUnavailableMetrics(),
-        mountNode: mountTarget.mountNode,
-        mountPosition: mountTarget.mountPosition,
-        rawListing: null,
-        statusMessage: statusMessage,
-        currencyContext: currencyContext
-      });
-      applySidebarCurrency(currencyContext);
-      applyCardCurrency(currencyContext);
-      syncCardCurrencyObserver(currencyContext);
-    });
-  }
-
-  return {
-    renderUnavailable: renderUnavailable
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusRunLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function handleNonListingRoute(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var urlApi = config.urlApi;
-    var locationObj = config.locationObj;
-    var documentObj = config.documentObj;
-    var clearRetryTimer =
-      typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () {};
-    var disconnectHydrationObserver =
-      typeof config.disconnectHydrationObserver === "function"
-        ? config.disconnectHydrationObserver
-        : function () {};
-    var insightsPanel = config.insightsPanel;
-    var resolveCurrencyContext =
-      typeof config.resolveCurrencyContext === "function"
-        ? config.resolveCurrencyContext
-        : function () {
-            return Promise.resolve(null);
-          };
-    var createUsdCurrencyContext =
-      typeof config.createUsdCurrencyContext === "function"
-        ? config.createUsdCurrencyContext
-        : function () {
-            return { selectedCurrency: "USD", rate: null, mode: "dual" };
-          };
-    var applyCardCurrency =
-      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
-    var syncCardCurrencyObserver =
-      typeof config.syncCardCurrencyObserver === "function"
-        ? config.syncCardCurrencyObserver
-        : function () {};
-
-    if (!state || typeof state !== "object") {
-      return false;
-    }
-
-    var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-    if (!urlApi || typeof urlApi.isListingPath !== "function" || urlApi.isListingPath(pathname)) {
-      return false;
-    }
-
-    var nonListingToken = state.renderToken + 1;
-    state.renderToken = nonListingToken;
-    clearRetryTimer(true);
-    disconnectHydrationObserver();
-
-    if (insightsPanel && typeof insightsPanel.removeExistingPanels === "function") {
-      insightsPanel.removeExistingPanels(documentObj);
-    }
-    state.latestPanelContext = null;
-
-    resolveCurrencyContext()
-      .then(function (currencyContext) {
-        var latestPathname =
-          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-        if (nonListingToken !== state.renderToken || urlApi.isListingPath(latestPathname)) {
-          return;
-        }
-
-        applyCardCurrency(currencyContext);
-        syncCardCurrencyObserver(currencyContext);
-      })
-      .catch(function () {
-        var latestPathname =
-          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-        if (nonListingToken !== state.renderToken || urlApi.isListingPath(latestPathname)) {
-          return;
-        }
-
-        var fallbackCurrency = createUsdCurrencyContext();
-        applyCardCurrency(fallbackCurrency);
-        syncCardCurrencyObserver(fallbackCurrency);
-      });
-
-    return true;
-  }
-
-  function handleListingInsightsDisabled(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var listingInsightsEnabled = Boolean(config.listingInsightsEnabled);
-    var urlApi = config.urlApi;
-    var locationObj = config.locationObj;
-    var documentObj = config.documentObj;
-    var clearRetryTimer =
-      typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () {};
-    var disconnectHydrationObserver =
-      typeof config.disconnectHydrationObserver === "function"
-        ? config.disconnectHydrationObserver
-        : function () {};
-    var insightsPanel = config.insightsPanel;
-    var resolveCurrencyContext =
-      typeof config.resolveCurrencyContext === "function"
-        ? config.resolveCurrencyContext
-        : function () {
-            return Promise.resolve(null);
-          };
-    var createUsdCurrencyContext =
-      typeof config.createUsdCurrencyContext === "function"
-        ? config.createUsdCurrencyContext
-        : function () {
-            return { selectedCurrency: "USD", rate: null, mode: "dual" };
-          };
-    var applySidebarCurrency =
-      typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
-    var applyCardCurrency =
-      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
-    var syncCardCurrencyObserver =
-      typeof config.syncCardCurrencyObserver === "function"
-        ? config.syncCardCurrencyObserver
-        : function () {};
-    var log = typeof config.log === "function" ? config.log : function () {};
-    var reason = typeof config.reason === "string" ? config.reason : "";
-    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
-
-    if (!state || typeof state !== "object" || listingInsightsEnabled) {
-      return false;
-    }
-
-    var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-    if (!urlApi || typeof urlApi.isListingPath !== "function" || !urlApi.isListingPath(pathname)) {
-      return false;
-    }
-
-    var disabledToken = state.renderToken + 1;
-    state.renderToken = disabledToken;
-    clearRetryTimer(true);
-    disconnectHydrationObserver();
-
-    if (insightsPanel && typeof insightsPanel.removeExistingPanels === "function") {
-      insightsPanel.removeExistingPanels(documentObj);
-    }
-    state.latestPanelContext = null;
-
-    resolveCurrencyContext()
-      .then(function (currencyContext) {
-        var latestPathname =
-          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-        if (disabledToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
-          return;
-        }
-
-        applySidebarCurrency(currencyContext);
-        applyCardCurrency(currencyContext);
-        syncCardCurrencyObserver(currencyContext);
-
-        log("skipped_listing_insights_panel", {
-          reason: reason,
-          attempt: attempt,
-          currency: currencyContext && currencyContext.selectedCurrency
-        });
-      })
-      .catch(function () {
-        var latestPathname =
-          locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-        if (disabledToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
-          return;
-        }
-
-        var fallbackCurrency = createUsdCurrencyContext();
-        applySidebarCurrency(fallbackCurrency);
-        applyCardCurrency(fallbackCurrency);
-        syncCardCurrencyObserver(fallbackCurrency);
-      });
-
-    return true;
-  }
-
-  return {
-    handleNonListingRoute: handleNonListingRoute,
-    handleListingInsightsDisabled: handleListingInsightsDisabled
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusRetryLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function scheduleRetry(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
-    var reason = typeof config.reason === "string" ? config.reason : "unknown";
-    var maxRetries = Number.isFinite(Number(config.maxRetries)) ? Number(config.maxRetries) : 0;
-    var retryDelayMs = Number.isFinite(Number(config.retryDelayMs)) ? Number(config.retryDelayMs) : 0;
-    var shouldStopRetryWindow =
-      typeof config.shouldStopRetryWindow === "function"
-        ? config.shouldStopRetryWindow
-        : function () {
-            return false;
-          };
-    var log = typeof config.log === "function" ? config.log : function () {};
-    var disconnectHydrationObserver =
-      typeof config.disconnectHydrationObserver === "function"
-        ? config.disconnectHydrationObserver
-        : function () {};
-    var renderUnavailable =
-      typeof config.renderUnavailable === "function" ? config.renderUnavailable : function () {};
-    var scheduleHydrationObserver =
-      typeof config.scheduleHydrationObserver === "function"
-        ? config.scheduleHydrationObserver
-        : function () {};
-    var clearRetryTimer =
-      typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () {};
-    var run = typeof config.run === "function" ? config.run : function () {};
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    if (attempt >= maxRetries || shouldStopRetryWindow()) {
-      log("retry limit reached", {
-        reason: reason,
-        attempt: attempt
-      });
-      disconnectHydrationObserver();
-      renderUnavailable("Feature unavailable: unable to read listing data.");
-      return;
-    }
-
-    scheduleHydrationObserver();
-
-    clearRetryTimer(false);
-    state.retryTimer = setTimeout(function () {
-      run("retry:" + reason, attempt + 1);
-    }, retryDelayMs);
-
-    log("scheduled retry", {
-      reason: reason,
-      attempt: attempt
-    });
-  }
-
-  return {
-    scheduleRetry: scheduleRetry
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusListingRenderLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function renderListingWithCurrency(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var urlApi = config.urlApi;
-    var locationObj = config.locationObj;
-    var renderToken = Number(config.renderToken);
-    var listing = config.listing;
-    var metrics = config.metrics;
-    var mountTarget = config.mountTarget && typeof config.mountTarget === "object" ? config.mountTarget : null;
-    var resolveCurrencyContext =
-      typeof config.resolveCurrencyContext === "function"
-        ? config.resolveCurrencyContext
-        : function () {
-            return Promise.resolve(null);
-          };
-    var createUsdCurrencyContext =
-      typeof config.createUsdCurrencyContext === "function"
-        ? config.createUsdCurrencyContext
-        : function () {
-            return { selectedCurrency: "USD", rate: null, mode: "dual" };
-          };
-    var renderPanelWithMarketCompare =
-      typeof config.renderPanelWithMarketCompare === "function"
-        ? config.renderPanelWithMarketCompare
-        : function () {};
-    var applySidebarCurrency =
-      typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () {};
-    var applyCardCurrency =
-      typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () {};
-    var syncCardCurrencyObserver =
-      typeof config.syncCardCurrencyObserver === "function"
-        ? config.syncCardCurrencyObserver
-        : function () {};
-    var disconnectHydrationObserver =
-      typeof config.disconnectHydrationObserver === "function"
-        ? config.disconnectHydrationObserver
-        : function () {};
-    var log = typeof config.log === "function" ? config.log : function () {};
-    var reason = typeof config.reason === "string" ? config.reason : "";
-    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
-
-    if (!state || typeof state !== "object") {
-      return;
-    }
-
-    resolveCurrencyContext()
-      .then(function (currencyContext) {
-        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-        if (renderToken !== state.renderToken || !urlApi.isListingPath(pathname)) {
-          return;
-        }
-
-        renderPanelWithMarketCompare({
-          listing: listing,
-          metrics: metrics,
-          mountNode: mountTarget ? mountTarget.mountNode : null,
-          mountPosition: mountTarget ? mountTarget.mountPosition : "afterend",
-          rawListing: listing && listing.rawListing ? listing.rawListing : null,
-          currencyContext: currencyContext
-        });
-        applySidebarCurrency(currencyContext);
-        applyCardCurrency(currencyContext);
-        syncCardCurrencyObserver(currencyContext);
-
-        disconnectHydrationObserver();
-        state.retryStartedAtMs = null;
-
-        log("rendered", {
-          reason: reason,
-          attempt: attempt,
-          listingId: listing && listing.id,
-          currency: currencyContext && currencyContext.selectedCurrency
-        });
-      })
-      .catch(function () {
-        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
-        if (renderToken !== state.renderToken || !urlApi.isListingPath(pathname)) {
-          return;
-        }
-
-        var fallbackCurrency = createUsdCurrencyContext();
-        renderPanelWithMarketCompare({
-          listing: listing,
-          metrics: metrics,
-          mountNode: mountTarget ? mountTarget.mountNode : null,
-          mountPosition: mountTarget ? mountTarget.mountPosition : "afterend",
-          rawListing: listing && listing.rawListing ? listing.rawListing : null,
-          currencyContext: fallbackCurrency
-        });
-        applySidebarCurrency(fallbackCurrency);
-        applyCardCurrency(fallbackCurrency);
-        syncCardCurrencyObserver(fallbackCurrency);
-
-        disconnectHydrationObserver();
-        state.retryStartedAtMs = null;
-
-        log("rendered_with_currency_fallback", {
-          reason: reason,
-          attempt: attempt,
-          listingId: listing && listing.id
-        });
-      });
-  }
-
-  return {
-    renderListingWithCurrency: renderListingWithCurrency
-  };
-});
-
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.GrailedPlusListingPipelineLifecycle = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  function prepareListingRenderContext(options) {
-    var config = options && typeof options === "object" ? options : {};
-    var state = config.state;
-    var listingExtractor = config.listingExtractor;
-    var documentObj = config.documentObj;
-    var normalizeListingModel =
-      typeof config.normalizeListingModel === "function"
-        ? config.normalizeListingModel
-        : function (value) {
-            return value;
-          };
-    var resolveMountTarget =
-      typeof config.resolveMountTarget === "function"
-        ? config.resolveMountTarget
-        : function () {
+    var TREND_CLIP_ID_PREFIX = "grailed-plus__trend-clip-";
+    var trendClipIdCounter = 0;
+    function normalizeCurrencyCode(input) {
+        if (typeof input !== "string") {
             return null;
-          };
-    var computeListingInsights =
-      typeof config.computeListingInsights === "function"
-        ? config.computeListingInsights
-        : function () {
+        }
+        var trimmed = input.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(trimmed)) {
             return null;
-          };
-    var scheduleRetry =
-      typeof config.scheduleRetry === "function" ? config.scheduleRetry : function () {};
-    var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
-
-    if (!state || typeof state !== "object") {
-      return null;
+        }
+        return trimmed;
     }
-
-    if (!listingExtractor || typeof listingExtractor.readNextDataFromDocument !== "function") {
-      return null;
+    function formatCurrencyByCode(value, currencyCode) {
+        if (!Number.isFinite(value)) {
+            return "N/A";
+        }
+        var normalizedCode = normalizeCurrencyCode(currencyCode) || "USD";
+        try {
+            return new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: normalizedCode,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+        catch (_) {
+            return normalizedCode + " " + Number(value).toFixed(2);
+        }
     }
-
-    var nextData = listingExtractor.readNextDataFromDocument(documentObj);
-    if (!nextData) {
-      scheduleRetry("missing_next_data", attempt);
-      return null;
-    }
-
-    var listing = normalizeListingModel(listingExtractor.extractListing(nextData));
-    if (!listing || !listing.id) {
-      scheduleRetry("missing_listing", attempt);
-      return null;
-    }
-
-    var mountTarget = resolveMountTarget(documentObj);
-    if (!mountTarget || !mountTarget.mountNode) {
-      scheduleRetry("missing_mount", attempt);
-      return null;
-    }
-
-    var metrics = computeListingInsights(listing);
-    var renderToken = state.renderToken + 1;
-    state.renderToken = renderToken;
-
-    return {
-      listing: listing,
-      metrics: metrics,
-      mountTarget: mountTarget,
-      renderToken: renderToken
-    };
-  }
-
-  return {
-    prepareListingRenderContext: prepareListingRenderContext
-  };
-});
-
-(function () {
-  "use strict";
-
-  if (globalThis.__grailedPlusBooted) {
-    return;
-  }
-  globalThis.__grailedPlusBooted = true;
-
-  var Url = globalThis.GrailedPlusUrl;
-  var ListingExtractor =
-    globalThis.GrailedPlusListingExtractor || globalThis.GrailedPlusExtractListing;
-  var PricingInsights =
-    globalThis.GrailedPlusPricingInsights || globalThis.GrailedPlusMetrics;
-  var Settings = globalThis.GrailedPlusSettings;
-  var Currency = globalThis.GrailedPlusCurrency;
-  var DepopProviderFactory = globalThis.GrailedPlusDepopProvider;
-  var MarketProviders = globalThis.GrailedPlusMarketProviders;
-  var MarketCompareController = globalThis.GrailedPlusMarketCompareController;
-  var InsightsPanel =
-    globalThis.GrailedPlusInsightsPanel || globalThis.GrailedPlusRender;
-  var Theme = globalThis.GrailedPlusTheme;
-  var Runtime = globalThis.GrailedPlusContentRuntime;
-  var NavigationLifecycle = globalThis.GrailedPlusNavigationLifecycle;
-  var DarkModeLifecycle = globalThis.GrailedPlusDarkModeLifecycle;
-  var FilterScopeLifecycle = globalThis.GrailedPlusFilterScopeLifecycle;
-  var CardCurrencyLifecycle = globalThis.GrailedPlusCardCurrencyLifecycle;
-  var MarketCompareLifecycle = globalThis.GrailedPlusMarketCompareLifecycle;
-  var CurrencyLifecycle = globalThis.GrailedPlusCurrencyLifecycle;
-  var ListingInsightsLifecycle = globalThis.GrailedPlusListingInsightsLifecycle;
-  var UnavailableLifecycle = globalThis.GrailedPlusUnavailableLifecycle;
-  var RunLifecycle = globalThis.GrailedPlusRunLifecycle;
-  var RetryLifecycle = globalThis.GrailedPlusRetryLifecycle;
-  var ListingRenderLifecycle = globalThis.GrailedPlusListingRenderLifecycle;
-  var ListingPipelineLifecycle = globalThis.GrailedPlusListingPipelineLifecycle;
-
-  if (!Url || !ListingExtractor || !PricingInsights || !InsightsPanel) {
-    console.error("[Grailed+] Failed to initialize: missing modules");
-    return;
-  }
-
-  var MAX_RETRIES = 12;
-  var RETRY_DELAY_MS = 500;
-  var MAX_RETRY_WINDOW_MS = 15000;
-  var URL_POLL_INTERVAL_MS = 1000;
-  var CARD_PRICE_CONTAINER_SELECTOR =
-    'div[class*="Price_root"], div[class*="Price-module__root"]';
-  var CARD_PRICE_CURRENT_SELECTOR = '[data-testid="Current"]';
-  var MONEY_ROOT_PRICE_SELECTOR =
-    'span[class*="Money_root_"], span[class*="Money-module__root"]';
-  var CARD_PRICE_TARGET_SELECTOR =
-    CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR + ", " + MONEY_ROOT_PRICE_SELECTOR;
-  var FILTER_TARGET_ATTR = "data-grailed-plus-filter-target";
-  var FILTER_TARGET_ATTR_VALUE = "1";
-  var FILTER_SCOPE_SKIP_ATTR = "data-grailed-plus-filter-skip";
-  var FILTER_SCOPE_SKIP_ATTR_VALUE = "1";
-  var HEADER_ROOT_SELECTOR = [
-    "header[class*='SiteHeader']",
-    "[class*='SiteHeader']:is([class*='_nav__'], [class*='__nav__'])",
-    "#globalHeader",
-    ".Page-Header",
-    "#siteBanner",
-    "#flash",
-    "#nav-overlay",
-    "#global-modal-container",
-    "header[id='globalHeader']",
-    /* Messages pages can pin this container near the global header on mobile. */
-    "[class*='FlashContainer']:is([class*='_flashContainer__'], [class*='__flashContainer__'])",
-    "[class*='FlashContainer']:is([class*='_mobileConversation__'], [class*='__mobileConversation__'])",
-    "[class*='FlashContainer_flashContainer__']",
-    "[class*='FlashContainer_mobileConversation__']"
-  ].join(", ");
-  var MENU_ROOT_SELECTOR =
-    "[class*='MerchandisingMenu']:is([class*='_root__'], [class*='__root__']), " +
-    "[class*='MerchandisingMenu']:is([class*='_list__'], [class*='__list__']), " +
-    "[class*='MerchandisingMenu']:is([class*='_viewportContainer__'], [class*='__viewportContainer__'])";
-  var FILTER_TARGET_REFRESH_DELAYS_MS = [120, 400, 1200, 2500, 5000];
-
-  var state =
-    Runtime && typeof Runtime.createRuntimeState === "function"
-      ? Runtime.createRuntimeState()
-      : {
-          // Start empty so first navigation pass always applies theme state on initial load.
-          lastUrl: "",
-          retryTimer: null,
-          urlPollTimer: null,
-          retryStartedAtMs: null,
-          mutationObserver: null,
-          renderToken: 0,
-          darkModeToken: 0,
-          darkModeMediaQuery: null,
-          darkModeMediaListener: null,
-          filterScopeTick: null,
-          filterScopeDelayTimers: [],
-          filterScopeObserver: null,
-          cardCurrencyObserver: null,
-          cardCurrencyTick: null,
-          cardCurrencyTickUsesAnimationFrame: false,
-          cardCurrencyContext: null,
-          marketCompareController: null,
-          marketCompareUnsubscribe: null,
-          latestPanelContext: null
+    function normalizeCurrencyContext(currencyContext) {
+        var selectedCurrency = normalizeCurrencyCode(currencyContext && currencyContext.selectedCurrency);
+        var rate = Number(currencyContext && currencyContext.rate);
+        return {
+            selectedCurrency: selectedCurrency || "USD",
+            rate: Number.isFinite(rate) ? rate : null,
+            mode: "dual"
         };
-
-  function isDebugEnabled() {
-    var enabled = false;
-
-    if (globalThis && globalThis.GRAILED_PLUS_DEBUG === true) {
-      return true;
     }
-
-    try {
-      enabled = localStorage.getItem("grailed-plus:debug") === "1";
-    } catch (_) {
-      enabled = false;
+    function formatCurrency(value) {
+        return formatCurrencyByCode(value, "USD");
     }
-
-    if (enabled) {
-      return true;
-    }
-
-    try {
-      var params = new URLSearchParams(globalThis.location.search || "");
-      return params.get("gp_debug") === "1";
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function log() {
-    if (!isDebugEnabled()) {
-      return;
-    }
-    var args = Array.prototype.slice.call(arguments);
-    args.unshift("[Grailed+]");
-    console.debug.apply(console, args);
-  }
-
-  function clearRetryTimer(resetWindow) {
-    if (!Runtime || typeof Runtime.clearRetryTimer !== "function") {
-      return;
-    }
-    Runtime.clearRetryTimer(state, resetWindow);
-  }
-
-  function shouldStopRetryWindow() {
-    if (!Runtime || typeof Runtime.shouldStopRetryWindow !== "function") {
-      return true;
-    }
-    return Runtime.shouldStopRetryWindow(state, MAX_RETRY_WINDOW_MS);
-  }
-
-  function scheduleHydrationObserver() {
-    if (!Runtime || typeof Runtime.scheduleHydrationObserver !== "function") {
-      return;
-    }
-    Runtime.scheduleHydrationObserver({
-      state: state,
-      isListingPath: Url.isListingPath,
-      getPathname: function () {
-        return location.pathname;
-      },
-      getNextDataNode: function () {
-        return document.getElementById("__NEXT_DATA__");
-      },
-      onHydrated: function () {
-        refresh("mutation_observer");
-      },
-      log: log
-    });
-  }
-
-  function disconnectHydrationObserver() {
-    if (!Runtime || typeof Runtime.disconnectHydrationObserver !== "function") {
-      return;
-    }
-    Runtime.disconnectHydrationObserver(state);
-  }
-
-  function resolveMountTarget(doc) {
-    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.resolveMountTarget !== "function") {
-      return null;
-    }
-    return ListingInsightsLifecycle.resolveMountTarget(InsightsPanel, doc);
-  }
-
-  function normalizeListingModel(listing) {
-    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.normalizeListingModel !== "function") {
-      return null;
-    }
-    return ListingInsightsLifecycle.normalizeListingModel(listing);
-  }
-
-  function computeListingInsights(listing) {
-    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.computeListingInsights !== "function") {
-      return null;
-    }
-    return ListingInsightsLifecycle.computeListingInsights({
-      listing: listing,
-      pricingInsights: PricingInsights
-    });
-  }
-
-  function renderListingInsightsPanel(options) {
-    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.renderListingInsightsPanel !== "function") {
-      return null;
-    }
-    return ListingInsightsLifecycle.renderListingInsightsPanel({
-      insightsPanel: InsightsPanel,
-      panelOptions: options
-    });
-  }
-
-  function ensureMarketCompareController() {
-    if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.ensureMarketCompareController !== "function") {
-      return null;
-    }
-    return MarketCompareLifecycle.ensureMarketCompareController({
-      state: state,
-      marketCompareControllerApi: MarketCompareController,
-      marketProviders: MarketProviders,
-      depopProviderFactory: DepopProviderFactory,
-      onStateUpdate: function (nextState) {
-        var context = state.latestPanelContext;
-        if (!context) {
-          return;
+    function formatMoney(valueUsd, currencyContext) {
+        if (!Number.isFinite(valueUsd)) {
+            return "N/A";
         }
-        if (!Url.isListingPath(location.pathname)) {
-          return;
+        var usdText = formatCurrency(valueUsd);
+        var normalizedContext = normalizeCurrencyContext(currencyContext);
+        var rate = Number(normalizedContext.rate);
+        if (normalizedContext.selectedCurrency === "USD" ||
+            !Number.isFinite(rate) ||
+            rate <= 0) {
+            return usdText;
         }
-        if (context.renderToken !== state.renderToken) {
-          return;
+        var converted = valueUsd * rate;
+        var convertedText = formatCurrencyByCode(converted, normalizedContext.selectedCurrency);
+        if (convertedText === "N/A") {
+            return usdText;
         }
-
-        renderListingInsightsPanel({
-          listing: context.listing,
-          metrics: context.metrics,
-          mountNode: context.mountNode,
-          mountPosition: context.mountPosition,
-          rawListing: context.rawListing,
-          statusMessage: context.statusMessage,
-          currencyContext: context.currencyContext,
-          marketCompare: nextState,
-          onMarketCompareClick: triggerMarketCompare
+        return convertedText;
+    }
+    function buildMoneyDisplay(valueUsd, currencyContext) {
+        if (!Number.isFinite(valueUsd)) {
+            return {
+                text: "N/A",
+                isConverted: false,
+                originalUsdText: ""
+            };
+        }
+        var usdText = formatCurrency(valueUsd);
+        var normalizedContext = normalizeCurrencyContext(currencyContext);
+        var rate = Number(normalizedContext.rate);
+        if (normalizedContext.selectedCurrency === "USD" ||
+            !Number.isFinite(rate) ||
+            rate <= 0) {
+            return {
+                text: usdText,
+                isConverted: false,
+                originalUsdText: usdText
+            };
+        }
+        var converted = valueUsd * rate;
+        var convertedText = formatCurrencyByCode(converted, normalizedContext.selectedCurrency);
+        if (convertedText === "N/A") {
+            return {
+                text: usdText,
+                isConverted: false,
+                originalUsdText: usdText
+            };
+        }
+        return {
+            text: convertedText,
+            isConverted: true,
+            originalUsdText: usdText
+        };
+    }
+    function normalizeMaxFractionDigits(value, fallback) {
+        if (!Number.isFinite(value)) {
+            return fallback;
+        }
+        var rounded = Math.floor(value);
+        if (rounded < 0) {
+            return fallback;
+        }
+        return rounded;
+    }
+    function formatAmountWithoutCurrency(value, maxFractionDigits) {
+        if (!Number.isFinite(value)) {
+            return "N/A";
+        }
+        var digits = normalizeMaxFractionDigits(maxFractionDigits, 2);
+        try {
+            return new Intl.NumberFormat("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: digits
+            }).format(value);
+        }
+        catch (_) {
+            return Number(value).toFixed(digits);
+        }
+    }
+    function formatDate(isoValue) {
+        if (!isoValue) {
+            return "Unknown";
+        }
+        var date = new Date(isoValue);
+        if (Number.isNaN(date.getTime())) {
+            return "Unknown";
+        }
+        return date.toDateString();
+    }
+    function getD3() {
+        var globalScope = typeof globalThis !== "undefined" ? globalThis : null;
+        if (globalScope && globalScope.d3) {
+            return globalScope.d3;
+        }
+        return null;
+    }
+    function parseDateMs(value) {
+        if (!value) {
+            return null;
+        }
+        var date = new Date(value);
+        var ms = date.getTime();
+        if (!Number.isFinite(ms)) {
+            return null;
+        }
+        return ms;
+    }
+    function normalizeTrendPoints(listing) {
+        var history = listing && listing.pricing && Array.isArray(listing.pricing.history)
+            ? listing.pricing.history
+            : [];
+        if (!Array.isArray(history) || history.length <= 1) {
+            return [];
+        }
+        var createdAtMs = parseDateMs(listing ? listing.createdAt : null);
+        var updatedAtMs = parseDateMs(listing && listing.pricing ? listing.pricing.updatedAt : null);
+        var createdAtMsValue = Number(createdAtMs);
+        var updatedAtMsValue = Number(updatedAtMs);
+        if (!Number.isFinite(createdAtMsValue) ||
+            !Number.isFinite(updatedAtMsValue) ||
+            updatedAtMsValue <= createdAtMsValue) {
+            return [];
+        }
+        var intervalMs = (updatedAtMsValue - createdAtMsValue) / (history.length - 1);
+        if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+            return [];
+        }
+        var points = [];
+        var i;
+        var price;
+        var ts;
+        for (i = 0; i < history.length; i += 1) {
+            price = Number(history[i]);
+            if (!Number.isFinite(price) || price <= 0) {
+                continue;
+            }
+            ts = createdAtMsValue + intervalMs * i;
+            points.push({
+                key: String(Math.round(ts)) + ":" + String(price) + ":" + String(i),
+                index: i,
+                timestampMs: Math.round(ts),
+                date: new Date(ts),
+                priceUsd: price
+            });
+        }
+        points.sort(function (a, b) {
+            return a.timestampMs - b.timestampMs;
         });
-      }
-    });
-  }
-
-  function triggerMarketCompare() {
-    if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.triggerMarketCompare !== "function") {
-      return;
+        return points;
     }
-    MarketCompareLifecycle.triggerMarketCompare({
-      state: state,
-      ensureController: ensureMarketCompareController
-    });
-  }
-
-  function renderPanelWithMarketCompare(options) {
-    if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.renderPanelWithMarketCompare !== "function") {
-      return null;
-    }
-    return MarketCompareLifecycle.renderPanelWithMarketCompare({
-      state: state,
-      ensureController: ensureMarketCompareController,
-      renderListingInsightsPanel: renderListingInsightsPanel,
-      onMarketCompareClick: triggerMarketCompare,
-      panelOptions: options
-    });
-  }
-
-  function createUsdCurrencyContext() {
-    if (!CurrencyLifecycle || typeof CurrencyLifecycle.createUsdCurrencyContext !== "function") {
-      return {
-        selectedCurrency: "USD",
-        rate: null,
-        mode: "dual"
-      };
-    }
-    return CurrencyLifecycle.createUsdCurrencyContext();
-  }
-
-  function normalizeCurrencyCode(input) {
-    if (!CurrencyLifecycle || typeof CurrencyLifecycle.normalizeCurrencyCode !== "function") {
-      return null;
-    }
-    return CurrencyLifecycle.normalizeCurrencyCode(input, Settings);
-  }
-
-  function createDefaultDarkModeContext() {
-    if (
-      !DarkModeLifecycle ||
-      typeof DarkModeLifecycle.createDefaultDarkModeContext !== "function"
-    ) {
-      return {
-        enabled: false,
-        behavior: "system",
-        primaryColor: "#000000"
-      };
-    }
-    return DarkModeLifecycle.createDefaultDarkModeContext();
-  }
-
-  function resolveCurrencyContext() {
-    if (!CurrencyLifecycle || typeof CurrencyLifecycle.resolveCurrencyContext !== "function") {
-      return Promise.resolve(createUsdCurrencyContext());
-    }
-    return CurrencyLifecycle.resolveCurrencyContext({
-      settings: Settings,
-      currencyApi: Currency,
-      normalizeCurrencyCode: normalizeCurrencyCode
-    });
-  }
-
-  function resolveListingInsightsEnabled() {
-    if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.resolveListingInsightsEnabled !== "function") {
-      return Promise.resolve(true);
-    }
-    return ListingInsightsLifecycle.resolveListingInsightsEnabled(Settings);
-  }
-
-  function applySidebarCurrency(currencyContext) {
-    if (!CurrencyLifecycle || typeof CurrencyLifecycle.applySidebarCurrency !== "function") {
-      return false;
-    }
-    return CurrencyLifecycle.applySidebarCurrency({
-      insightsPanel: InsightsPanel,
-      documentObj: document,
-      currencyContext: currencyContext
-    });
-  }
-
-  function applyCardCurrency(currencyContext) {
-    if (!CurrencyLifecycle || typeof CurrencyLifecycle.applyCardCurrency !== "function") {
-      return false;
-    }
-    return CurrencyLifecycle.applyCardCurrency({
-      insightsPanel: InsightsPanel,
-      documentObj: document,
-      currencyContext: currencyContext
-    });
-  }
-
-  function disconnectCardCurrencyObserver() {
-    if (
-      !CardCurrencyLifecycle ||
-      typeof CardCurrencyLifecycle.disconnectCardCurrencyObserver !== "function"
-    ) {
-      return;
-    }
-    CardCurrencyLifecycle.disconnectCardCurrencyObserver(state);
-  }
-
-  function scheduleCardCurrencyRefresh() {
-    if (
-      !CardCurrencyLifecycle ||
-      typeof CardCurrencyLifecycle.scheduleCardCurrencyRefresh !== "function"
-    ) {
-      return;
-    }
-    CardCurrencyLifecycle.scheduleCardCurrencyRefresh({
-      state: state,
-      onRefresh: function () {
-        applyCardCurrency(state.cardCurrencyContext || createUsdCurrencyContext());
-      }
-    });
-  }
-
-  function setupCardCurrencyObserver() {
-    if (
-      !CardCurrencyLifecycle ||
-      typeof CardCurrencyLifecycle.setupCardCurrencyObserver !== "function"
-    ) {
-      return;
-    }
-    CardCurrencyLifecycle.setupCardCurrencyObserver({
-      state: state,
-      documentObj: document,
-      selector: CARD_PRICE_TARGET_SELECTOR,
-      insightsPanel: InsightsPanel,
-      onScheduleRefresh: scheduleCardCurrencyRefresh
-    });
-  }
-
-  function syncCardCurrencyObserver(currencyContext) {
-    if (
-      !CardCurrencyLifecycle ||
-      typeof CardCurrencyLifecycle.syncCardCurrencyObserver !== "function"
-    ) {
-      return;
-    }
-    CardCurrencyLifecycle.syncCardCurrencyObserver({
-      state: state,
-      currencyContext: currencyContext,
-      createUsdCurrencyContext: createUsdCurrencyContext,
-      normalizeCurrencyCode: normalizeCurrencyCode,
-      onSetup: setupCardCurrencyObserver,
-      onDisconnect: disconnectCardCurrencyObserver
-    });
-  }
-
-  function applyDarkMode(darkModeContext) {
-    if (Theme && typeof Theme.applyDarkModeToDocument === "function") {
-      try {
-        Theme.applyDarkModeToDocument(document, darkModeContext || createDefaultDarkModeContext());
-      } catch (_) {
-        // Theme application should not block the rest of the extension.
-      }
-    }
-
-    syncFilterScopeObserver(Boolean(darkModeContext && darkModeContext.enabled));
-    refreshFilterTargets();
-    scheduleFilterTargetsRefreshBurst();
-  }
-
-  function refreshDarkMode() {
-    if (!DarkModeLifecycle || typeof DarkModeLifecycle.refreshDarkMode !== "function") {
-      return;
-    }
-    DarkModeLifecycle.refreshDarkMode({
-      state: state,
-      settings: Settings,
-      onApply: applyDarkMode
-    });
-  }
-
-  function setupDarkModeMediaListener() {
-    if (
-      !DarkModeLifecycle ||
-      typeof DarkModeLifecycle.setupDarkModeMediaListener !== "function"
-    ) {
-      return;
-    }
-    DarkModeLifecycle.setupDarkModeMediaListener({
-      state: state,
-      onChange: refreshDarkMode
-    });
-  }
-
-  function refreshFilterTargets() {
-    if (!FilterScopeLifecycle || typeof FilterScopeLifecycle.refreshFilterTargets !== "function") {
-      return;
-    }
-    FilterScopeLifecycle.refreshFilterTargets({
-      documentObj: document,
-      theme: Theme,
-      headerSelector: HEADER_ROOT_SELECTOR,
-      menuSelector: MENU_ROOT_SELECTOR,
-      filterTargetAttr: FILTER_TARGET_ATTR,
-      filterTargetAttrValue: FILTER_TARGET_ATTR_VALUE,
-      filterScopeSkipAttr: FILTER_SCOPE_SKIP_ATTR,
-      filterScopeSkipAttrValue: FILTER_SCOPE_SKIP_ATTR_VALUE
-    });
-  }
-
-  function scheduleFilterTargetsRefresh() {
-    if (
-      !FilterScopeLifecycle ||
-      typeof FilterScopeLifecycle.scheduleFilterTargetsRefresh !== "function"
-    ) {
-      return;
-    }
-    FilterScopeLifecycle.scheduleFilterTargetsRefresh({
-      state: state,
-      onRefresh: refreshFilterTargets
-    });
-  }
-
-  function scheduleFilterTargetsRefreshBurst() {
-    if (
-      !FilterScopeLifecycle ||
-      typeof FilterScopeLifecycle.scheduleFilterTargetsRefreshBurst !== "function"
-    ) {
-      return;
-    }
-    FilterScopeLifecycle.scheduleFilterTargetsRefreshBurst({
-      state: state,
-      delays: FILTER_TARGET_REFRESH_DELAYS_MS,
-      onScheduleRefresh: scheduleFilterTargetsRefresh
-    });
-  }
-
-  function setupFilterScopeObserver() {
-    if (
-      !FilterScopeLifecycle ||
-      typeof FilterScopeLifecycle.setupFilterScopeObserver !== "function"
-    ) {
-      return;
-    }
-    FilterScopeLifecycle.setupFilterScopeObserver({
-      state: state,
-      documentObj: document,
-      onScheduleRefresh: scheduleFilterTargetsRefresh
-    });
-  }
-
-  function disconnectFilterScopeObserver() {
-    if (
-      !FilterScopeLifecycle ||
-      typeof FilterScopeLifecycle.disconnectFilterScopeObserver !== "function"
-    ) {
-      return;
-    }
-    FilterScopeLifecycle.disconnectFilterScopeObserver(state);
-  }
-
-  function syncFilterScopeObserver(enabled) {
-    if (
-      !FilterScopeLifecycle ||
-      typeof FilterScopeLifecycle.syncFilterScopeObserver !== "function"
-    ) {
-      return;
-    }
-    FilterScopeLifecycle.syncFilterScopeObserver({
-      enabled: enabled,
-      onSetup: setupFilterScopeObserver,
-      onDisconnect: disconnectFilterScopeObserver
-    });
-  }
-
-  function renderUnavailable(statusMessage) {
-    if (!UnavailableLifecycle || typeof UnavailableLifecycle.renderUnavailable !== "function") {
-      return;
-    }
-    UnavailableLifecycle.renderUnavailable({
-      state: state,
-      urlApi: Url,
-      locationObj: location,
-      documentObj: document,
-      resolveMountTarget: resolveMountTarget,
-      resolveCurrencyContext: resolveCurrencyContext,
-      renderPanelWithMarketCompare: renderPanelWithMarketCompare,
-      applySidebarCurrency: applySidebarCurrency,
-      applyCardCurrency: applyCardCurrency,
-      syncCardCurrencyObserver: syncCardCurrencyObserver,
-      statusMessage: statusMessage
-    });
-  }
-
-  function scheduleRetry(reason, attempt) {
-    if (!RetryLifecycle || typeof RetryLifecycle.scheduleRetry !== "function") {
-      return;
-    }
-    RetryLifecycle.scheduleRetry({
-      state: state,
-      reason: reason,
-      attempt: attempt,
-      maxRetries: MAX_RETRIES,
-      retryDelayMs: RETRY_DELAY_MS,
-      shouldStopRetryWindow: shouldStopRetryWindow,
-      log: log,
-      disconnectHydrationObserver: disconnectHydrationObserver,
-      renderUnavailable: renderUnavailable,
-      scheduleHydrationObserver: scheduleHydrationObserver,
-      clearRetryTimer: clearRetryTimer,
-      run: run
-    });
-  }
-
-  function run(reason, attempt) {
-    if (!RunLifecycle || typeof RunLifecycle.handleNonListingRoute !== "function") {
-      return;
-    }
-
-    if (
-      RunLifecycle.handleNonListingRoute({
-        state: state,
-        urlApi: Url,
-        locationObj: location,
-        documentObj: document,
-        clearRetryTimer: clearRetryTimer,
-        disconnectHydrationObserver: disconnectHydrationObserver,
-        insightsPanel: InsightsPanel,
-        resolveCurrencyContext: resolveCurrencyContext,
-        createUsdCurrencyContext: createUsdCurrencyContext,
-        applyCardCurrency: applyCardCurrency,
-        syncCardCurrencyObserver: syncCardCurrencyObserver
-      })
-    ) {
-      return;
-    }
-
-    if (!Url.isListingPath(location.pathname)) {
-      return;
-    }
-
-    syncCardCurrencyObserver(null);
-
-    resolveListingInsightsEnabled().then(function (listingInsightsEnabled) {
-      if (!Url.isListingPath(location.pathname)) {
-        return;
-      }
-
-      if (typeof RunLifecycle.handleListingInsightsDisabled !== "function") {
-        return;
-      }
-
-      if (
-        RunLifecycle.handleListingInsightsDisabled({
-          state: state,
-          listingInsightsEnabled: listingInsightsEnabled,
-          urlApi: Url,
-          locationObj: location,
-          documentObj: document,
-          clearRetryTimer: clearRetryTimer,
-          disconnectHydrationObserver: disconnectHydrationObserver,
-          insightsPanel: InsightsPanel,
-          resolveCurrencyContext: resolveCurrencyContext,
-          createUsdCurrencyContext: createUsdCurrencyContext,
-          applySidebarCurrency: applySidebarCurrency,
-          applyCardCurrency: applyCardCurrency,
-          syncCardCurrencyObserver: syncCardCurrencyObserver,
-          log: log,
-          reason: reason,
-          attempt: attempt
+    function createTrendChartRow(doc, listing, currencyContext) {
+        var row = doc.createElement("div");
+        row.className = "grailed-plus__trend-row";
+        var chart = doc.createElement("div");
+        chart.className = "grailed-plus__trend-chart";
+        chart.setAttribute("role", "img");
+        chart.setAttribute("aria-label", "Price trend");
+        row.appendChild(chart);
+        var points = normalizeTrendPoints(listing);
+        var d3 = getD3();
+        if (!d3 || points.length <= 1) {
+            var emptyNode = doc.createElement("div");
+            emptyNode.className = "grailed-plus__trend-empty";
+            emptyNode.textContent = TREND_EMPTY_TEXT;
+            chart.appendChild(emptyNode);
+            return row;
+        }
+        var width = TREND_CHART_WIDTH;
+        var height = TREND_CHART_HEIGHT;
+        var innerWidth = Math.max(1, width - TREND_MARGIN.left - TREND_MARGIN.right);
+        var innerHeight = Math.max(1, height - TREND_MARGIN.top - TREND_MARGIN.bottom);
+        var svg = d3
+            .select(chart)
+            .append("svg")
+            .attr("class", "grailed-plus__trend-svg")
+            .attr("viewBox", "0 0 " + String(width) + " " + String(height))
+            .attr("preserveAspectRatio", "xMidYMid meet")
+            .attr("aria-hidden", "true");
+        var root = svg
+            .append("g")
+            .attr("class", "grailed-plus__trend-root")
+            .attr("transform", "translate(" + String(TREND_MARGIN.left) + "," + String(TREND_MARGIN.top) + ")");
+        var clipPathId = TREND_CLIP_ID_PREFIX + String(trendClipIdCounter);
+        trendClipIdCounter += 1;
+        svg
+            .append("defs")
+            .append("clipPath")
+            .attr("id", clipPathId)
+            .attr("clipPathUnits", "userSpaceOnUse")
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", innerWidth)
+            .attr("height", innerHeight);
+        var trendLineLayer = root
+            .append("g")
+            .attr("class", "grailed-plus__trend-line-layer")
+            .attr("clip-path", "url(#" + clipPathId + ")");
+        var trendPointLayer = root
+            .append("g")
+            .attr("class", "grailed-plus__trend-point-layer")
+            .attr("clip-path", "url(#" + clipPathId + ")");
+        var x = d3
+            .scaleTime()
+            .domain(d3.extent(points, function (d) {
+            return d.date;
+        }))
+            .range([0, innerWidth]);
+        var yExtent = d3.extent(points, function (d) {
+            return d.priceUsd;
+        });
+        var yMin = yExtent[0];
+        var yMax = yExtent[1];
+        if (yMin === yMax) {
+            yMin = yMin - 1;
+            yMax = yMax + 1;
+        }
+        var y = d3.scaleLinear().domain([yMin, yMax]).nice(3).range([innerHeight, 0]);
+        var line = d3
+            .line()
+            .defined(function (d) {
+            return Number.isFinite(d.priceUsd) && d.date instanceof Date;
         })
-      ) {
-        return;
-      }
-
-      if (!listingInsightsEnabled) {
-        return;
-      }
-
-      var listing = null;
-      var metrics = null;
-      var mountTarget = null;
-      var renderToken = null;
-
-      if (
-        !ListingPipelineLifecycle ||
-        typeof ListingPipelineLifecycle.prepareListingRenderContext !== "function"
-      ) {
-        return;
-      }
-
-      var preparedContext = ListingPipelineLifecycle.prepareListingRenderContext({
-        state: state,
-        listingExtractor: ListingExtractor,
-        documentObj: document,
-        normalizeListingModel: normalizeListingModel,
-        resolveMountTarget: resolveMountTarget,
-        computeListingInsights: computeListingInsights,
-        scheduleRetry: scheduleRetry,
-        attempt: attempt
-      });
-      if (!preparedContext) {
-        return;
-      }
-
-      listing = preparedContext.listing;
-      metrics = preparedContext.metrics;
-      mountTarget = preparedContext.mountTarget;
-      renderToken = preparedContext.renderToken;
-
-      if (!ListingRenderLifecycle || typeof ListingRenderLifecycle.renderListingWithCurrency !== "function") {
-        return;
-      }
-
-      ListingRenderLifecycle.renderListingWithCurrency({
-        state: state,
-        urlApi: Url,
-        locationObj: location,
-        renderToken: renderToken,
-        listing: listing,
-        metrics: metrics,
-        mountTarget: mountTarget,
-        resolveCurrencyContext: resolveCurrencyContext,
-        createUsdCurrencyContext: createUsdCurrencyContext,
-        renderPanelWithMarketCompare: renderPanelWithMarketCompare,
+            .curve(d3.curveMonotoneX)
+            .x(function (d) {
+            return x(d.date);
+        })
+            .y(function (d) {
+            return y(d.priceUsd);
+        });
+        trendLineLayer
+            .selectAll("path.grailed-plus__trend-line")
+            .data([points])
+            .join("path")
+            .attr("class", "grailed-plus__trend-line")
+            .attr("d", line);
+        var tooltip = d3
+            .select(chart)
+            .append("div")
+            .attr("class", "grailed-plus__trend-tooltip")
+            .attr("aria-hidden", "true");
+        function showTooltip(event, point) {
+            var display = buildMoneyDisplay(point.priceUsd, currencyContext);
+            var tooltipText = display.text + " - " + formatDate(point.date.toISOString());
+            tooltip.text(tooltipText);
+            if (display.isConverted) {
+                tooltip.attr("title", "USD: " + display.originalUsdText);
+            }
+            else {
+                tooltip.attr("title", "");
+            }
+            var xPos = Number(event && event.offsetX);
+            var yPos = Number(event && event.offsetY);
+            if (!Number.isFinite(xPos) || !Number.isFinite(yPos)) {
+                xPos = x(point.date) + TREND_MARGIN.left;
+                yPos = y(point.priceUsd) + TREND_MARGIN.top;
+            }
+            tooltip
+                .style("opacity", "1")
+                .style("left", String(xPos + 10) + "px")
+                .style("top", String(yPos - 12) + "px")
+                .attr("aria-hidden", "false");
+        }
+        function hideTooltip() {
+            tooltip.style("opacity", "0").attr("aria-hidden", "true");
+        }
+        var pointNodes = trendPointLayer
+            .selectAll("circle.grailed-plus__trend-point")
+            .data(points, function (d) {
+            return d.key;
+        })
+            .join("circle")
+            .attr("class", "grailed-plus__trend-point")
+            .attr("cx", function (d) {
+            return x(d.date);
+        })
+            .attr("cy", function (d) {
+            return y(d.priceUsd);
+        })
+            .attr("r", 3)
+            .attr("tabindex", 0)
+            .on("focus", function (event, point) {
+            pointNodes.classed("is-active", false);
+            d3.select(this).classed("is-active", true);
+            showTooltip(event, point);
+        })
+            .on("blur", function () {
+            pointNodes.classed("is-active", false);
+            hideTooltip();
+        });
+        var bisectByDate = d3.bisector(function (d) {
+            return d.date;
+        }).center;
+        function findNearestPoint(event) {
+            var pointer = d3.pointer(event, root.node());
+            var px = Number(pointer && pointer[0]);
+            if (!Number.isFinite(px)) {
+                return points[points.length - 1];
+            }
+            var clampedPx = Math.max(0, Math.min(innerWidth, px));
+            var hoverDate = x.invert(clampedPx);
+            var index = bisectByDate(points, hoverDate);
+            if (!Number.isFinite(index)) {
+                return points[points.length - 1];
+            }
+            index = Math.max(0, Math.min(points.length - 1, index));
+            return points[index];
+        }
+        function syncHoverState(event) {
+            var nearest = findNearestPoint(event);
+            pointNodes.classed("is-active", function (d) {
+                return d.key === nearest.key;
+            });
+            showTooltip(event, nearest);
+        }
+        root
+            .selectAll("rect.grailed-plus__trend-hit-area")
+            .data([null])
+            .join("rect")
+            .attr("class", "grailed-plus__trend-hit-area")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", innerWidth)
+            .attr("height", innerHeight)
+            .on("mouseenter", syncHoverState)
+            .on("mousemove", syncHoverState)
+            .on("mouseleave", function () {
+            pointNodes.classed("is-active", false);
+            hideTooltip();
+        });
+        return row;
+    }
+    function createRow(doc, label, value, extraClass = "", valueTitle = "") {
+        var row = doc.createElement("div");
+        row.className = "grailed-plus__row" + (extraClass ? " " + extraClass : "");
+        var labelNode = doc.createElement("span");
+        labelNode.className = "grailed-plus__label";
+        labelNode.textContent = label;
+        var valueNode = doc.createElement("span");
+        valueNode.className = "grailed-plus__value";
+        valueNode.textContent = value;
+        if (valueTitle && typeof valueNode.setAttribute === "function") {
+            valueNode.setAttribute("title", valueTitle);
+        }
+        row.appendChild(labelNode);
+        row.appendChild(valueNode);
+        return row;
+    }
+    function setNodeTitle(node, title) {
+        if (!node) {
+            return;
+        }
+        if (title && typeof node.setAttribute === "function") {
+            node.setAttribute("title", title);
+            return;
+        }
+        if (typeof node.removeAttribute === "function") {
+            node.removeAttribute("title");
+            return;
+        }
+        if (typeof node.setAttribute === "function") {
+            node.setAttribute("title", "");
+        }
+    }
+    function removeExistingPanels(doc) {
+        if (!doc || typeof doc.querySelectorAll !== "function") {
+            return;
+        }
+        var existingPanels = doc.querySelectorAll("[" + PANEL_ATTR + '="' + PANEL_ATTR_VALUE + '"]');
+        Array.prototype.forEach.call(existingPanels, function (panel) {
+            if (panel && typeof panel.remove === "function") {
+                panel.remove();
+            }
+            else if (panel && panel.parentNode) {
+                panel.parentNode.removeChild(panel);
+            }
+        });
+    }
+    function getClassName(node) {
+        if (!node) {
+            return "";
+        }
+        if (typeof node.className === "string") {
+            return node.className;
+        }
+        if (typeof node.getAttribute === "function") {
+            return node.getAttribute("class") || "";
+        }
+        return "";
+    }
+    function findFirstBySelectors(root, selectors) {
+        if (!root || typeof root.querySelector !== "function" || !Array.isArray(selectors)) {
+            return null;
+        }
+        var i;
+        var node;
+        for (i = 0; i < selectors.length; i += 1) {
+            node = root.querySelector(selectors[i]);
+            if (node) {
+                return node;
+            }
+        }
+        return null;
+    }
+    function collectCtaCandidates(root) {
+        if (!root || typeof root.querySelectorAll !== "function") {
+            return [];
+        }
+        var allCandidates = root.querySelectorAll("button, a");
+        var matches = [];
+        var i;
+        var candidate;
+        var text;
+        for (i = 0; i < allCandidates.length; i += 1) {
+            candidate = allCandidates[i];
+            if (!candidate || typeof candidate.textContent !== "string") {
+                continue;
+            }
+            text = candidate.textContent.replace(/\s+/g, " ").trim();
+            if (/Purchase|Offer/i.test(text)) {
+                matches.push(candidate);
+            }
+        }
+        return matches;
+    }
+    function appendUniqueNodes(target, source) {
+        if (!Array.isArray(target) || !Array.isArray(source)) {
+            return;
+        }
+        var i;
+        var j;
+        var candidate;
+        var exists;
+        for (i = 0; i < source.length; i += 1) {
+            candidate = source[i];
+            exists = false;
+            for (j = 0; j < target.length; j += 1) {
+                if (target[j] === candidate) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                target.push(candidate);
+            }
+        }
+    }
+    function isCardPriceContainer(node) {
+        if (!node) {
+            return false;
+        }
+        var className = getClassName(node);
+        if (typeof className !== "string" ||
+            (className.indexOf("Price_root") === -1 && className.indexOf("Price-module__root") === -1)) {
+            return false;
+        }
+        var tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
+        return tagName === "DIV";
+    }
+    function findClosestCardPriceContainer(node) {
+        if (!node) {
+            return null;
+        }
+        if (typeof node.closest === "function") {
+            var scoped = node.closest(CARD_PRICE_CONTAINER_SELECTOR);
+            if (scoped) {
+                return scoped;
+            }
+        }
+        var current = node;
+        while (current) {
+            if (isCardPriceContainer(current)) {
+                return current;
+            }
+            current = current.parentNode;
+        }
+        return null;
+    }
+    function collectCardPriceContainers(doc) {
+        if (!doc || typeof doc.querySelectorAll !== "function") {
+            return [];
+        }
+        var currentNodes = doc.querySelectorAll(CARD_PRICE_CURRENT_SELECTOR);
+        var containers = [];
+        var i;
+        var container;
+        for (i = 0; i < currentNodes.length; i += 1) {
+            container = findClosestCardPriceContainer(currentNodes[i]);
+            if (container) {
+                appendUniqueNodes(containers, [container]);
+            }
+        }
+        return containers;
+    }
+    function collectMoneyRootPriceNodes(doc) {
+        if (!doc || typeof doc.querySelectorAll !== "function") {
+            return [];
+        }
+        var nodes = doc.querySelectorAll(MONEY_ROOT_PRICE_SELECTOR);
+        var matches = [];
+        var i;
+        for (i = 0; i < nodes.length; i += 1) {
+            appendUniqueNodes(matches, [nodes[i]]);
+        }
+        return matches;
+    }
+    function isNodeWithinAnyTarget(node, targets) {
+        if (!node || !Array.isArray(targets) || targets.length === 0) {
+            return false;
+        }
+        var current = node;
+        var i;
+        while (current) {
+            for (i = 0; i < targets.length; i += 1) {
+                if (targets[i] === current) {
+                    return true;
+                }
+            }
+            current = current.parentNode;
+        }
+        return false;
+    }
+    function collectCardPriceTargets(doc) {
+        var targets = collectCardPriceContainers(doc);
+        var moneyNodes = collectMoneyRootPriceNodes(doc);
+        var i;
+        for (i = 0; i < moneyNodes.length; i += 1) {
+            if (!isNodeWithinAnyTarget(moneyNodes[i], targets)) {
+                appendUniqueNodes(targets, [moneyNodes[i]]);
+            }
+        }
+        return targets;
+    }
+    function nodeContainsCardPriceTarget(node) {
+        if (!node) {
+            return false;
+        }
+        if (typeof node.matches === "function" && node.matches(CARD_PRICE_TARGET_SELECTOR)) {
+            return true;
+        }
+        if (typeof node.querySelector === "function") {
+            return Boolean(node.querySelector(CARD_PRICE_TARGET_SELECTOR));
+        }
+        return false;
+    }
+    function findSidebarScope(priceNode) {
+        if (!priceNode) {
+            return null;
+        }
+        if (typeof priceNode.closest === "function") {
+            var scoped = priceNode.closest('[class*="sidebar"], aside');
+            if (scoped) {
+                return scoped;
+            }
+        }
+        var current = priceNode;
+        var className;
+        while (current) {
+            className = getClassName(current);
+            if (typeof className === "string" && /sidebar/i.test(className)) {
+                return current;
+            }
+            current = current.parentNode;
+        }
+        return priceNode.parentNode || null;
+    }
+    function getRootNode(node) {
+        var current = node;
+        while (current && current.parentNode) {
+            current = current.parentNode;
+        }
+        return current;
+    }
+    function getChildIndex(node) {
+        if (!node || !node.parentNode || !node.parentNode.children) {
+            return -1;
+        }
+        var siblings = node.parentNode.children;
+        var i;
+        for (i = 0; i < siblings.length; i += 1) {
+            if (siblings[i] === node) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    function buildNodePath(node) {
+        if (!node) {
+            return null;
+        }
+        var path = [];
+        var current = node;
+        var index;
+        while (current && current.parentNode) {
+            index = getChildIndex(current);
+            if (index < 0) {
+                return null;
+            }
+            path.unshift(index);
+            current = current.parentNode;
+        }
+        return path;
+    }
+    function compareNodeOrder(left, right) {
+        if (!left || !right || left === right) {
+            return 0;
+        }
+        if (typeof left.compareDocumentPosition === "function") {
+            var relation = left.compareDocumentPosition(right);
+            if (relation & 4) {
+                return -1;
+            }
+            if (relation & 2) {
+                return 1;
+            }
+        }
+        if (getRootNode(left) !== getRootNode(right)) {
+            return 0;
+        }
+        var leftPath = buildNodePath(left);
+        var rightPath = buildNodePath(right);
+        if (!leftPath || !rightPath) {
+            return 0;
+        }
+        var minLength = Math.min(leftPath.length, rightPath.length);
+        var i;
+        for (i = 0; i < minLength; i += 1) {
+            if (leftPath[i] < rightPath[i]) {
+                return -1;
+            }
+            if (leftPath[i] > rightPath[i]) {
+                return 1;
+            }
+        }
+        if (leftPath.length < rightPath.length) {
+            return -1;
+        }
+        if (leftPath.length > rightPath.length) {
+            return 1;
+        }
+        return 0;
+    }
+    function findCtaNode(doc, priceNode) {
+        var candidates = [];
+        if (priceNode) {
+            appendUniqueNodes(candidates, collectCtaCandidates(findSidebarScope(priceNode)));
+            appendUniqueNodes(candidates, collectCtaCandidates(priceNode.parentNode));
+        }
+        appendUniqueNodes(candidates, collectCtaCandidates(doc));
+        if (candidates.length === 0) {
+            return null;
+        }
+        if (!priceNode) {
+            return candidates[0];
+        }
+        var i;
+        var candidate;
+        for (i = 0; i < candidates.length; i += 1) {
+            candidate = candidates[i];
+            if (compareNodeOrder(priceNode, candidate) === -1) {
+                return candidate;
+            }
+        }
+        return candidates[0];
+    }
+    function findMountTarget(doc) {
+        if (!doc || typeof doc.querySelector !== "function") {
+            return null;
+        }
+        var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
+        var fallbackNode;
+        if (priceNode) {
+            return {
+                mountNode: priceNode,
+                mountPosition: "afterend",
+                strategy: "sidebar_price"
+            };
+        }
+        fallbackNode = doc.querySelector("main") || doc.body || null;
+        if (!fallbackNode) {
+            return null;
+        }
+        return {
+            mountNode: fallbackNode,
+            mountPosition: "afterend",
+            strategy: fallbackNode === doc.body ? "fallback_body" : "fallback_main"
+        };
+    }
+    function findMountNode(doc) {
+        var mountTarget = findMountTarget(doc);
+        return mountTarget && mountTarget.mountNode ? mountTarget.mountNode : null;
+    }
+    function parseUsdAmount(text) {
+        if (typeof text !== "string") {
+            return null;
+        }
+        var normalized = text.replace(/,/g, "");
+        var match = normalized.match(/-?\d+(?:\.\d+)?/);
+        if (!match) {
+            return null;
+        }
+        var amount = Number(match[0]);
+        return Number.isFinite(amount) ? amount : null;
+    }
+    function parseStoredAmount(value) {
+        if (value == null) {
+            return null;
+        }
+        if (typeof value === "string" && value.trim() === "") {
+            return null;
+        }
+        var parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    function getNodeText(node) {
+        if (!node || typeof node.textContent !== "string") {
+            return "";
+        }
+        return node.textContent.trim();
+    }
+    function getNodePrimaryText(node) {
+        var fallback = getNodeText(node);
+        if (!node || !node.childNodes || node.childNodes.length === 0) {
+            return fallback;
+        }
+        var i;
+        var child;
+        var text;
+        for (i = 0; i < node.childNodes.length; i += 1) {
+            child = node.childNodes[i];
+            if (!child || child.nodeType !== 3) {
+                continue;
+            }
+            text = String(child.textContent || "").trim();
+            if (text) {
+                return text;
+            }
+        }
+        return fallback;
+    }
+    function setNodePrimaryText(node, text) {
+        if (!node || typeof text !== "string") {
+            return;
+        }
+        if (node.childNodes && node.childNodes.length > 0) {
+            var i;
+            var child;
+            for (i = 0; i < node.childNodes.length; i += 1) {
+                child = node.childNodes[i];
+                if (!child || child.nodeType !== 3) {
+                    continue;
+                }
+                child.textContent = text;
+                return;
+            }
+        }
+        node.textContent = text;
+    }
+    function isDescendantOf(node, potentialAncestor) {
+        var current = node && node.parentNode;
+        while (current) {
+            if (current === potentialAncestor) {
+                return true;
+            }
+            current = current.parentNode;
+        }
+        return false;
+    }
+    function hasConvertibleDescendant(node, candidates) {
+        if (!node || !Array.isArray(candidates) || candidates.length === 0) {
+            return false;
+        }
+        var i;
+        for (i = 0; i < candidates.length; i += 1) {
+            if (candidates[i] === node) {
+                continue;
+            }
+            if (isDescendantOf(candidates[i], node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function isUsdPriceText(text) {
+        if (typeof text !== "string") {
+            return false;
+        }
+        // Convert USD-like price text (e.g. "$500", "US $500", "$500 (Offer Price)").
+        // This intentionally excludes percentage/label strings like "23% off".
+        return /^\s*(?:[A-Z]{0,3}\s*)?\$\s*-?\d[\d,]*(?:\.\d+)?\s*(?:\([^)]*\))?\s*$/i.test(text);
+    }
+    function hasStoredOriginalPrice(node) {
+        if (!node || typeof node.getAttribute !== "function") {
+            return false;
+        }
+        return Boolean(node.getAttribute(SIDEBAR_USD_TEXT_ATTR));
+    }
+    function isStrikethroughNode(node) {
+        if (!node) {
+            return false;
+        }
+        var tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
+        if (tagName === "DEL" || tagName === "S") {
+            return true;
+        }
+        var className = getClassName(node).toLowerCase();
+        if (/(line[-_ ]?through|strik|cross|previous|old|original|was|before|compare)/i.test(className)) {
+            return true;
+        }
+        var styleText = "";
+        if (typeof node.getAttribute === "function") {
+            styleText = String(node.getAttribute("style") || "").toLowerCase();
+        }
+        if (!styleText && node.style) {
+            styleText = String(node.style.textDecorationLine || node.style.textDecoration || "").toLowerCase();
+        }
+        return styleText.indexOf("line-through") !== -1;
+    }
+    function collectPriceTextCandidates(priceNode) {
+        if (!priceNode) {
+            return [];
+        }
+        var candidates = [priceNode];
+        if (typeof priceNode.querySelectorAll === "function") {
+            var descendants = priceNode.querySelectorAll("*");
+            Array.prototype.forEach.call(descendants, function (node) {
+                candidates.push(node);
+            });
+        }
+        return candidates.filter(function (node) {
+            var text = getNodePrimaryText(node);
+            if (!text && !hasStoredOriginalPrice(node)) {
+                return false;
+            }
+            if (hasStoredOriginalPrice(node)) {
+                return true;
+            }
+            if (!isUsdPriceText(text)) {
+                return false;
+            }
+            return Number.isFinite(parseUsdAmount(text));
+        });
+    }
+    function getPriceTextTargets(priceNode) {
+        var candidates = collectPriceTextCandidates(priceNode);
+        if (candidates.length === 0) {
+            return priceNode ? [priceNode] : [];
+        }
+        var terminalCandidates = candidates.filter(function (node) {
+            return !hasConvertibleDescendant(node, candidates);
+        });
+        if (terminalCandidates.length > 0) {
+            return terminalCandidates;
+        }
+        return [candidates[0]];
+    }
+    function choosePrimaryPriceIndex(entries) {
+        if (!Array.isArray(entries) || entries.length === 0) {
+            return -1;
+        }
+        var nonStrikeIndices = [];
+        var allConvertibleIndices = [];
+        var i;
+        for (i = 0; i < entries.length; i += 1) {
+            if (!entries[i] || !Number.isFinite(entries[i].usdValue)) {
+                continue;
+            }
+            allConvertibleIndices.push(i);
+            if (!entries[i].isStrikethrough) {
+                nonStrikeIndices.push(i);
+            }
+        }
+        var candidateIndices = nonStrikeIndices.length > 0 ? nonStrikeIndices : allConvertibleIndices;
+        if (candidateIndices.length === 0) {
+            return -1;
+        }
+        // In the common old-vs-current pair, the current price is usually the lower value.
+        if (candidateIndices.length === 2) {
+            var left = entries[candidateIndices[0]];
+            var right = entries[candidateIndices[1]];
+            if (Number.isFinite(left.usdValue) && Number.isFinite(right.usdValue)) {
+                return left.usdValue <= right.usdValue ? candidateIndices[0] : candidateIndices[1];
+            }
+        }
+        var bestIndex = -1;
+        var bestScore = Infinity;
+        var entry;
+        var className;
+        var score;
+        for (i = 0; i < candidateIndices.length; i += 1) {
+            entry = entries[candidateIndices[i]];
+            className = getClassName(entry.node).toLowerCase();
+            score = 0;
+            // Prefer nodes that usually represent current/live values.
+            if (/(value|current|now|final|amount|active)/i.test(className)) {
+                score -= 50;
+            }
+            // De-prioritize non-primary monetary labels (e.g. financing/monthly breakdowns).
+            if (/(month|monthly|installment|payment|finance|per)/i.test(className)) {
+                score += 20;
+            }
+            // Current price is usually the lower one.
+            score += entry.usdValue * 0.0001;
+            if (score < bestScore) {
+                bestScore = score;
+                bestIndex = candidateIndices[i];
+            }
+        }
+        return bestIndex;
+    }
+    function applyCurrencyToPriceContainer(priceNode, currencyContext, options = {}) {
+        if (!priceNode) {
+            return {
+                handled: false,
+                convertedAny: false,
+                result: false
+            };
+        }
+        var priceTextTargets = getPriceTextTargets(priceNode);
+        if (!Array.isArray(priceTextTargets) || priceTextTargets.length === 0) {
+            return {
+                handled: false,
+                convertedAny: false,
+                result: false
+            };
+        }
+        var normalizedContext = normalizeCurrencyContext(currencyContext);
+        var conversionRate = Number(normalizedContext.rate);
+        var handled = false;
+        var convertedAny = false;
+        var conversionEnabled = normalizedContext.selectedCurrency !== "USD" &&
+            Number.isFinite(conversionRate) &&
+            conversionRate > 0;
+        var normalizedOptions = options || {};
+        var strikeMaxFractionDigits = normalizeMaxFractionDigits(normalizedOptions.strikeMaxFractionDigits, null);
+        var targetEntries = [];
+        var i;
+        var priceTextTarget;
+        var existingText;
+        var storedUsdText;
+        var storedUsdValueRaw;
+        var usdValue;
+        var primaryIndex = -1;
+        var convertedText;
+        for (i = 0; i < priceTextTargets.length; i += 1) {
+            priceTextTarget = priceTextTargets[i];
+            if (!priceTextTarget || typeof priceTextTarget.textContent !== "string") {
+                continue;
+            }
+            existingText = getNodePrimaryText(priceTextTarget);
+            storedUsdText =
+                typeof priceTextTarget.getAttribute === "function"
+                    ? priceTextTarget.getAttribute(SIDEBAR_USD_TEXT_ATTR) || ""
+                    : "";
+            if (!storedUsdText && existingText && typeof priceTextTarget.setAttribute === "function") {
+                storedUsdText = existingText;
+                priceTextTarget.setAttribute(SIDEBAR_USD_TEXT_ATTR, existingText);
+            }
+            storedUsdValueRaw =
+                typeof priceTextTarget.getAttribute === "function"
+                    ? priceTextTarget.getAttribute(SIDEBAR_USD_VALUE_ATTR)
+                    : null;
+            usdValue = parseStoredAmount(storedUsdValueRaw);
+            if (usdValue == null) {
+                usdValue = parseUsdAmount(storedUsdText || existingText);
+                if (Number.isFinite(usdValue) && typeof priceTextTarget.setAttribute === "function") {
+                    priceTextTarget.setAttribute(SIDEBAR_USD_VALUE_ATTR, String(usdValue));
+                }
+            }
+            handled = true;
+            targetEntries.push({
+                node: priceTextTarget,
+                storedUsdText: storedUsdText,
+                usdValue: usdValue,
+                isStrikethrough: isStrikethroughNode(priceTextTarget)
+            });
+        }
+        if (!conversionEnabled) {
+            for (i = 0; i < targetEntries.length; i += 1) {
+                if (targetEntries[i].storedUsdText) {
+                    setNodePrimaryText(targetEntries[i].node, targetEntries[i].storedUsdText);
+                }
+                setNodeTitle(targetEntries[i].node, "");
+            }
+            return {
+                handled: handled,
+                convertedAny: false,
+                result: handled
+            };
+        }
+        primaryIndex = choosePrimaryPriceIndex(targetEntries);
+        for (i = 0; i < targetEntries.length; i += 1) {
+            var entry = targetEntries[i];
+            if (!entry || !Number.isFinite(entry.usdValue)) {
+                continue;
+            }
+            var usdAmount = Number(entry.usdValue);
+            if (i === primaryIndex) {
+                convertedText = formatCurrencyByCode(usdAmount * conversionRate, normalizedContext.selectedCurrency);
+            }
+            else {
+                convertedText = formatAmountWithoutCurrency(usdAmount * conversionRate, entry.isStrikethrough && strikeMaxFractionDigits != null
+                    ? strikeMaxFractionDigits
+                    : 2);
+            }
+            if (convertedText === "N/A") {
+                setNodeTitle(entry.node, "");
+                continue;
+            }
+            setNodePrimaryText(entry.node, convertedText);
+            setNodeTitle(entry.node, "USD: " + (entry.storedUsdText || formatCurrency(usdAmount)));
+            convertedAny = true;
+        }
+        return {
+            handled: handled,
+            convertedAny: convertedAny,
+            result: convertedAny
+        };
+    }
+    function applySidebarCurrency(doc, currencyContext) {
+        if (!doc || typeof doc.querySelector !== "function") {
+            return false;
+        }
+        var priceNode = findFirstBySelectors(doc, PRICE_SELECTORS);
+        if (!priceNode) {
+            return false;
+        }
+        return applyCurrencyToPriceContainer(priceNode, currencyContext).result;
+    }
+    function applyCardCurrency(doc, currencyContext) {
+        if (!doc || typeof doc.querySelectorAll !== "function") {
+            return false;
+        }
+        var targets = collectCardPriceTargets(doc);
+        if (!Array.isArray(targets) || targets.length === 0) {
+            return false;
+        }
+        var handledAny = false;
+        var i;
+        var outcome;
+        for (i = 0; i < targets.length; i += 1) {
+            outcome = applyCurrencyToPriceContainer(targets[i], currencyContext, {
+                strikeMaxFractionDigits: 0
+            });
+            if (outcome && outcome.handled) {
+                handledAny = true;
+            }
+        }
+        return handledAny;
+    }
+    function openMetadataInNewTab(rawListing, listing) {
+        var payload = rawListing || (listing && listing.rawListing) || listing || {};
+        var blob;
+        var objectUrl = "";
+        var newWindow;
+        try {
+            blob = new Blob([JSON.stringify(payload, null, 2)], {
+                type: "application/json"
+            });
+            objectUrl = URL.createObjectURL(blob);
+            newWindow = window.open(objectUrl, "_blank", "noopener,noreferrer");
+            if (!newWindow) {
+                var link = document.createElement("a");
+                link.href = objectUrl;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.click();
+            }
+            setTimeout(function () {
+                URL.revokeObjectURL(objectUrl);
+            }, 60000);
+        }
+        catch (_) {
+            // Intentionally silent. The metadata feature is non-blocking.
+        }
+    }
+    function buildExpectedDropText(listing, metrics) {
+        if (metrics.expectedDropState === "inactive") {
+            return ("Listing appears inactive. Last update was " +
+                formatDate(listing && listing.pricing ? listing.pricing.updatedAt : null));
+        }
+        if (metrics.expectedDropState === "scheduled" &&
+            Number.isFinite(metrics.expectedNextDropDays)) {
+            return String(metrics.expectedNextDropDays) + " days";
+        }
+        return "Not enough data to estimate";
+    }
+    function formatRelativeTimestamp(timestampMs) {
+        if (!Number.isFinite(Number(timestampMs))) {
+            return "";
+        }
+        var deltaMs = Date.now() - Number(timestampMs);
+        if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+            return "";
+        }
+        var seconds = Math.floor(deltaMs / 1000);
+        if (seconds < 60) {
+            return "just now";
+        }
+        var minutes = Math.floor(seconds / 60);
+        if (minutes < 60) {
+            return String(minutes) + "m ago";
+        }
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) {
+            return String(hours) + "h ago";
+        }
+        var days = Math.floor(hours / 24);
+        return String(days) + "d ago";
+    }
+    function createMarketCompareSection(doc, marketCompare, onCompareClick) {
+        var state = marketCompare && typeof marketCompare === "object" ? marketCompare : {};
+        var status = typeof state.status === "string" ? state.status : "idle";
+        var provider = typeof state.provider === "string" ? state.provider : "Depop";
+        var message = typeof state.message === "string" ? state.message : "";
+        var results = Array.isArray(state.results) ? state.results : [];
+        var section = doc.createElement("div");
+        section.className = "grailed-plus__market";
+        var header = doc.createElement("div");
+        header.className = "grailed-plus__market-header";
+        var title = doc.createElement("span");
+        title.className = "grailed-plus__market-title";
+        title.textContent = "Other Markets";
+        var chip = doc.createElement("span");
+        chip.className = "grailed-plus__market-chip";
+        if (status === "loading") {
+            chip.textContent = "Searching";
+        }
+        else if (status === "results") {
+            chip.textContent = "Results";
+        }
+        else if (status === "no-results") {
+            chip.textContent = "No Results";
+        }
+        else if (status === "error") {
+            chip.textContent = "Error";
+        }
+        else {
+            chip.textContent = "Ready";
+        }
+        header.appendChild(title);
+        header.appendChild(chip);
+        section.appendChild(header);
+        var providerLabel = doc.createElement("div");
+        providerLabel.className = "grailed-plus__market-provider";
+        providerLabel.textContent = provider;
+        section.appendChild(providerLabel);
+        if (message) {
+            var messageNode = doc.createElement("div");
+            messageNode.className = "grailed-plus__market-message";
+            messageNode.textContent = message;
+            section.appendChild(messageNode);
+        }
+        if (status === "results" && results.length > 0) {
+            var list = doc.createElement("div");
+            list.className = "grailed-plus__market-list";
+            results.forEach(function (entry) {
+                var row = doc.createElement("div");
+                row.className = "grailed-plus__market-row";
+                var link = doc.createElement("a");
+                link.className = "grailed-plus__market-link";
+                link.href = entry.url || "#";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = entry.title || "Listing";
+                var meta = doc.createElement("span");
+                meta.className = "grailed-plus__market-meta";
+                var parts = [];
+                if (Number.isFinite(entry.price)) {
+                    parts.push(formatCurrencyByCode(entry.price, entry.currency || "USD"));
+                }
+                if (Number.isFinite(entry.score)) {
+                    parts.push("score " + String(Math.round(entry.score)));
+                }
+                if (entry.deltaLabel) {
+                    parts.push(entry.deltaLabel);
+                }
+                meta.textContent = parts.join(" | ");
+                row.appendChild(link);
+                row.appendChild(meta);
+                list.appendChild(row);
+            });
+            section.appendChild(list);
+        }
+        if (Number.isFinite(state.lastCheckedAt)) {
+            var stamp = doc.createElement("div");
+            stamp.className = "grailed-plus__market-stamp";
+            stamp.textContent = "Last checked " + formatRelativeTimestamp(state.lastCheckedAt);
+            section.appendChild(stamp);
+        }
+        var actions = doc.createElement("div");
+        actions.className = "grailed-plus__market-actions";
+        var compareButton = doc.createElement("button");
+        compareButton.type = "button";
+        compareButton.className = "grailed-plus__button gp-button grailed-plus__button--market-compare";
+        compareButton.textContent = status === "loading" ? "Searching..." : "Compare on Depop";
+        compareButton.disabled = status === "loading";
+        if (typeof compareButton.addEventListener === "function") {
+            compareButton.addEventListener("click", function () {
+                if (typeof onCompareClick === "function") {
+                    onCompareClick();
+                }
+            });
+        }
+        actions.appendChild(compareButton);
+        section.appendChild(actions);
+        return section;
+    }
+    function renderInsightsPanel(options) {
+        var listing = options && options.listing ? options.listing : {};
+        var metrics = options && options.metrics ? options.metrics : {};
+        var mountNode = options && options.mountNode ? options.mountNode : null;
+        var mountPosition = options && options.mountPosition === "beforebegin" ? "beforebegin" : "afterend";
+        var rawListing = options && options.rawListing ? options.rawListing : null;
+        var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
+        var currencyContext = options && options.currencyContext ? options.currencyContext : null;
+        var marketCompare = options && options.marketCompare ? options.marketCompare : null;
+        var onMarketCompareClick = options && typeof options.onMarketCompareClick === "function"
+            ? options.onMarketCompareClick
+            : null;
+        var doc = (mountNode && mountNode.ownerDocument) || document;
+        if (!mountNode || !doc || typeof doc.createElement !== "function") {
+            return null;
+        }
+        removeExistingPanels(doc);
+        var panel = doc.createElement("section");
+        panel.className = "grailed-plus-panel";
+        panel.setAttribute(PANEL_ATTR, PANEL_ATTR_VALUE);
+        if (statusMessage) {
+            panel.appendChild(createRow(doc, "Status", statusMessage, "grailed-plus__row--status"));
+        }
+        var pricingHistory = listing && listing.pricing && Array.isArray(listing.pricing.history)
+            ? listing.pricing.history
+            : [];
+        panel.appendChild(createTrendChartRow(doc, listing, currencyContext));
+        var avgText = "N/A";
+        var avgTitle = "";
+        if (Number.isFinite(metrics.averageDropPercent) &&
+            Number.isFinite(metrics.averageDropAmountUsd)) {
+            var avgDisplay = buildMoneyDisplay(metrics.averageDropAmountUsd, currencyContext);
+            avgText = String(metrics.averageDropPercent) + "% (" + avgDisplay.text + ")";
+            if (avgDisplay.isConverted) {
+                avgTitle = "USD: " + avgDisplay.originalUsdText;
+            }
+        }
+        var avgClass = "";
+        if (metrics.averageDropPercent === 10 && pricingHistory.length > 2) {
+            avgClass = "grailed-plus__row--alert";
+        }
+        panel.appendChild(createRow(doc, "Avg. Price Drop", avgText, avgClass, avgTitle));
+        panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics)));
+        panel.appendChild(createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt)));
+        panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick));
+        var actions = doc.createElement("div");
+        actions.className = "grailed-plus__actions";
+        var metadataButton = doc.createElement("button");
+        metadataButton.type = "button";
+        metadataButton.className = "grailed-plus__button gp-button";
+        metadataButton.textContent = "Listing Metadata";
+        if (typeof metadataButton.addEventListener === "function") {
+            metadataButton.addEventListener("click", function () {
+                openMetadataInNewTab(rawListing, listing);
+            });
+        }
+        else {
+            metadataButton.onclick = function () {
+                openMetadataInNewTab(rawListing, listing);
+            };
+        }
+        actions.appendChild(metadataButton);
+        panel.appendChild(actions);
+        if (mountNode.parentNode) {
+            if (mountPosition === "beforebegin") {
+                if (typeof mountNode.insertAdjacentElement === "function") {
+                    mountNode.insertAdjacentElement("beforebegin", panel);
+                }
+                else {
+                    mountNode.parentNode.insertBefore(panel, mountNode);
+                }
+            }
+            else if (typeof mountNode.insertAdjacentElement === "function") {
+                mountNode.insertAdjacentElement("afterend", panel);
+            }
+            else if (mountNode.nextSibling) {
+                mountNode.parentNode.insertBefore(panel, mountNode.nextSibling);
+            }
+            else {
+                mountNode.parentNode.appendChild(panel);
+            }
+        }
+        else if (doc.body) {
+            doc.body.appendChild(panel);
+        }
+        return panel;
+    }
+    return {
+        PANEL_ATTR: PANEL_ATTR,
+        PANEL_ATTR_VALUE: PANEL_ATTR_VALUE,
+        findMountTarget: findMountTarget,
+        findMountNode: findMountNode,
         applySidebarCurrency: applySidebarCurrency,
         applyCardCurrency: applyCardCurrency,
-        syncCardCurrencyObserver: syncCardCurrencyObserver,
-        disconnectHydrationObserver: disconnectHydrationObserver,
-        log: log,
-        reason: reason,
-        attempt: attempt
-      });
-    });
-  }
+        nodeContainsCardPriceTarget: nodeContainsCardPriceTarget,
+        removeExistingPanels: removeExistingPanels,
+        renderInsightsPanel: renderInsightsPanel,
+        formatCurrency: formatCurrency,
+        formatMoney: formatMoney
+    };
+});
 
-  function refresh(reason) {
-    clearRetryTimer(true);
-    refreshDarkMode();
-    run(reason, 0);
-  }
-
-  function onNavigation(reason) {
-    if (location.href === state.lastUrl && reason !== "initial") {
-      return;
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
     }
-
-    state.lastUrl = String(location.href);
-    refresh(reason);
-  }
-
-  function setupNavigationListeners() {
-    if (!NavigationLifecycle || typeof NavigationLifecycle.setupNavigationListeners !== "function") {
-      return;
+    else {
+        root.GrailedPlusTheme = factory();
     }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    var DEFAULT_DARK_MODE_ENABLED = true;
+    var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
+    var DEFAULT_DARK_MODE_BASE_TONE = "#FFFFFF";
+    var ROOT_ATTR = "data-grailed-plus-dark-mode";
+    var ROOT_ATTR_VALUE = "1";
+    var CUSTOM_COLOR_ATTR = "data-grailed-plus-custom-color";
+    var CUSTOM_COLOR_ATTR_VALUE = "1";
+    var BLACK_BASE_ATTR = "data-grailed-plus-black-base";
+    var BLACK_BASE_ATTR_VALUE = "1";
+    var NEXT_ROOT_ATTR = "data-grailed-plus-next-root";
+    var NEXT_ROOT_ATTR_VALUE = "1";
+    var PRIMARY_COLOR_VAR = "--gp-dm-primary";
+    var PRIMARY_COLOR_USER_VAR = "--gp-dm-primary-user";
+    var PRIMARY_COLOR_SAFE_VAR = "--gp-dm-primary-safe";
+    var PRIMARY_COLOR_SAFE_RGB_VAR = "--gp-dm-primary-safe-rgb";
+    var DARK_MODE_TINT_SATURATION = 1;
+    var DARK_MODE_TINT_LIGHTNESS = 0.35;
+    function normalizeHexColor(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        var trimmed = input.trim();
+        if (!trimmed) {
+            return null;
+        }
+        var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+        if (shortMatch && shortMatch[1]) {
+            var shortHex = shortMatch[1].toUpperCase();
+            return ("#" +
+                shortHex.charAt(0) +
+                shortHex.charAt(0) +
+                shortHex.charAt(1) +
+                shortHex.charAt(1) +
+                shortHex.charAt(2) +
+                shortHex.charAt(2));
+        }
+        var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+        if (longMatch && longMatch[1]) {
+            return "#" + longMatch[1].toUpperCase();
+        }
+        return null;
+    }
+    function toHexChannel(value) {
+        var hex = value.toString(16).toUpperCase();
+        return hex.length === 1 ? "0" + hex : hex;
+    }
+    function clampUnit(value) {
+        if (value < 0) {
+            return 0;
+        }
+        if (value > 1) {
+            return 1;
+        }
+        return value;
+    }
+    function rgbToHsl(red, green, blue) {
+        var r = red / 255;
+        var g = green / 255;
+        var b = blue / 255;
+        var max = Math.max(r, g, b);
+        var min = Math.min(r, g, b);
+        var hue = 0;
+        var saturation = 0;
+        var lightness = (max + min) / 2;
+        if (max !== min) {
+            var diff = max - min;
+            saturation = lightness > 0.5 ? diff / (2 - max - min) : diff / (max + min);
+            if (max === r) {
+                hue = (g - b) / diff + (g < b ? 6 : 0);
+            }
+            else if (max === g) {
+                hue = (b - r) / diff + 2;
+            }
+            else {
+                hue = (r - g) / diff + 4;
+            }
+            hue = hue / 6;
+        }
+        return {
+            h: hue,
+            s: saturation,
+            l: lightness
+        };
+    }
+    function hueToRgb(p, q, t) {
+        var temp = t;
+        if (temp < 0) {
+            temp += 1;
+        }
+        if (temp > 1) {
+            temp -= 1;
+        }
+        if (temp < 1 / 6) {
+            return p + (q - p) * 6 * temp;
+        }
+        if (temp < 1 / 2) {
+            return q;
+        }
+        if (temp < 2 / 3) {
+            return p + (q - p) * (2 / 3 - temp) * 6;
+        }
+        return p;
+    }
+    function hslToRgb(hue, saturation, lightness) {
+        var h = hue;
+        var s = clampUnit(saturation);
+        var l = clampUnit(lightness);
+        var red;
+        var green;
+        var blue;
+        if (s === 0) {
+            red = l;
+            green = l;
+            blue = l;
+        }
+        else {
+            var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            var p = 2 * l - q;
+            red = hueToRgb(p, q, h + 1 / 3);
+            green = hueToRgb(p, q, h);
+            blue = hueToRgb(p, q, h - 1 / 3);
+        }
+        return {
+            r: Math.round(red * 255),
+            g: Math.round(green * 255),
+            b: Math.round(blue * 255)
+        };
+    }
+    function rotateHexHue(normalizedHex, degrees) {
+        var normalized = normalizeHexColor(normalizedHex);
+        if (!normalized) {
+            return null;
+        }
+        var red = parseInt(normalized.slice(1, 3), 16);
+        var green = parseInt(normalized.slice(3, 5), 16);
+        var blue = parseInt(normalized.slice(5, 7), 16);
+        var hsl = rgbToHsl(red, green, blue);
+        var normalizedDegrees = ((degrees % 360) + 360) % 360;
+        var hue = (hsl.h + normalizedDegrees / 360) % 1;
+        var rotated = hslToRgb(hue, hsl.s, hsl.l);
+        return "#" + toHexChannel(rotated.r) + toHexChannel(rotated.g) + toHexChannel(rotated.b);
+    }
+    function lockHexToHueOnly(normalizedHex) {
+        var normalized = normalizeHexColor(normalizedHex);
+        if (!normalized) {
+            return null;
+        }
+        var red = parseInt(normalized.slice(1, 3), 16);
+        var green = parseInt(normalized.slice(3, 5), 16);
+        var blue = parseInt(normalized.slice(5, 7), 16);
+        var hsl = rgbToHsl(red, green, blue);
+        var locked = hslToRgb(hsl.h, DARK_MODE_TINT_SATURATION, DARK_MODE_TINT_LIGHTNESS);
+        return "#" + toHexChannel(locked.r) + toHexChannel(locked.g) + toHexChannel(locked.b);
+    }
+    function invertHexColor(normalizedHex) {
+        var normalized = normalizeHexColor(normalizedHex);
+        if (!normalized) {
+            return null;
+        }
+        var red = 255 - parseInt(normalized.slice(1, 3), 16);
+        var green = 255 - parseInt(normalized.slice(3, 5), 16);
+        var blue = 255 - parseInt(normalized.slice(5, 7), 16);
+        return "#" + toHexChannel(red) + toHexChannel(green) + toHexChannel(blue);
+    }
+    function hexToRgbChannels(normalizedHex) {
+        var normalized = normalizeHexColor(normalizedHex);
+        if (!normalized) {
+            return null;
+        }
+        var red = parseInt(normalized.slice(1, 3), 16);
+        var green = parseInt(normalized.slice(3, 5), 16);
+        var blue = parseInt(normalized.slice(5, 7), 16);
+        return red + ", " + green + ", " + blue;
+    }
+    function normalizeDarkModeContext(context) {
+        var typedContext = context && typeof context === "object" ? context : null;
+        var normalizedPrimary = normalizeHexColor(typedContext && typedContext.primaryColor);
+        var primaryColor = normalizedPrimary || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+        return {
+            enabled: Boolean(typedContext && typedContext.enabled),
+            primaryColor: primaryColor,
+            customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR,
+            blackBaseEnabled: primaryColor === DEFAULT_DARK_MODE_PRIMARY_COLOR
+        };
+    }
+    function setAttribute(node, name, value) {
+        if (!node || typeof node.setAttribute !== "function") {
+            return;
+        }
+        node.setAttribute(name, value);
+    }
+    function removeAttribute(node, name) {
+        if (!node) {
+            return;
+        }
+        if (typeof node.removeAttribute === "function") {
+            node.removeAttribute(name);
+            return;
+        }
+        if (typeof node.setAttribute === "function") {
+            node.setAttribute(name, "");
+        }
+    }
+    function setCssVar(node, key, value) {
+        if (!node || !node.style || typeof node.style.setProperty !== "function") {
+            return;
+        }
+        node.style.setProperty(key, value);
+    }
+    function removeCssVar(node, key) {
+        if (!node || !node.style) {
+            return;
+        }
+        if (typeof node.style.removeProperty === "function") {
+            node.style.removeProperty(key);
+            return;
+        }
+        if (typeof node.style.setProperty === "function") {
+            node.style.setProperty(key, "");
+        }
+    }
+    function resolveRootNode(doc) {
+        if (!doc) {
+            return null;
+        }
+        var typedDoc = doc;
+        return typedDoc.documentElement || typedDoc.body || null;
+    }
+    function hasNextRoot(doc) {
+        if (!doc || typeof doc.getElementById !== "function") {
+            return false;
+        }
+        return Boolean(doc.getElementById("__next"));
+    }
+    function applyDarkModeToDocument(doc, context) {
+        var rootNode = resolveRootNode(doc);
+        if (!rootNode) {
+            return false;
+        }
+        var normalizedContext = normalizeDarkModeContext(context);
+        if (!normalizedContext.enabled) {
+            removeAttribute(rootNode, ROOT_ATTR);
+            removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+            removeAttribute(rootNode, BLACK_BASE_ATTR);
+            removeAttribute(rootNode, NEXT_ROOT_ATTR);
+            removeCssVar(rootNode, PRIMARY_COLOR_VAR);
+            removeCssVar(rootNode, PRIMARY_COLOR_USER_VAR);
+            removeCssVar(rootNode, PRIMARY_COLOR_SAFE_VAR);
+            removeCssVar(rootNode, PRIMARY_COLOR_SAFE_RGB_VAR);
+            return false;
+        }
+        setAttribute(rootNode, ROOT_ATTR, ROOT_ATTR_VALUE);
+        if (normalizedContext.customColorEnabled) {
+            setAttribute(rootNode, CUSTOM_COLOR_ATTR, CUSTOM_COLOR_ATTR_VALUE);
+        }
+        else {
+            removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
+        }
+        if (normalizedContext.blackBaseEnabled) {
+            setAttribute(rootNode, BLACK_BASE_ATTR, BLACK_BASE_ATTR_VALUE);
+        }
+        else {
+            removeAttribute(rootNode, BLACK_BASE_ATTR);
+        }
+        if (hasNextRoot(doc)) {
+            setAttribute(rootNode, NEXT_ROOT_ATTR, NEXT_ROOT_ATTR_VALUE);
+        }
+        else {
+            removeAttribute(rootNode, NEXT_ROOT_ATTR);
+        }
+        setCssVar(rootNode, PRIMARY_COLOR_USER_VAR, normalizedContext.primaryColor);
+        var hueOnlyColor = lockHexToHueOnly(normalizedContext.primaryColor) || normalizedContext.primaryColor;
+        // Body uses "invert(1) hue-rotate(180deg)", so pre-transform custom color accordingly.
+        var hueRotatedColor = rotateHexHue(hueOnlyColor, 180) || hueOnlyColor;
+        var safeColor = invertHexColor(hueRotatedColor) || DEFAULT_DARK_MODE_BASE_TONE;
+        var safeColorRgb = hexToRgbChannels(safeColor) || "255, 255, 255";
+        setCssVar(rootNode, PRIMARY_COLOR_SAFE_VAR, safeColor);
+        setCssVar(rootNode, PRIMARY_COLOR_SAFE_RGB_VAR, safeColorRgb);
+        // Keep base tone stable; custom color is applied through targeted gradient accents.
+        setCssVar(rootNode, PRIMARY_COLOR_VAR, DEFAULT_DARK_MODE_BASE_TONE);
+        return true;
+    }
+    return {
+        DEFAULT_DARK_MODE_ENABLED: DEFAULT_DARK_MODE_ENABLED,
+        DEFAULT_DARK_MODE_PRIMARY_COLOR: DEFAULT_DARK_MODE_PRIMARY_COLOR,
+        ROOT_ATTR: ROOT_ATTR,
+        ROOT_ATTR_VALUE: ROOT_ATTR_VALUE,
+        CUSTOM_COLOR_ATTR: CUSTOM_COLOR_ATTR,
+        CUSTOM_COLOR_ATTR_VALUE: CUSTOM_COLOR_ATTR_VALUE,
+        BLACK_BASE_ATTR: BLACK_BASE_ATTR,
+        BLACK_BASE_ATTR_VALUE: BLACK_BASE_ATTR_VALUE,
+        NEXT_ROOT_ATTR: NEXT_ROOT_ATTR,
+        NEXT_ROOT_ATTR_VALUE: NEXT_ROOT_ATTR_VALUE,
+        PRIMARY_COLOR_VAR: PRIMARY_COLOR_VAR,
+        PRIMARY_COLOR_USER_VAR: PRIMARY_COLOR_USER_VAR,
+        PRIMARY_COLOR_SAFE_VAR: PRIMARY_COLOR_SAFE_VAR,
+        PRIMARY_COLOR_SAFE_RGB_VAR: PRIMARY_COLOR_SAFE_RGB_VAR,
+        normalizeHexColor: normalizeHexColor,
+        normalizeDarkModeContext: normalizeDarkModeContext,
+        applyDarkModeToDocument: applyDarkModeToDocument
+    };
+});
 
-    NavigationLifecycle.setupNavigationListeners({
-      state: state,
-      onNavigation: onNavigation,
-      pollIntervalMs: URL_POLL_INTERVAL_MS,
-      history: history,
-      window: window,
-      location: location
-    });
-  }
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusContentRuntime = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function createRuntimeState() {
+        return {
+            // Start empty so first navigation pass always applies theme state on initial load.
+            lastUrl: "",
+            retryTimer: null,
+            urlPollTimer: null,
+            retryStartedAtMs: null,
+            mutationObserver: null,
+            renderToken: 0,
+            darkModeToken: 0,
+            darkModeMediaQuery: null,
+            darkModeMediaListener: null,
+            filterScopeTick: null,
+            filterScopeDelayTimers: [],
+            filterScopeObserver: null,
+            cardCurrencyObserver: null,
+            cardCurrencyTick: null,
+            cardCurrencyTickUsesAnimationFrame: false,
+            cardCurrencyContext: null,
+            marketCompareController: null,
+            marketCompareUnsubscribe: null,
+            latestPanelContext: null
+        };
+    }
+    function clearRetryTimer(state, resetWindow) {
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (state.retryTimer) {
+            clearTimeout(state.retryTimer);
+            state.retryTimer = null;
+        }
+        if (resetWindow) {
+            state.retryStartedAtMs = null;
+        }
+    }
+    function shouldStopRetryWindow(state, maxRetryWindowMs) {
+        if (!state || typeof state !== "object") {
+            return true;
+        }
+        if (state.retryStartedAtMs == null) {
+            state.retryStartedAtMs = Date.now();
+            return false;
+        }
+        return Date.now() - state.retryStartedAtMs > maxRetryWindowMs;
+    }
+    function scheduleHydrationObserver(options) {
+        if (!options || typeof options !== "object") {
+            return;
+        }
+        var state = options.state;
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (typeof MutationObserver !== "function") {
+            return;
+        }
+        if (state.mutationObserver) {
+            return;
+        }
+        var isListingPath = typeof options.isListingPath === "function" ? options.isListingPath : function () {
+            return false;
+        };
+        var getPathname = typeof options.getPathname === "function" ? options.getPathname : function () {
+            return "";
+        };
+        var getNextDataNode = typeof options.getNextDataNode === "function"
+            ? options.getNextDataNode
+            : function () {
+                return null;
+            };
+        var onHydrated = typeof options.onHydrated === "function"
+            ? options.onHydrated
+            : function () { };
+        var log = typeof options.log === "function" ? options.log : null;
+        var obs = new MutationObserver(function () {
+            if (!isListingPath(getPathname())) {
+                return;
+            }
+            var nextDataNode = getNextDataNode();
+            if (nextDataNode && nextDataNode.textContent) {
+                if (log) {
+                    log("hydration observer detected next data");
+                }
+                onHydrated();
+            }
+        });
+        obs.observe(document.documentElement || document.body, {
+            childList: true,
+            subtree: true
+        });
+        state.mutationObserver = obs;
+    }
+    function disconnectHydrationObserver(state) {
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (state.mutationObserver && typeof state.mutationObserver.disconnect === "function") {
+            state.mutationObserver.disconnect();
+        }
+        state.mutationObserver = null;
+    }
+    return {
+        createRuntimeState: createRuntimeState,
+        clearRetryTimer: clearRetryTimer,
+        shouldStopRetryWindow: shouldStopRetryWindow,
+        scheduleHydrationObserver: scheduleHydrationObserver,
+        disconnectHydrationObserver: disconnectHydrationObserver
+    };
+});
 
-  setupNavigationListeners();
-  setupDarkModeMediaListener();
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusNavigationLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function patchHistoryMethod(historyApi, methodName, dispatchNavigationEvent) {
+        if (!historyApi || typeof historyApi[methodName] !== "function") {
+            return;
+        }
+        var original = historyApi[methodName];
+        historyApi[methodName] = function () {
+            var args = Array.prototype.slice.call(arguments);
+            var result = original.apply(this, args);
+            dispatchNavigationEvent();
+            return result;
+        };
+    }
+    function setupNavigationListeners(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var onNavigation = typeof config.onNavigation === "function" ? config.onNavigation : function () { };
+        var pollIntervalMs = Number(config.pollIntervalMs);
+        var historyApi = config.history || history;
+        var windowApi = config.window || window;
+        var locationApi = config.location || location;
+        var eventName = typeof config.eventName === "string" && config.eventName.trim()
+            ? config.eventName.trim()
+            : "grailed-plus:navigation";
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0) {
+            pollIntervalMs = 1000;
+        }
+        var dispatchNavigationEvent = function () {
+            if (!windowApi || typeof windowApi.dispatchEvent !== "function") {
+                return;
+            }
+            try {
+                windowApi.dispatchEvent(new Event(eventName));
+            }
+            catch (_) {
+                // Ignore environments that cannot construct Event directly.
+            }
+        };
+        patchHistoryMethod(historyApi, "pushState", dispatchNavigationEvent);
+        patchHistoryMethod(historyApi, "replaceState", dispatchNavigationEvent);
+        windowApi.addEventListener(eventName, function () {
+            onNavigation("history");
+        });
+        windowApi.addEventListener("popstate", function () {
+            onNavigation("popstate");
+        });
+        state.urlPollTimer = setInterval(function () {
+            if (locationApi.href !== state.lastUrl) {
+                onNavigation("url_poll");
+            }
+        }, pollIntervalMs);
+    }
+    return {
+        patchHistoryMethod: patchHistoryMethod,
+        setupNavigationListeners: setupNavigationListeners
+    };
+});
 
-  if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      function () {
-        onNavigation("dom_content_loaded");
-      },
-      { once: true }
-    );
-  }
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusDarkModeLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function normalizeHexColor(input, settings) {
+        if (settings && typeof settings.normalizeHexColor === "function") {
+            return settings.normalizeHexColor(input);
+        }
+        if (typeof input !== "string") {
+            return null;
+        }
+        var trimmed = input.trim();
+        if (!trimmed) {
+            return null;
+        }
+        var shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+        if (shortMatch && shortMatch[1]) {
+            var shortHex = shortMatch[1].toUpperCase();
+            return ("#" +
+                shortHex.charAt(0) +
+                shortHex.charAt(0) +
+                shortHex.charAt(1) +
+                shortHex.charAt(1) +
+                shortHex.charAt(2) +
+                shortHex.charAt(2));
+        }
+        var longMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+        if (longMatch && longMatch[1]) {
+            return "#" + longMatch[1].toUpperCase();
+        }
+        return null;
+    }
+    function normalizeDarkModeBehavior(input, settings) {
+        if (settings && typeof settings.normalizeDarkModeBehavior === "function") {
+            return settings.normalizeDarkModeBehavior(input);
+        }
+        if (typeof input !== "string") {
+            return null;
+        }
+        var trimmed = input.trim().toLowerCase();
+        if (trimmed !== "system" && trimmed !== "permanent") {
+            return null;
+        }
+        return trimmed;
+    }
+    function getSystemDarkModeQuery() {
+        if (typeof globalThis.matchMedia !== "function") {
+            return null;
+        }
+        try {
+            return globalThis.matchMedia("(prefers-color-scheme: dark)");
+        }
+        catch (_) {
+            return null;
+        }
+    }
+    function getSystemPrefersDark() {
+        var query = getSystemDarkModeQuery();
+        return Boolean(query && query.matches);
+    }
+    function createDefaultDarkModeContext() {
+        return {
+            enabled: getSystemPrefersDark(),
+            behavior: "system",
+            primaryColor: "#000000"
+        };
+    }
+    function resolveDarkModeContext(settings) {
+        var defaultContext = createDefaultDarkModeContext();
+        if (!settings) {
+            return Promise.resolve(defaultContext);
+        }
+        var enabledPromise = typeof settings.getDarkModeEnabled === "function"
+            ? settings.getDarkModeEnabled()
+            : Promise.resolve(defaultContext.enabled);
+        var behaviorPromise = typeof settings.getDarkModeBehavior === "function"
+            ? settings.getDarkModeBehavior()
+            : Promise.resolve(defaultContext.behavior);
+        var colorPromise = typeof settings.getDarkModePrimaryColor === "function"
+            ? settings.getDarkModePrimaryColor()
+            : Promise.resolve(defaultContext.primaryColor);
+        return Promise.all([enabledPromise, behaviorPromise, colorPromise])
+            .then(function (values) {
+            var configuredEnabled = Boolean(values[0]);
+            var behavior = normalizeDarkModeBehavior(values[1], settings) || defaultContext.behavior;
+            var primaryColor = normalizeHexColor(values[2], settings) || defaultContext.primaryColor;
+            var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
+            return {
+                enabled: enabled,
+                behavior: behavior,
+                primaryColor: primaryColor
+            };
+        })
+            .catch(function () {
+            return defaultContext;
+        });
+    }
+    function refreshDarkMode(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var settings = config.settings || null;
+        var onApply = typeof config.onApply === "function" ? config.onApply : function () { };
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        var darkModeToken = state.darkModeToken + 1;
+        state.darkModeToken = darkModeToken;
+        var safeState = state;
+        resolveDarkModeContext(settings).then(function (darkModeContext) {
+            if (darkModeToken !== safeState.darkModeToken) {
+                return;
+            }
+            onApply(darkModeContext);
+        });
+    }
+    function setupDarkModeMediaListener(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var onChange = typeof config.onChange === "function" ? config.onChange : function () { };
+        if (!state || typeof state !== "object" || state.darkModeMediaQuery) {
+            return;
+        }
+        var query = getSystemDarkModeQuery();
+        if (!query) {
+            return;
+        }
+        var listener = function () {
+            onChange();
+        };
+        if (typeof query.addEventListener === "function") {
+            query.addEventListener("change", listener);
+        }
+        else if (typeof query.addListener === "function") {
+            query.addListener(listener);
+        }
+        else {
+            return;
+        }
+        state.darkModeMediaQuery = query;
+        state.darkModeMediaListener = listener;
+    }
+    return {
+        normalizeHexColor: normalizeHexColor,
+        normalizeDarkModeBehavior: normalizeDarkModeBehavior,
+        getSystemDarkModeQuery: getSystemDarkModeQuery,
+        getSystemPrefersDark: getSystemPrefersDark,
+        createDefaultDarkModeContext: createDefaultDarkModeContext,
+        resolveDarkModeContext: resolveDarkModeContext,
+        refreshDarkMode: refreshDarkMode,
+        setupDarkModeMediaListener: setupDarkModeMediaListener
+    };
+});
 
-  onNavigation("initial");
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusFilterScopeLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function getThemeAttrOrFallback(theme, key, fallback) {
+        if (!theme || typeof theme !== "object") {
+            return fallback;
+        }
+        return theme[key] || fallback;
+    }
+    function clearFilterTargets(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var documentObj = config.documentObj;
+        var filterTargetAttr = config.filterTargetAttr;
+        var filterScopeSkipAttr = config.filterScopeSkipAttr;
+        if (!documentObj ||
+            typeof documentObj.querySelectorAll !== "function" ||
+            typeof filterTargetAttr !== "string" ||
+            typeof filterScopeSkipAttr !== "string") {
+            return;
+        }
+        var nodes = documentObj.querySelectorAll("[" + filterTargetAttr + "],[" + filterScopeSkipAttr + "]");
+        var i;
+        var node;
+        for (i = 0; i < nodes.length; i += 1) {
+            node = nodes[i];
+            if (typeof node.removeAttribute === "function") {
+                node.removeAttribute(filterTargetAttr);
+                node.removeAttribute(filterScopeSkipAttr);
+            }
+        }
+    }
+    function getDarkModeRootState(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var documentObj = config.documentObj;
+        var theme = config.theme;
+        if (!documentObj) {
+            return {
+                rootNode: null,
+                bodyNode: null,
+                nextRoot: null,
+                enabled: false,
+                mode: "none",
+                filterRoot: null
+            };
+        }
+        var rootNode = documentObj.documentElement || null;
+        var bodyNode = documentObj.body || null;
+        var nextRoot = typeof documentObj.getElementById === "function"
+            ? documentObj.getElementById("__next")
+            : null;
+        var rootAttr = getThemeAttrOrFallback(theme, "ROOT_ATTR", "data-grailed-plus-dark-mode");
+        var nextRootAttr = getThemeAttrOrFallback(theme, "NEXT_ROOT_ATTR", "data-grailed-plus-next-root");
+        var rootEnabled = Boolean(rootNode && rootNode.getAttribute(rootAttr) === "1");
+        var nextRootEnabled = Boolean(rootNode && rootNode.getAttribute(nextRootAttr) === "1");
+        var filterRoot = null;
+        var mode = "none";
+        if (rootEnabled && nextRootEnabled && nextRoot) {
+            filterRoot = nextRoot;
+            mode = "next";
+        }
+        else if (rootEnabled && bodyNode) {
+            filterRoot = bodyNode;
+            mode = "legacy";
+        }
+        return {
+            rootNode: rootNode,
+            bodyNode: bodyNode,
+            nextRoot: nextRoot,
+            enabled: Boolean(filterRoot),
+            mode: mode,
+            filterRoot: filterRoot
+        };
+    }
+    function containsHeaderBoundary(node, headerRoot, headerSelector, menuSelector) {
+        if (!node) {
+            return false;
+        }
+        if (headerRoot && node === headerRoot) {
+            return true;
+        }
+        if (typeof node.matches === "function") {
+            if (node.matches(headerSelector) || node.matches(menuSelector)) {
+                return true;
+            }
+        }
+        if (typeof node.querySelector === "function") {
+            return Boolean(node.querySelector(headerSelector + ", " + menuSelector));
+        }
+        return false;
+    }
+    function isDirectHeaderBoundary(node, headerRoot, headerSelector, menuSelector) {
+        if (!node) {
+            return false;
+        }
+        if (headerRoot && node === headerRoot) {
+            return true;
+        }
+        if (typeof node.matches !== "function") {
+            return false;
+        }
+        return Boolean(node.matches(headerSelector) || node.matches(menuSelector));
+    }
+    function markFilterTargetsWithin(boundaryNode, headerRoot, depth, options) {
+        var config = options && typeof options === "object" ? options : {};
+        var headerSelector = config.headerSelector;
+        var menuSelector = config.menuSelector;
+        var filterTargetAttr = config.filterTargetAttr;
+        var filterTargetAttrValue = config.filterTargetAttrValue;
+        var filterScopeSkipAttr = config.filterScopeSkipAttr;
+        var filterScopeSkipAttrValue = config.filterScopeSkipAttrValue;
+        if (!boundaryNode ||
+            !boundaryNode.children ||
+            depth > 6 ||
+            !headerSelector ||
+            !menuSelector ||
+            !filterTargetAttr ||
+            !filterScopeSkipAttr) {
+            return;
+        }
+        var children = boundaryNode.children;
+        var i;
+        var child;
+        var hasBoundary;
+        var isDirectBoundary;
+        for (i = 0; i < children.length; i += 1) {
+            child = children[i];
+            isDirectBoundary = isDirectHeaderBoundary(child, headerRoot, headerSelector, menuSelector);
+            if (isDirectBoundary) {
+                if (typeof child.setAttribute === "function") {
+                    child.setAttribute(filterScopeSkipAttr, filterScopeSkipAttrValue);
+                }
+                continue;
+            }
+            hasBoundary = containsHeaderBoundary(child, headerRoot, headerSelector, menuSelector);
+            if (hasBoundary) {
+                if (typeof child.setAttribute === "function") {
+                    child.setAttribute(filterScopeSkipAttr, filterScopeSkipAttrValue);
+                }
+                markFilterTargetsWithin(child, headerRoot, depth + 1, config);
+                continue;
+            }
+            if (typeof child.setAttribute === "function") {
+                child.setAttribute(filterTargetAttr, filterTargetAttrValue);
+            }
+        }
+    }
+    function refreshFilterTargets(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var documentObj = config.documentObj;
+        var headerSelector = config.headerSelector;
+        var menuSelector = config.menuSelector;
+        clearFilterTargets(config);
+        if (!documentObj || !headerSelector || !menuSelector) {
+            return;
+        }
+        var modeState = getDarkModeRootState({
+            documentObj: documentObj,
+            theme: config.theme
+        });
+        if (!modeState.enabled) {
+            return;
+        }
+        var filterRoot = modeState.filterRoot;
+        if (!filterRoot || !filterRoot.children) {
+            return;
+        }
+        var headerRoot = typeof filterRoot.querySelector === "function" ? filterRoot.querySelector(headerSelector) : null;
+        var topChildren = filterRoot.children;
+        var i;
+        var topChild;
+        var hasBoundary;
+        for (i = 0; i < topChildren.length; i += 1) {
+            topChild = topChildren[i];
+            hasBoundary = containsHeaderBoundary(topChild, headerRoot, headerSelector, menuSelector);
+            if (hasBoundary) {
+                if (typeof topChild.setAttribute === "function") {
+                    topChild.setAttribute(config.filterScopeSkipAttr || "", config.filterScopeSkipAttrValue || "1");
+                }
+                markFilterTargetsWithin(topChild, headerRoot, 0, {
+                    headerSelector: headerSelector,
+                    menuSelector: menuSelector,
+                    filterTargetAttr: config.filterTargetAttr || "",
+                    filterTargetAttrValue: config.filterTargetAttrValue || "1",
+                    filterScopeSkipAttr: config.filterScopeSkipAttr || "",
+                    filterScopeSkipAttrValue: config.filterScopeSkipAttrValue || "1"
+                });
+                continue;
+            }
+            if (typeof topChild.setAttribute === "function") {
+                topChild.setAttribute(config.filterTargetAttr || "", config.filterTargetAttrValue || "1");
+            }
+        }
+    }
+    function scheduleFilterTargetsRefresh(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var onRefresh = typeof config.onRefresh === "function" ? config.onRefresh : function () { };
+        if (!state || typeof state !== "object" || state.filterScopeTick != null) {
+            return;
+        }
+        var safeState = state;
+        var run = function () {
+            safeState.filterScopeTick = null;
+            onRefresh();
+        };
+        if (typeof globalThis.requestAnimationFrame === "function") {
+            safeState.filterScopeTick = globalThis.requestAnimationFrame(run);
+            return;
+        }
+        safeState.filterScopeTick = globalThis.setTimeout(run, 16);
+    }
+    function clearFilterTargetsRefreshDelayTimers(state) {
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        var timers = state.filterScopeDelayTimers || [];
+        var i;
+        for (i = 0; i < timers.length; i += 1) {
+            clearTimeout(timers[i]);
+        }
+        state.filterScopeDelayTimers = [];
+    }
+    function scheduleFilterTargetsRefreshBurst(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var delays = Array.isArray(config.delays) ? config.delays : [];
+        var onScheduleRefresh = typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () { };
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        var timers = [];
+        var i;
+        var delayMs;
+        clearFilterTargetsRefreshDelayTimers(state);
+        onScheduleRefresh();
+        for (i = 0; i < delays.length; i += 1) {
+            delayMs = delays[i];
+            timers.push(globalThis.setTimeout(onScheduleRefresh, delayMs));
+        }
+        state.filterScopeDelayTimers = timers;
+    }
+    function setupFilterScopeObserver(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var documentObj = config.documentObj;
+        var onScheduleRefresh = typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () { };
+        if (!state ||
+            typeof state !== "object" ||
+            state.filterScopeObserver ||
+            typeof MutationObserver !== "function" ||
+            !documentObj) {
+            return;
+        }
+        var root = documentObj.body || documentObj.documentElement;
+        if (!root) {
+            return;
+        }
+        var observer = new MutationObserver(function (mutations) {
+            var i;
+            var mutation;
+            var shouldRefresh = false;
+            for (i = 0; i < mutations.length; i += 1) {
+                mutation = mutations[i];
+                if (!mutation) {
+                    continue;
+                }
+                if (mutation.type === "childList") {
+                    if ((mutation.addedNodes && mutation.addedNodes.length > 0) ||
+                        (mutation.removedNodes && mutation.removedNodes.length > 0)) {
+                        shouldRefresh = true;
+                        break;
+                    }
+                    continue;
+                }
+                if (mutation.type === "attributes") {
+                    shouldRefresh = true;
+                    break;
+                }
+            }
+            if (shouldRefresh) {
+                onScheduleRefresh();
+            }
+        });
+        observer.observe(root, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["class", "style", "id"]
+        });
+        state.filterScopeObserver = observer;
+    }
+    function disconnectFilterScopeObserver(state) {
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (state.filterScopeObserver && typeof state.filterScopeObserver.disconnect === "function") {
+            state.filterScopeObserver.disconnect();
+        }
+        state.filterScopeObserver = null;
+    }
+    function syncFilterScopeObserver(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var enabled = Boolean(config.enabled);
+        var onSetup = typeof config.onSetup === "function" ? config.onSetup : function () { };
+        var onDisconnect = typeof config.onDisconnect === "function" ? config.onDisconnect : function () { };
+        if (!enabled) {
+            onDisconnect();
+            return;
+        }
+        onSetup();
+    }
+    return {
+        getThemeAttrOrFallback: getThemeAttrOrFallback,
+        clearFilterTargets: clearFilterTargets,
+        getDarkModeRootState: getDarkModeRootState,
+        refreshFilterTargets: refreshFilterTargets,
+        scheduleFilterTargetsRefresh: scheduleFilterTargetsRefresh,
+        clearFilterTargetsRefreshDelayTimers: clearFilterTargetsRefreshDelayTimers,
+        scheduleFilterTargetsRefreshBurst: scheduleFilterTargetsRefreshBurst,
+        setupFilterScopeObserver: setupFilterScopeObserver,
+        disconnectFilterScopeObserver: disconnectFilterScopeObserver,
+        syncFilterScopeObserver: syncFilterScopeObserver
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusCardCurrencyLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function isConversionContextEnabled(currencyContext, normalizeCurrencyCode) {
+        var selectedCurrency = typeof normalizeCurrencyCode === "function"
+            ? normalizeCurrencyCode(currencyContext && currencyContext.selectedCurrency)
+            : null;
+        var rate = Number(currencyContext && currencyContext.rate);
+        return Boolean(selectedCurrency && selectedCurrency !== "USD" && Number.isFinite(rate) && rate > 0);
+    }
+    function isElementNode(node) {
+        if (!node) {
+            return false;
+        }
+        if (node.nodeType === 1) {
+            return true;
+        }
+        return typeof node.querySelector === "function";
+    }
+    function nodeContainsCardPriceTarget(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var node = config.node;
+        var insightsPanel = config.insightsPanel;
+        var selector = config.selector;
+        if (!isElementNode(node)) {
+            return false;
+        }
+        if (insightsPanel && typeof insightsPanel.nodeContainsCardPriceTarget === "function") {
+            try {
+                return Boolean(insightsPanel.nodeContainsCardPriceTarget(node));
+            }
+            catch (_) {
+                // Fall through to local selector checks.
+            }
+        }
+        if (typeof node.matches === "function") {
+            if (node.matches(selector)) {
+                return true;
+            }
+        }
+        if (typeof node.querySelector === "function") {
+            return Boolean(node.querySelector(selector));
+        }
+        return false;
+    }
+    function clearCardCurrencyTick(state) {
+        if (!state || typeof state !== "object" || state.cardCurrencyTick == null) {
+            return;
+        }
+        if (state.cardCurrencyTickUsesAnimationFrame &&
+            typeof globalThis.cancelAnimationFrame === "function") {
+            globalThis.cancelAnimationFrame(state.cardCurrencyTick);
+        }
+        else {
+            clearTimeout(state.cardCurrencyTick);
+        }
+        state.cardCurrencyTick = null;
+        state.cardCurrencyTickUsesAnimationFrame = false;
+    }
+    function disconnectCardCurrencyObserver(state) {
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (state.cardCurrencyObserver && typeof state.cardCurrencyObserver.disconnect === "function") {
+            state.cardCurrencyObserver.disconnect();
+        }
+        state.cardCurrencyObserver = null;
+        state.cardCurrencyContext = null;
+        clearCardCurrencyTick(state);
+    }
+    function scheduleCardCurrencyRefresh(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var onRefresh = typeof config.onRefresh === "function" ? config.onRefresh : function () { };
+        if (!state || typeof state !== "object" || state.cardCurrencyTick != null) {
+            return;
+        }
+        var run = function () {
+            state.cardCurrencyTick = null;
+            state.cardCurrencyTickUsesAnimationFrame = false;
+            onRefresh();
+        };
+        if (typeof globalThis.requestAnimationFrame === "function") {
+            state.cardCurrencyTickUsesAnimationFrame = true;
+            state.cardCurrencyTick = globalThis.requestAnimationFrame(run);
+            return;
+        }
+        state.cardCurrencyTickUsesAnimationFrame = false;
+        state.cardCurrencyTick = globalThis.setTimeout(run, 16);
+    }
+    function setupCardCurrencyObserver(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var documentObj = config.documentObj;
+        var selector = config.selector;
+        var insightsPanel = config.insightsPanel;
+        var onScheduleRefresh = typeof config.onScheduleRefresh === "function" ? config.onScheduleRefresh : function () { };
+        if (!state || typeof state !== "object" || state.cardCurrencyObserver || typeof MutationObserver !== "function") {
+            return;
+        }
+        var root = documentObj.body || documentObj.documentElement;
+        if (!root) {
+            return;
+        }
+        var observer = new MutationObserver(function (mutations) {
+            var i;
+            var j;
+            var mutation;
+            var addedNode;
+            var shouldRefresh = false;
+            var mutationTarget;
+            for (i = 0; i < mutations.length; i += 1) {
+                mutation = mutations[i];
+                if (!mutation) {
+                    continue;
+                }
+                mutationTarget = mutation.target || null;
+                if (mutation.type === "characterData") {
+                    if (nodeContainsCardPriceTarget({
+                        node: mutationTarget && mutationTarget.parentNode,
+                        insightsPanel: insightsPanel,
+                        selector: selector
+                    })) {
+                        shouldRefresh = true;
+                        break;
+                    }
+                    continue;
+                }
+                if (mutation.type !== "childList") {
+                    continue;
+                }
+                if (nodeContainsCardPriceTarget({
+                    node: mutationTarget,
+                    insightsPanel: insightsPanel,
+                    selector: selector
+                })) {
+                    shouldRefresh = true;
+                    break;
+                }
+                if (!mutation.addedNodes) {
+                    continue;
+                }
+                for (j = 0; j < mutation.addedNodes.length; j += 1) {
+                    addedNode = mutation.addedNodes[j];
+                    if (addedNode && addedNode.nodeType === 3) {
+                        if (nodeContainsCardPriceTarget({
+                            node: addedNode.parentNode,
+                            insightsPanel: insightsPanel,
+                            selector: selector
+                        })) {
+                            shouldRefresh = true;
+                            break;
+                        }
+                        continue;
+                    }
+                    if (nodeContainsCardPriceTarget({
+                        node: addedNode,
+                        insightsPanel: insightsPanel,
+                        selector: selector
+                    })) {
+                        shouldRefresh = true;
+                        break;
+                    }
+                }
+                if (shouldRefresh) {
+                    break;
+                }
+            }
+            if (shouldRefresh) {
+                onScheduleRefresh();
+            }
+        });
+        observer.observe(root, {
+            childList: true,
+            attributes: true,
+            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-testid"],
+            characterData: true,
+            subtree: true
+        });
+        state.cardCurrencyObserver = observer;
+    }
+    function syncCardCurrencyObserver(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var currencyContext = config.currencyContext;
+        var createUsdCurrencyContext = config.createUsdCurrencyContext;
+        var normalizeCurrencyCode = config.normalizeCurrencyCode;
+        var onSetup = typeof config.onSetup === "function" ? config.onSetup : function () { };
+        var onDisconnect = typeof config.onDisconnect === "function" ? config.onDisconnect : function () { };
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        state.cardCurrencyContext =
+            currencyContext ||
+                (typeof createUsdCurrencyContext === "function" ? createUsdCurrencyContext() : null);
+        if (!isConversionContextEnabled(state.cardCurrencyContext, normalizeCurrencyCode)) {
+            onDisconnect();
+            return;
+        }
+        onSetup();
+    }
+    return {
+        isConversionContextEnabled: isConversionContextEnabled,
+        nodeContainsCardPriceTarget: nodeContainsCardPriceTarget,
+        clearCardCurrencyTick: clearCardCurrencyTick,
+        disconnectCardCurrencyObserver: disconnectCardCurrencyObserver,
+        scheduleCardCurrencyRefresh: scheduleCardCurrencyRefresh,
+        setupCardCurrencyObserver: setupCardCurrencyObserver,
+        syncCardCurrencyObserver: syncCardCurrencyObserver
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusMarketCompareLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function ensureMarketCompareController(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var marketCompareControllerApi = config.marketCompareControllerApi;
+        var marketProviders = config.marketProviders;
+        var depopProviderFactory = config.depopProviderFactory;
+        var onStateUpdate = typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () { };
+        if (!state || typeof state !== "object") {
+            return null;
+        }
+        if (state.marketCompareController) {
+            return state.marketCompareController;
+        }
+        if (!marketCompareControllerApi ||
+            typeof marketCompareControllerApi.createController !== "function") {
+            return null;
+        }
+        var registry = marketProviders && typeof marketProviders.createRegistry === "function"
+            ? marketProviders.createRegistry()
+            : null;
+        var depopProvider = depopProviderFactory && typeof depopProviderFactory.createDepopProvider === "function"
+            ? depopProviderFactory.createDepopProvider({
+                maxRequests: 5,
+                cooldownMs: 1200
+            })
+            : null;
+        var mockProvider = !depopProvider &&
+            marketProviders &&
+            typeof marketProviders.createMockDepopProvider === "function"
+            ? marketProviders.createMockDepopProvider()
+            : null;
+        if (registry && typeof registry.register === "function") {
+            if (depopProvider) {
+                registry.register(depopProvider);
+            }
+            else if (mockProvider) {
+                registry.register(mockProvider);
+            }
+        }
+        state.marketCompareController = marketCompareControllerApi.createController({
+            providerRegistry: registry,
+            provider: depopProvider || mockProvider
+        });
+        if (state.marketCompareController &&
+            typeof state.marketCompareController.subscribe === "function") {
+            state.marketCompareUnsubscribe = state.marketCompareController.subscribe(function (nextState) {
+                onStateUpdate(nextState);
+            });
+        }
+        return state.marketCompareController;
+    }
+    function triggerMarketCompare(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var ensureController = typeof config.ensureController === "function" ? config.ensureController : function () {
+            return null;
+        };
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        var controller = ensureController();
+        var context = state.latestPanelContext;
+        if (!controller || !context || typeof controller.compare !== "function") {
+            return;
+        }
+        controller.compare({
+            listing: context.listing,
+            currency: context.currencyContext && context.currencyContext.selectedCurrency
+                ? context.currencyContext.selectedCurrency
+                : "USD",
+            currencyRate: context.currencyContext && Number.isFinite(Number(context.currencyContext.rate))
+                ? Number(context.currencyContext.rate)
+                : null,
+            currencyRates: context.currencyContext &&
+                context.currencyContext.usdRates &&
+                typeof context.currencyContext.usdRates === "object"
+                ? context.currencyContext.usdRates
+                : null
+        });
+    }
+    function renderPanelWithMarketCompare(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var ensureController = typeof config.ensureController === "function" ? config.ensureController : function () {
+            return null;
+        };
+        var renderListingInsightsPanel = typeof config.renderListingInsightsPanel === "function"
+            ? config.renderListingInsightsPanel
+            : function () {
+                return null;
+            };
+        var onMarketCompareClick = typeof config.onMarketCompareClick === "function" ? config.onMarketCompareClick : function () { };
+        var panelOptions = config.panelOptions && typeof config.panelOptions === "object" ? config.panelOptions : {};
+        if (!state || typeof state !== "object") {
+            return null;
+        }
+        var controller = ensureController();
+        if (controller && typeof controller.resetForListing === "function") {
+            controller.resetForListing(panelOptions.listing || null);
+        }
+        var marketCompareState = controller && typeof controller.getState === "function" ? controller.getState() : null;
+        state.latestPanelContext = {
+            listing: panelOptions.listing || null,
+            metrics: panelOptions.metrics || null,
+            mountNode: panelOptions.mountNode || null,
+            mountPosition: panelOptions.mountPosition || "afterend",
+            rawListing: panelOptions.rawListing || null,
+            statusMessage: panelOptions.statusMessage || "",
+            currencyContext: panelOptions.currencyContext || null,
+            renderToken: state.renderToken
+        };
+        return renderListingInsightsPanel({
+            listing: state.latestPanelContext.listing,
+            metrics: state.latestPanelContext.metrics,
+            mountNode: state.latestPanelContext.mountNode,
+            mountPosition: state.latestPanelContext.mountPosition,
+            rawListing: state.latestPanelContext.rawListing,
+            statusMessage: state.latestPanelContext.statusMessage,
+            currencyContext: state.latestPanelContext.currencyContext,
+            marketCompare: marketCompareState,
+            onMarketCompareClick: onMarketCompareClick
+        });
+    }
+    return {
+        ensureMarketCompareController: ensureMarketCompareController,
+        triggerMarketCompare: triggerMarketCompare,
+        renderPanelWithMarketCompare: renderPanelWithMarketCompare
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusCurrencyLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function createUsdCurrencyContext() {
+        return {
+            selectedCurrency: "USD",
+            rate: null,
+            mode: "dual"
+        };
+    }
+    function normalizeCurrencyCode(input, settings) {
+        if (settings && typeof settings.normalizeCurrencyCode === "function") {
+            return settings.normalizeCurrencyCode(input);
+        }
+        if (typeof input !== "string") {
+            return null;
+        }
+        var trimmed = input.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(trimmed)) {
+            return null;
+        }
+        return trimmed;
+    }
+    function resolveCurrencyContext(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var settings = config.settings || null;
+        var currencyApi = config.currencyApi || null;
+        var normalizeCurrencyCodeFn = typeof config.normalizeCurrencyCode === "function"
+            ? config.normalizeCurrencyCode
+            : function (value) {
+                return normalizeCurrencyCode(value, settings);
+            };
+        var defaultContext = createUsdCurrencyContext();
+        if (!settings || typeof settings.getSelectedCurrency !== "function") {
+            return Promise.resolve(defaultContext);
+        }
+        var enabledPromise = typeof settings.getCurrencyConversionEnabled === "function"
+            ? settings.getCurrencyConversionEnabled()
+            : Promise.resolve(false);
+        var selectedCurrencyGetter = settings && settings.getSelectedCurrency;
+        return enabledPromise
+            .then(function (enabled) {
+            if (!enabled) {
+                return defaultContext;
+            }
+            return typeof selectedCurrencyGetter === "function" ? selectedCurrencyGetter() : defaultContext;
+        })
+            .then(function (savedCurrency) {
+            if (typeof savedCurrency !== "string") {
+                return defaultContext;
+            }
+            var selectedCurrency = normalizeCurrencyCodeFn(savedCurrency) || defaultContext.selectedCurrency;
+            var context = {
+                selectedCurrency: selectedCurrency,
+                rate: null,
+                mode: "dual"
+            };
+            if (selectedCurrency === "USD") {
+                return context;
+            }
+            if (!currencyApi || typeof currencyApi.getRates !== "function") {
+                return context;
+            }
+            return currencyApi
+                .getRates("USD")
+                .then(function (result) {
+                var rates = result && result.rates && typeof result.rates === "object" ? result.rates : {};
+                var rate = Number(rates[selectedCurrency]);
+                if (Number.isFinite(rate) && rate > 0) {
+                    context.rate = rate;
+                }
+                context.usdRates = rates;
+                return context;
+            })
+                .catch(function () {
+                return context;
+            });
+        })
+            .catch(function () {
+            return defaultContext;
+        });
+    }
+    function applySidebarCurrency(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var insightsPanel = config.insightsPanel;
+        var documentObj = config.documentObj;
+        var currencyContext = config.currencyContext;
+        if (!insightsPanel || typeof insightsPanel.applySidebarCurrency !== "function") {
+            return false;
+        }
+        try {
+            return insightsPanel.applySidebarCurrency(documentObj, currencyContext || createUsdCurrencyContext());
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    function applyCardCurrency(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var insightsPanel = config.insightsPanel;
+        var documentObj = config.documentObj;
+        var currencyContext = config.currencyContext;
+        if (!insightsPanel || typeof insightsPanel.applyCardCurrency !== "function") {
+            return false;
+        }
+        try {
+            return insightsPanel.applyCardCurrency(documentObj, currencyContext || createUsdCurrencyContext());
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    return {
+        createUsdCurrencyContext: createUsdCurrencyContext,
+        normalizeCurrencyCode: normalizeCurrencyCode,
+        resolveCurrencyContext: resolveCurrencyContext,
+        applySidebarCurrency: applySidebarCurrency,
+        applyCardCurrency: applyCardCurrency
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusListingInsightsLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function createDefaultListingModel() {
+        return {
+            id: null,
+            title: "",
+            createdAt: null,
+            pricing: {
+                history: [],
+                updatedAt: null
+            },
+            seller: {
+                createdAt: null
+            },
+            prettyPath: null,
+            sold: false,
+            rawListing: null,
+            sourceStatus: "missing_listing"
+        };
+    }
+    function resolveMountTarget(insightsPanel, doc) {
+        if (!insightsPanel) {
+            return null;
+        }
+        if (typeof insightsPanel.findMountTarget === "function") {
+            return insightsPanel.findMountTarget(doc);
+        }
+        if (typeof insightsPanel.findMountNode === "function") {
+            var legacyMountNode = insightsPanel.findMountNode(doc);
+            if (!legacyMountNode) {
+                return null;
+            }
+            return {
+                mountNode: legacyMountNode,
+                mountPosition: "afterend",
+                strategy: "legacy_mount_node"
+            };
+        }
+        return null;
+    }
+    function normalizeListingModel(listing) {
+        if (!listing || typeof listing !== "object") {
+            return createDefaultListingModel();
+        }
+        var existingPricing = listing.pricing && typeof listing.pricing === "object" ? listing.pricing : {};
+        var history = Array.isArray(existingPricing.history)
+            ? existingPricing.history
+            : Array.isArray(listing.priceDrops)
+                ? listing.priceDrops
+                : [];
+        var updatedAt = typeof existingPricing.updatedAt === "string" || existingPricing.updatedAt === null
+            ? existingPricing.updatedAt
+            : listing.priceUpdatedAt || null;
+        return {
+            id: listing.id || null,
+            title: typeof listing.title === "string" ? listing.title : "",
+            createdAt: listing.createdAt || null,
+            pricing: {
+                history: history,
+                updatedAt: updatedAt
+            },
+            seller: listing.seller && typeof listing.seller === "object"
+                ? {
+                    createdAt: listing.seller.createdAt || null
+                }
+                : {
+                    createdAt: null
+                },
+            prettyPath: listing.prettyPath || null,
+            sold: Boolean(listing.sold),
+            rawListing: listing.rawListing || null,
+            sourceStatus: listing.sourceStatus || "ok"
+        };
+    }
+    function computeListingInsights(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var listing = config.listing;
+        var pricingInsights = config.pricingInsights;
+        if (pricingInsights && typeof pricingInsights.computePricingInsights === "function") {
+            return pricingInsights.computePricingInsights(listing);
+        }
+        if (pricingInsights && typeof pricingInsights.computeMetrics === "function") {
+            var legacy = pricingInsights.computeMetrics({
+                priceDrops: listing && listing.pricing ? listing.pricing.history : [],
+                createdAt: listing ? listing.createdAt : null,
+                priceUpdatedAt: listing && listing.pricing ? listing.pricing.updatedAt : null
+            });
+            return {
+                averageDropAmountUsd: legacy && Number.isFinite(legacy.avgDropAmount) ? legacy.avgDropAmount : null,
+                averageDropPercent: legacy && Number.isFinite(legacy.avgDropPercent) ? legacy.avgDropPercent : null,
+                expectedNextDropDays: legacy && Number.isFinite(legacy.expectedDropDays) ? legacy.expectedDropDays : null,
+                expectedDropState: legacy && typeof legacy.expectedDropState === "string"
+                    ? legacy.expectedDropState
+                    : "insufficient_data",
+                totalDrops: legacy && Number.isFinite(legacy.totalDrops) ? legacy.totalDrops : 0
+            };
+        }
+        return {
+            averageDropAmountUsd: null,
+            averageDropPercent: null,
+            expectedNextDropDays: null,
+            expectedDropState: "insufficient_data",
+            totalDrops: 0
+        };
+    }
+    function renderListingInsightsPanel(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var insightsPanel = config.insightsPanel;
+        if (insightsPanel && typeof insightsPanel.renderInsightsPanel === "function") {
+            return insightsPanel.renderInsightsPanel(config.panelOptions || {});
+        }
+        if (insightsPanel && typeof insightsPanel.renderPanel === "function") {
+            var panelOptions = config.panelOptions && typeof config.panelOptions === "object" ? config.panelOptions : {};
+            var listing = normalizeListingModel(panelOptions.listing || null);
+            var metrics = panelOptions.metrics && typeof panelOptions.metrics === "object" ? panelOptions.metrics : {};
+            var legacyMetrics = {
+                avgDropAmount: Number.isFinite(metrics.averageDropAmountUsd) ? metrics.averageDropAmountUsd : null,
+                avgDropPercent: Number.isFinite(metrics.averageDropPercent) ? metrics.averageDropPercent : null,
+                expectedDropDays: Number.isFinite(metrics.expectedNextDropDays) ? metrics.expectedNextDropDays : null,
+                expectedDropState: typeof metrics.expectedDropState === "string"
+                    ? metrics.expectedDropState
+                    : "insufficient_data",
+                totalDrops: Number.isFinite(metrics.totalDrops) ? metrics.totalDrops : 0
+            };
+            return insightsPanel.renderPanel({
+                listing: {
+                    id: listing.id,
+                    title: listing.title,
+                    priceDrops: listing.pricing.history,
+                    createdAt: listing.createdAt,
+                    priceUpdatedAt: listing.pricing.updatedAt,
+                    seller: listing.seller,
+                    prettyPath: listing.prettyPath,
+                    sold: listing.sold,
+                    rawListing: listing.rawListing
+                },
+                metrics: legacyMetrics,
+                mountNode: panelOptions.mountNode || null,
+                mountPosition: panelOptions.mountPosition || "afterend",
+                rawListing: panelOptions.rawListing || null,
+                statusMessage: panelOptions.statusMessage || "",
+                currencyContext: panelOptions.currencyContext || null,
+                marketCompare: panelOptions.marketCompare || null,
+                onMarketCompareClick: typeof panelOptions.onMarketCompareClick === "function"
+                    ? panelOptions.onMarketCompareClick
+                    : function () { }
+            });
+        }
+        return null;
+    }
+    function resolveListingInsightsEnabled(settings) {
+        var defaultEnabled = settings && typeof settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
+            ? settings.DEFAULT_LISTING_INSIGHTS_ENABLED
+            : true;
+        if (!settings || typeof settings.getListingInsightsEnabled !== "function") {
+            return Promise.resolve(defaultEnabled);
+        }
+        return settings
+            .getListingInsightsEnabled()
+            .then(function (enabled) {
+            return typeof enabled === "boolean" ? enabled : defaultEnabled;
+        })
+            .catch(function () {
+            return defaultEnabled;
+        });
+    }
+    return {
+        createDefaultListingModel: createDefaultListingModel,
+        resolveMountTarget: resolveMountTarget,
+        normalizeListingModel: normalizeListingModel,
+        computeListingInsights: computeListingInsights,
+        renderListingInsightsPanel: renderListingInsightsPanel,
+        resolveListingInsightsEnabled: resolveListingInsightsEnabled
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusUnavailableLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function createUnavailableListing() {
+        return {
+            id: "unknown",
+            title: "",
+            createdAt: null,
+            pricing: {
+                history: [],
+                updatedAt: null
+            },
+            seller: {
+                createdAt: null
+            },
+            rawListing: null
+        };
+    }
+    function createUnavailableMetrics() {
+        return {
+            averageDropAmountUsd: null,
+            averageDropPercent: null,
+            expectedNextDropDays: null,
+            expectedDropState: "insufficient_data"
+        };
+    }
+    function renderUnavailable(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var urlApi = config.urlApi;
+        var locationObj = config.locationObj;
+        var documentObj = config.documentObj;
+        var resolveMountTarget = typeof config.resolveMountTarget === "function" ? config.resolveMountTarget : function () {
+            return null;
+        };
+        var resolveCurrencyContext = typeof config.resolveCurrencyContext === "function"
+            ? config.resolveCurrencyContext
+            : function () {
+                return Promise.resolve(null);
+            };
+        var renderPanelWithMarketCompare = typeof config.renderPanelWithMarketCompare === "function"
+            ? config.renderPanelWithMarketCompare
+            : function () { };
+        var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
+        var applyCardCurrency = typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () { };
+        var syncCardCurrencyObserver = typeof config.syncCardCurrencyObserver === "function"
+            ? config.syncCardCurrencyObserver
+            : function () { };
+        var statusMessage = typeof config.statusMessage === "string" ? config.statusMessage : "";
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (!urlApi || typeof urlApi.isListingPath !== "function" || !urlApi.isListingPath(pathname)) {
+            return;
+        }
+        var renderToken = state.renderToken + 1;
+        state.renderToken = renderToken;
+        var mountTarget = resolveMountTarget(documentObj);
+        if (!mountTarget || !mountTarget.mountNode) {
+            return;
+        }
+        var safeState = state;
+        var isListingPath = urlApi.isListingPath;
+        var resolvedMountTarget = mountTarget;
+        var mountNode = resolvedMountTarget.mountNode;
+        if (!mountNode) {
+            return;
+        }
+        resolveCurrencyContext().then(function (currencyContext) {
+            var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
+                return;
+            }
+            renderPanelWithMarketCompare({
+                listing: createUnavailableListing(),
+                metrics: createUnavailableMetrics(),
+                mountNode: mountNode,
+                mountPosition: resolvedMountTarget.mountPosition,
+                rawListing: null,
+                statusMessage: statusMessage,
+                currencyContext: currencyContext
+            });
+            applySidebarCurrency(currencyContext);
+            applyCardCurrency(currencyContext);
+            syncCardCurrencyObserver(currencyContext);
+        });
+    }
+    return {
+        renderUnavailable: renderUnavailable
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusRunLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function handleNonListingRoute(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var urlApi = config.urlApi;
+        var locationObj = config.locationObj;
+        var documentObj = config.documentObj;
+        var clearRetryTimer = typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () { };
+        var disconnectHydrationObserver = typeof config.disconnectHydrationObserver === "function"
+            ? config.disconnectHydrationObserver
+            : function () { };
+        var insightsPanel = config.insightsPanel;
+        var resolveCurrencyContext = typeof config.resolveCurrencyContext === "function"
+            ? config.resolveCurrencyContext
+            : function () {
+                return Promise.resolve(null);
+            };
+        var createUsdCurrencyContext = typeof config.createUsdCurrencyContext === "function"
+            ? config.createUsdCurrencyContext
+            : function () {
+                return { selectedCurrency: "USD", rate: null, mode: "dual" };
+            };
+        var applyCardCurrency = typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () { };
+        var syncCardCurrencyObserver = typeof config.syncCardCurrencyObserver === "function"
+            ? config.syncCardCurrencyObserver
+            : function () { };
+        if (!state || typeof state !== "object") {
+            return false;
+        }
+        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (!urlApi || typeof urlApi.isListingPath !== "function" || urlApi.isListingPath(pathname)) {
+            return false;
+        }
+        var nonListingToken = state.renderToken + 1;
+        state.renderToken = nonListingToken;
+        clearRetryTimer(true);
+        disconnectHydrationObserver();
+        if (insightsPanel && typeof insightsPanel.removeExistingPanels === "function") {
+            insightsPanel.removeExistingPanels(documentObj);
+        }
+        state.latestPanelContext = null;
+        resolveCurrencyContext()
+            .then(function (currencyContext) {
+            var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (nonListingToken !== state.renderToken || urlApi.isListingPath(latestPathname)) {
+                return;
+            }
+            applyCardCurrency(currencyContext);
+            syncCardCurrencyObserver(currencyContext);
+        })
+            .catch(function () {
+            var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (nonListingToken !== state.renderToken || urlApi.isListingPath(latestPathname)) {
+                return;
+            }
+            var fallbackCurrency = createUsdCurrencyContext();
+            applyCardCurrency(fallbackCurrency);
+            syncCardCurrencyObserver(fallbackCurrency);
+        });
+        return true;
+    }
+    function handleListingInsightsDisabled(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var listingInsightsEnabled = Boolean(config.listingInsightsEnabled);
+        var urlApi = config.urlApi;
+        var locationObj = config.locationObj;
+        var documentObj = config.documentObj;
+        var clearRetryTimer = typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () { };
+        var disconnectHydrationObserver = typeof config.disconnectHydrationObserver === "function"
+            ? config.disconnectHydrationObserver
+            : function () { };
+        var insightsPanel = config.insightsPanel;
+        var resolveCurrencyContext = typeof config.resolveCurrencyContext === "function"
+            ? config.resolveCurrencyContext
+            : function () {
+                return Promise.resolve(null);
+            };
+        var createUsdCurrencyContext = typeof config.createUsdCurrencyContext === "function"
+            ? config.createUsdCurrencyContext
+            : function () {
+                return { selectedCurrency: "USD", rate: null, mode: "dual" };
+            };
+        var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
+        var applyCardCurrency = typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () { };
+        var syncCardCurrencyObserver = typeof config.syncCardCurrencyObserver === "function"
+            ? config.syncCardCurrencyObserver
+            : function () { };
+        var log = typeof config.log === "function" ? config.log : function () { };
+        var reason = typeof config.reason === "string" ? config.reason : "";
+        var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+        if (!state || typeof state !== "object" || listingInsightsEnabled) {
+            return false;
+        }
+        var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+        if (!urlApi || typeof urlApi.isListingPath !== "function" || !urlApi.isListingPath(pathname)) {
+            return false;
+        }
+        var disabledToken = state.renderToken + 1;
+        state.renderToken = disabledToken;
+        clearRetryTimer(true);
+        disconnectHydrationObserver();
+        if (insightsPanel && typeof insightsPanel.removeExistingPanels === "function") {
+            insightsPanel.removeExistingPanels(documentObj);
+        }
+        state.latestPanelContext = null;
+        resolveCurrencyContext()
+            .then(function (currencyContext) {
+            var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (disabledToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
+                return;
+            }
+            applySidebarCurrency(currencyContext);
+            applyCardCurrency(currencyContext);
+            syncCardCurrencyObserver(currencyContext);
+            log("skipped_listing_insights_panel", {
+                reason: reason,
+                attempt: attempt,
+                currency: currencyContext && currencyContext.selectedCurrency
+            });
+        })
+            .catch(function () {
+            var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (disabledToken !== state.renderToken || !urlApi.isListingPath(latestPathname)) {
+                return;
+            }
+            var fallbackCurrency = createUsdCurrencyContext();
+            applySidebarCurrency(fallbackCurrency);
+            applyCardCurrency(fallbackCurrency);
+            syncCardCurrencyObserver(fallbackCurrency);
+        });
+        return true;
+    }
+    return {
+        handleNonListingRoute: handleNonListingRoute,
+        handleListingInsightsDisabled: handleListingInsightsDisabled
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusRetryLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function scheduleRetry(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+        var reason = typeof config.reason === "string" ? config.reason : "unknown";
+        var maxRetries = Number.isFinite(Number(config.maxRetries)) ? Number(config.maxRetries) : 0;
+        var retryDelayMs = Number.isFinite(Number(config.retryDelayMs)) ? Number(config.retryDelayMs) : 0;
+        var shouldStopRetryWindow = typeof config.shouldStopRetryWindow === "function"
+            ? config.shouldStopRetryWindow
+            : function () {
+                return false;
+            };
+        var log = typeof config.log === "function" ? config.log : function () { };
+        var disconnectHydrationObserver = typeof config.disconnectHydrationObserver === "function"
+            ? config.disconnectHydrationObserver
+            : function () { };
+        var renderUnavailable = typeof config.renderUnavailable === "function" ? config.renderUnavailable : function () { };
+        var scheduleHydrationObserver = typeof config.scheduleHydrationObserver === "function"
+            ? config.scheduleHydrationObserver
+            : function () { };
+        var clearRetryTimer = typeof config.clearRetryTimer === "function" ? config.clearRetryTimer : function () { };
+        var run = typeof config.run === "function" ? config.run : function () { };
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        if (attempt >= maxRetries || shouldStopRetryWindow()) {
+            log("retry limit reached", {
+                reason: reason,
+                attempt: attempt
+            });
+            disconnectHydrationObserver();
+            renderUnavailable("Feature unavailable: unable to read listing data.");
+            return;
+        }
+        scheduleHydrationObserver();
+        clearRetryTimer(false);
+        state.retryTimer = setTimeout(function () {
+            run("retry:" + reason, attempt + 1);
+        }, retryDelayMs);
+        log("scheduled retry", {
+            reason: reason,
+            attempt: attempt
+        });
+    }
+    return {
+        scheduleRetry: scheduleRetry
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusListingRenderLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function renderListingWithCurrency(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var urlApi = config.urlApi;
+        var locationObj = config.locationObj;
+        var renderToken = Number(config.renderToken);
+        var listing = config.listing;
+        var metrics = config.metrics;
+        var mountTarget = config.mountTarget && typeof config.mountTarget === "object" ? config.mountTarget : null;
+        var resolveCurrencyContext = typeof config.resolveCurrencyContext === "function"
+            ? config.resolveCurrencyContext
+            : function () {
+                return Promise.resolve(null);
+            };
+        var createUsdCurrencyContext = typeof config.createUsdCurrencyContext === "function"
+            ? config.createUsdCurrencyContext
+            : function () {
+                return { selectedCurrency: "USD", rate: null, mode: "dual" };
+            };
+        var renderPanelWithMarketCompare = typeof config.renderPanelWithMarketCompare === "function"
+            ? config.renderPanelWithMarketCompare
+            : function () { };
+        var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
+        var applyCardCurrency = typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () { };
+        var syncCardCurrencyObserver = typeof config.syncCardCurrencyObserver === "function"
+            ? config.syncCardCurrencyObserver
+            : function () { };
+        var disconnectHydrationObserver = typeof config.disconnectHydrationObserver === "function"
+            ? config.disconnectHydrationObserver
+            : function () { };
+        var log = typeof config.log === "function" ? config.log : function () { };
+        var reason = typeof config.reason === "string" ? config.reason : "";
+        var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+        if (!state || typeof state !== "object") {
+            return;
+        }
+        resolveCurrencyContext()
+            .then(function (currencyContext) {
+            var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (renderToken !== state.renderToken || !urlApi.isListingPath(pathname)) {
+                return;
+            }
+            renderPanelWithMarketCompare({
+                listing: listing,
+                metrics: metrics,
+                mountNode: mountTarget ? mountTarget.mountNode : null,
+                mountPosition: mountTarget ? mountTarget.mountPosition || "afterend" : "afterend",
+                rawListing: listing && listing.rawListing ? listing.rawListing : null,
+                currencyContext: currencyContext
+            });
+            applySidebarCurrency(currencyContext);
+            applyCardCurrency(currencyContext);
+            syncCardCurrencyObserver(currencyContext);
+            disconnectHydrationObserver();
+            state.retryStartedAtMs = null;
+            log("rendered", {
+                reason: reason,
+                attempt: attempt,
+                listingId: listing && listing.id,
+                currency: currencyContext && currencyContext.selectedCurrency
+            });
+        })
+            .catch(function () {
+            var pathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
+            if (renderToken !== state.renderToken || !urlApi.isListingPath(pathname)) {
+                return;
+            }
+            var fallbackCurrency = createUsdCurrencyContext();
+            renderPanelWithMarketCompare({
+                listing: listing,
+                metrics: metrics,
+                mountNode: mountTarget ? mountTarget.mountNode : null,
+                mountPosition: mountTarget ? mountTarget.mountPosition || "afterend" : "afterend",
+                rawListing: listing && listing.rawListing ? listing.rawListing : null,
+                currencyContext: fallbackCurrency
+            });
+            applySidebarCurrency(fallbackCurrency);
+            applyCardCurrency(fallbackCurrency);
+            syncCardCurrencyObserver(fallbackCurrency);
+            disconnectHydrationObserver();
+            state.retryStartedAtMs = null;
+            log("rendered_with_currency_fallback", {
+                reason: reason,
+                attempt: attempt,
+                listingId: listing && listing.id
+            });
+        });
+    }
+    return {
+        renderListingWithCurrency: renderListingWithCurrency
+    };
+});
+
+"use strict";
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory();
+    }
+    else {
+        root.GrailedPlusListingPipelineLifecycle = factory();
+    }
+})(typeof globalThis !== "undefined" ? globalThis : {}, function () {
+    "use strict";
+    function prepareListingRenderContext(options) {
+        var config = options && typeof options === "object" ? options : {};
+        var state = config.state;
+        var listingExtractor = config.listingExtractor;
+        var documentObj = config.documentObj;
+        var normalizeListingModel = typeof config.normalizeListingModel === "function"
+            ? config.normalizeListingModel
+            : function (value) {
+                return value;
+            };
+        var resolveMountTarget = typeof config.resolveMountTarget === "function"
+            ? config.resolveMountTarget
+            : function () {
+                return null;
+            };
+        var computeListingInsights = typeof config.computeListingInsights === "function"
+            ? config.computeListingInsights
+            : function () {
+                return null;
+            };
+        var scheduleRetry = typeof config.scheduleRetry === "function" ? config.scheduleRetry : function () { };
+        var attempt = Number.isFinite(Number(config.attempt)) ? Number(config.attempt) : 0;
+        if (!state || typeof state !== "object") {
+            return null;
+        }
+        if (!listingExtractor || typeof listingExtractor.readNextDataFromDocument !== "function") {
+            return null;
+        }
+        var nextData = listingExtractor.readNextDataFromDocument(documentObj);
+        if (!nextData) {
+            scheduleRetry("missing_next_data", attempt);
+            return null;
+        }
+        var listing = normalizeListingModel(listingExtractor.extractListing(nextData));
+        if (!listing || !listing.id) {
+            scheduleRetry("missing_listing", attempt);
+            return null;
+        }
+        var mountTarget = resolveMountTarget(documentObj);
+        if (!mountTarget || !mountTarget.mountNode) {
+            scheduleRetry("missing_mount", attempt);
+            return null;
+        }
+        var metrics = computeListingInsights(listing);
+        var renderToken = state.renderToken + 1;
+        state.renderToken = renderToken;
+        return {
+            listing: listing,
+            metrics: metrics,
+            mountTarget: mountTarget,
+            renderToken: renderToken
+        };
+    }
+    return {
+        prepareListingRenderContext: prepareListingRenderContext
+    };
+});
+
+"use strict";
+(function () {
+    "use strict";
+    var globalScope = globalThis;
+    if (globalScope.__grailedPlusBooted) {
+        return;
+    }
+    globalScope.__grailedPlusBooted = true;
+    var Url = globalScope.GrailedPlusUrl;
+    var ListingExtractor = globalScope.GrailedPlusListingExtractor || globalScope.GrailedPlusExtractListing;
+    var PricingInsights = globalScope.GrailedPlusPricingInsights || globalScope.GrailedPlusMetrics;
+    var Settings = globalScope.GrailedPlusSettings;
+    var Currency = globalScope.GrailedPlusCurrency;
+    var DepopProviderFactory = globalScope.GrailedPlusDepopProvider;
+    var MarketProviders = globalScope.GrailedPlusMarketProviders;
+    var MarketCompareController = globalScope.GrailedPlusMarketCompareController;
+    var InsightsPanel = globalScope.GrailedPlusInsightsPanel || globalScope.GrailedPlusRender;
+    var Theme = globalScope.GrailedPlusTheme;
+    var Runtime = globalScope.GrailedPlusContentRuntime;
+    var NavigationLifecycle = globalScope.GrailedPlusNavigationLifecycle;
+    var DarkModeLifecycle = globalScope.GrailedPlusDarkModeLifecycle;
+    var FilterScopeLifecycle = globalScope.GrailedPlusFilterScopeLifecycle;
+    var CardCurrencyLifecycle = globalScope.GrailedPlusCardCurrencyLifecycle;
+    var MarketCompareLifecycle = globalScope.GrailedPlusMarketCompareLifecycle;
+    var CurrencyLifecycle = globalScope.GrailedPlusCurrencyLifecycle;
+    var ListingInsightsLifecycle = globalScope.GrailedPlusListingInsightsLifecycle;
+    var UnavailableLifecycle = globalScope.GrailedPlusUnavailableLifecycle;
+    var RunLifecycle = globalScope.GrailedPlusRunLifecycle;
+    var RetryLifecycle = globalScope.GrailedPlusRetryLifecycle;
+    var ListingRenderLifecycle = globalScope.GrailedPlusListingRenderLifecycle;
+    var ListingPipelineLifecycle = globalScope.GrailedPlusListingPipelineLifecycle;
+    if (!Url || !ListingExtractor || !PricingInsights || !InsightsPanel) {
+        console.error("[Grailed+] Failed to initialize: missing modules");
+        return;
+    }
+    var MAX_RETRIES = 12;
+    var RETRY_DELAY_MS = 500;
+    var MAX_RETRY_WINDOW_MS = 15000;
+    var URL_POLL_INTERVAL_MS = 1000;
+    var CARD_PRICE_CONTAINER_SELECTOR = 'div[class*="Price_root"], div[class*="Price-module__root"]';
+    var CARD_PRICE_CURRENT_SELECTOR = '[data-testid="Current"]';
+    var MONEY_ROOT_PRICE_SELECTOR = 'span[class*="Money_root_"], span[class*="Money-module__root"]';
+    var CARD_PRICE_TARGET_SELECTOR = CARD_PRICE_CONTAINER_SELECTOR + ", " + CARD_PRICE_CURRENT_SELECTOR + ", " + MONEY_ROOT_PRICE_SELECTOR;
+    var FILTER_TARGET_ATTR = "data-grailed-plus-filter-target";
+    var FILTER_TARGET_ATTR_VALUE = "1";
+    var FILTER_SCOPE_SKIP_ATTR = "data-grailed-plus-filter-skip";
+    var FILTER_SCOPE_SKIP_ATTR_VALUE = "1";
+    var HEADER_ROOT_SELECTOR = [
+        "header[class*='SiteHeader']",
+        "[class*='SiteHeader']:is([class*='_nav__'], [class*='__nav__'])",
+        "#globalHeader",
+        ".Page-Header",
+        "#siteBanner",
+        "#flash",
+        "#nav-overlay",
+        "#global-modal-container",
+        "header[id='globalHeader']",
+        "[class*='FlashContainer']:is([class*='_flashContainer__'], [class*='__flashContainer__'])",
+        "[class*='FlashContainer']:is([class*='_mobileConversation__'], [class*='__mobileConversation__'])",
+        "[class*='FlashContainer_flashContainer__']",
+        "[class*='FlashContainer_mobileConversation__']"
+    ].join(", ");
+    var MENU_ROOT_SELECTOR = "[class*='MerchandisingMenu']:is([class*='_root__'], [class*='__root__']), " +
+        "[class*='MerchandisingMenu']:is([class*='_list__'], [class*='__list__']), " +
+        "[class*='MerchandisingMenu']:is([class*='_viewportContainer__'], [class*='__viewportContainer__'])";
+    var FILTER_TARGET_REFRESH_DELAYS_MS = [120, 400, 1200, 2500, 5000];
+    var state = Runtime && typeof Runtime.createRuntimeState === "function"
+        ? Runtime.createRuntimeState()
+        : {
+            lastUrl: "",
+            retryTimer: null,
+            urlPollTimer: null,
+            retryStartedAtMs: null,
+            mutationObserver: null,
+            renderToken: 0,
+            darkModeToken: 0,
+            darkModeMediaQuery: null,
+            darkModeMediaListener: null,
+            filterScopeTick: null,
+            filterScopeDelayTimers: [],
+            filterScopeObserver: null,
+            cardCurrencyObserver: null,
+            cardCurrencyTick: null,
+            cardCurrencyTickUsesAnimationFrame: false,
+            cardCurrencyContext: null,
+            marketCompareController: null,
+            marketCompareUnsubscribe: null,
+            latestPanelContext: null
+        };
+    function isDebugEnabled() {
+        var enabled = false;
+        if (globalScope && globalScope.GRAILED_PLUS_DEBUG === true) {
+            return true;
+        }
+        try {
+            enabled = localStorage.getItem("grailed-plus:debug") === "1";
+        }
+        catch (_) {
+            enabled = false;
+        }
+        if (enabled) {
+            return true;
+        }
+        try {
+            var params = new URLSearchParams(globalScope.location.search || "");
+            return params.get("gp_debug") === "1";
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    function log(...args) {
+        if (!isDebugEnabled()) {
+            return;
+        }
+        args.unshift("[Grailed+]");
+        console.debug.apply(console, args);
+    }
+    function clearRetryTimer(resetWindow) {
+        if (!Runtime || typeof Runtime.clearRetryTimer !== "function") {
+            return;
+        }
+        Runtime.clearRetryTimer(state, resetWindow);
+    }
+    function shouldStopRetryWindow() {
+        if (!Runtime || typeof Runtime.shouldStopRetryWindow !== "function") {
+            return true;
+        }
+        return Runtime.shouldStopRetryWindow(state, MAX_RETRY_WINDOW_MS);
+    }
+    function scheduleHydrationObserver() {
+        if (!Runtime || typeof Runtime.scheduleHydrationObserver !== "function") {
+            return;
+        }
+        Runtime.scheduleHydrationObserver({
+            state: state,
+            isListingPath: Url.isListingPath,
+            getPathname: function () {
+                return location.pathname;
+            },
+            getNextDataNode: function () {
+                return document.getElementById("__NEXT_DATA__");
+            },
+            onHydrated: function () {
+                refresh("mutation_observer");
+            },
+            log: log
+        });
+    }
+    function disconnectHydrationObserver() {
+        if (!Runtime || typeof Runtime.disconnectHydrationObserver !== "function") {
+            return;
+        }
+        Runtime.disconnectHydrationObserver(state);
+    }
+    function resolveMountTarget(doc) {
+        if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.resolveMountTarget !== "function") {
+            return null;
+        }
+        return ListingInsightsLifecycle.resolveMountTarget(InsightsPanel, doc);
+    }
+    function normalizeListingModel(listing) {
+        if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.normalizeListingModel !== "function") {
+            return null;
+        }
+        return ListingInsightsLifecycle.normalizeListingModel(listing);
+    }
+    function computeListingInsights(listing) {
+        if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.computeListingInsights !== "function") {
+            return null;
+        }
+        return ListingInsightsLifecycle.computeListingInsights({
+            listing: listing,
+            pricingInsights: PricingInsights
+        });
+    }
+    function renderListingInsightsPanel(options) {
+        if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.renderListingInsightsPanel !== "function") {
+            return null;
+        }
+        return ListingInsightsLifecycle.renderListingInsightsPanel({
+            insightsPanel: InsightsPanel,
+            panelOptions: options
+        });
+    }
+    function ensureMarketCompareController() {
+        if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.ensureMarketCompareController !== "function") {
+            return null;
+        }
+        return MarketCompareLifecycle.ensureMarketCompareController({
+            state: state,
+            marketCompareControllerApi: MarketCompareController,
+            marketProviders: MarketProviders,
+            depopProviderFactory: DepopProviderFactory,
+            onStateUpdate: function (nextState) {
+                var context = state.latestPanelContext;
+                if (!context) {
+                    return;
+                }
+                if (!Url.isListingPath(location.pathname)) {
+                    return;
+                }
+                if (context.renderToken !== state.renderToken) {
+                    return;
+                }
+                renderListingInsightsPanel({
+                    listing: context.listing,
+                    metrics: context.metrics,
+                    mountNode: context.mountNode,
+                    mountPosition: context.mountPosition,
+                    rawListing: context.rawListing,
+                    statusMessage: context.statusMessage,
+                    currencyContext: context.currencyContext,
+                    marketCompare: nextState,
+                    onMarketCompareClick: triggerMarketCompare
+                });
+            }
+        });
+    }
+    function triggerMarketCompare() {
+        if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.triggerMarketCompare !== "function") {
+            return;
+        }
+        MarketCompareLifecycle.triggerMarketCompare({
+            state: state,
+            ensureController: ensureMarketCompareController
+        });
+    }
+    function renderPanelWithMarketCompare(options) {
+        if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.renderPanelWithMarketCompare !== "function") {
+            return null;
+        }
+        return MarketCompareLifecycle.renderPanelWithMarketCompare({
+            state: state,
+            ensureController: ensureMarketCompareController,
+            renderListingInsightsPanel: renderListingInsightsPanel,
+            onMarketCompareClick: triggerMarketCompare,
+            panelOptions: options
+        });
+    }
+    function createUsdCurrencyContext() {
+        if (!CurrencyLifecycle || typeof CurrencyLifecycle.createUsdCurrencyContext !== "function") {
+            return {
+                selectedCurrency: "USD",
+                rate: null,
+                mode: "dual"
+            };
+        }
+        return CurrencyLifecycle.createUsdCurrencyContext();
+    }
+    function normalizeCurrencyCode(input) {
+        if (!CurrencyLifecycle || typeof CurrencyLifecycle.normalizeCurrencyCode !== "function") {
+            return null;
+        }
+        return CurrencyLifecycle.normalizeCurrencyCode(input, Settings);
+    }
+    function createDefaultDarkModeContext() {
+        if (!DarkModeLifecycle ||
+            typeof DarkModeLifecycle.createDefaultDarkModeContext !== "function") {
+            return {
+                enabled: false,
+                behavior: "system",
+                primaryColor: "#000000"
+            };
+        }
+        return DarkModeLifecycle.createDefaultDarkModeContext();
+    }
+    function resolveCurrencyContext() {
+        if (!CurrencyLifecycle || typeof CurrencyLifecycle.resolveCurrencyContext !== "function") {
+            return Promise.resolve(createUsdCurrencyContext());
+        }
+        return CurrencyLifecycle.resolveCurrencyContext({
+            settings: Settings,
+            currencyApi: Currency,
+            normalizeCurrencyCode: normalizeCurrencyCode
+        });
+    }
+    function resolveListingInsightsEnabled() {
+        if (!ListingInsightsLifecycle || typeof ListingInsightsLifecycle.resolveListingInsightsEnabled !== "function") {
+            return Promise.resolve(true);
+        }
+        return ListingInsightsLifecycle.resolveListingInsightsEnabled(Settings);
+    }
+    function applySidebarCurrency(currencyContext) {
+        if (!CurrencyLifecycle || typeof CurrencyLifecycle.applySidebarCurrency !== "function") {
+            return false;
+        }
+        return CurrencyLifecycle.applySidebarCurrency({
+            insightsPanel: InsightsPanel,
+            documentObj: document,
+            currencyContext: currencyContext
+        });
+    }
+    function applyCardCurrency(currencyContext) {
+        if (!CurrencyLifecycle || typeof CurrencyLifecycle.applyCardCurrency !== "function") {
+            return false;
+        }
+        return CurrencyLifecycle.applyCardCurrency({
+            insightsPanel: InsightsPanel,
+            documentObj: document,
+            currencyContext: currencyContext
+        });
+    }
+    function disconnectCardCurrencyObserver() {
+        if (!CardCurrencyLifecycle ||
+            typeof CardCurrencyLifecycle.disconnectCardCurrencyObserver !== "function") {
+            return;
+        }
+        CardCurrencyLifecycle.disconnectCardCurrencyObserver(state);
+    }
+    function scheduleCardCurrencyRefresh() {
+        if (!CardCurrencyLifecycle ||
+            typeof CardCurrencyLifecycle.scheduleCardCurrencyRefresh !== "function") {
+            return;
+        }
+        CardCurrencyLifecycle.scheduleCardCurrencyRefresh({
+            state: state,
+            onRefresh: function () {
+                applyCardCurrency(state.cardCurrencyContext || createUsdCurrencyContext());
+            }
+        });
+    }
+    function setupCardCurrencyObserver() {
+        if (!CardCurrencyLifecycle ||
+            typeof CardCurrencyLifecycle.setupCardCurrencyObserver !== "function") {
+            return;
+        }
+        CardCurrencyLifecycle.setupCardCurrencyObserver({
+            state: state,
+            documentObj: document,
+            selector: CARD_PRICE_TARGET_SELECTOR,
+            insightsPanel: InsightsPanel,
+            onScheduleRefresh: scheduleCardCurrencyRefresh
+        });
+    }
+    function syncCardCurrencyObserver(currencyContext) {
+        if (!CardCurrencyLifecycle ||
+            typeof CardCurrencyLifecycle.syncCardCurrencyObserver !== "function") {
+            return;
+        }
+        CardCurrencyLifecycle.syncCardCurrencyObserver({
+            state: state,
+            currencyContext: currencyContext,
+            createUsdCurrencyContext: createUsdCurrencyContext,
+            normalizeCurrencyCode: normalizeCurrencyCode,
+            onSetup: setupCardCurrencyObserver,
+            onDisconnect: disconnectCardCurrencyObserver
+        });
+    }
+    function applyDarkMode(darkModeContext) {
+        if (Theme && typeof Theme.applyDarkModeToDocument === "function") {
+            try {
+                Theme.applyDarkModeToDocument(document, darkModeContext || createDefaultDarkModeContext());
+            }
+            catch (_) {
+                // Theme application should not block the rest of the extension.
+            }
+        }
+        syncFilterScopeObserver(Boolean(darkModeContext && darkModeContext.enabled));
+        refreshFilterTargets();
+        scheduleFilterTargetsRefreshBurst();
+    }
+    function refreshDarkMode() {
+        if (!DarkModeLifecycle || typeof DarkModeLifecycle.refreshDarkMode !== "function") {
+            return;
+        }
+        DarkModeLifecycle.refreshDarkMode({
+            state: state,
+            settings: Settings,
+            onApply: applyDarkMode
+        });
+    }
+    function setupDarkModeMediaListener() {
+        if (!DarkModeLifecycle ||
+            typeof DarkModeLifecycle.setupDarkModeMediaListener !== "function") {
+            return;
+        }
+        DarkModeLifecycle.setupDarkModeMediaListener({
+            state: state,
+            onChange: refreshDarkMode
+        });
+    }
+    function refreshFilterTargets() {
+        if (!FilterScopeLifecycle || typeof FilterScopeLifecycle.refreshFilterTargets !== "function") {
+            return;
+        }
+        FilterScopeLifecycle.refreshFilterTargets({
+            documentObj: document,
+            theme: Theme,
+            headerSelector: HEADER_ROOT_SELECTOR,
+            menuSelector: MENU_ROOT_SELECTOR,
+            filterTargetAttr: FILTER_TARGET_ATTR,
+            filterTargetAttrValue: FILTER_TARGET_ATTR_VALUE,
+            filterScopeSkipAttr: FILTER_SCOPE_SKIP_ATTR,
+            filterScopeSkipAttrValue: FILTER_SCOPE_SKIP_ATTR_VALUE
+        });
+    }
+    function scheduleFilterTargetsRefresh() {
+        if (!FilterScopeLifecycle ||
+            typeof FilterScopeLifecycle.scheduleFilterTargetsRefresh !== "function") {
+            return;
+        }
+        FilterScopeLifecycle.scheduleFilterTargetsRefresh({
+            state: state,
+            onRefresh: refreshFilterTargets
+        });
+    }
+    function scheduleFilterTargetsRefreshBurst() {
+        if (!FilterScopeLifecycle ||
+            typeof FilterScopeLifecycle.scheduleFilterTargetsRefreshBurst !== "function") {
+            return;
+        }
+        FilterScopeLifecycle.scheduleFilterTargetsRefreshBurst({
+            state: state,
+            delays: FILTER_TARGET_REFRESH_DELAYS_MS,
+            onScheduleRefresh: scheduleFilterTargetsRefresh
+        });
+    }
+    function setupFilterScopeObserver() {
+        if (!FilterScopeLifecycle ||
+            typeof FilterScopeLifecycle.setupFilterScopeObserver !== "function") {
+            return;
+        }
+        FilterScopeLifecycle.setupFilterScopeObserver({
+            state: state,
+            documentObj: document,
+            onScheduleRefresh: scheduleFilterTargetsRefresh
+        });
+    }
+    function disconnectFilterScopeObserver() {
+        if (!FilterScopeLifecycle ||
+            typeof FilterScopeLifecycle.disconnectFilterScopeObserver !== "function") {
+            return;
+        }
+        FilterScopeLifecycle.disconnectFilterScopeObserver(state);
+    }
+    function syncFilterScopeObserver(enabled) {
+        if (!FilterScopeLifecycle ||
+            typeof FilterScopeLifecycle.syncFilterScopeObserver !== "function") {
+            return;
+        }
+        FilterScopeLifecycle.syncFilterScopeObserver({
+            enabled: enabled,
+            onSetup: setupFilterScopeObserver,
+            onDisconnect: disconnectFilterScopeObserver
+        });
+    }
+    function renderUnavailable(statusMessage) {
+        if (!UnavailableLifecycle || typeof UnavailableLifecycle.renderUnavailable !== "function") {
+            return;
+        }
+        UnavailableLifecycle.renderUnavailable({
+            state: state,
+            urlApi: Url,
+            locationObj: location,
+            documentObj: document,
+            resolveMountTarget: resolveMountTarget,
+            resolveCurrencyContext: resolveCurrencyContext,
+            renderPanelWithMarketCompare: renderPanelWithMarketCompare,
+            applySidebarCurrency: applySidebarCurrency,
+            applyCardCurrency: applyCardCurrency,
+            syncCardCurrencyObserver: syncCardCurrencyObserver,
+            statusMessage: statusMessage
+        });
+    }
+    function scheduleRetry(reason, attempt) {
+        if (!RetryLifecycle || typeof RetryLifecycle.scheduleRetry !== "function") {
+            return;
+        }
+        RetryLifecycle.scheduleRetry({
+            state: state,
+            reason: reason,
+            attempt: attempt,
+            maxRetries: MAX_RETRIES,
+            retryDelayMs: RETRY_DELAY_MS,
+            shouldStopRetryWindow: shouldStopRetryWindow,
+            log: log,
+            disconnectHydrationObserver: disconnectHydrationObserver,
+            renderUnavailable: renderUnavailable,
+            scheduleHydrationObserver: scheduleHydrationObserver,
+            clearRetryTimer: clearRetryTimer,
+            run: run
+        });
+    }
+    function run(reason, attempt) {
+        if (!RunLifecycle || typeof RunLifecycle.handleNonListingRoute !== "function") {
+            return;
+        }
+        if (RunLifecycle.handleNonListingRoute({
+            state: state,
+            urlApi: Url,
+            locationObj: location,
+            documentObj: document,
+            clearRetryTimer: clearRetryTimer,
+            disconnectHydrationObserver: disconnectHydrationObserver,
+            insightsPanel: InsightsPanel,
+            resolveCurrencyContext: resolveCurrencyContext,
+            createUsdCurrencyContext: createUsdCurrencyContext,
+            applyCardCurrency: applyCardCurrency,
+            syncCardCurrencyObserver: syncCardCurrencyObserver
+        })) {
+            return;
+        }
+        if (!Url.isListingPath(location.pathname)) {
+            return;
+        }
+        syncCardCurrencyObserver(null);
+        resolveListingInsightsEnabled().then(function (listingInsightsEnabled) {
+            if (!Url.isListingPath(location.pathname)) {
+                return;
+            }
+            if (typeof RunLifecycle.handleListingInsightsDisabled !== "function") {
+                return;
+            }
+            if (RunLifecycle.handleListingInsightsDisabled({
+                state: state,
+                listingInsightsEnabled: listingInsightsEnabled,
+                urlApi: Url,
+                locationObj: location,
+                documentObj: document,
+                clearRetryTimer: clearRetryTimer,
+                disconnectHydrationObserver: disconnectHydrationObserver,
+                insightsPanel: InsightsPanel,
+                resolveCurrencyContext: resolveCurrencyContext,
+                createUsdCurrencyContext: createUsdCurrencyContext,
+                applySidebarCurrency: applySidebarCurrency,
+                applyCardCurrency: applyCardCurrency,
+                syncCardCurrencyObserver: syncCardCurrencyObserver,
+                log: log,
+                reason: reason,
+                attempt: attempt
+            })) {
+                return;
+            }
+            if (!listingInsightsEnabled) {
+                return;
+            }
+            if (!ListingPipelineLifecycle ||
+                typeof ListingPipelineLifecycle.prepareListingRenderContext !== "function") {
+                return;
+            }
+            var preparedContext = ListingPipelineLifecycle.prepareListingRenderContext({
+                state: state,
+                listingExtractor: ListingExtractor,
+                documentObj: document,
+                normalizeListingModel: normalizeListingModel,
+                resolveMountTarget: resolveMountTarget,
+                computeListingInsights: computeListingInsights,
+                scheduleRetry: scheduleRetry,
+                attempt: attempt
+            });
+            if (!preparedContext) {
+                return;
+            }
+            if (!ListingRenderLifecycle || typeof ListingRenderLifecycle.renderListingWithCurrency !== "function") {
+                return;
+            }
+            ListingRenderLifecycle.renderListingWithCurrency({
+                state: state,
+                urlApi: Url,
+                locationObj: location,
+                renderToken: preparedContext.renderToken,
+                listing: preparedContext.listing,
+                metrics: preparedContext.metrics,
+                mountTarget: preparedContext.mountTarget,
+                resolveCurrencyContext: resolveCurrencyContext,
+                createUsdCurrencyContext: createUsdCurrencyContext,
+                renderPanelWithMarketCompare: renderPanelWithMarketCompare,
+                applySidebarCurrency: applySidebarCurrency,
+                applyCardCurrency: applyCardCurrency,
+                syncCardCurrencyObserver: syncCardCurrencyObserver,
+                disconnectHydrationObserver: disconnectHydrationObserver,
+                log: log,
+                reason: reason,
+                attempt: attempt
+            });
+        });
+    }
+    function refresh(reason) {
+        clearRetryTimer(true);
+        refreshDarkMode();
+        run(reason, 0);
+    }
+    function onNavigation(reason) {
+        if (location.href === state.lastUrl && reason !== "initial") {
+            return;
+        }
+        state.lastUrl = String(location.href);
+        refresh(reason);
+    }
+    function setupNavigationListeners() {
+        if (!NavigationLifecycle || typeof NavigationLifecycle.setupNavigationListeners !== "function") {
+            return;
+        }
+        NavigationLifecycle.setupNavigationListeners({
+            state: state,
+            onNavigation: onNavigation,
+            pollIntervalMs: URL_POLL_INTERVAL_MS,
+            history: history,
+            window: window,
+            location: location
+        });
+    }
+    setupNavigationListeners();
+    setupDarkModeMediaListener();
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+            onNavigation("dom_content_loaded");
+        }, { once: true });
+    }
+    onNavigation("initial");
 })();

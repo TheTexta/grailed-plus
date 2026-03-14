@@ -9,7 +9,7 @@ const {
   normalizeString,
   normalizeListingId,
   normalizePriceDrops
-} = require("../src/domain/normalize.js");
+} = require("../.tmp/ts-build/src/domain/normalize");
 
 test("getNestedValue returns first non-null matching path", () => {
   const input = {

@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { buildQueries, isAllowedCategory } = require("../src/domain/querySynthesis.js");
+const { buildQueries, isAllowedCategory } = require("../.tmp/ts-build/src/domain/querySynthesis");
 
 test("isAllowedCategory supports category-keyword subset gating", () => {
   assert.equal(isAllowedCategory({ title: "Vintage bomber jacket" }, ["jacket"]), true);

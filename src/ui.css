@@ -41,16 +41,54 @@ body.gp-ui-body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background-color 0.25s ease, border-color 0.25s ease;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 .gp-button:hover {
-  border-color: #ffffff;
+  border-color: var(--gp-ui-accent);
+  background: var(--gp-ui-accent-soft);
 }
 
 .gp-button:focus-visible,
 .gp-button:active {
   color: var(--gp-ui-text);
+}
+
+.gp-button:disabled,
+.gp-button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.65;
+  border-color: var(--gp-ui-border);
+  background: var(--gp-ui-border-soft);
+  color: var(--gp-ui-muted);
+}
+
+.gp-button:disabled:hover,
+.gp-button:disabled:focus-visible,
+.gp-button:disabled:active,
+.gp-button[disabled]:hover,
+.gp-button[disabled]:focus-visible,
+.gp-button[disabled]:active {
+  border-color: var(--gp-ui-border);
+  background: var(--gp-ui-border-soft);
+  color: var(--gp-ui-muted);
+}
+
+.gp-button--primary {
+  border-color: var(--gp-ui-accent);
+  background: var(--gp-ui-accent);
+  color: #ffffff;
+}
+
+.gp-button--primary:hover {
+  border-color: var(--gp-ui-accent);
+  background: #0c3f2b;
+  color: #ffffff;
+}
+
+.gp-button--primary:focus-visible,
+.gp-button--primary:active {
+  color: #ffffff;
 }
 
 

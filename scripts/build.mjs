@@ -1,11 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const d3BundlePath = path.join(rootDir, "node_modules", "d3", "dist", "d3.min.js");
+const transpileRoot = path.join(rootDir, ".tmp", "ts-build");
+const runtimeEntryTsFiles = ["src/background.ts", "src/options.ts", "src/popup.ts"];
 
 const inputFiles = [
   "src/domain/url.js",
@@ -46,6 +49,82 @@ function readFile(relativePath) {
   return fs.readFileSync(fullPath, "utf8").trimEnd();
 }
 
+function ensureDirectoryFor(filePath) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+function resolveSourcePath(relativeJsPath) {
+  const absoluteJsPath = path.join(rootDir, relativeJsPath);
+  const absoluteTsPath = absoluteJsPath.replace(/\.js$/, ".ts");
+
+  if (fs.existsSync(absoluteTsPath)) {
+    return {
+      type: "ts",
+      absolutePath: absoluteTsPath,
+      relativeTsPath: relativeJsPath.replace(/\.js$/, ".ts")
+    };
+  }
+
+  return {
+    type: "js",
+    absolutePath: absoluteJsPath,
+    relativeTsPath: null
+  };
+}
+
+function transpileTypeScript(relativeTsPath) {
+  const absoluteTsPath = path.join(rootDir, relativeTsPath);
+  const source = fs.readFileSync(absoluteTsPath, "utf8");
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.CommonJS,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      lib: ["ES2020", "DOM"],
+      strict: true,
+      removeComments: false
+    },
+    fileName: absoluteTsPath,
+    reportDiagnostics: true
+  });
+
+  if (Array.isArray(transpiled.diagnostics) && transpiled.diagnostics.length > 0) {
+    const diagnostics = ts.formatDiagnosticsWithColorAndContext(transpiled.diagnostics, {
+      getCanonicalFileName: (fileName) => fileName,
+      getCurrentDirectory: () => rootDir,
+      getNewLine: () => "\n"
+    });
+    throw new Error(`TypeScript transpile diagnostics for ${relativeTsPath}\n${diagnostics}`);
+  }
+
+  const outputRelativePath = relativeTsPath.replace(/\.ts$/, ".js");
+  const outputAbsolutePath = path.join(transpileRoot, outputRelativePath);
+  ensureDirectoryFor(outputAbsolutePath);
+  fs.writeFileSync(outputAbsolutePath, transpiled.outputText.trimEnd(), "utf8");
+
+  return outputAbsolutePath;
+}
+
+function readSourceForBundle(relativeJsPath) {
+  const resolved = resolveSourcePath(relativeJsPath);
+  if (resolved.type === "ts" && resolved.relativeTsPath) {
+    const transpiledPath = transpileTypeScript(resolved.relativeTsPath);
+    return fs.readFileSync(transpiledPath, "utf8").trimEnd();
+  }
+
+  return fs.readFileSync(resolved.absolutePath, "utf8").trimEnd();
+}
+
+function emitRuntimeEntry(relativeTsPath) {
+  const transpiledPath = transpileTypeScript(relativeTsPath);
+  const outputRelativePath = relativeTsPath.replace(/\.ts$/, ".js");
+  const outputAbsolutePath = path.join(rootDir, outputRelativePath);
+
+  ensureDirectoryFor(outputAbsolutePath);
+  fs.copyFileSync(transpiledPath, outputAbsolutePath);
+}
+
 const banner = [
   "/*",
   " * Grailed Plus content bundle",
@@ -58,9 +137,14 @@ if (!fs.existsSync(d3BundlePath)) {
   throw new Error("Missing D3 runtime at node_modules/d3/dist/d3.min.js. Run npm install.");
 }
 
+fs.rmSync(transpileRoot, { recursive: true, force: true });
+
 const d3Runtime = fs.readFileSync(d3BundlePath, "utf8").trimEnd();
-const contents = inputFiles.map(readFile);
+const contents = inputFiles.map(readSourceForBundle);
 const output = `${banner}${d3Runtime}\n\n${contents.join("\n\n")}\n`;
 
 fs.writeFileSync(outputFile, output, "utf8");
+
+runtimeEntryTsFiles.forEach(emitRuntimeEntry);
+
 console.log(`Built ${path.relative(rootDir, outputFile)}`);

@@ -1,6 +1,5 @@
 # AGENTS.md
 
-Use YAGNI principle when making code.
 
 ## UI Styling Policy
 

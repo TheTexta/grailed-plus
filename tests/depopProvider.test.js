@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { createDepopProvider, parseCandidates, mapHttpError } = require("../src/domain/depopProvider.js");
+const { createDepopProvider, parseCandidates, mapHttpError } = require("../.tmp/ts-build/src/domain/depopProvider");
 
 test("mapHttpError classifies common HTTP statuses", () => {
   assert.equal(mapHttpError(403).errorCode, "FORBIDDEN_OR_BLOCKED");
@@ -268,6 +268,59 @@ test("depop provider can fetch via runtime message bridge", async () => {
   assert.equal(result.ok, true);
   assert.equal(result.candidates.length, 1);
   assert.equal(result.candidates[0].id, "runtime1");
+});
+
+test("depop provider ignores malformed runtime bridge response and falls back to fetch", async () => {
+  let fetchCalls = 0;
+  const html = [
+    "<html><head>",
+    '<script type="application/ld+json">',
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      sku: "fallback-runtime-1",
+      name: "Fallback Runtime Tee",
+      url: "https://www.depop.com/products/user-fallback-runtime-tee/",
+      image: "https://images.depop.test/fallback-runtime.jpg",
+      offers: {
+        price: "79",
+        priceCurrency: "USD"
+      }
+    }),
+    "</script>",
+    "</head></html>"
+  ].join("");
+
+  const provider = createDepopProvider({
+    runtimeSendMessage: async function () {
+      return {
+        ok: true,
+        status: "bad-status",
+        text: html
+      };
+    },
+    fetchImpl: async function () {
+      fetchCalls += 1;
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return html;
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["fallback runtime tee"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(fetchCalls, 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.candidates[0].id, "fallback-runtime-1");
 });
 
 test("depop provider uses cookie-aware fetch options", async () => {

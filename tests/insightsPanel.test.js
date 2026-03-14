@@ -8,8 +8,8 @@ const {
   renderInsightsPanel,
   applySidebarCurrency,
   applyCardCurrency
-} = require("../src/ui/renderInsightsPanel.js");
-const { MockDocument, flattenText } = require("./helpers/mockDocument.js");
+} = require("../.tmp/ts-build/src/ui/renderInsightsPanel");
+const { MockDocument, flattenText } = require("./helpers/mockDocument");
 
 function createPanelHarness() {
   const doc = new MockDocument();

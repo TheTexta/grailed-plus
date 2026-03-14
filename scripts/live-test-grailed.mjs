@@ -1,5 +1,6 @@
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 
 const targetUrl =
@@ -92,6 +93,53 @@ async function dismissConsentOverlays(page) {
   }
 }
 
+export async function dismissLoginModal(page) {
+  // Some live sessions show a sign-in modal that blocks click targets.
+  // Try backdrop/close actions first, then click safe viewport corners.
+  const selectors = [
+    '[data-testid="close-modal"]',
+    '[aria-label="Close"]',
+    '[role="dialog"] [aria-label="Close"]',
+    '[class*="ModalOverlay"]',
+    '[class*="backdrop"]',
+    '[class*="overlay"]'
+  ];
+
+  for (const selector of selectors) {
+    const locator = page.locator(selector);
+    if ((await locator.count()) > 0) {
+      try {
+        await locator.first().click({ timeout: 1200 });
+        await page.waitForTimeout(150);
+      } catch (_) {
+        // Ignore and continue fallback sequence.
+      }
+    }
+  }
+
+  try {
+    await page.keyboard.press("Escape");
+  } catch (_) {
+    // Ignore in environments that block key presses.
+  }
+
+  try {
+    const viewport = page.viewportSize() || { width: 1200, height: 900 };
+    const clickPoints = [
+      { x: 8, y: 8 },
+      { x: Math.max(8, viewport.width - 8), y: 8 },
+      { x: 8, y: Math.max(8, viewport.height - 8) }
+    ];
+
+    for (const point of clickPoints) {
+      await page.mouse.click(point.x, point.y);
+      await page.waitForTimeout(120);
+    }
+  } catch (_) {
+    // Final fallback is best-effort only.
+  }
+}
+
 async function run() {
   const context = await chromium.launchPersistentContext("", {
     headless: false,
@@ -106,6 +154,7 @@ async function run() {
     const page = context.pages()[0] || (await context.newPage());
     await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
 
+    await dismissLoginModal(page);
     await page.waitForTimeout(3000);
 
     try {
@@ -156,10 +205,12 @@ async function run() {
 
     compareButton = page.locator(".grailed-plus__button--market-compare").first();
 
+    await dismissLoginModal(page);
     await dismissConsentOverlays(page);
     try {
       await compareButton.click({ timeout: 7000 });
     } catch (_) {
+      await dismissLoginModal(page);
       await dismissConsentOverlays(page);
       await compareButton.click({ timeout: 7000, force: true });
     }
@@ -328,7 +379,17 @@ async function run() {
   }
 }
 
-run().catch((error) => {
-  console.error(error && error.stack ? error.stack : String(error));
-  process.exitCode = 1;
-});
+const isDirectExecution = (() => {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  return import.meta.url === pathToFileURL(process.argv[1]).href;
+})();
+
+if (isDirectExecution) {
+  run().catch((error) => {
+    console.error(error && error.stack ? error.stack : String(error));
+    process.exitCode = 1;
+  });
+}

@@ -1,10 +1,12 @@
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
+const tscEntry = path.join(rootDir, "node_modules", "typescript", "bin", "tsc");
 
 const filesToCheck = [
   "src/domain/url.js",
@@ -32,6 +34,11 @@ const filesToCheck = [
 let hasFailure = false;
 
 for (const relativePath of filesToCheck) {
+  const absolutePath = path.join(rootDir, relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    continue;
+  }
+
   const result = spawnSync(process.execPath, ["--check", relativePath], {
     cwd: rootDir,
     stdio: "inherit"
@@ -43,6 +50,15 @@ for (const relativePath of filesToCheck) {
 }
 
 if (hasFailure) {
+  process.exit(1);
+}
+
+const typecheckResult = spawnSync(process.execPath, [tscEntry, "--noEmit", "-p", "tsconfig.json"], {
+  cwd: rootDir,
+  stdio: "inherit"
+});
+
+if (typecheckResult.status !== 0) {
   process.exit(1);
 }
 

@@ -31,7 +31,7 @@ const {
   setDarkModeBehavior,
   getDarkModePrimaryColor,
   setDarkModePrimaryColor
-} = require("../src/domain/settings.js");
+} = require("../.tmp/ts-build/src/domain/settings");
 
 function createChromeStorage(initialState) {
   const state = Object.assign({}, initialState || {});

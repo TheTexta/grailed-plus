@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { parseListingIdFromUrl, isListingPath } = require("../src/domain/url.js");
+const { parseListingIdFromUrl, isListingPath } = require("../.tmp/ts-build/src/domain/url");
 
 test("parseListingIdFromUrl handles canonical listing URL", () => {
   const input = "https://www.grailed.com/listings/21536148-gucci-gucci-apron-monogram-grail";

@@ -18,7 +18,7 @@ const {
   PRIMARY_COLOR_SAFE_RGB_VAR,
   normalizeDarkModeContext,
   applyDarkModeToDocument
-} = require("../src/ui/theme.js");
+} = require("../.tmp/ts-build/src/ui/theme");
 
 function createRootNode() {
   const attributes = Object.create(null);

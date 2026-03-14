@@ -3,14 +3,14 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { scheduleRetry } = require("../src/content/retryLifecycle.js");
+const { scheduleRetry } = require("../.tmp/ts-build/src/content/retryLifecycle");
 const {
   handleNonListingRoute,
   handleListingInsightsDisabled
-} = require("../src/content/runLifecycle.js");
-const { prepareListingRenderContext } = require("../src/content/listingPipelineLifecycle.js");
-const { renderListingWithCurrency } = require("../src/content/listingRenderLifecycle.js");
-const { renderUnavailable } = require("../src/content/unavailableLifecycle.js");
+} = require("../.tmp/ts-build/src/content/runLifecycle");
+const { prepareListingRenderContext } = require("../.tmp/ts-build/src/content/listingPipelineLifecycle");
+const { renderListingWithCurrency } = require("../.tmp/ts-build/src/content/listingRenderLifecycle");
+const { renderUnavailable } = require("../.tmp/ts-build/src/content/unavailableLifecycle");
 
 function waitForAsyncTick() {
   return new Promise((resolve) => setTimeout(resolve, 0));

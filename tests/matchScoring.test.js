@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { convertBetweenCurrencies, scoreCandidate, rankCandidates } = require("../src/domain/matchScoring.js");
+const { convertBetweenCurrencies, scoreCandidate, rankCandidates } = require("../.tmp/ts-build/src/domain/matchScoring");
 
 test("convertBetweenCurrencies converts via USD base rates", () => {
   const ratesByUsd = {

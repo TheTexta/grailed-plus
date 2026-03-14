@@ -3,8 +3,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { createRegistry } = require("../src/domain/marketProviders.js");
-const { createController } = require("../src/domain/marketCompareController.js");
+const { createRegistry } = require("../.tmp/ts-build/src/domain/marketProviders");
+const { createController } = require("../.tmp/ts-build/src/domain/marketCompareController");
 
 function sampleListing() {
   return {

@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { CACHE_KEY, CACHE_TTL_MS, getRates, convert } = require("../src/domain/currency.js");
+const { CACHE_KEY, CACHE_TTL_MS, getRates, convert } = require("../.tmp/ts-build/src/domain/currency");
 
 function createChromeStorage(initialState) {
   const state = Object.assign({}, initialState || {});

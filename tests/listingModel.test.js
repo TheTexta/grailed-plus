@@ -7,7 +7,7 @@ const {
   fromNextData,
   mapRawListingToModel,
   createDefaultListing
-} = require("../src/data/listingModel.js");
+} = require("../.tmp/ts-build/src/data/listingModel");
 
 test("createDefaultListing returns stable default model", () => {
   const listing = createDefaultListing();
