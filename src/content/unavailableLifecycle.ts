@@ -38,6 +38,7 @@ interface URenderUnavailableOptions {
   resolveMountTarget?: ((documentObj?: Document | null) => UMountTarget | null) | null;
   resolveCurrencyContext?: (() => Promise<any>) | null;
   resolveMarketCompareResultsLimit?: (() => Promise<number>) | null;
+  resolveListingMetadataButtonEnabled?: (() => Promise<boolean>) | null;
   renderPanelWithMarketCompare?:
     | ((options: {
         listing: UUnavailableListing;
@@ -48,6 +49,7 @@ interface URenderUnavailableOptions {
         statusMessage: string;
         currencyContext: any;
         marketCompareResultsLimit: number;
+        showMetadataButton: boolean;
       }) => void)
     | null;
   applySidebarCurrency?: ((currencyContext: any) => void) | null;
@@ -114,6 +116,12 @@ interface UUnavailableGlobal {
         : function () {
             return Promise.resolve(null);
           };
+    var resolveListingMetadataButtonEnabled =
+      typeof config.resolveListingMetadataButtonEnabled === "function"
+        ? config.resolveListingMetadataButtonEnabled
+        : function () {
+            return Promise.resolve(true);
+          };
     var renderPanelWithMarketCompare =
       typeof config.renderPanelWithMarketCompare === "function"
         ? config.renderPanelWithMarketCompare
@@ -159,10 +167,15 @@ interface UUnavailableGlobal {
       return;
     }
 
-    Promise.all([resolveCurrencyContext(), resolveMarketCompareResultsLimit()]).then(function (values) {
+    Promise.all([
+      resolveCurrencyContext(),
+      resolveMarketCompareResultsLimit(),
+      resolveListingMetadataButtonEnabled()
+    ]).then(function (values) {
       var currencyContext = values[0];
       var marketCompareResultsLimit =
         Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
+      var showMetadataButton = values[2] !== false;
       var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
       if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
         return;
@@ -176,7 +189,8 @@ interface UUnavailableGlobal {
         rawListing: null,
         statusMessage: statusMessage,
         currencyContext: currencyContext,
-        marketCompareResultsLimit: marketCompareResultsLimit
+        marketCompareResultsLimit: marketCompareResultsLimit,
+        showMetadataButton: showMetadataButton
       });
       applySidebarCurrency(currencyContext);
       applyCardCurrency(currencyContext);

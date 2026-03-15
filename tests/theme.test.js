@@ -10,6 +10,8 @@ const {
   CUSTOM_COLOR_ATTR_VALUE,
   BLACK_BASE_ATTR,
   BLACK_BASE_ATTR_VALUE,
+  INVERT_FALLBACK_ATTR,
+  INVERT_FALLBACK_ATTR_VALUE,
   NEXT_ROOT_ATTR,
   NEXT_ROOT_ATTR_VALUE,
   PRIMARY_COLOR_VAR,
@@ -52,16 +54,25 @@ test("normalizeDarkModeContext normalizes enabled flag and hex color", () => {
   assert.deepEqual(normalizeDarkModeContext({ enabled: true, primaryColor: "#0f0" }), {
     enabled: true,
     primaryColor: "#00FF00",
-    customColorEnabled: true,
-    blackBaseEnabled: false
-  });
-
-  assert.deepEqual(normalizeDarkModeContext({ enabled: 1, primaryColor: "invalid" }), {
-    enabled: true,
-    primaryColor: "#000000",
+    legacyColorCustomizationEnabled: false,
     customColorEnabled: false,
     blackBaseEnabled: true
   });
+
+  assert.deepEqual(
+    normalizeDarkModeContext({
+      enabled: 1,
+      primaryColor: "invalid",
+      legacyColorCustomizationEnabled: true
+    }),
+    {
+    enabled: true,
+    primaryColor: "#000000",
+      legacyColorCustomizationEnabled: true,
+    customColorEnabled: false,
+    blackBaseEnabled: true
+    }
+  );
 });
 
 test("applyDarkModeToDocument applies root attribute and primary color variables", () => {
@@ -76,13 +87,15 @@ test("applyDarkModeToDocument applies root attribute and primary color variables
 
   const applied = applyDarkModeToDocument(doc, {
     enabled: true,
-    primaryColor: "#123456"
+    primaryColor: "#123456",
+    legacyColorCustomizationEnabled: true
   });
 
   assert.equal(applied, true);
   assert.equal(root.getAttribute(ROOT_ATTR), ROOT_ATTR_VALUE);
   assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), CUSTOM_COLOR_ATTR_VALUE);
   assert.equal(root.getAttribute(BLACK_BASE_ATTR), undefined);
+  assert.equal(root.getAttribute(INVERT_FALLBACK_ATTR), INVERT_FALLBACK_ATTR_VALUE);
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), NEXT_ROOT_ATTR_VALUE);
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_USER_VAR), "#123456");
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_VAR), "#FFFFFF");
@@ -98,13 +111,15 @@ test("applyDarkModeToDocument does not mark custom color for default color", () 
 
   const applied = applyDarkModeToDocument(doc, {
     enabled: true,
-    primaryColor: "#000000"
+    primaryColor: "#000000",
+    legacyColorCustomizationEnabled: true
   });
 
   assert.equal(applied, true);
   assert.equal(root.getAttribute(ROOT_ATTR), ROOT_ATTR_VALUE);
   assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), undefined);
   assert.equal(root.getAttribute(BLACK_BASE_ATTR), BLACK_BASE_ATTR_VALUE);
+  assert.equal(root.getAttribute(INVERT_FALLBACK_ATTR), INVERT_FALLBACK_ATTR_VALUE);
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), undefined);
 });
 
@@ -116,18 +131,21 @@ test("applyDarkModeToDocument clears root state when disabled", () => {
 
   applyDarkModeToDocument(doc, {
     enabled: true,
-    primaryColor: "#ABCDEF"
+    primaryColor: "#ABCDEF",
+    legacyColorCustomizationEnabled: true
   });
 
   const applied = applyDarkModeToDocument(doc, {
     enabled: false,
-    primaryColor: "#ABCDEF"
+    primaryColor: "#ABCDEF",
+    legacyColorCustomizationEnabled: true
   });
 
   assert.equal(applied, false);
   assert.equal(root.getAttribute(ROOT_ATTR), undefined);
   assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), undefined);
   assert.equal(root.getAttribute(BLACK_BASE_ATTR), undefined);
+  assert.equal(root.getAttribute(INVERT_FALLBACK_ATTR), undefined);
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), undefined);
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_USER_VAR), "");
   assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_VAR), "");
@@ -150,19 +168,45 @@ test("applyDarkModeToDocument removes next-root attribute when __next disappears
 
   applyDarkModeToDocument(doc, {
     enabled: true,
-    primaryColor: "#123456"
+    primaryColor: "#123456",
+    legacyColorCustomizationEnabled: true
   });
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), NEXT_ROOT_ATTR_VALUE);
 
   hasNextRoot = false;
   applyDarkModeToDocument(doc, {
     enabled: true,
-    primaryColor: "#123456"
+    primaryColor: "#123456",
+    legacyColorCustomizationEnabled: true
   });
   assert.equal(root.getAttribute(NEXT_ROOT_ATTR), undefined);
 });
 
 test("applyDarkModeToDocument returns false when no root node exists", () => {
-  const applied = applyDarkModeToDocument({}, { enabled: true, primaryColor: "#000000" });
+  const applied = applyDarkModeToDocument({}, {
+    enabled: true,
+    primaryColor: "#000000",
+    legacyColorCustomizationEnabled: true
+  });
   assert.equal(applied, false);
+});
+
+test("applyDarkModeToDocument keeps neutral stage when legacy color customization is disabled", () => {
+  const root = createRootNode();
+  const doc = {
+    documentElement: root
+  };
+
+  const applied = applyDarkModeToDocument(doc, {
+    enabled: true,
+    primaryColor: "#123456",
+    legacyColorCustomizationEnabled: false
+  });
+
+  assert.equal(applied, true);
+  assert.equal(root.getAttribute(ROOT_ATTR), ROOT_ATTR_VALUE);
+  assert.equal(root.getAttribute(CUSTOM_COLOR_ATTR), undefined);
+  assert.equal(root.getAttribute(BLACK_BASE_ATTR), BLACK_BASE_ATTR_VALUE);
+  assert.equal(root.getAttribute(INVERT_FALLBACK_ATTR), undefined);
+  assert.equal(root.style.getPropertyValue(PRIMARY_COLOR_VAR), "#FFFFFF");
 });

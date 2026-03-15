@@ -8,22 +8,32 @@ interface SStorageLocal {
   set: (payload: Record<string, unknown>, callback?: () => void) => unknown;
 }
 
+interface SBrowserStorageModule {
+  getStorageLocal: () => SStorageLocal | null;
+  storageGet: (storage: SStorageLocal | null, key: string) => Promise<Record<string, unknown>>;
+  storageSet: (storage: SStorageLocal | null, payload: Record<string, unknown>) => Promise<boolean>;
+}
+
 interface SSettingsModule {
   DEFAULT_CURRENCY: string;
   DEFAULT_CONVERSION_ENABLED: boolean;
   DEFAULT_LISTING_INSIGHTS_ENABLED: boolean;
+  DEFAULT_LISTING_METADATA_BUTTON_ENABLED: boolean;
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: boolean;
   DEFAULT_DARK_MODE_ENABLED: boolean;
   DEFAULT_DARK_MODE_BEHAVIOR: "system" | "permanent";
   DEFAULT_DARK_MODE_PRIMARY_COLOR: string;
+  DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED: boolean;
   CURATED_CURRENCIES: string[];
   CURRENCY_STORAGE_KEY: string;
   CONVERSION_ENABLED_STORAGE_KEY: string;
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY: string;
+  LISTING_METADATA_BUTTON_STORAGE_KEY: string;
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY: string;
   DARK_MODE_ENABLED_STORAGE_KEY: string;
   DARK_MODE_BEHAVIOR_STORAGE_KEY: string;
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: string;
+  DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY: string;
   STORAGE_KEY: string;
   normalizeCurrencyCode: (input: unknown) => string | null;
   normalizeHexColor: (input: unknown) => string | null;
@@ -34,6 +44,8 @@ interface SSettingsModule {
   setCurrencyConversionEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getListingInsightsEnabled: () => Promise<boolean>;
   setListingInsightsEnabled: (enabled: unknown) => Promise<SStorageResult>;
+  getListingMetadataButtonEnabled: () => Promise<boolean>;
+  setListingMetadataButtonEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getMarketCompareExpandedAmountEnabled: () => Promise<boolean>;
   setMarketCompareExpandedAmountEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getDarkModeEnabled: () => Promise<boolean>;
@@ -42,9 +54,12 @@ interface SSettingsModule {
   setDarkModeBehavior: (behavior: unknown) => Promise<SStorageResult>;
   getDarkModePrimaryColor: () => Promise<string>;
   setDarkModePrimaryColor: (color: unknown) => Promise<SStorageResult>;
+  getDarkModeLegacyColorCustomizationEnabled: () => Promise<boolean>;
+  setDarkModeLegacyColorCustomizationEnabled: (enabled: unknown) => Promise<SStorageResult>;
 }
 
 interface SGlobalRoot {
+  GrailedPlusBrowserStorage?: SBrowserStorageModule;
   GrailedPlusSettings?: SSettingsModule;
 }
 
@@ -62,19 +77,37 @@ interface SGlobalRoot {
     const DEFAULT_CURRENCY = "USD";
     const DEFAULT_CONVERSION_ENABLED = false;
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
+    const DEFAULT_LISTING_METADATA_BUTTON_ENABLED = true;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR: "system" | "permanent" = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
+    const DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
     const CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
     const CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
+    const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY =
       "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
+    const DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY =
+      "grailed_plus_dark_mode_legacy_color_customization_enabled_v1";
+    let BrowserStorage: SBrowserStorageModule | null = null;
+
+    if (typeof globalThis !== "undefined" && (globalThis as unknown as SGlobalRoot).GrailedPlusBrowserStorage) {
+      BrowserStorage = (globalThis as unknown as SGlobalRoot).GrailedPlusBrowserStorage || null;
+    }
+
+    if (!BrowserStorage && typeof require === "function") {
+      try {
+        BrowserStorage = require("./browserStorage") as SBrowserStorageModule;
+      } catch (_) {
+        BrowserStorage = null;
+      }
+    }
 
     function normalizeCurrencyCode(input: unknown): string | null {
       if (typeof input !== "string") {
@@ -135,149 +168,46 @@ interface SGlobalRoot {
     }
 
     function getStorageLocal(): SStorageLocal | null {
-      if (
-        typeof chrome !== "undefined" &&
-        chrome.storage &&
-        chrome.storage.local &&
-        typeof chrome.storage.local.get === "function" &&
-        typeof chrome.storage.local.set === "function"
-      ) {
-        return chrome.storage.local as unknown as SStorageLocal;
-      }
-
-      if (
-        typeof browser !== "undefined" &&
-        browser.storage &&
-        browser.storage.local &&
-        typeof browser.storage.local.get === "function" &&
-        typeof browser.storage.local.set === "function"
-      ) {
-        return browser.storage.local as unknown as SStorageLocal;
-      }
-
-      return null;
+      return BrowserStorage && typeof BrowserStorage.getStorageLocal === "function"
+        ? BrowserStorage.getStorageLocal()
+        : null;
     }
 
     function storageGet(storage: SStorageLocal | null, key: string): Promise<Record<string, unknown>> {
-      if (!storage) {
-        return Promise.resolve({});
-      }
-
-      try {
-        const result = storage.get(key);
-        if (result && typeof (result as Promise<unknown>).then === "function") {
-          return result as Promise<Record<string, unknown>>;
-        }
-      } catch (_) {
-        // Try callback style below.
-      }
-
-      return new Promise(function (resolve) {
-        try {
-          storage.get(key, function (data) {
-            if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-              resolve({});
-              return;
-            }
-            resolve(data || {});
-          });
-        } catch (_) {
-          resolve({});
-        }
-      });
+      return BrowserStorage && typeof BrowserStorage.storageGet === "function"
+        ? BrowserStorage.storageGet(storage, key)
+        : Promise.resolve({});
     }
 
     function storageSet(storage: SStorageLocal | null, payload: Record<string, unknown>): Promise<boolean> {
-      if (!storage) {
-        return Promise.resolve(false);
-      }
-
-      try {
-        const result = storage.set(payload);
-        if (result && typeof (result as Promise<unknown>).then === "function") {
-          return (result as Promise<unknown>).then(function () {
-            return true;
-          });
-        }
-      } catch (_) {
-        // Try callback style below.
-      }
-
-      return new Promise(function (resolve) {
-        try {
-          storage.set(payload, function () {
-            if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-              resolve(false);
-              return;
-            }
-            resolve(true);
-          });
-        } catch (_) {
-          resolve(false);
-        }
-      });
+      return BrowserStorage && typeof BrowserStorage.storageSet === "function"
+        ? BrowserStorage.storageSet(storage, payload)
+        : Promise.resolve(false);
     }
 
-    function getSelectedCurrency(): Promise<string> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_CURRENCY);
-      }
-
-      return storageGet(storage, CURRENCY_STORAGE_KEY)
-        .then(function (data) {
-          const normalized = normalizeCurrencyCode(data && data[CURRENCY_STORAGE_KEY]);
-          return normalized || DEFAULT_CURRENCY;
-        })
-        .catch(function () {
-          return DEFAULT_CURRENCY;
-        });
-    }
-
-    function setSelectedCurrency(code: unknown): Promise<SStorageResult> {
-      const normalized = normalizeCurrencyCode(code);
-      if (!normalized) {
-        return Promise.resolve({
-          ok: false,
-          error: "Currency must be a 3-letter code."
-        });
-      }
-
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve({
-          ok: false,
-          error: "Storage unavailable."
-        });
-      }
-
-      const payload: Record<string, unknown> = {};
-      payload[CURRENCY_STORAGE_KEY] = normalized;
-
-      return storageSet(storage, payload)
-        .then(function (ok) {
-          if (!ok) {
-            return {
-              ok: false,
-              error: "Failed to persist currency."
-            };
-          }
-          return {
-            ok: true
-          };
-        })
-        .catch(function () {
-          return {
-            ok: false,
-            error: "Failed to persist currency."
-          };
-        });
-    }
-
-    function _persistBooleanSetting(
+    function readSetting<T>(
       storageKey: string,
-      enabled: unknown,
-      settingDescription: string
+      fallback: T,
+      normalize: (value: unknown) => T
+    ): Promise<T> {
+      const storage = getStorageLocal();
+      if (!storage) {
+        return Promise.resolve(fallback);
+      }
+
+      return storageGet(storage, storageKey)
+        .then(function (data) {
+          return normalize(data && data[storageKey]);
+        })
+        .catch(function () {
+          return fallback;
+        });
+    }
+
+    function persistSetting(
+      storageKey: string,
+      value: unknown,
+      failureMessage: string
     ): Promise<SStorageResult> {
       const storage = getStorageLocal();
       if (!storage) {
@@ -288,16 +218,17 @@ interface SGlobalRoot {
       }
 
       const payload: Record<string, unknown> = {};
-      payload[storageKey] = Boolean(enabled);
+      payload[storageKey] = value;
 
       return storageSet(storage, payload)
         .then(function (ok) {
           if (!ok) {
             return {
               ok: false,
-              error: "Failed to persist " + settingDescription + "."
+              error: failureMessage
             };
           }
+
           return {
             ok: true
           };
@@ -305,228 +236,212 @@ interface SGlobalRoot {
         .catch(function () {
           return {
             ok: false,
-            error: "Failed to persist " + settingDescription + "."
+            error: failureMessage
           };
         });
+    }
+
+    function createBooleanSetting(
+      storageKey: string,
+      fallback: boolean,
+      settingDescription: string
+    ): {
+      get: () => Promise<boolean>;
+      set: (enabled: unknown) => Promise<SStorageResult>;
+    } {
+      return {
+        get: function () {
+          return readSetting(storageKey, fallback, function (value) {
+            return typeof value === "boolean" ? value : fallback;
+          });
+        },
+        set: function (enabled: unknown) {
+          return persistSetting(
+            storageKey,
+            Boolean(enabled),
+            "Failed to persist " + settingDescription + "."
+          );
+        }
+      };
+    }
+
+    function createValidatedSetting<T>(
+      storageKey: string,
+      fallback: T,
+      normalize: (value: unknown) => T | null,
+      invalidMessage: string,
+      failureMessage: string
+    ): {
+      get: () => Promise<T>;
+      set: (value: unknown) => Promise<SStorageResult>;
+    } {
+      return {
+        get: function () {
+          return readSetting(storageKey, fallback, function (value) {
+            const normalized = normalize(value);
+            return normalized == null ? fallback : normalized;
+          });
+        },
+        set: function (value: unknown) {
+          const normalized = normalize(value);
+          if (normalized == null) {
+            return Promise.resolve({
+              ok: false,
+              error: invalidMessage
+            });
+          }
+
+          return persistSetting(storageKey, normalized, failureMessage);
+        }
+      };
+    }
+
+    const selectedCurrencySetting = createValidatedSetting(
+      CURRENCY_STORAGE_KEY,
+      DEFAULT_CURRENCY,
+      normalizeCurrencyCode,
+      "Currency must be a 3-letter code.",
+      "Failed to persist currency."
+    );
+    const currencyConversionSetting = createBooleanSetting(
+      CONVERSION_ENABLED_STORAGE_KEY,
+      DEFAULT_CONVERSION_ENABLED,
+      "conversion status"
+    );
+    const listingInsightsSetting = createBooleanSetting(
+      LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+      DEFAULT_LISTING_INSIGHTS_ENABLED,
+      "listing insights status"
+    );
+    const listingMetadataButtonSetting = createBooleanSetting(
+      LISTING_METADATA_BUTTON_STORAGE_KEY,
+      DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
+      "listing metadata button status"
+    );
+    const marketCompareExpandedAmountSetting = createBooleanSetting(
+      MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
+      DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
+      "market compare expanded amount status"
+    );
+    const darkModeEnabledSetting = createBooleanSetting(
+      DARK_MODE_ENABLED_STORAGE_KEY,
+      DEFAULT_DARK_MODE_ENABLED,
+      "dark mode status"
+    );
+    const darkModeBehaviorSetting = createValidatedSetting(
+      DARK_MODE_BEHAVIOR_STORAGE_KEY,
+      DEFAULT_DARK_MODE_BEHAVIOR,
+      normalizeDarkModeBehavior,
+      "Dark mode behavior must be either 'system' or 'permanent'.",
+      "Failed to persist dark mode behavior."
+    );
+    const darkModePrimaryColorSetting = createValidatedSetting(
+      DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
+      DEFAULT_DARK_MODE_PRIMARY_COLOR,
+      normalizeHexColor,
+      "Primary color must be a valid hex value.",
+      "Failed to persist dark mode primary color."
+    );
+    const darkModeLegacyColorCustomizationSetting = createBooleanSetting(
+      DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY,
+      DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED,
+      "dark mode legacy color customization status"
+    );
+
+    function getSelectedCurrency(): Promise<string> {
+      return selectedCurrencySetting.get();
+    }
+
+    function setSelectedCurrency(code: unknown): Promise<SStorageResult> {
+      return selectedCurrencySetting.set(code);
     }
 
     function getCurrencyConversionEnabled(): Promise<boolean> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_CONVERSION_ENABLED);
-      }
-
-      return storageGet(storage, CONVERSION_ENABLED_STORAGE_KEY)
-        .then(function (data) {
-          return Boolean(data && data[CONVERSION_ENABLED_STORAGE_KEY]);
-        })
-        .catch(function () {
-          return DEFAULT_CONVERSION_ENABLED;
-        });
+      return currencyConversionSetting.get();
     }
 
     function setCurrencyConversionEnabled(enabled: unknown): Promise<SStorageResult> {
-      return _persistBooleanSetting(CONVERSION_ENABLED_STORAGE_KEY, enabled, "conversion status");
+      return currencyConversionSetting.set(enabled);
     }
 
     function getListingInsightsEnabled(): Promise<boolean> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_LISTING_INSIGHTS_ENABLED);
-      }
-
-      return storageGet(storage, LISTING_INSIGHTS_ENABLED_STORAGE_KEY)
-        .then(function (data) {
-          const storedValue = data && data[LISTING_INSIGHTS_ENABLED_STORAGE_KEY];
-          return typeof storedValue === "boolean" ? storedValue : DEFAULT_LISTING_INSIGHTS_ENABLED;
-        })
-        .catch(function () {
-          return DEFAULT_LISTING_INSIGHTS_ENABLED;
-        });
+      return listingInsightsSetting.get();
     }
 
     function setListingInsightsEnabled(enabled: unknown): Promise<SStorageResult> {
-      return _persistBooleanSetting(
-        LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
-        enabled,
-        "listing insights status"
-      );
+      return listingInsightsSetting.set(enabled);
+    }
+
+    function getListingMetadataButtonEnabled(): Promise<boolean> {
+      return listingMetadataButtonSetting.get();
+    }
+
+    function setListingMetadataButtonEnabled(enabled: unknown): Promise<SStorageResult> {
+      return listingMetadataButtonSetting.set(enabled);
     }
 
     function getMarketCompareExpandedAmountEnabled(): Promise<boolean> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED);
-      }
-
-      return storageGet(storage, MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY)
-        .then(function (data) {
-          const storedValue = data && data[MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY];
-          return typeof storedValue === "boolean"
-            ? storedValue
-            : DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED;
-        })
-        .catch(function () {
-          return DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED;
-        });
+      return marketCompareExpandedAmountSetting.get();
     }
 
     function setMarketCompareExpandedAmountEnabled(enabled: unknown): Promise<SStorageResult> {
-      return _persistBooleanSetting(
-        MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
-        enabled,
-        "market compare expanded amount status"
-      );
+      return marketCompareExpandedAmountSetting.set(enabled);
     }
 
     function getDarkModeEnabled(): Promise<boolean> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_DARK_MODE_ENABLED);
-      }
-
-      return storageGet(storage, DARK_MODE_ENABLED_STORAGE_KEY)
-        .then(function (data) {
-          const storedValue = data && data[DARK_MODE_ENABLED_STORAGE_KEY];
-          return typeof storedValue === "boolean" ? storedValue : DEFAULT_DARK_MODE_ENABLED;
-        })
-        .catch(function () {
-          return DEFAULT_DARK_MODE_ENABLED;
-        });
+      return darkModeEnabledSetting.get();
     }
 
     function setDarkModeEnabled(enabled: unknown): Promise<SStorageResult> {
-      return _persistBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, enabled, "dark mode status");
+      return darkModeEnabledSetting.set(enabled);
     }
 
     function getDarkModePrimaryColor(): Promise<string> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_DARK_MODE_PRIMARY_COLOR);
-      }
-
-      return storageGet(storage, DARK_MODE_PRIMARY_COLOR_STORAGE_KEY)
-        .then(function (data) {
-          const normalized = normalizeHexColor(data && data[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY]);
-          return normalized || DEFAULT_DARK_MODE_PRIMARY_COLOR;
-        })
-        .catch(function () {
-          return DEFAULT_DARK_MODE_PRIMARY_COLOR;
-        });
+      return darkModePrimaryColorSetting.get();
     }
 
     function getDarkModeBehavior(): Promise<"system" | "permanent"> {
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve(DEFAULT_DARK_MODE_BEHAVIOR);
-      }
-
-      return storageGet(storage, DARK_MODE_BEHAVIOR_STORAGE_KEY)
-        .then(function (data) {
-          const normalized = normalizeDarkModeBehavior(data && data[DARK_MODE_BEHAVIOR_STORAGE_KEY]);
-          return normalized || DEFAULT_DARK_MODE_BEHAVIOR;
-        })
-        .catch(function () {
-          return DEFAULT_DARK_MODE_BEHAVIOR;
-        });
+      return darkModeBehaviorSetting.get();
     }
 
     function setDarkModeBehavior(behavior: unknown): Promise<SStorageResult> {
-      const normalized = normalizeDarkModeBehavior(behavior);
-      if (!normalized) {
-        return Promise.resolve({
-          ok: false,
-          error: "Dark mode behavior must be either 'system' or 'permanent'."
-        });
-      }
-
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve({
-          ok: false,
-          error: "Storage unavailable."
-        });
-      }
-
-      const payload: Record<string, unknown> = {};
-      payload[DARK_MODE_BEHAVIOR_STORAGE_KEY] = normalized;
-
-      return storageSet(storage, payload)
-        .then(function (ok) {
-          if (!ok) {
-            return {
-              ok: false,
-              error: "Failed to persist dark mode behavior."
-            };
-          }
-          return {
-            ok: true
-          };
-        })
-        .catch(function () {
-          return {
-            ok: false,
-            error: "Failed to persist dark mode behavior."
-          };
-        });
+      return darkModeBehaviorSetting.set(behavior);
     }
 
     function setDarkModePrimaryColor(color: unknown): Promise<SStorageResult> {
-      const normalized = normalizeHexColor(color);
-      if (!normalized) {
-        return Promise.resolve({
-          ok: false,
-          error: "Primary color must be a valid hex value."
-        });
-      }
+      return darkModePrimaryColorSetting.set(color);
+    }
 
-      const storage = getStorageLocal();
-      if (!storage) {
-        return Promise.resolve({
-          ok: false,
-          error: "Storage unavailable."
-        });
-      }
+    function getDarkModeLegacyColorCustomizationEnabled(): Promise<boolean> {
+      return darkModeLegacyColorCustomizationSetting.get();
+    }
 
-      const payload: Record<string, unknown> = {};
-      payload[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY] = normalized;
-
-      return storageSet(storage, payload)
-        .then(function (ok) {
-          if (!ok) {
-            return {
-              ok: false,
-              error: "Failed to persist dark mode primary color."
-            };
-          }
-          return {
-            ok: true
-          };
-        })
-        .catch(function () {
-          return {
-            ok: false,
-            error: "Failed to persist dark mode primary color."
-          };
-        });
+    function setDarkModeLegacyColorCustomizationEnabled(
+      enabled: unknown
+    ): Promise<SStorageResult> {
+      return darkModeLegacyColorCustomizationSetting.set(enabled);
     }
 
     return {
       DEFAULT_CURRENCY,
       DEFAULT_CONVERSION_ENABLED,
       DEFAULT_LISTING_INSIGHTS_ENABLED,
+      DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
       DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
       DEFAULT_DARK_MODE_ENABLED,
       DEFAULT_DARK_MODE_BEHAVIOR,
       DEFAULT_DARK_MODE_PRIMARY_COLOR,
+      DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED,
       CURATED_CURRENCIES,
       CURRENCY_STORAGE_KEY,
       CONVERSION_ENABLED_STORAGE_KEY,
       LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+      LISTING_METADATA_BUTTON_STORAGE_KEY,
       MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
       DARK_MODE_ENABLED_STORAGE_KEY,
       DARK_MODE_BEHAVIOR_STORAGE_KEY,
       DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
+      DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY,
       STORAGE_KEY: CURRENCY_STORAGE_KEY,
       normalizeCurrencyCode,
       normalizeHexColor,
@@ -537,6 +452,8 @@ interface SGlobalRoot {
       setCurrencyConversionEnabled,
       getListingInsightsEnabled,
       setListingInsightsEnabled,
+      getListingMetadataButtonEnabled,
+      setListingMetadataButtonEnabled,
       getMarketCompareExpandedAmountEnabled,
       setMarketCompareExpandedAmountEnabled,
       getDarkModeEnabled,
@@ -544,7 +461,9 @@ interface SGlobalRoot {
       getDarkModeBehavior,
       setDarkModeBehavior,
       getDarkModePrimaryColor,
-      setDarkModePrimaryColor
+      setDarkModePrimaryColor,
+      getDarkModeLegacyColorCustomizationEnabled,
+      setDarkModeLegacyColorCustomizationEnabled
     };
   }
 );

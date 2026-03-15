@@ -7,6 +7,8 @@ const {
   getNestedValue,
   normalizeDate,
   normalizeString,
+  normalizeTrimmedString,
+  normalizeThreeLetterCurrencyCode,
   normalizeListingId,
   normalizePriceDrops
 } = require("../.tmp/ts-build/src/domain/normalize");
@@ -55,6 +57,19 @@ test("normalizeString preserves strings and coerces other values", () => {
   assert.equal(normalizeString("hello", "fallback"), "hello");
   assert.equal(normalizeString(123, "fallback"), "123");
   assert.equal(normalizeString(null, "fallback"), "fallback");
+});
+
+test("normalizeTrimmedString trims string input and falls back otherwise", () => {
+  assert.equal(normalizeTrimmedString("  hello  ", "fallback"), "hello");
+  assert.equal(normalizeTrimmedString("   ", "fallback"), "fallback");
+  assert.equal(normalizeTrimmedString(null, "fallback"), "fallback");
+});
+
+test("normalizeThreeLetterCurrencyCode normalizes valid currency codes", () => {
+  assert.equal(normalizeThreeLetterCurrencyCode(" usd "), "USD");
+  assert.equal(normalizeThreeLetterCurrencyCode("cad"), "CAD");
+  assert.equal(normalizeThreeLetterCurrencyCode("US"), null);
+  assert.equal(normalizeThreeLetterCurrencyCode(null), null);
 });
 
 test("normalizeListingId accepts positive integers and numeric strings", () => {

@@ -53,6 +53,11 @@
             </label>
 
             <label class="gp-options__toggle">
+              <input id="listing-metadata-button-enabled" type="checkbox" />
+              <span>Show metadata button in listing insights panel</span>
+            </label>
+
+            <label class="gp-options__toggle">
               <input id="market-compare-expanded-amount-enabled" type="checkbox" />
               <span>Expanded amount: show 10 market compare results</span>
             </label>
@@ -75,20 +80,29 @@
               <option value="permanent">Permanent dark mode</option>
             </select>
 
+            <label class="gp-options__toggle">
+              <input id="dark-mode-legacy-color-enabled" type="checkbox" />
+              <span>Enable legacy compatibility mode (tint + inversion fallback)</span>
+            </label>
 
+            <p class="gp-options__hint gp-options__hint--inline">
+              Use only if the neutral dark stage renders incorrectly on a specific Grailed view.
+            </p>
 
-            <label for="dark-mode-primary" class="gp-options__label">Primary color</label>
-            <div class="gp-options__color-row">
-              <input id="dark-mode-primary" class="gp-options__color" type="color" value="#000000" />
-              <input
-                id="dark-mode-primary-hex"
-                class="gp-options__control gp-options__control--hex"
-                type="text"
-                maxlength="7"
-                placeholder="#000000"
-                autocomplete="off"
-                spellcheck="false"
-              />
+            <div id="dark-mode-legacy-color-controls" class="gp-options__legacy-group" hidden>
+              <label for="dark-mode-primary" class="gp-options__label">Legacy primary color</label>
+              <div class="gp-options__color-row">
+                <input id="dark-mode-primary" class="gp-options__color" type="color" value="#000000" />
+                <input
+                  id="dark-mode-primary-hex"
+                  class="gp-options__control gp-options__control--hex"
+                  type="text"
+                  maxlength="7"
+                  placeholder="#000000"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </div>
             </div>
 
         </section>
@@ -103,6 +117,7 @@
       <p id="status" class="gp-options__status" aria-live="polite"></p>
     </main>
 
+    <script src="domain/browserStorage.js"></script>
     <script src="domain/settings.js"></script>
     <script src="domain/currency.js"></script>
     <script src="options.js"></script>

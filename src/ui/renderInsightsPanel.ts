@@ -22,6 +22,8 @@
   var SIDEBAR_USD_TEXT_ATTR = "data-grailed-plus-original-price-text";
   var SIDEBAR_USD_VALUE_ATTR = "data-grailed-plus-original-price-value";
   var TREND_EMPTY_TEXT = "no price history data";
+    var TREND_ERROR_TEXT = "Could not load price history";
+    var TREND_LOADING_TEXT = "Loading price history...";
   var TREND_CHART_WIDTH = 296;
   var TREND_CHART_HEIGHT = 108;
   var TREND_MARGIN = {
@@ -358,6 +360,7 @@
       var emptyNode = doc.createElement("div");
       emptyNode.className = "grailed-plus__trend-empty";
       emptyNode.textContent = TREND_EMPTY_TEXT;
+      emptyNode.setAttribute("aria-live", "polite");
       chart.appendChild(emptyNode);
       return row;
     }
@@ -489,6 +492,8 @@
     var linePath = createSvgElement("path");
     setClass(linePath, "grailed-plus__trend-line");
     setAttr(linePath, "d", pathData.trim());
+    setAttr(linePath, "fill", "none");
+    setAttr(linePath, "stroke", "var(--icon-fill)");
     trendLineLayer.appendChild(linePath);
 
     var tooltip = doc.createElement("div");
@@ -503,6 +508,56 @@
 
     setTooltipAlignment("center");
 
+    function readChartSize() {
+      var chartWidth = Number(chart && chart.clientWidth);
+      if (!Number.isFinite(chartWidth) || chartWidth <= 0) {
+        chartWidth = width;
+      }
+
+      var chartHeight = Number(chart && chart.clientHeight);
+      if (!Number.isFinite(chartHeight) || chartHeight <= 0) {
+        chartHeight = height;
+      }
+
+      return {
+        width: chartWidth,
+        height: chartHeight
+      };
+    }
+
+    function getChartPointerCoordinates(event: any) {
+      var chartRect =
+        chart && typeof chart.getBoundingClientRect === "function"
+          ? chart.getBoundingClientRect()
+          : null;
+      var clientX = Number(event && event.clientX);
+      var clientY = Number(event && event.clientY);
+
+      if (
+        chartRect &&
+        Number.isFinite(clientX) &&
+        Number.isFinite(clientY) &&
+        Number.isFinite(Number(chartRect.left)) &&
+        Number.isFinite(Number(chartRect.top))
+      ) {
+        return {
+          x: clientX - Number(chartRect.left),
+          y: clientY - Number(chartRect.top)
+        };
+      }
+
+      var offsetX = Number(event && event.offsetX);
+      var offsetY = Number(event && event.offsetY);
+      if (Number.isFinite(offsetX) && Number.isFinite(offsetY)) {
+        return {
+          x: offsetX,
+          y: offsetY
+        };
+      }
+
+      return null;
+    }
+
     function showTooltip(event: any, point: any) {
       var display = buildMoneyDisplay(point.priceUsd, currencyContext);
       var tooltipText = display.text + " - " + formatDate(point.date.toISOString());
@@ -514,20 +569,18 @@
         tooltip.removeAttribute("title");
       }
 
-      var xPos = Number(event && event.offsetX);
-      var yPos = Number(event && event.offsetY);
-      if (!Number.isFinite(xPos) || !Number.isFinite(yPos)) {
-        xPos = scaleX(point.timestampMs) + TREND_MARGIN.left;
-        yPos = scaleY(point.priceUsd) + TREND_MARGIN.top;
-      }
+      var chartSize = readChartSize();
+      var chartWidth = chartSize.width;
+      var chartHeight = chartSize.height;
+      var pointerCoords = getChartPointerCoordinates(event);
+      var xPos = Number(pointerCoords && pointerCoords.x);
+      var yPos = Number(pointerCoords && pointerCoords.y);
 
-      var chartWidth = Number(chart && chart.clientWidth);
-      if (!Number.isFinite(chartWidth) || chartWidth <= 0) {
-        chartWidth = width;
-      }
-      var chartHeight = Number(chart && chart.clientHeight);
-      if (!Number.isFinite(chartHeight) || chartHeight <= 0) {
-        chartHeight = height;
+      if (!Number.isFinite(xPos) || !Number.isFinite(yPos)) {
+        var scaleXToChart = chartWidth / width;
+        var scaleYToChart = chartHeight / height;
+        xPos = (scaleX(point.timestampMs) + TREND_MARGIN.left) * scaleXToChart;
+        yPos = (scaleY(point.priceUsd) + TREND_MARGIN.top) * scaleYToChart;
       }
 
       var tooltipRect =
@@ -590,6 +643,7 @@
         setAttr(pointNode, "cx", scaleX(point.timestampMs));
         setAttr(pointNode, "cy", scaleY(point.priceUsd));
         setAttr(pointNode, "r", TREND_POINT_RADIUS);
+        setAttr(pointNode, "fill", "var(--icon-fill)");
         setAttr(pointNode, "tabindex", 0);
         setAttr(pointNode, "data-point-key", point.key);
         setAttr(pointNode, "aria-label", formatTrendPointAriaLabel(point, currencyContext));
@@ -611,15 +665,28 @@
     }
 
     function findNearestPoint(event: any) {
-      var px = Number(event && event.offsetX);
-      if (Number.isFinite(px)) {
-        px = px - TREND_MARGIN.left;
+      var px = NaN;
+      var svgRect = typeof svg.getBoundingClientRect === "function" ? svg.getBoundingClientRect() : null;
+
+      if (event && Number.isFinite(Number(event.clientX)) && svgRect) {
+        var svgLeft = Number(svgRect.left);
+        var svgWidth = Number(svgRect.width);
+        if (Number.isFinite(svgLeft) && Number.isFinite(svgWidth) && svgWidth > 0) {
+          px = ((Number(event.clientX) - svgLeft) / svgWidth) * width - TREND_MARGIN.left;
+        }
       }
 
-      if (!Number.isFinite(px) && event && Number.isFinite(Number(event.clientX))) {
-        var svgRect = typeof svg.getBoundingClientRect === "function" ? svg.getBoundingClientRect() : null;
-        if (svgRect) {
-          px = Number(event.clientX) - Number(svgRect.left) - TREND_MARGIN.left;
+      if (!Number.isFinite(px)) {
+        var offsetX = Number(event && event.offsetX);
+        if (Number.isFinite(offsetX)) {
+          var renderedWidth = Number(svgRect && svgRect.width);
+          if (!Number.isFinite(renderedWidth) || renderedWidth <= 0) {
+            renderedWidth = Number(chart && chart.clientWidth);
+          }
+          if (!Number.isFinite(renderedWidth) || renderedWidth <= 0) {
+            renderedWidth = width;
+          }
+          px = (offsetX / renderedWidth) * width - TREND_MARGIN.left;
         }
       }
 
@@ -1644,6 +1711,27 @@
     return "Not enough data to estimate";
   }
 
+  function buildAvgDropSignal(metrics: any) {
+    var avgDrop = Number(metrics && metrics.averageDropPercent);
+    if (!Number.isFinite(avgDrop)) {
+      return "Trend signal is limited. Compare against external listings before buying.";
+    }
+
+    if (avgDrop >= 14) {
+      return "Strong markdown trend. Waiting may unlock a better price.";
+    }
+
+    if (avgDrop >= 8) {
+      return "Moderate markdown trend. There is room for additional price movement.";
+    }
+
+    if (avgDrop > 0) {
+      return "Light markdown trend. Price changes are gradual so timing matters less.";
+    }
+
+    return "No markdown trend detected. Compare with other markets before committing.";
+  }
+
   function formatRelativeTimestamp(timestampMs: any) {
     if (!Number.isFinite(Number(timestampMs))) {
       return "";
@@ -1728,13 +1816,47 @@
     if (parent.childNodes && parent.childNodes.length > 0) {
       var separator = doc.createElement("span");
       separator.className = "grailed-plus__market-meta-separator";
-      separator.textContent = " | ";
+      separator.textContent = " · ";
       parent.appendChild(separator);
     }
 
     var segment = doc.createElement("span");
     segment.className = "grailed-plus__market-meta-segment" + (extraClass ? " " + extraClass : "");
     segment.textContent = text;
+    parent.appendChild(segment);
+  }
+
+  function appendMarketPriceSegment(doc: any, parent: any, entry: any) {
+    if (!parent || !Number.isFinite(entry && entry.price)) {
+      return;
+    }
+
+    if (parent.childNodes && parent.childNodes.length > 0) {
+      var separator = doc.createElement("span");
+      separator.className = "grailed-plus__market-meta-separator";
+      separator.textContent = " · ";
+      parent.appendChild(separator);
+    }
+
+    var segment = doc.createElement("span");
+    segment.className = "grailed-plus__market-meta-segment";
+    segment.textContent = formatCurrencyByCode(entry.price, entry.currency || "USD");
+
+    var originalPrice = Number(entry && entry.originalPrice);
+    var originalCurrency = normalizeCurrencyCode(entry && entry.originalCurrency);
+    var displayCurrency = normalizeCurrencyCode(entry && entry.currency);
+    if (
+      Number.isFinite(originalPrice) &&
+      originalCurrency &&
+      displayCurrency &&
+      originalCurrency !== displayCurrency
+    ) {
+      var note = doc.createElement("span");
+      note.className = "grailed-plus__market-meta-note";
+      note.textContent = " Depop " + formatCurrencyByCode(originalPrice, originalCurrency);
+      segment.appendChild(note);
+    }
+
     parent.appendChild(segment);
   }
 
@@ -1767,12 +1889,19 @@
 
     if (status === "loading") {
       chip.textContent = "Searching";
+      chip.setAttribute("aria-busy", "true");
     } else if (status === "results") {
       chip.textContent = "Results";
     } else if (status === "no-results") {
       chip.textContent = "No Results";
     } else if (status === "error") {
       chip.textContent = "Error";
+      chip.setAttribute("aria-live", "assertive");
+      var errorNode = doc.createElement("div");
+      errorNode.className = "grailed-plus__trend-empty";
+      errorNode.textContent = TREND_ERROR_TEXT;
+      errorNode.setAttribute("aria-live", "assertive");
+      section.appendChild(errorNode);
     } else {
       chip.textContent = "Ready";
     }
@@ -1833,9 +1962,7 @@
         var deltaPercent = extractPercentValue(deltaText);
         var deltaToneClass = getPercentToneClass(deltaPercent);
 
-        if (Number.isFinite(entry.price)) {
-          appendMetaSegment(doc, meta, formatCurrencyByCode(entry.price, entry.currency || "USD"));
-        }
+        appendMarketPriceSegment(doc, meta, entry);
         if (Number.isFinite(entry.score)) {
           appendMetaSegment(doc, meta, "score " + String(Math.round(entry.score)));
         }
@@ -1884,6 +2011,11 @@
     compareButton.className = "gp-button grailed-plus__panel-button";
     compareButton.textContent = status === "loading" ? "Searching..." : "Compare on Depop";
     compareButton.disabled = status === "loading";
+    if (status === "loading") {
+      compareButton.setAttribute("aria-busy", "true");
+    } else {
+      compareButton.removeAttribute("aria-busy");
+    }
     if (typeof compareButton.addEventListener === "function") {
       compareButton.addEventListener("click", function () {
         if (typeof onCompareClick === "function") {
@@ -1912,6 +2044,7 @@
       options && options.marketCompareResultsLimit != null
         ? options.marketCompareResultsLimit
         : DEFAULT_MARKET_COMPARE_RESULTS_LIMIT;
+    var showMetadataButton = !options || options.showMetadataButton !== false;
     var onMarketCompareClick =
       options && typeof options.onMarketCompareClick === "function"
         ? options.onMarketCompareClick
@@ -1939,7 +2072,14 @@
     panel.appendChild(panelTitle);
 
     if (statusMessage) {
-      panel.appendChild(createRow(doc, "Status", statusMessage, "grailed-plus__row--status"));
+      panel.appendChild(
+        createRow(
+          doc,
+          "Status",
+          statusMessage,
+          "grailed-plus__row--status grailed-plus__row--support"
+        )
+      );
     }
 
     var pricingHistory =
@@ -1966,16 +2106,35 @@
       avgClass = "grailed-plus__row--alert";
     }
 
-    var avgRow = createRow(doc, "Avg. Price Drop", avgText, avgClass, avgTitle);
+    var avgRowClass = "grailed-plus__row--anchor" + (avgClass ? " " + avgClass : "");
+    var avgRow = createRow(doc, "Avg. Price Drop", avgText, avgRowClass, avgTitle);
     var avgValueNode = avgRow.querySelector(".grailed-plus__value");
     var avgToneClass = getPercentToneClass(-Number(metrics.averageDropPercent));
     if (avgValueNode && avgToneClass) {
       avgValueNode.className += " " + avgToneClass;
     }
     panel.appendChild(avgRow);
-    panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics)));
+
+    var avgSignal = doc.createElement("p");
+    avgSignal.className = "grailed-plus__history-signal";
+    avgSignal.textContent = buildAvgDropSignal(metrics);
+    panel.appendChild(avgSignal);
+
     panel.appendChild(
-      createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt))
+      createRow(
+        doc,
+        "Next Expected Drop",
+        buildExpectedDropText(listing, metrics),
+        "grailed-plus__row--support"
+      )
+    );
+    panel.appendChild(
+      createRow(
+        doc,
+        "Seller Account Created",
+        formatDate(listing.seller && listing.seller.createdAt),
+        "grailed-plus__row--support"
+      )
     );
     panel.appendChild(
       createMarketCompareSection(
@@ -1986,25 +2145,28 @@
       )
     );
 
-    var actions = doc.createElement("div");
-    actions.className = "grailed-plus__actions";
+    if (showMetadataButton) {
+      var actions = doc.createElement("div");
+      actions.className = "grailed-plus__actions";
 
-    var metadataButton = doc.createElement("button");
-    metadataButton.type = "button";
-    metadataButton.className = "gp-button grailed-plus__panel-button";
-    metadataButton.textContent = "Listing Metadata";
-    if (typeof metadataButton.addEventListener === "function") {
-      metadataButton.addEventListener("click", function () {
-        openMetadataInNewTab(rawListing, listing);
-      });
-    } else {
-      metadataButton.onclick = function () {
-        openMetadataInNewTab(rawListing, listing);
-      };
+      var metadataButton = doc.createElement("button");
+      metadataButton.type = "button";
+      metadataButton.className =
+        "gp-button grailed-plus__panel-button grailed-plus__panel-button--tertiary";
+      metadataButton.textContent = "Metadata";
+      if (typeof metadataButton.addEventListener === "function") {
+        metadataButton.addEventListener("click", function () {
+          openMetadataInNewTab(rawListing, listing);
+        });
+      } else {
+        metadataButton.onclick = function () {
+          openMetadataInNewTab(rawListing, listing);
+        };
+      }
+
+      actions.appendChild(metadataButton);
+      panel.appendChild(actions);
     }
-
-    actions.appendChild(metadataButton);
-    panel.appendChild(actions);
 
     if (mountNode.parentNode) {
       if (mountPosition === "beforebegin") {

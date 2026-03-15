@@ -7,17 +7,21 @@ const {
   DEFAULT_CURRENCY,
   DEFAULT_CONVERSION_ENABLED,
   DEFAULT_LISTING_INSIGHTS_ENABLED,
+  DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
   DEFAULT_DARK_MODE_ENABLED,
   DEFAULT_DARK_MODE_BEHAVIOR,
   DEFAULT_DARK_MODE_PRIMARY_COLOR,
+  DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED,
   CURRENCY_STORAGE_KEY,
   CONVERSION_ENABLED_STORAGE_KEY,
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
+  LISTING_METADATA_BUTTON_STORAGE_KEY,
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
   DARK_MODE_ENABLED_STORAGE_KEY,
   DARK_MODE_BEHAVIOR_STORAGE_KEY,
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
+  DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY,
   normalizeCurrencyCode,
   normalizeHexColor,
   normalizeDarkModeBehavior,
@@ -27,6 +31,8 @@ const {
   setCurrencyConversionEnabled,
   getListingInsightsEnabled,
   setListingInsightsEnabled,
+  getListingMetadataButtonEnabled,
+  setListingMetadataButtonEnabled,
   getMarketCompareExpandedAmountEnabled,
   setMarketCompareExpandedAmountEnabled,
   getDarkModeEnabled,
@@ -34,7 +40,9 @@ const {
   getDarkModeBehavior,
   setDarkModeBehavior,
   getDarkModePrimaryColor,
-  setDarkModePrimaryColor
+  setDarkModePrimaryColor,
+  getDarkModeLegacyColorCustomizationEnabled,
+  setDarkModeLegacyColorCustomizationEnabled
 } = require("../.tmp/ts-build/src/domain/settings");
 
 function createChromeStorage(initialState) {
@@ -247,6 +255,48 @@ test("setListingInsightsEnabled persists boolean values", async () => {
   }
 });
 
+test("getListingMetadataButtonEnabled defaults to enabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getListingMetadataButtonEnabled();
+    assert.equal(enabled, DEFAULT_LISTING_METADATA_BUTTON_ENABLED);
+    assert.equal(enabled, true);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setListingMetadataButtonEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const offResult = await setListingMetadataButtonEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[LISTING_METADATA_BUTTON_STORAGE_KEY], false);
+    assert.equal(await getListingMetadataButtonEnabled(), false);
+
+    const onResult = await setListingMetadataButtonEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[LISTING_METADATA_BUTTON_STORAGE_KEY], true);
+    assert.equal(await getListingMetadataButtonEnabled(), true);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
 test("getMarketCompareExpandedAmountEnabled defaults to disabled", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
@@ -451,6 +501,48 @@ test("setDarkModePrimaryColor rejects invalid hex values", async () => {
     assert.equal(result.ok, false);
     assert.match(result.error, /hex/i);
     assert.equal(chromeMock.__state[DARK_MODE_PRIMARY_COLOR_STORAGE_KEY], undefined);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getDarkModeLegacyColorCustomizationEnabled defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getDarkModeLegacyColorCustomizationEnabled();
+    assert.equal(enabled, DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setDarkModeLegacyColorCustomizationEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setDarkModeLegacyColorCustomizationEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY], true);
+    assert.equal(await getDarkModeLegacyColorCustomizationEnabled(), true);
+
+    const offResult = await setDarkModeLegacyColorCustomizationEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY], false);
+    assert.equal(await getDarkModeLegacyColorCustomizationEnabled(), false);
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;

@@ -255,6 +255,7 @@ interface CListingInsightsGlobal {
           Number(panelOptions.marketCompareResultsLimit) > 0
             ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
             : 5,
+        showMetadataButton: panelOptions.showMetadataButton !== false,
         marketCompare: panelOptions.marketCompare || null,
         onMarketCompareClick:
           typeof panelOptions.onMarketCompareClick === "function"

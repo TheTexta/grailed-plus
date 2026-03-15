@@ -201,6 +201,20 @@ class MockElement {
     }
   }
 
+  removeAttribute(name) {
+    if (!name) {
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this.attributes, name)) {
+      delete this.attributes[name];
+    }
+
+    if (name === "class") {
+      this.className = "";
+    }
+  }
+
   getAttribute(name) {
     return this.attributes[name];
   }

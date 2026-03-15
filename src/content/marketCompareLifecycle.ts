@@ -10,6 +10,7 @@ interface CMarketCompareState {
     statusMessage: string;
     currencyContext: any;
     marketCompareResultsLimit: number;
+    showMetadataButton: boolean;
     renderToken: number;
   } | null;
   renderToken: number;
@@ -59,6 +60,7 @@ interface CRenderPanelOptions {
     statusMessage: string;
     currencyContext: any;
     marketCompareResultsLimit: number;
+    showMetadataButton: boolean;
     marketCompare: any;
     onMarketCompareClick: () => void;
   }) => unknown;
@@ -72,6 +74,7 @@ interface CRenderPanelOptions {
     statusMessage?: string;
     currencyContext?: any;
     marketCompareResultsLimit?: number;
+    showMetadataButton?: boolean;
   };
 }
 
@@ -245,6 +248,7 @@ interface CMarketCompareGlobal {
         Number(panelOptions.marketCompareResultsLimit) > 0
           ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
           : 5,
+      showMetadataButton: panelOptions.showMetadataButton !== false,
       renderToken: state.renderToken
     };
 
@@ -257,6 +261,7 @@ interface CMarketCompareGlobal {
       statusMessage: state.latestPanelContext.statusMessage,
       currencyContext: state.latestPanelContext.currencyContext,
       marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
+      showMetadataButton: state.latestPanelContext.showMetadataButton,
       marketCompare: marketCompareState,
       onMarketCompareClick: onMarketCompareClick
     });

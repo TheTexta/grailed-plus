@@ -339,6 +339,25 @@
       });
   }
 
+  function resolveListingMetadataButtonEnabled(): Promise<boolean> {
+    var defaultEnabled =
+      Settings && typeof Settings.DEFAULT_LISTING_METADATA_BUTTON_ENABLED === "boolean"
+        ? Settings.DEFAULT_LISTING_METADATA_BUTTON_ENABLED
+        : true;
+
+    if (!Settings || typeof Settings.getListingMetadataButtonEnabled !== "function") {
+      return Promise.resolve(defaultEnabled);
+    }
+
+    return Settings.getListingMetadataButtonEnabled()
+      .then(function (enabled: any) {
+        return typeof enabled === "boolean" ? enabled : defaultEnabled;
+      })
+      .catch(function () {
+        return defaultEnabled;
+      });
+  }
+
   function applySidebarCurrency(currencyContext: any): boolean {
     if (!CurrencyLifecycle || typeof CurrencyLifecycle.applySidebarCurrency !== "function") {
       return false;
@@ -428,9 +447,20 @@
       }
     }
 
-    syncFilterScopeObserver(Boolean(darkModeContext && darkModeContext.enabled));
-    refreshFilterTargets();
-    scheduleFilterTargetsRefreshBurst();
+    var darkModeEnabled = Boolean(darkModeContext && darkModeContext.enabled);
+    var invertFallbackEnabled = Boolean(
+      darkModeEnabled && darkModeContext && darkModeContext.legacyColorCustomizationEnabled
+    );
+
+    syncFilterScopeObserver(invertFallbackEnabled);
+
+    if (invertFallbackEnabled) {
+      refreshFilterTargets();
+      scheduleFilterTargetsRefreshBurst();
+      return;
+    }
+
+    clearFilterTargets();
   }
 
   function refreshDarkMode(): void {
@@ -470,6 +500,17 @@
       filterTargetAttrValue: FILTER_TARGET_ATTR_VALUE,
       filterScopeSkipAttr: FILTER_SCOPE_SKIP_ATTR,
       filterScopeSkipAttrValue: FILTER_SCOPE_SKIP_ATTR_VALUE
+    });
+  }
+
+  function clearFilterTargets(): void {
+    if (!FilterScopeLifecycle || typeof FilterScopeLifecycle.clearFilterTargets !== "function") {
+      return;
+    }
+    FilterScopeLifecycle.clearFilterTargets({
+      documentObj: document,
+      filterTargetAttr: FILTER_TARGET_ATTR,
+      filterScopeSkipAttr: FILTER_SCOPE_SKIP_ATTR
     });
   }
 
@@ -554,7 +595,8 @@
       applyCardCurrency: applyCardCurrency,
       syncCardCurrencyObserver: syncCardCurrencyObserver,
       statusMessage: statusMessage,
-      resolveMarketCompareResultsLimit: resolveMarketCompareResultsLimit
+      resolveMarketCompareResultsLimit: resolveMarketCompareResultsLimit,
+      resolveListingMetadataButtonEnabled: resolveListingMetadataButtonEnabled
     });
   }
 
@@ -607,10 +649,15 @@
 
     syncCardCurrencyObserver(null);
 
-    Promise.all([resolveListingInsightsEnabled(), resolveMarketCompareResultsLimit()]).then(function (values: any[]) {
+    Promise.all([
+      resolveListingInsightsEnabled(),
+      resolveMarketCompareResultsLimit(),
+      resolveListingMetadataButtonEnabled()
+    ]).then(function (values: any[]) {
       var listingInsightsEnabled = Boolean(values[0]);
       var marketCompareResultsLimit =
         Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
+      var showMetadataButton = Boolean(values[2]);
 
       if (!Url.isListingPath(location.pathname)) {
         return;
@@ -681,6 +728,7 @@
         metrics: preparedContext.metrics,
         mountTarget: preparedContext.mountTarget,
         marketCompareResultsLimit: marketCompareResultsLimit,
+        showMetadataButton: showMetadataButton,
         resolveCurrencyContext: resolveCurrencyContext,
         createUsdCurrencyContext: createUsdCurrencyContext,
         renderPanelWithMarketCompare: renderPanelWithMarketCompare,
@@ -695,10 +743,20 @@
     });
   }
 
+  // Guard to prevent recursive refreshes from observer-triggered hydration
+  let isRefreshing = false;
   function refresh(reason: string): void {
-    clearRetryTimer(true);
-    refreshDarkMode();
-    run(reason, 0);
+    if (isRefreshing) {
+      return;
+    }
+    isRefreshing = true;
+    try {
+      clearRetryTimer(true);
+      refreshDarkMode();
+      run(reason, 0);
+    } finally {
+      isRefreshing = false;
+    }
   }
 
   function onNavigation(reason: "history" | "popstate" | "url_poll" | "initial" | "dom_content_loaded" | "mutation_observer"): void {

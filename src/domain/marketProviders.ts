@@ -63,6 +63,9 @@ interface MPModule {
 }
 
 interface MPGlobalRoot {
+  GrailedPlusNormalize?: {
+    normalizeTrimmedString?: (value: unknown, fallback: string) => string;
+  };
   GrailedPlusMarketProviders?: MPModule;
 }
 
@@ -77,13 +80,29 @@ interface MPGlobalRoot {
   function () {
     "use strict";
 
+    let Normalize: MPGlobalRoot["GrailedPlusNormalize"] | null = null;
+    if (typeof globalThis !== "undefined" && (globalThis as unknown as MPGlobalRoot).GrailedPlusNormalize) {
+      Normalize = (globalThis as unknown as MPGlobalRoot).GrailedPlusNormalize || null;
+    }
+    if (!Normalize && typeof require === "function") {
+      try {
+        Normalize = require("./normalize");
+      } catch (_) {
+        Normalize = null;
+      }
+    }
+
     function normalizeString(value: unknown, fallback: string): string {
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        return trimmed || fallback;
+      if (Normalize && typeof Normalize.normalizeTrimmedString === "function") {
+        return Normalize.normalizeTrimmedString(value, fallback);
       }
 
-      return fallback;
+      if (typeof value !== "string") {
+        return fallback;
+      }
+
+      const trimmed = value.trim();
+      return trimmed || fallback;
     }
 
     function normalizeNumber(value: unknown): number | null {
@@ -182,16 +201,9 @@ interface MPGlobalRoot {
     }
 
     function createRegistry(options?: MPRegistryOptions | null): MPProviderRegistry {
-      const providersByMarket: Record<string, MPProvider> = Object.create(null) as Record<string, MPProvider>;
-      const inFlightByKey: Record<string, Promise<MPProviderResult>> = Object.create(null) as Record<
-        string,
-        Promise<MPProviderResult>
-      >;
-      const cacheByKey: Record<string, { expiresAt: number; value: MPProviderResult }> = Object.create(null) as Record<
-        string,
-        { expiresAt: number; value: MPProviderResult }
-      >;
-      const cacheKeyOrder: string[] = [];
+      const providersByMarket = new Map<string, MPProvider>();
+      const inFlightByKey = new Map<string, Promise<MPProviderResult>>();
+      const cacheByKey = new Map<string, { expiresAt: number; value: MPProviderResult }>();
       const cacheTtlMs =
         options && Number.isFinite(Number(options.cacheTtlMs))
           ? Math.max(0, Number(options.cacheTtlMs))
@@ -255,14 +267,7 @@ interface MPGlobalRoot {
           return;
         }
 
-        if (cacheByKey[cacheKey]) {
-          delete cacheByKey[cacheKey];
-        }
-
-        const orderIndex = cacheKeyOrder.indexOf(cacheKey);
-        if (orderIndex >= 0) {
-          cacheKeyOrder.splice(orderIndex, 1);
-        }
+        cacheByKey.delete(cacheKey);
       }
 
       function upsertCacheEntry(cacheKey: string, value: MPProviderResult): void {
@@ -270,23 +275,20 @@ interface MPGlobalRoot {
           return;
         }
 
-        const existingIndex = cacheKeyOrder.indexOf(cacheKey);
-        if (existingIndex >= 0) {
-          cacheKeyOrder.splice(existingIndex, 1);
-        }
-
-        cacheByKey[cacheKey] = {
+        cacheByKey.delete(cacheKey);
+        cacheByKey.set(cacheKey, {
           expiresAt: Date.now() + cacheTtlMs,
           value: value
-        };
-        cacheKeyOrder.push(cacheKey);
+        });
 
-        while (cacheKeyOrder.length > cacheMaxEntries) {
-          const evictedKey = cacheKeyOrder.shift();
-          if (evictedKey) {
-            delete cacheByKey[evictedKey];
-            incrementDiagnostic("evictions");
+        while (cacheByKey.size > cacheMaxEntries) {
+          const oldestKey = cacheByKey.keys().next().value;
+          if (!oldestKey) {
+            break;
           }
+
+          cacheByKey.delete(oldestKey);
+          incrementDiagnostic("evictions");
         }
       }
 
@@ -304,17 +306,18 @@ interface MPGlobalRoot {
           throw new Error("Provider must implement search(input).");
         }
 
-        providersByMarket[market] = {
+        const normalizedProvider = {
           market: market,
           search: provider.search
         };
+        providersByMarket.set(market, normalizedProvider);
 
-        return providersByMarket[market];
+        return normalizedProvider;
       }
 
       function get(market: unknown): MPProvider | null {
         const key = normalizeString(market, "");
-        return key ? providersByMarket[key] || null : null;
+        return key ? providersByMarket.get(key) || null : null;
       }
 
       function search(market: unknown, input: unknown): Promise<MPProviderResult> {
@@ -338,7 +341,7 @@ interface MPGlobalRoot {
 
         const cacheKey = createSearchCacheKey(provider.market, input);
         if (cacheKey) {
-          const cached = cacheByKey[cacheKey];
+          const cached = cacheByKey.get(cacheKey);
           if (cached && cached.expiresAt > Date.now()) {
             incrementDiagnostic("cacheHits");
             return Promise.resolve(normalizeProviderResult(cached.value, provider.market));
@@ -351,9 +354,9 @@ interface MPGlobalRoot {
             incrementDiagnostic("expiredRemovals");
           }
 
-          if (inFlightByKey[cacheKey]) {
+          if (inFlightByKey.has(cacheKey)) {
             incrementDiagnostic("inFlightHits");
-            return inFlightByKey[cacheKey];
+            return inFlightByKey.get(cacheKey) as Promise<MPProviderResult>;
           }
         }
 
@@ -367,17 +370,18 @@ interface MPGlobalRoot {
         });
 
         if (cacheKey) {
-          inFlightByKey[cacheKey] = executeSearchPromise.finally(function () {
-            delete inFlightByKey[cacheKey];
+          const trackedPromise = executeSearchPromise.finally(function () {
+            inFlightByKey.delete(cacheKey);
           });
-          return inFlightByKey[cacheKey];
+          inFlightByKey.set(cacheKey, trackedPromise);
+          return trackedPromise;
         }
 
         return executeSearchPromise;
       }
 
       function listMarkets(): string[] {
-        return Object.keys(providersByMarket);
+        return Array.from(providersByMarket.keys());
       }
 
       return {

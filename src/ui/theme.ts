@@ -1,11 +1,13 @@
 interface TThemeContext {
   enabled?: unknown;
   primaryColor?: unknown;
+  legacyColorCustomizationEnabled?: unknown;
 }
 
 interface TNormalizedThemeContext {
   enabled: boolean;
   primaryColor: string;
+  legacyColorCustomizationEnabled: boolean;
   customColorEnabled: boolean;
   blackBaseEnabled: boolean;
 }
@@ -19,6 +21,8 @@ interface TThemeModule {
   CUSTOM_COLOR_ATTR_VALUE: string;
   BLACK_BASE_ATTR: string;
   BLACK_BASE_ATTR_VALUE: string;
+  INVERT_FALLBACK_ATTR: string;
+  INVERT_FALLBACK_ATTR_VALUE: string;
   NEXT_ROOT_ATTR: string;
   NEXT_ROOT_ATTR_VALUE: string;
   PRIMARY_COLOR_VAR: string;
@@ -61,6 +65,8 @@ type TThemeNode = {
   var CUSTOM_COLOR_ATTR_VALUE = "1";
   var BLACK_BASE_ATTR = "data-grailed-plus-black-base";
   var BLACK_BASE_ATTR_VALUE = "1";
+  var INVERT_FALLBACK_ATTR = "data-grailed-plus-invert-fallback";
+  var INVERT_FALLBACK_ATTR_VALUE = "1";
   var NEXT_ROOT_ATTR = "data-grailed-plus-next-root";
   var NEXT_ROOT_ATTR_VALUE = "1";
   var PRIMARY_COLOR_VAR = "--gp-dm-primary";
@@ -256,11 +262,17 @@ type TThemeNode = {
     var typedContext = context && typeof context === "object" ? (context as TThemeContext) : null;
     var normalizedPrimary = normalizeHexColor(typedContext && typedContext.primaryColor);
     var primaryColor = normalizedPrimary || DEFAULT_DARK_MODE_PRIMARY_COLOR;
+    var legacyColorCustomizationEnabled = Boolean(
+      typedContext && typedContext.legacyColorCustomizationEnabled
+    );
+    var customColorEnabled =
+      legacyColorCustomizationEnabled && primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR;
     return {
       enabled: Boolean(typedContext && typedContext.enabled),
       primaryColor: primaryColor,
-      customColorEnabled: primaryColor !== DEFAULT_DARK_MODE_PRIMARY_COLOR,
-      blackBaseEnabled: primaryColor === DEFAULT_DARK_MODE_PRIMARY_COLOR
+      legacyColorCustomizationEnabled: legacyColorCustomizationEnabled,
+      customColorEnabled: customColorEnabled,
+      blackBaseEnabled: !customColorEnabled
     };
   }
 
@@ -331,6 +343,7 @@ type TThemeNode = {
       removeAttribute(rootNode, ROOT_ATTR);
       removeAttribute(rootNode, CUSTOM_COLOR_ATTR);
       removeAttribute(rootNode, BLACK_BASE_ATTR);
+      removeAttribute(rootNode, INVERT_FALLBACK_ATTR);
       removeAttribute(rootNode, NEXT_ROOT_ATTR);
       removeCssVar(rootNode, PRIMARY_COLOR_VAR);
       removeCssVar(rootNode, PRIMARY_COLOR_USER_VAR);
@@ -349,6 +362,11 @@ type TThemeNode = {
       setAttribute(rootNode, BLACK_BASE_ATTR, BLACK_BASE_ATTR_VALUE);
     } else {
       removeAttribute(rootNode, BLACK_BASE_ATTR);
+    }
+    if (normalizedContext.legacyColorCustomizationEnabled) {
+      setAttribute(rootNode, INVERT_FALLBACK_ATTR, INVERT_FALLBACK_ATTR_VALUE);
+    } else {
+      removeAttribute(rootNode, INVERT_FALLBACK_ATTR);
     }
     if (hasNextRoot(doc)) {
       setAttribute(rootNode, NEXT_ROOT_ATTR, NEXT_ROOT_ATTR_VALUE);
@@ -377,6 +395,8 @@ type TThemeNode = {
     CUSTOM_COLOR_ATTR_VALUE: CUSTOM_COLOR_ATTR_VALUE,
     BLACK_BASE_ATTR: BLACK_BASE_ATTR,
     BLACK_BASE_ATTR_VALUE: BLACK_BASE_ATTR_VALUE,
+    INVERT_FALLBACK_ATTR: INVERT_FALLBACK_ATTR,
+    INVERT_FALLBACK_ATTR_VALUE: INVERT_FALLBACK_ATTR_VALUE,
     NEXT_ROOT_ATTR: NEXT_ROOT_ATTR,
     NEXT_ROOT_ATTR_VALUE: NEXT_ROOT_ATTR_VALUE,
     PRIMARY_COLOR_VAR: PRIMARY_COLOR_VAR,

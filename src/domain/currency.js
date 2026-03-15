@@ -10,6 +10,18 @@
     "use strict";
     const CACHE_KEY = "grailed_plus_exchange_rates_v1";
     const CACHE_TTL_MS = 60 * 60 * 1000;
+    let BrowserStorage = null;
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusBrowserStorage) {
+        BrowserStorage = globalThis.GrailedPlusBrowserStorage || null;
+    }
+    if (!BrowserStorage && typeof require === "function") {
+        try {
+            BrowserStorage = require("./browserStorage");
+        }
+        catch (_) {
+            BrowserStorage = null;
+        }
+    }
     function normalizeCurrencyCode(input) {
         if (typeof input !== "string") {
             return null;
@@ -21,79 +33,19 @@
         return trimmed;
     }
     function getStorageLocal() {
-        if (typeof chrome !== "undefined" &&
-            chrome.storage &&
-            chrome.storage.local &&
-            typeof chrome.storage.local.get === "function" &&
-            typeof chrome.storage.local.set === "function") {
-            return chrome.storage.local;
-        }
-        if (typeof browser !== "undefined" &&
-            browser.storage &&
-            browser.storage.local &&
-            typeof browser.storage.local.get === "function" &&
-            typeof browser.storage.local.set === "function") {
-            return browser.storage.local;
-        }
-        return null;
+        return BrowserStorage && typeof BrowserStorage.getStorageLocal === "function"
+            ? BrowserStorage.getStorageLocal()
+            : null;
     }
     function storageGet(storage, key) {
-        if (!storage) {
-            return Promise.resolve({});
-        }
-        try {
-            const result = storage.get(key);
-            if (result && typeof result.then === "function") {
-                return result;
-            }
-        }
-        catch (_) {
-            // Try callback style below.
-        }
-        return new Promise(function (resolve) {
-            try {
-                storage.get(key, function (data) {
-                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-                        resolve({});
-                        return;
-                    }
-                    resolve(data || {});
-                });
-            }
-            catch (_) {
-                resolve({});
-            }
-        });
+        return BrowserStorage && typeof BrowserStorage.storageGet === "function"
+            ? BrowserStorage.storageGet(storage, key)
+            : Promise.resolve({});
     }
     function storageSet(storage, payload) {
-        if (!storage) {
-            return Promise.resolve(false);
-        }
-        try {
-            const result = storage.set(payload);
-            if (result && typeof result.then === "function") {
-                return result.then(function () {
-                    return true;
-                });
-            }
-        }
-        catch (_) {
-            // Try callback style below.
-        }
-        return new Promise(function (resolve) {
-            try {
-                storage.set(payload, function () {
-                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-                        resolve(false);
-                        return;
-                    }
-                    resolve(true);
-                });
-            }
-            catch (_) {
-                resolve(false);
-            }
-        });
+        return BrowserStorage && typeof BrowserStorage.storageSet === "function"
+            ? BrowserStorage.storageSet(storage, payload)
+            : Promise.resolve(false);
     }
     function isCacheUsable(cache, baseCurrency, nowMs) {
         if (!isCacheStaleButCompatible(cache, baseCurrency)) {

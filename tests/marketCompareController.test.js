@@ -125,6 +125,141 @@ test("market compare controller transitions loading -> results", async () => {
   assert.match(finalState.results[0].deltaLabel, /cheaper/);
 });
 
+test("market compare controller recomputes delta label when ranked candidate is incorrectly marked same price", async () => {
+  const registry = createRegistry();
+  registry.register({
+    market: "depop",
+    search: async function () {
+      return {
+        ok: true,
+        candidates: [
+          {
+            id: "c-same-price-bug",
+            market: "depop",
+            title: "PXE tee",
+            url: "https://depop.test/item/pxe",
+            price: 68.52,
+            currency: "CAD",
+            score: 24,
+            deltaPercent: 0,
+            deltaLabel: "same price"
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock"
+      };
+    }
+  });
+
+  const controller = createController({
+    providerRegistry: registry,
+    rankCandidates: function (_listing, candidates) {
+      return candidates.map(function (candidate) {
+        return {
+          id: candidate.id,
+          title: candidate.title,
+          url: candidate.url,
+          imageUrl: candidate.imageUrl || "",
+          market: candidate.market || "depop",
+          currency: candidate.currency || "CAD",
+          originalCurrency: candidate.currency || "CAD",
+          originalPrice: candidate.price,
+          price: candidate.price,
+          score: 24,
+          usedImage: false,
+          imageUnavailableReason: "",
+          deltaPercent: 0,
+          deltaLabel: "same price"
+        };
+      });
+    }
+  });
+
+  const finalState = await controller.compare({
+    listing: sampleListing(),
+    currency: "CAD",
+    currencyRate: 1.25,
+    minScore: 0
+  });
+
+  assert.equal(finalState.status, "results");
+  assert.equal(finalState.results.length, 1);
+  assert.notEqual(finalState.results[0].deltaLabel, "same price");
+  assert.match(finalState.results[0].deltaLabel, /cheaper/);
+});
+
+test("market compare controller falls back to raw listing price when price history is empty", async () => {
+  const registry = createRegistry();
+  registry.register({
+    market: "depop",
+    search: async function () {
+      return {
+        ok: true,
+        candidates: [
+          {
+            id: "c-raw-price",
+            market: "depop",
+            title: "PXE tee",
+            url: "https://depop.test/item/raw-price",
+            price: 80,
+            currency: "USD",
+            score: 24,
+            deltaPercent: 0,
+            deltaLabel: "same price"
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock"
+      };
+    }
+  });
+
+  const controller = createController({
+    providerRegistry: registry,
+    rankCandidates: function (_listing, candidates) {
+      return candidates.map(function (candidate) {
+        return {
+          id: candidate.id,
+          title: candidate.title,
+          url: candidate.url,
+          imageUrl: candidate.imageUrl || "",
+          market: candidate.market || "depop",
+          currency: candidate.currency || "USD",
+          originalCurrency: candidate.currency || "USD",
+          originalPrice: candidate.price,
+          price: candidate.price,
+          score: 24,
+          usedImage: false,
+          imageUnavailableReason: "",
+          deltaPercent: 0,
+          deltaLabel: "same price"
+        };
+      });
+    }
+  });
+
+  const finalState = await controller.compare({
+    listing: {
+      id: 556,
+      title: "No drop history",
+      pricing: {
+        history: []
+      },
+      rawListing: {
+        price: 100
+      }
+    },
+    currency: "USD",
+    minScore: 0
+  });
+
+  assert.equal(finalState.status, "results");
+  assert.equal(finalState.results.length, 1);
+  assert.match(finalState.results[0].deltaLabel, /cheaper/);
+});
+
 test("market compare controller enforces single in-flight request per listing", async () => {
   let callCount = 0;
   let resolveSearch;

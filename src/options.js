@@ -5,6 +5,7 @@
     var Currency = globalThis.GrailedPlusCurrency;
     var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
     var DEFAULT_DARK_MODE_BEHAVIOR = "system";
+    var DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
     var CURRENCY_LABELS = {
         USD: "USD - US Dollar",
         EUR: "EUR - Euro",
@@ -136,6 +137,26 @@
         }
         return Settings.setListingInsightsEnabled(Boolean(enabled));
     }
+    function loadListingMetadataButtonEnabled() {
+        var fallbackEnabled = Settings && typeof Settings.DEFAULT_LISTING_METADATA_BUTTON_ENABLED === "boolean"
+            ? Settings.DEFAULT_LISTING_METADATA_BUTTON_ENABLED
+            : true;
+        if (!Settings || typeof Settings.getListingMetadataButtonEnabled !== "function") {
+            return Promise.resolve(fallbackEnabled);
+        }
+        return Settings.getListingMetadataButtonEnabled().then(function (value) {
+            return typeof value === "boolean" ? value : fallbackEnabled;
+        });
+    }
+    function saveListingMetadataButtonEnabled(enabled) {
+        if (!Settings || typeof Settings.setListingMetadataButtonEnabled !== "function") {
+            return Promise.resolve({
+                ok: false,
+                error: "Settings module unavailable."
+            });
+        }
+        return Settings.setListingMetadataButtonEnabled(Boolean(enabled));
+    }
     function loadMarketCompareExpandedAmountEnabled() {
         var fallbackEnabled = Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
             ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
@@ -176,6 +197,18 @@
             return normalizeHexColor(value) || fallbackColor;
         });
     }
+    function loadDarkModeLegacyColorCustomizationEnabled() {
+        var fallbackEnabled = Settings && typeof Settings.DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED === "boolean"
+            ? Settings.DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED
+            : DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED;
+        if (!Settings ||
+            typeof Settings.getDarkModeLegacyColorCustomizationEnabled !== "function") {
+            return Promise.resolve(fallbackEnabled);
+        }
+        return Settings.getDarkModeLegacyColorCustomizationEnabled().then(function (value) {
+            return typeof value === "boolean" ? value : fallbackEnabled;
+        });
+    }
     function loadDarkModeBehavior() {
         var fallbackBehavior = normalizeDarkModeBehavior(Settings && Settings.DEFAULT_DARK_MODE_BEHAVIOR) || DEFAULT_DARK_MODE_BEHAVIOR;
         if (!Settings || typeof Settings.getDarkModeBehavior !== "function") {
@@ -202,6 +235,16 @@
             });
         }
         return Settings.setDarkModePrimaryColor(color);
+    }
+    function saveDarkModeLegacyColorCustomizationEnabled(enabled) {
+        if (!Settings ||
+            typeof Settings.setDarkModeLegacyColorCustomizationEnabled !== "function") {
+            return Promise.resolve({
+                ok: false,
+                error: "Settings module unavailable."
+            });
+        }
+        return Settings.setDarkModeLegacyColorCustomizationEnabled(Boolean(enabled));
     }
     function saveDarkModeBehavior(behavior) {
         if (!Settings || typeof Settings.setDarkModeBehavior !== "function") {
@@ -277,14 +320,22 @@
         selectNode.value = "CUSTOM";
         customInputNode.value = selectedCurrency;
     }
-    function syncDarkModeInputs(enabledNode, behaviorNode, colorPickerNode, colorHexNode) {
-        if (!enabledNode || !behaviorNode || !colorPickerNode || !colorHexNode) {
+    function syncDarkModeInputs(enabledNode, behaviorNode, legacyColorEnabledNode, legacyColorControlsNode, colorPickerNode, colorHexNode) {
+        if (!enabledNode ||
+            !behaviorNode ||
+            !legacyColorEnabledNode ||
+            !legacyColorControlsNode ||
+            !colorPickerNode ||
+            !colorHexNode) {
             return;
         }
         var enabled = Boolean(enabledNode.checked);
+        var legacyColorEnabled = Boolean(legacyColorEnabledNode.checked);
         behaviorNode.disabled = !enabled;
-        colorPickerNode.disabled = !enabled;
-        colorHexNode.disabled = !enabled;
+        legacyColorEnabledNode.disabled = !enabled;
+        legacyColorControlsNode.hidden = !enabled || !legacyColorEnabled;
+        colorPickerNode.disabled = !enabled || !legacyColorEnabled;
+        colorHexNode.disabled = !enabled || !legacyColorEnabled;
     }
     function applyDarkModeColor(colorPickerNode, colorHexNode, color) {
         if (!colorPickerNode || !colorHexNode) {
@@ -298,11 +349,14 @@
         var form = document.getElementById("currency-form");
         var enabledNode = document.getElementById("conversion-enabled");
         var listingInsightsEnabledNode = document.getElementById("listing-insights-enabled");
+        var listingMetadataButtonEnabledNode = document.getElementById("listing-metadata-button-enabled");
         var marketCompareExpandedAmountEnabledNode = document.getElementById("market-compare-expanded-amount-enabled");
         var selectNode = document.getElementById("currency-select");
         var customInputNode = document.getElementById("currency-custom");
         var darkModeEnabledNode = document.getElementById("dark-mode-enabled");
         var darkModeBehaviorNode = document.getElementById("dark-mode-behavior");
+        var darkModeLegacyColorEnabledNode = document.getElementById("dark-mode-legacy-color-enabled");
+        var darkModeLegacyColorControlsNode = document.getElementById("dark-mode-legacy-color-controls");
         var darkModePrimaryNode = document.getElementById("dark-mode-primary");
         var darkModePrimaryHexNode = document.getElementById("dark-mode-primary-hex");
         var resetButton = document.getElementById("reset-button");
@@ -310,11 +364,14 @@
         if (!form ||
             !enabledNode ||
             !listingInsightsEnabledNode ||
+            !listingMetadataButtonEnabledNode ||
             !marketCompareExpandedAmountEnabledNode ||
             !selectNode ||
             !customInputNode ||
             !darkModeEnabledNode ||
             !darkModeBehaviorNode ||
+            !darkModeLegacyColorEnabledNode ||
+            !darkModeLegacyColorControlsNode ||
             !darkModePrimaryNode ||
             !darkModePrimaryHexNode ||
             !resetButton ||
@@ -333,27 +390,33 @@
             loadSelectedCurrency(),
             loadConversionEnabled(),
             loadListingInsightsEnabled(),
+            loadListingMetadataButtonEnabled(),
             loadMarketCompareExpandedAmountEnabled(),
             loadDarkModeEnabled(),
             loadDarkModeBehavior(),
-            loadDarkModePrimaryColor()
+            loadDarkModePrimaryColor(),
+            loadDarkModeLegacyColorCustomizationEnabled()
         ]).then(function (values) {
             var selectedCurrency = values[0];
             var enabled = values[1];
             var listingInsightsEnabled = values[2];
-            var marketCompareExpandedAmountEnabled = values[3];
-            var darkModeEnabled = values[4];
-            var darkModeBehavior = values[5];
-            var darkModePrimaryColor = values[6];
+            var listingMetadataButtonEnabled = values[3];
+            var marketCompareExpandedAmountEnabled = values[4];
+            var darkModeEnabled = values[5];
+            var darkModeBehavior = values[6];
+            var darkModePrimaryColor = values[7];
+            var darkModeLegacyColorCustomizationEnabled = values[8];
             applySelection(selectNode, customInputNode, selectedCurrency, curatedSet);
             enabledNode.checked = enabled;
             syncCurrencyInputs(selectNode, customInputNode, enabled);
             listingInsightsEnabledNode.checked = listingInsightsEnabled;
+            listingMetadataButtonEnabledNode.checked = listingMetadataButtonEnabled;
             marketCompareExpandedAmountEnabledNode.checked = marketCompareExpandedAmountEnabled;
             darkModeEnabledNode.checked = darkModeEnabled;
             darkModeBehaviorNode.value = darkModeBehavior;
+            darkModeLegacyColorEnabledNode.checked = darkModeLegacyColorCustomizationEnabled;
             applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, darkModePrimaryColor);
-            syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModePrimaryNode, darkModePrimaryHexNode);
+            syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModeLegacyColorEnabledNode, darkModeLegacyColorControlsNode, darkModePrimaryNode, darkModePrimaryHexNode);
         });
         if (typeof selectNode.addEventListener === "function") {
             selectNode.addEventListener("change", function () {
@@ -372,6 +435,11 @@
                 setStatus(statusNode, null, "");
             });
         }
+        if (typeof listingMetadataButtonEnabledNode.addEventListener === "function") {
+            listingMetadataButtonEnabledNode.addEventListener("change", function () {
+                setStatus(statusNode, null, "");
+            });
+        }
         if (typeof marketCompareExpandedAmountEnabledNode.addEventListener === "function") {
             marketCompareExpandedAmountEnabledNode.addEventListener("change", function () {
                 setStatus(statusNode, null, "");
@@ -379,7 +447,13 @@
         }
         if (typeof darkModeEnabledNode.addEventListener === "function") {
             darkModeEnabledNode.addEventListener("change", function () {
-                syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModePrimaryNode, darkModePrimaryHexNode);
+                syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModeLegacyColorEnabledNode, darkModeLegacyColorControlsNode, darkModePrimaryNode, darkModePrimaryHexNode);
+                setStatus(statusNode, null, "");
+            });
+        }
+        if (typeof darkModeLegacyColorEnabledNode.addEventListener === "function") {
+            darkModeLegacyColorEnabledNode.addEventListener("change", function () {
+                syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModeLegacyColorEnabledNode, darkModeLegacyColorControlsNode, darkModePrimaryNode, darkModePrimaryHexNode);
                 setStatus(statusNode, null, "");
             });
         }
@@ -415,9 +489,11 @@
                 setStatus(statusNode, null, "");
                 var conversionEnabled = Boolean(enabledNode.checked);
                 var listingInsightsEnabled = Boolean(listingInsightsEnabledNode.checked);
+                var listingMetadataButtonEnabled = Boolean(listingMetadataButtonEnabledNode.checked);
                 var marketCompareExpandedAmountEnabled = Boolean(marketCompareExpandedAmountEnabledNode.checked);
                 var usingCustom = selectNode.value === "CUSTOM";
                 var darkModeEnabled = Boolean(darkModeEnabledNode.checked);
+                var darkModeLegacyColorCustomizationEnabled = Boolean(darkModeLegacyColorEnabledNode.checked);
                 var darkModeBehavior = normalizeDarkModeBehavior(darkModeBehaviorNode.value);
                 var targetCode = null;
                 var darkModePrimaryColor = normalizeHexColor(darkModePrimaryHexNode.value || darkModePrimaryNode.value);
@@ -435,7 +511,7 @@
                         return;
                     }
                 }
-                if (!darkModePrimaryColor) {
+                if (darkModeLegacyColorCustomizationEnabled && !darkModePrimaryColor) {
                     setStatus(statusNode, "error", "Primary color must be a valid hex value.");
                     return;
                 }
@@ -445,7 +521,9 @@
                 }
                 var safeTargetCode = targetCode;
                 var safeDarkModeBehavior = darkModeBehavior;
-                var safeDarkModePrimaryColor = darkModePrimaryColor;
+                var safeDarkModePrimaryColor = darkModeLegacyColorCustomizationEnabled
+                    ? (darkModePrimaryColor || DEFAULT_DARK_MODE_PRIMARY_COLOR)
+                    : DEFAULT_DARK_MODE_PRIMARY_COLOR;
                 applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, safeDarkModePrimaryColor);
                 var validationPromise = Promise.resolve({ ok: true });
                 if (usingCustom && conversionEnabled) {
@@ -461,10 +539,12 @@
                         saveSelectedCurrency(safeTargetCode),
                         saveConversionEnabled(conversionEnabled),
                         saveListingInsightsEnabled(listingInsightsEnabled),
+                        saveListingMetadataButtonEnabled(listingMetadataButtonEnabled),
                         saveMarketCompareExpandedAmountEnabled(marketCompareExpandedAmountEnabled),
                         saveDarkModeEnabled(darkModeEnabled),
                         saveDarkModeBehavior(safeDarkModeBehavior),
-                        saveDarkModePrimaryColor(safeDarkModePrimaryColor)
+                        saveDarkModePrimaryColor(safeDarkModePrimaryColor),
+                        saveDarkModeLegacyColorCustomizationEnabled(darkModeLegacyColorCustomizationEnabled)
                     ]).then(function (results) {
                         var i;
                         for (i = 0; i < results.length; i += 1) {
@@ -490,6 +570,9 @@
                 var defaultListingInsightsEnabled = Settings && typeof Settings.DEFAULT_LISTING_INSIGHTS_ENABLED === "boolean"
                     ? Settings.DEFAULT_LISTING_INSIGHTS_ENABLED
                     : true;
+                var defaultListingMetadataButtonEnabled = Settings && typeof Settings.DEFAULT_LISTING_METADATA_BUTTON_ENABLED === "boolean"
+                    ? Settings.DEFAULT_LISTING_METADATA_BUTTON_ENABLED
+                    : true;
                 var defaultMarketCompareExpandedAmountEnabled = Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
                     ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
                     : false;
@@ -500,14 +583,19 @@
                     DEFAULT_DARK_MODE_BEHAVIOR;
                 var defaultDarkModePrimaryColor = normalizeHexColor(Settings && Settings.DEFAULT_DARK_MODE_PRIMARY_COLOR) ||
                     DEFAULT_DARK_MODE_PRIMARY_COLOR;
+                var defaultDarkModeLegacyColorCustomizationEnabled = Settings && typeof Settings.DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED === "boolean"
+                    ? Settings.DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED
+                    : DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED;
                 Promise.all([
                     saveSelectedCurrency(defaultCurrency),
                     saveConversionEnabled(defaultConversionEnabled),
                     saveListingInsightsEnabled(defaultListingInsightsEnabled),
+                    saveListingMetadataButtonEnabled(defaultListingMetadataButtonEnabled),
                     saveMarketCompareExpandedAmountEnabled(defaultMarketCompareExpandedAmountEnabled),
                     saveDarkModeEnabled(defaultDarkModeEnabled),
                     saveDarkModeBehavior(defaultDarkModeBehavior),
-                    saveDarkModePrimaryColor(defaultDarkModePrimaryColor)
+                    saveDarkModePrimaryColor(defaultDarkModePrimaryColor),
+                    saveDarkModeLegacyColorCustomizationEnabled(defaultDarkModeLegacyColorCustomizationEnabled)
                 ]).then(function (results) {
                     var i;
                     for (i = 0; i < results.length; i += 1) {
@@ -520,11 +608,14 @@
                     applySelection(selectNode, customInputNode, defaultCurrency, curatedSet);
                     syncCurrencyInputs(selectNode, customInputNode, defaultConversionEnabled);
                     listingInsightsEnabledNode.checked = defaultListingInsightsEnabled;
+                    listingMetadataButtonEnabledNode.checked = defaultListingMetadataButtonEnabled;
                     marketCompareExpandedAmountEnabledNode.checked = defaultMarketCompareExpandedAmountEnabled;
                     darkModeEnabledNode.checked = defaultDarkModeEnabled;
                     darkModeBehaviorNode.value = defaultDarkModeBehavior;
+                    darkModeLegacyColorEnabledNode.checked =
+                        defaultDarkModeLegacyColorCustomizationEnabled;
                     applyDarkModeColor(darkModePrimaryNode, darkModePrimaryHexNode, defaultDarkModePrimaryColor);
-                    syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModePrimaryNode, darkModePrimaryHexNode);
+                    syncDarkModeInputs(darkModeEnabledNode, darkModeBehaviorNode, darkModeLegacyColorEnabledNode, darkModeLegacyColorControlsNode, darkModePrimaryNode, darkModePrimaryHexNode);
                     setStatus(statusNode, "success", "Reset to defaults.");
                 });
             });

@@ -4,6 +4,7 @@ interface DDarkModeContext {
   enabled: boolean;
   behavior: DDarkModeBehavior;
   primaryColor: string;
+  legacyColorCustomizationEnabled: boolean;
 }
 
 interface DSettingsLike {
@@ -12,6 +13,7 @@ interface DSettingsLike {
   getDarkModeEnabled?: () => Promise<boolean>;
   getDarkModeBehavior?: () => Promise<unknown>;
   getDarkModePrimaryColor?: () => Promise<unknown>;
+  getDarkModeLegacyColorCustomizationEnabled?: () => Promise<unknown>;
 }
 
 interface DRefreshDarkModeOptions {
@@ -142,7 +144,8 @@ interface DDarkModeGlobal {
     return {
       enabled: getSystemPrefersDark(),
       behavior: "system",
-      primaryColor: "#000000"
+      primaryColor: "#000000",
+      legacyColorCustomizationEnabled: false
     };
   }
 
@@ -164,17 +167,31 @@ interface DDarkModeGlobal {
       typeof settings.getDarkModePrimaryColor === "function"
         ? settings.getDarkModePrimaryColor()
         : Promise.resolve(defaultContext.primaryColor);
+    var legacyColorCustomizationPromise =
+      typeof settings.getDarkModeLegacyColorCustomizationEnabled === "function"
+        ? settings.getDarkModeLegacyColorCustomizationEnabled()
+        : Promise.resolve(defaultContext.legacyColorCustomizationEnabled);
 
-    return Promise.all([enabledPromise, behaviorPromise, colorPromise])
+    return Promise.all([
+      enabledPromise,
+      behaviorPromise,
+      colorPromise,
+      legacyColorCustomizationPromise
+    ])
       .then(function (values) {
         var configuredEnabled = Boolean(values[0]);
         var behavior = normalizeDarkModeBehavior(values[1], settings) || defaultContext.behavior;
         var primaryColor = normalizeHexColor(values[2], settings) || defaultContext.primaryColor;
+        var legacyColorCustomizationEnabled =
+          typeof values[3] === "boolean"
+            ? values[3]
+            : defaultContext.legacyColorCustomizationEnabled;
         var enabled = configuredEnabled && (behavior === "permanent" ? true : getSystemPrefersDark());
         return {
           enabled: enabled,
           behavior: behavior,
-          primaryColor: primaryColor
+          primaryColor: primaryColor,
+          legacyColorCustomizationEnabled: legacyColorCustomizationEnabled
         };
       })
       .catch(function () {

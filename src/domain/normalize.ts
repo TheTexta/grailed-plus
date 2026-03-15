@@ -6,6 +6,8 @@ interface NNormalizeModule {
   getNestedValue: (input: unknown, paths: NNestedPaths, fallback: unknown) => unknown;
   normalizeDate: (value: unknown) => string | null;
   normalizeString: (value: unknown, fallback: string | null) => string | null;
+  normalizeTrimmedString: (value: unknown, fallback: string) => string;
+  normalizeThreeLetterCurrencyCode: (value: unknown) => string | null;
   normalizeListingId: (value: unknown) => number | null;
   normalizePriceDrops: (value: unknown) => number[];
 }
@@ -74,6 +76,24 @@ interface NGlobalRoot {
       }
     }
 
+    function normalizeTrimmedString(value: unknown, fallback: string): string {
+      if (typeof value !== "string") {
+        return fallback;
+      }
+
+      const trimmed = value.trim();
+      return trimmed || fallback;
+    }
+
+    function normalizeThreeLetterCurrencyCode(value: unknown): string | null {
+      const normalized = normalizeTrimmedString(value, "").toUpperCase();
+      if (!normalized || !/^[A-Z]{3}$/.test(normalized)) {
+        return null;
+      }
+
+      return normalized;
+    }
+
     function normalizeListingId(value: unknown): number | null {
       if (typeof value === "number" && Number.isInteger(value) && value > 0) {
         return value;
@@ -109,6 +129,8 @@ interface NGlobalRoot {
       getNestedValue,
       normalizeDate,
       normalizeString,
+      normalizeTrimmedString,
+      normalizeThreeLetterCurrencyCode,
       normalizeListingId,
       normalizePriceDrops
     };

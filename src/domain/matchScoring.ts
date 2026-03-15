@@ -74,6 +74,10 @@ interface MSModule {
 }
 
 interface MSGlobalRoot {
+  GrailedPlusNormalize?: {
+    normalizeTrimmedString?: (value: unknown, fallback: string) => string;
+    normalizeThreeLetterCurrencyCode?: (value: unknown) => string | null;
+  };
   GrailedPlusMatchScoring?: MSModule;
 }
 
@@ -88,12 +92,29 @@ interface MSGlobalRoot {
   function () {
     "use strict";
 
-    function normalizeString(value: unknown, fallback: string): string {
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        return trimmed || fallback;
+    let Normalize: MSGlobalRoot["GrailedPlusNormalize"] | null = null;
+    if (typeof globalThis !== "undefined" && (globalThis as unknown as MSGlobalRoot).GrailedPlusNormalize) {
+      Normalize = (globalThis as unknown as MSGlobalRoot).GrailedPlusNormalize || null;
+    }
+    if (!Normalize && typeof require === "function") {
+      try {
+        Normalize = require("./normalize");
+      } catch (_) {
+        Normalize = null;
       }
-      return fallback;
+    }
+
+    function normalizeString(value: unknown, fallback: string): string {
+      if (Normalize && typeof Normalize.normalizeTrimmedString === "function") {
+        return Normalize.normalizeTrimmedString(value, fallback);
+      }
+
+      if (typeof value !== "string") {
+        return fallback;
+      }
+
+      const trimmed = value.trim();
+      return trimmed || fallback;
     }
 
     function normalizeNumber(value: unknown): number | null {
@@ -114,6 +135,10 @@ interface MSGlobalRoot {
     }
 
     function normalizeCurrencyCode(value: unknown, fallback: string): string {
+      if (Normalize && typeof Normalize.normalizeThreeLetterCurrencyCode === "function") {
+        return Normalize.normalizeThreeLetterCurrencyCode(value) || fallback;
+      }
+
       if (typeof value !== "string") {
         return fallback;
       }
@@ -322,6 +347,26 @@ interface MSGlobalRoot {
       return amount * normalizedRate;
     }
 
+    function convertComparablePrice(
+      amount: unknown,
+      fromCurrency: unknown,
+      selectedCurrency: unknown,
+      rate: unknown,
+      ratesByUsd: Record<string, unknown> | null | undefined
+    ): number | null {
+      const comparable = convertBetweenCurrencies(amount, fromCurrency, selectedCurrency, ratesByUsd);
+      if (comparable != null) {
+        return comparable;
+      }
+
+      const from = normalizeCurrencyCode(fromCurrency, "USD");
+      if (from !== "USD") {
+        return null;
+      }
+
+      return convertUsdPrice(amount, selectedCurrency, rate);
+    }
+
     function scoreCandidate(
       listing: MSListingInput,
       candidate: MSCandidateInput,
@@ -372,24 +417,30 @@ interface MSGlobalRoot {
           ? (config.ratesByUsd as Record<string, unknown>)
           : null;
 
-      const listingComparable = convertUsdPrice(listingPriceUsd, selectedCurrency, rate);
-      let candidateComparable = convertBetweenCurrencies(
+      const listingComparable = convertComparablePrice(
+        listingPriceUsd,
+        "USD",
+        selectedCurrency,
+        rate,
+        ratesByUsd
+      );
+      const candidateComparable = convertComparablePrice(
         candidateAmount,
         candidateCurrency,
         selectedCurrency,
+        rate,
         ratesByUsd
       );
 
-      if (candidateComparable == null) {
-        candidateComparable = convertUsdPrice(candidateAmount, selectedCurrency, rate);
-      }
-
       let deltaAbsolute: number | null = null;
       let deltaPercent: number | null = null;
-      if (listingComparable != null && candidateComparable != null && listingComparable !== 0) {
+      if (listingComparable != null && candidateComparable != null && listingComparable > 0) {
         deltaAbsolute = candidateComparable - listingComparable;
         deltaPercent = (deltaAbsolute / listingComparable) * 100;
       }
+
+      const displayPrice = candidateComparable != null ? candidateComparable : candidateAmount;
+      const displayCurrency = candidateComparable != null ? selectedCurrency : candidateCurrency;
 
       return {
         id: candidate.id,
@@ -397,8 +448,8 @@ interface MSGlobalRoot {
         url: candidate.url,
         imageUrl: normalizeString(candidate.imageUrl, ""),
         market: normalizeString(candidate.market, "depop"),
-        currency: selectedCurrency,
-        price: candidateComparable != null ? candidateComparable : candidateAmount,
+        currency: displayCurrency,
+        price: displayPrice,
         originalCurrency: candidateCurrency,
         originalPrice: candidateAmount,
         score: finalScore,

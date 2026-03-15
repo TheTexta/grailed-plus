@@ -11,6 +11,7 @@ const runtimeEntryTsFiles = [
   "src/background.ts",
   "src/options.ts",
   "src/popup.ts",
+  "src/domain/browserStorage.ts",
   "src/domain/settings.ts",
   "src/domain/currency.ts"
 ];
@@ -21,6 +22,7 @@ const contentCssOutputPath = path.join(rootDir, "src", "contentScript.css");
 const inputFiles = [
   "src/domain/url.js",
   "src/domain/normalize.js",
+  "src/domain/browserStorage.js",
   "src/data/listingModel.js",
   "src/data/listingExtractor.js",
   "src/domain/pricingInsights.js",

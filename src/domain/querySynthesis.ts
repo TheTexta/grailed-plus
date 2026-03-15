@@ -46,6 +46,9 @@ interface QSQuerySynthesisModule {
 }
 
 interface QSGlobalRoot {
+  GrailedPlusNormalize?: {
+    normalizeTrimmedString?: (value: unknown, fallback: string) => string;
+  };
   GrailedPlusQuerySynthesis?: QSQuerySynthesisModule;
 }
 
@@ -59,6 +62,18 @@ interface QSGlobalRoot {
   typeof globalThis !== "undefined" ? (globalThis as unknown as QSGlobalRoot) : {},
   function () {
     "use strict";
+
+    let Normalize: QSGlobalRoot["GrailedPlusNormalize"] | null = null;
+    if (typeof globalThis !== "undefined" && (globalThis as unknown as QSGlobalRoot).GrailedPlusNormalize) {
+      Normalize = (globalThis as unknown as QSGlobalRoot).GrailedPlusNormalize || null;
+    }
+    if (!Normalize && typeof require === "function") {
+      try {
+        Normalize = require("./normalize");
+      } catch (_) {
+        Normalize = null;
+      }
+    }
 
     const DEFAULT_CATEGORY_KEYWORDS = [
       "outerwear",
@@ -124,9 +139,14 @@ interface QSGlobalRoot {
     };
 
     function normalizeString(value: unknown): string {
+      if (Normalize && typeof Normalize.normalizeTrimmedString === "function") {
+        return Normalize.normalizeTrimmedString(value, "");
+      }
+
       if (typeof value !== "string") {
         return "";
       }
+
       return value.trim();
     }
 

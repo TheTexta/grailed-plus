@@ -54,6 +54,77 @@ test("scoreCandidate computes delta using candidate currency when non-USD", () =
   assert.equal(Number(scored.deltaAbsolute.toFixed(2)), 10);
 });
 
+test("scoreCandidate converts listing price with ratesByUsd when selected currency is non-USD", () => {
+  const listing = {
+    title: "Stone Island Jacket",
+    pricing: {
+      history: [100]
+    },
+    rawListing: {
+      condition: "Good"
+    }
+  };
+
+  const candidate = {
+    id: "c-rates",
+    title: "Stone Island Jacket Similar",
+    url: "https://depop.test/item/rates",
+    imageUrl: "https://images.test/jacket-cad.jpg",
+    price: 80,
+    currency: "EUR",
+    condition: "Good"
+  };
+
+  const scored = scoreCandidate(listing, candidate, {
+    listingPriceUsd: 100,
+    selectedCurrency: "CAD",
+    ratesByUsd: {
+      EUR: 0.8,
+      CAD: 1.25
+    }
+  });
+
+  assert.equal(Number(scored.price.toFixed(2)), 125);
+  assert.equal(Number(scored.deltaAbsolute.toFixed(2)), 0);
+  assert.equal(Number(scored.deltaPercent.toFixed(2)), 0);
+});
+
+test("scoreCandidate preserves original candidate currency when conversion is unavailable", () => {
+  const listing = {
+    title: "Stone Island Jacket",
+    pricing: {
+      history: [100]
+    },
+    rawListing: {
+      condition: "Good"
+    }
+  };
+
+  const candidate = {
+    id: "c-missing-rate",
+    title: "Stone Island Jacket Similar",
+    url: "https://depop.test/item/missing-rate",
+    imageUrl: "https://images.test/jacket-eur.jpg",
+    price: 80,
+    currency: "EUR",
+    condition: "Good"
+  };
+
+  const scored = scoreCandidate(listing, candidate, {
+    listingPriceUsd: 100,
+    selectedCurrency: "CAD",
+    rate: 1.35,
+    ratesByUsd: {
+      CAD: 1.35
+    }
+  });
+
+  assert.equal(scored.currency, "EUR");
+  assert.equal(scored.price, 80);
+  assert.equal(scored.deltaAbsolute, null);
+  assert.equal(scored.deltaPercent, null);
+});
+
 test("rankCandidates applies min score threshold and sort order", () => {
   const listing = {
     title: "Vintage Bomber Jacket",

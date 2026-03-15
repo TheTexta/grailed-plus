@@ -384,8 +384,27 @@ test("renderInsightsPanel inserts panel after mount node by default", () => {
   assert.equal(main.children[1], panel);
   assert.equal(panel.getAttribute("data-grailed-plus-panel"), "1");
   assert.ok(panel.querySelector(".grailed-plus__trend-chart"));
-  assert.match(flattenText(panel), /Listing Metadata/);
+  assert.match(flattenText(panel), /Metadata/);
   assert.match(flattenText(panel), /Compare on Depop/);
+  const metadataButton = panel.querySelector(".grailed-plus__panel-button--tertiary");
+  assert.ok(metadataButton);
+  assert.equal(metadataButton.textContent, "Metadata");
+});
+
+test("renderInsightsPanel omits metadata button when disabled", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    showMetadataButton: false
+  });
+
+  assert.ok(panel);
+  assert.equal(panel.querySelector(".grailed-plus__panel-button--tertiary"), null);
+  assert.doesNotMatch(flattenText(panel), /\bMetadata\b/);
 });
 
 test("renderInsightsPanel exposes a semantic title linked from the section landmark", () => {
@@ -597,6 +616,42 @@ test("renderInsightsPanel omits thumbnail preview for non-Depop providers", () =
 
   assert.equal(panel.querySelector(".grailed-plus__market-preview"), null);
   assert.equal(panel.querySelector(".grailed-plus__market-preview-image"), null);
+});
+
+test("renderInsightsPanel shows original Depop currency note when market price is converted", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r-converted",
+          title: "Converted listing",
+          url: "https://depop.test/item/converted",
+          price: 108,
+          currency: "CAD",
+          originalPrice: 80,
+          originalCurrency: "EUR",
+          score: 64,
+          deltaLabel: "-14.0% cheaper"
+        }
+      ]
+    }
+  });
+
+  const metaNode = panel.querySelector(".grailed-plus__market-meta");
+  const noteNode = panel.querySelector(".grailed-plus__market-meta-note");
+  assert.ok(metaNode);
+  assert.ok(noteNode);
+  assert.match(flattenText(metaNode), /CA\$108/);
+  assert.match(flattenText(metaNode), /Depop/);
+  assert.match(flattenText(metaNode), /€80/);
 });
 
 test("renderInsightsPanel shows loading market compare state with disabled action", () => {
@@ -851,6 +906,59 @@ test("renderInsightsPanel shows centered empty-state trend text when only one pr
   const chartNode = panel.querySelector(".grailed-plus__trend-chart");
   assert.ok(chartNode);
   assert.match(chartNode.getAttribute("aria-label"), /Price trend unavailable/i);
+});
+
+test("renderInsightsPanel hover targets nearest trend point on scaled charts", () => {
+  const { anchor } = createPanelHarness();
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 }
+  });
+
+  const chartNode = panel.querySelector(".grailed-plus__trend-chart");
+  const svgNode = panel.querySelector(".grailed-plus__trend-svg");
+  const hitAreaNode = panel.querySelector(".grailed-plus__trend-hit-area");
+  const points = panel.querySelectorAll(".grailed-plus__trend-point");
+  const tooltipNode = panel.querySelector(".grailed-plus__trend-tooltip");
+
+  assert.ok(chartNode);
+  assert.ok(svgNode);
+  assert.ok(hitAreaNode);
+  assert.ok(tooltipNode);
+  assert.equal(points.length, 3);
+  assert.equal(typeof hitAreaNode._listeners.mousemove, "function");
+
+  chartNode.clientWidth = 592;
+  chartNode.clientHeight = 216;
+  chartNode.getBoundingClientRect = () => ({
+    left: 10,
+    top: 20,
+    width: 592,
+    height: 216
+  });
+
+  svgNode.getBoundingClientRect = () => ({
+    left: 10,
+    top: 20,
+    width: 592,
+    height: 216
+  });
+
+  tooltipNode.getBoundingClientRect = () => ({
+    width: 80,
+    height: 24
+  });
+
+  hitAreaNode._listeners.mousemove({
+    clientX: 314,
+    clientY: 84
+  });
+
+  assert.match(points[1].getAttribute("class"), /is-active/);
+  assert.doesNotMatch(points[2].getAttribute("class"), /is-active/);
+  assert.equal(tooltipNode.getAttribute("aria-hidden"), "false");
 });
 
 test("applySidebarCurrency converts and restores the sidebar price", () => {

@@ -47,6 +47,7 @@ interface MCListing {
   size?: unknown;
   category?: unknown;
   pricing?: MCListingPricing;
+  rawListing?: Record<string, unknown> | null;
 }
 
 interface MCControllerStateResult {
@@ -101,6 +102,9 @@ interface MCDeps {
 
 interface MCGlobalRoot {
   GrailedPlusMarketCompareController?: MCModule;
+  GrailedPlusNormalize?: {
+    normalizeTrimmedString?: (value: unknown, fallback: string) => string;
+  };
   GrailedPlusMarketProviders?: {
     createRegistry?: () => MCProviderRegistry;
     createMockDepopProvider?: () => unknown;
@@ -126,9 +130,20 @@ interface MCGlobalRoot {
   "use strict";
 
   let MarketProviders: MCGlobalRoot["GrailedPlusMarketProviders"] | null = null;
+  let Normalize: MCGlobalRoot["GrailedPlusNormalize"] | null = null;
   let QuerySynthesis: MCGlobalRoot["GrailedPlusQuerySynthesis"] | null = null;
   let ProviderFilters: MCGlobalRoot["GrailedPlusProviderFilters"] | null = null;
   let MatchScoring: MCGlobalRoot["GrailedPlusMatchScoring"] | null = null;
+  if (typeof globalThis !== "undefined" && (globalThis as unknown as MCGlobalRoot).GrailedPlusNormalize) {
+    Normalize = (globalThis as unknown as MCGlobalRoot).GrailedPlusNormalize || null;
+  }
+  if (!Normalize && typeof require === "function") {
+    try {
+      Normalize = require("./normalize");
+    } catch (_) {
+      Normalize = null;
+    }
+  }
   if (typeof globalThis !== "undefined" && (globalThis as unknown as MCGlobalRoot).GrailedPlusMarketProviders) {
     MarketProviders = (globalThis as unknown as MCGlobalRoot).GrailedPlusMarketProviders || null;
   }
@@ -171,11 +186,16 @@ interface MCGlobalRoot {
   }
 
   function normalizeString(value: unknown, fallback: string): string {
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      return trimmed || fallback;
+    if (Normalize && typeof Normalize.normalizeTrimmedString === "function") {
+      return Normalize.normalizeTrimmedString(value, fallback);
     }
-    return fallback;
+
+    if (typeof value !== "string") {
+      return fallback;
+    }
+
+    const trimmed = value.trim();
+    return trimmed || fallback;
   }
 
   function normalizeNumber(value: unknown): number | null {
@@ -204,6 +224,136 @@ interface MCGlobalRoot {
     }
 
     return "same price";
+  }
+
+  function normalizeCurrencyCode(value: unknown, fallback: string): string {
+    const upper = normalizeString(value, "").toUpperCase();
+    if (!/^[A-Z]{3}$/.test(upper)) {
+      return fallback;
+    }
+    return upper;
+  }
+
+  function getRateForCurrency(
+    currencyCode: string,
+    ratesByUsd: Record<string, unknown> | null | undefined
+  ): number | null {
+    if (!ratesByUsd || typeof ratesByUsd !== "object") {
+      return null;
+    }
+
+    if (currencyCode === "USD") {
+      return 1;
+    }
+
+    const value = normalizeNumber(ratesByUsd[currencyCode]);
+    return value != null && value > 0 ? value : null;
+  }
+
+  function convertBetweenCurrencies(
+    amount: unknown,
+    fromCurrency: unknown,
+    toCurrency: unknown,
+    ratesByUsd: Record<string, unknown> | null | undefined
+  ): number | null {
+    const amountValue = normalizeNumber(amount);
+    if (amountValue == null) {
+      return null;
+    }
+
+    const from = normalizeCurrencyCode(fromCurrency, "USD");
+    const to = normalizeCurrencyCode(toCurrency, "USD");
+
+    if (from === to) {
+      return amountValue;
+    }
+
+    const fromRate = getRateForCurrency(from, ratesByUsd);
+    const toRate = getRateForCurrency(to, ratesByUsd);
+    if (fromRate == null || toRate == null || fromRate <= 0 || toRate <= 0) {
+      return null;
+    }
+
+    const amountUsd = from === "USD" ? amountValue : amountValue / fromRate;
+    if (!Number.isFinite(amountUsd)) {
+      return null;
+    }
+
+    return to === "USD" ? amountUsd : amountUsd * toRate;
+  }
+
+  function convertUsdPrice(amountUsd: unknown, selectedCurrency: unknown, rate: unknown): number | null {
+    const amount = normalizeNumber(amountUsd);
+    if (amount == null) {
+      return null;
+    }
+
+    const currency = normalizeCurrencyCode(selectedCurrency, "USD");
+    if (currency === "USD") {
+      return amount;
+    }
+
+    const normalizedRate = normalizeNumber(rate);
+    if (normalizedRate == null || normalizedRate <= 0) {
+      return amount;
+    }
+
+    return amount * normalizedRate;
+  }
+
+  function convertComparablePrice(
+    amount: unknown,
+    fromCurrency: unknown,
+    selectedCurrency: unknown,
+    rate: unknown,
+    ratesByUsd: Record<string, unknown> | null | undefined
+  ): number | null {
+    const comparable = convertBetweenCurrencies(amount, fromCurrency, selectedCurrency, ratesByUsd);
+    if (comparable != null) {
+      return comparable;
+    }
+
+    const from = normalizeCurrencyCode(fromCurrency, "USD");
+    if (from !== "USD") {
+      return null;
+    }
+
+    return convertUsdPrice(amount, selectedCurrency, rate);
+  }
+
+  function computeDisplayedDeltaPercent(
+    candidate: MCCandidate,
+    payload: Record<string, unknown>,
+    listingPrice: number | null
+  ): number | null {
+    const candidatePrice = normalizeNumber(candidate && candidate.price);
+    if (candidatePrice == null) {
+      return null;
+    }
+
+    const selectedCurrency = normalizeCurrencyCode(payload && payload.currency, "USD");
+    const candidateCurrency = normalizeCurrencyCode(
+      candidate && (candidate.currency || candidate.originalCurrency),
+      selectedCurrency
+    );
+    const rate = normalizeNumber(payload && payload.currencyRate);
+    const ratesByUsd =
+      payload && payload.currencyRates && typeof payload.currencyRates === "object"
+        ? (payload.currencyRates as Record<string, unknown>)
+        : null;
+    const listingComparable = convertComparablePrice(
+      listingPrice,
+      "USD",
+      candidateCurrency,
+      candidateCurrency === selectedCurrency ? rate : null,
+      ratesByUsd
+    );
+
+    if (listingComparable == null || listingComparable <= 0) {
+      return null;
+    }
+
+    return ((candidatePrice - listingComparable) / listingComparable) * 100;
   }
 
   function createInitialState(): MCControllerState {
@@ -299,6 +449,64 @@ interface MCGlobalRoot {
     };
   }
 
+  function getNestedValue(input: unknown, paths: string[][]): unknown {
+    for (let i = 0; i < paths.length; i += 1) {
+      let cursor = input;
+      const path = paths[i];
+      for (let j = 0; j < path.length; j += 1) {
+        if (!cursor || typeof cursor !== "object") {
+          cursor = null;
+          break;
+        }
+
+        cursor = (cursor as Record<string, unknown>)[path[j]];
+      }
+
+      if (cursor != null) {
+        return cursor;
+      }
+    }
+
+    return null;
+  }
+
+  function pickRawListingPrice(rawListing: unknown): number | null {
+    const amount = normalizeNumber(
+      getNestedValue(rawListing, [
+        ["price"],
+        ["priceAmount"],
+        ["price_amount"],
+        ["priceUsd"],
+        ["price_usd"],
+        ["price", "amount"],
+        ["price", "value"],
+        ["price", "usd"],
+        ["price", "current"],
+        ["price", "amountUsd"],
+        ["price", "amount_usd"]
+      ])
+    );
+    if (amount != null && amount > 0) {
+      return amount;
+    }
+
+    const cents = normalizeNumber(
+      getNestedValue(rawListing, [
+        ["priceCents"],
+        ["price_cents"],
+        ["price", "amountCents"],
+        ["price", "amount_cents"],
+        ["amountCents"],
+        ["amount_cents"]
+      ])
+    );
+    if (cents != null && cents > 0) {
+      return cents / 100;
+    }
+
+    return null;
+  }
+
   function pickListingPrice(listing: unknown): number | null {
     const history =
       listing && typeof listing === "object" && (listing as MCListing).pricing && Array.isArray((listing as MCListing).pricing?.history)
@@ -306,11 +514,15 @@ interface MCGlobalRoot {
         : [];
 
     if (!history.length) {
-      return null;
+      return pickRawListingPrice(listing && typeof listing === "object" ? (listing as MCListing).rawListing : null);
     }
 
     const latest = Number(history[history.length - 1]);
-    return Number.isFinite(latest) ? latest : null;
+    if (Number.isFinite(latest) && latest > 0) {
+      return latest;
+    }
+
+    return pickRawListingPrice(listing && typeof listing === "object" ? (listing as MCListing).rawListing : null);
   }
 
   function createController(options?: unknown): MCController {
@@ -440,37 +652,266 @@ interface MCGlobalRoot {
       };
     }
 
+    function finishWithError(
+      errorCode: unknown,
+      options?: {
+        retryAfterMs?: unknown;
+        parserMismatchLikely?: unknown;
+        sourceType?: unknown;
+        messageSuffix?: string;
+      }
+    ): MCControllerState {
+      const mappedError = toErrorModel(
+        errorCode,
+        options && options.retryAfterMs,
+        options && options.parserMismatchLikely
+      );
+      const messageSuffix = normalizeString(options && options.messageSuffix, "");
+
+      updateState({
+        status: mappedError.status,
+        errorCode: mappedError.errorCode,
+        retryable: mappedError.retryable,
+        cooldownMs: mappedError.cooldownMs,
+        message: messageSuffix ? mappedError.message + " " + messageSuffix : mappedError.message,
+        sourceType: normalizeString(options && options.sourceType, ""),
+        results: [],
+        lastCheckedAt: Date.now()
+      });
+
+      return getState();
+    }
+
+    function buildQueryResult(listing: MCListing | null): MCQueryResult {
+      if (synthesizeQueries && listing) {
+        return synthesizeQueries(listing, {
+          maxQueries: 4,
+          maxTokens: 6
+        });
+      }
+
+      return {
+        ok: true,
+        queries: [normalizeString(listing && listing.title, "")]
+      };
+    }
+
+    function buildSearchPayload(
+      payload: Record<string, unknown>,
+      listing: MCListing | null,
+      listingPrice: number | null,
+      queries: string[]
+    ): Record<string, unknown> {
+      const resultLimit =
+        Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
+          ? Math.floor(Number(payload.limit))
+          : null;
+
+      return {
+        listingId: currentListingKey,
+        title: normalizeString(listing && listing.title, ""),
+        brand: normalizeString(listing && listing.brand, ""),
+        size: normalizeString(listing && listing.size, ""),
+        category: normalizeString(listing && listing.category, ""),
+        queries: queries,
+        listingPrice: listingPrice,
+        currency: normalizeString(payload.currency, "USD"),
+        limit: resultLimit
+      };
+    }
+
+    function filterCandidates(
+      result: MCProviderResult,
+      payload: Record<string, unknown>
+    ): MCCandidate[] {
+      let filteredCandidates = Array.isArray(result.candidates) ? result.candidates.slice() : [];
+      if (candidateFilterFn) {
+        filteredCandidates = candidateFilterFn(filteredCandidates, payload.filters || {});
+      }
+
+      const pricedCandidates = filteredCandidates.filter(function (candidate) {
+        const price = normalizeNumber(candidate && candidate.price);
+        return price != null && price > 0;
+      });
+
+      return pricedCandidates.length ? pricedCandidates : filteredCandidates;
+    }
+
+    function buildRankingOptions(
+      payload: Record<string, unknown>,
+      listingPrice: number | null,
+      minScore: number
+    ): {
+      listingPriceUsd: number | null;
+      selectedCurrency: string;
+      rate: number | null;
+      ratesByUsd: Record<string, unknown> | null;
+      minScore: number;
+    } {
+      const ratesByUsd =
+        payload && payload.currencyRates && typeof payload.currencyRates === "object"
+          ? (payload.currencyRates as Record<string, unknown>)
+          : null;
+
+      return {
+        listingPriceUsd: listingPrice,
+        selectedCurrency: normalizeString(payload.currency, "USD"),
+        rate: normalizeNumber(payload.currencyRate),
+        ratesByUsd: ratesByUsd,
+        minScore: minScore
+      };
+    }
+
+    function rankFilteredCandidates(
+      listing: MCListing | null,
+      payload: Record<string, unknown>,
+      filteredCandidates: MCCandidate[],
+      listingPrice: number | null
+    ): MCCandidate[] {
+      if (!rankCandidates) {
+        return filteredCandidates;
+      }
+
+      const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
+      const strictRankingOptions = buildRankingOptions(payload, listingPrice, strictMinScore);
+      let rankedCandidates = rankCandidates(listing, filteredCandidates, strictRankingOptions);
+
+      if ((!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) && filteredCandidates.length > 0) {
+        const depopOnlyCandidates = filteredCandidates.every(function (candidate) {
+          return normalizeString(candidate && candidate.market, "depop") === "depop";
+        });
+
+        if (depopOnlyCandidates) {
+          // Depop can return valid cross-border fallback listings that score
+          // below strict similarity thresholds.
+          rankedCandidates = rankCandidates(
+            listing,
+            filteredCandidates,
+            buildRankingOptions(payload, listingPrice, 0)
+          );
+        }
+      }
+
+      return Array.isArray(rankedCandidates) ? rankedCandidates : [];
+    }
+
+    function toDisplayResults(
+      candidates: MCCandidate[],
+      payload: Record<string, unknown>,
+      listingPrice: number | null
+    ): MCControllerStateResult[] {
+      return (Array.isArray(candidates) ? candidates : [])
+        .map(function (candidate) {
+          let normalizedPrice = normalizeNumber(candidate && candidate.price);
+          if (normalizedPrice != null && normalizedPrice <= 0) {
+            normalizedPrice = null;
+          }
+
+          let deltaLabel = normalizeString(candidate && candidate.deltaLabel, "");
+          let deltaPercent = normalizeNumber(candidate && candidate.deltaPercent);
+          const fallbackDeltaPercent = computeDisplayedDeltaPercent(candidate, payload, listingPrice);
+
+          if (
+            fallbackDeltaPercent != null &&
+            (
+              deltaPercent == null ||
+              Math.abs(deltaPercent) < 0.05 ||
+              deltaLabel.toLowerCase() === "same price"
+            ) &&
+            Math.abs(fallbackDeltaPercent) >= 0.05
+          ) {
+            deltaPercent = fallbackDeltaPercent;
+          }
+
+          if (normalizedPrice == null) {
+            deltaLabel = "";
+          } else if (deltaPercent != null) {
+            deltaLabel = formatDeltaLabel({
+              deltaPercent: deltaPercent
+            });
+          } else if (deltaLabel.toLowerCase() === "same price") {
+            deltaLabel = "";
+          }
+
+          return {
+            id: candidate.id,
+            title: candidate.title,
+            url: candidate.url,
+            imageUrl: normalizeString(candidate.imageUrl, ""),
+            price: normalizedPrice,
+            currency: normalizeString(candidate.currency, "USD"),
+            originalCurrency: normalizeString(candidate.originalCurrency || candidate.currency, "USD"),
+            originalPrice: normalizeNumber(candidate.originalPrice),
+            score: normalizeNumber(candidate.score),
+            usedImage: Boolean(candidate.usedImage),
+            imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
+            deltaLabel: deltaLabel || formatDeltaLabel(candidate)
+          };
+        })
+        .filter(function (entry) {
+          const score = normalizeNumber(entry && entry.score);
+          return score != null && score >= 0;
+        });
+    }
+
+    function handleProviderSuccess(
+      result: MCProviderResult,
+      payload: Record<string, unknown>,
+      listing: MCListing | null,
+      listingPrice: number | null,
+      searchModeHint: string
+    ): MCControllerState {
+      const sourceType = normalizeString(result && result.sourceType, "html");
+      const filteredCandidates = filterCandidates(result, payload);
+
+      if (!filteredCandidates.length) {
+        return finishWithError("NO_RESULTS", {
+          sourceType: sourceType,
+          messageSuffix: searchModeHint
+        });
+      }
+
+      const rankedCandidates = rankFilteredCandidates(listing, payload, filteredCandidates, listingPrice);
+      if (!rankedCandidates.length) {
+        return finishWithError("NO_RESULTS", {
+          sourceType: sourceType,
+          messageSuffix: searchModeHint
+        });
+      }
+
+      const normalizedResults = toDisplayResults(rankedCandidates, payload, listingPrice);
+      if (!normalizedResults.length) {
+        return finishWithError("NO_RESULTS", {
+          sourceType: sourceType,
+          messageSuffix: searchModeHint
+        });
+      }
+
+      updateState({
+        status: "results",
+        errorCode: "",
+        retryable: false,
+        cooldownMs: null,
+        message: searchModeHint,
+        sourceType: sourceType,
+        results: normalizedResults,
+        lastCheckedAt: Date.now()
+      });
+
+      return getState();
+    }
+
     function compare(input: unknown): Promise<MCControllerState> {
       const payload = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
       const listing = payload.listing && typeof payload.listing === "object" ? (payload.listing as MCListing) : null;
       resetForListing(listing);
 
       if (!currentListingKey) {
-        const missingContext = toErrorModel("MISSING_LISTING_DATA");
-        updateState({
-          status: missingContext.status,
-          errorCode: missingContext.errorCode,
-          retryable: missingContext.retryable,
-          cooldownMs: missingContext.cooldownMs,
-          message: missingContext.message,
-          results: [],
-          lastCheckedAt: Date.now()
-        });
-        return Promise.resolve(getState());
+        return Promise.resolve(finishWithError("MISSING_LISTING_DATA"));
       }
 
       if (!providerRegistry || typeof providerRegistry.search !== "function") {
-        const missingProvider = toErrorModel("NETWORK_ERROR");
-        updateState({
-          status: missingProvider.status,
-          errorCode: missingProvider.errorCode,
-          retryable: missingProvider.retryable,
-          cooldownMs: missingProvider.cooldownMs,
-          message: missingProvider.message,
-          results: [],
-          lastCheckedAt: Date.now()
-        });
-        return Promise.resolve(getState());
+        return Promise.resolve(finishWithError("NETWORK_ERROR"));
       }
 
       if (state.status === "loading" && inFlightPromise) {
@@ -480,36 +921,13 @@ interface MCGlobalRoot {
       const requestToken = activeRequestToken + 1;
       activeRequestToken = requestToken;
       const listingPrice = pickListingPrice(listing);
-      const resultLimit =
-        Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
-          ? Math.floor(Number(payload.limit))
-          : null;
-      const queryResult =
-        synthesizeQueries && listing
-          ? synthesizeQueries(listing, {
-              maxQueries: 4,
-              maxTokens: 6
-            })
-          : {
-              ok: true,
-              queries: [normalizeString(listing && listing.title, "")]
-            };
+      const queryResult = buildQueryResult(listing);
       const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
 
       if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
-        const queryError = toErrorModel(
-          queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA"
+        return Promise.resolve(
+          finishWithError(queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA")
         );
-        updateState({
-          status: queryError.status,
-          errorCode: queryError.errorCode,
-          retryable: queryError.retryable,
-          cooldownMs: queryError.cooldownMs,
-          message: queryError.message,
-          results: [],
-          lastCheckedAt: Date.now()
-        });
-        return Promise.resolve(getState());
       }
 
       updateState({
@@ -523,205 +941,28 @@ interface MCGlobalRoot {
       });
 
       inFlightPromise = providerRegistry
-        .search("depop", {
-          listingId: currentListingKey,
-          title: normalizeString(listing && listing.title, ""),
-          brand: normalizeString(listing && listing.brand, ""),
-          size: normalizeString(listing && listing.size, ""),
-          category: normalizeString(listing && listing.category, ""),
-          queries: queryResult.queries,
-          listingPrice: listingPrice,
-          currency: normalizeString(payload.currency, "USD"),
-          limit: resultLimit
-        })
+        .search("depop", buildSearchPayload(payload, listing, listingPrice, queryResult.queries))
         .then(function (result) {
           if (requestToken !== activeRequestToken) {
             return getState();
           }
 
           if (!result.ok) {
-            const mappedError = toErrorModel(
-              result.errorCode || "NETWORK_ERROR",
-              result.retryAfterMs,
-              Boolean(result.parserMismatchLikely)
-            );
-            updateState({
-              status: mappedError.status,
-              errorCode: mappedError.errorCode,
-              retryable: mappedError.retryable,
-              cooldownMs: mappedError.cooldownMs,
-              message: mappedError.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
+            return finishWithError(result.errorCode || "NETWORK_ERROR", {
+              retryAfterMs: result.retryAfterMs,
+              parserMismatchLikely: Boolean(result.parserMismatchLikely),
+              sourceType: normalizeString(result && result.sourceType, "html")
             });
-            return getState();
           }
 
-          let filteredCandidates = Array.isArray(result.candidates) ? result.candidates.slice() : [];
-          if (candidateFilterFn) {
-            filteredCandidates = candidateFilterFn(filteredCandidates, payload.filters || {});
-          }
-
-          const pricedCandidates = filteredCandidates.filter(function (candidate) {
-            const price = normalizeNumber(candidate && candidate.price);
-            return price != null && price > 0;
-          });
-          if (pricedCandidates.length) {
-            filteredCandidates = pricedCandidates;
-          }
-
-          if (!Array.isArray(filteredCandidates) || filteredCandidates.length === 0) {
-            const noResults = toErrorModel("NO_RESULTS");
-            updateState({
-              status: noResults.status,
-              errorCode: noResults.errorCode,
-              retryable: noResults.retryable,
-              cooldownMs: noResults.cooldownMs,
-              message: searchModeHint ? noResults.message + " " + searchModeHint : noResults.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
-            });
-            return getState();
-          }
-
-          const selectedCurrency = normalizeString(payload.currency, "USD");
-          const ratesByUsd =
-            payload && payload.currencyRates && typeof payload.currencyRates === "object"
-              ? (payload.currencyRates as Record<string, unknown>)
-              : null;
-          const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
-
-          let rankedCandidates = rankCandidates
-            ? rankCandidates(listing, filteredCandidates, {
-                listingPriceUsd: listingPrice,
-                selectedCurrency: selectedCurrency,
-                rate: normalizeNumber(payload.currencyRate),
-                ratesByUsd: ratesByUsd,
-                minScore: strictMinScore
-              })
-            : filteredCandidates;
-
-          if (
-            rankCandidates &&
-            (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) &&
-            Array.isArray(filteredCandidates) &&
-            filteredCandidates.length > 0
-          ) {
-            const depopOnlyCandidates = filteredCandidates.every(function (candidate) {
-              return normalizeString(candidate && candidate.market, "depop") === "depop";
-            });
-
-            if (depopOnlyCandidates) {
-              // Depop can return valid cross-border fallback listings that score
-              // below strict similarity thresholds.
-              rankedCandidates = rankCandidates(listing, filteredCandidates, {
-                listingPriceUsd: listingPrice,
-                selectedCurrency: selectedCurrency,
-                rate: normalizeNumber(payload.currencyRate),
-                ratesByUsd: ratesByUsd,
-                minScore: 0
-              });
-            }
-          }
-
-          if (!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) {
-            const noRankedResults = toErrorModel("NO_RESULTS");
-            updateState({
-              status: noRankedResults.status,
-              errorCode: noRankedResults.errorCode,
-              retryable: noRankedResults.retryable,
-              cooldownMs: noRankedResults.cooldownMs,
-              message: searchModeHint
-                ? noRankedResults.message + " " + searchModeHint
-                : noRankedResults.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
-            });
-            return getState();
-          }
-
-          const normalizedResults = rankedCandidates
-            .map(function (candidate) {
-              let normalizedPrice = normalizeNumber(candidate && candidate.price);
-              if (normalizedPrice != null && normalizedPrice <= 0) {
-                normalizedPrice = null;
-              }
-
-              let deltaLabel = normalizeString(candidate && candidate.deltaLabel, "");
-              if (normalizedPrice == null) {
-                deltaLabel = "";
-              }
-
-              return {
-                id: candidate.id,
-                title: candidate.title,
-                url: candidate.url,
-                imageUrl: normalizeString(candidate.imageUrl, ""),
-                price: normalizedPrice,
-                currency: normalizeString(candidate.currency, "USD"),
-                originalCurrency: normalizeString(candidate.originalCurrency || candidate.currency, "USD"),
-                originalPrice: normalizeNumber(candidate.originalPrice),
-                score: normalizeNumber(candidate.score),
-                usedImage: Boolean(candidate.usedImage),
-                imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
-                deltaLabel: deltaLabel || formatDeltaLabel(candidate)
-              };
-            })
-            .filter(function (entry) {
-              return normalizeNumber(entry && entry.score) != null && (normalizeNumber(entry && entry.score) as number) >= 0;
-            });
-
-          if (!normalizedResults.length) {
-            const noDisplayableResults = toErrorModel("NO_RESULTS");
-            updateState({
-              status: noDisplayableResults.status,
-              errorCode: noDisplayableResults.errorCode,
-              retryable: noDisplayableResults.retryable,
-              cooldownMs: noDisplayableResults.cooldownMs,
-              message: searchModeHint
-                ? noDisplayableResults.message + " " + searchModeHint
-                : noDisplayableResults.message,
-              sourceType: normalizeString(result && result.sourceType, "html"),
-              results: [],
-              lastCheckedAt: Date.now()
-            });
-            return getState();
-          }
-
-          updateState({
-            status: "results",
-            errorCode: "",
-            retryable: false,
-            cooldownMs: null,
-            message: searchModeHint,
-            sourceType: normalizeString(result && result.sourceType, "html"),
-            results: normalizedResults,
-            lastCheckedAt: Date.now()
-          });
-
-          return getState();
+          return handleProviderSuccess(result, payload, listing, listingPrice, searchModeHint);
         })
         .catch(function () {
           if (requestToken !== activeRequestToken) {
             return getState();
           }
 
-          const fallbackError = toErrorModel("NETWORK_ERROR");
-
-          updateState({
-            status: fallbackError.status,
-            errorCode: fallbackError.errorCode,
-            retryable: fallbackError.retryable,
-            cooldownMs: fallbackError.cooldownMs,
-            message: fallbackError.message,
-            sourceType: "",
-            results: [],
-            lastCheckedAt: Date.now()
-          });
-          return getState();
+          return finishWithError("NETWORK_ERROR");
         })
         .finally(function () {
           if (requestToken === activeRequestToken) {

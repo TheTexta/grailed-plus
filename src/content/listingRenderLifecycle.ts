@@ -27,6 +27,7 @@ interface CListingRenderOptions {
   metrics: any;
   mountTarget?: CListingRenderMountTarget | null;
   marketCompareResultsLimit?: number;
+  showMetadataButton?: boolean;
   resolveCurrencyContext?: () => Promise<CListingRenderCurrencyContext | null>;
   createUsdCurrencyContext?: () => CListingRenderCurrencyContext;
   renderPanelWithMarketCompare?: (options: {
@@ -37,6 +38,7 @@ interface CListingRenderOptions {
     rawListing: any;
     currencyContext: CListingRenderCurrencyContext | null;
     marketCompareResultsLimit: number;
+    showMetadataButton: boolean;
   }) => void;
   applySidebarCurrency?: (currencyContext: CListingRenderCurrencyContext | null) => void;
   applyCardCurrency?: (currencyContext: CListingRenderCurrencyContext | null) => void;
@@ -128,7 +130,8 @@ interface CListingRenderGlobal {
             Number.isFinite(Number(config.marketCompareResultsLimit)) &&
             Number(config.marketCompareResultsLimit) > 0
               ? Math.floor(Number(config.marketCompareResultsLimit))
-              : 5
+              : 5,
+          showMetadataButton: config.showMetadataButton !== false
         });
         applySidebarCurrency(currencyContext);
         applyCardCurrency(currencyContext);
@@ -162,7 +165,8 @@ interface CListingRenderGlobal {
             Number.isFinite(Number(config.marketCompareResultsLimit)) &&
             Number(config.marketCompareResultsLimit) > 0
               ? Math.floor(Number(config.marketCompareResultsLimit))
-              : 5
+              : 5,
+          showMetadataButton: config.showMetadataButton !== false
         });
         applySidebarCurrency(fallbackCurrency);
         applyCardCurrency(fallbackCurrency);
