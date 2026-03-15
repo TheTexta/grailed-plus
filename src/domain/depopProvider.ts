@@ -215,6 +215,21 @@
     return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
   }
 
+  type DepopAttemptFailure = {
+    ok: false;
+    requestCount: number;
+    errorCode: any;
+    retryAfterMs: any;
+  };
+
+  type DepopAttemptSuccess = {
+    ok: true;
+    requestCount: number;
+    candidates: any;
+  };
+
+  type DepopAttemptResult = DepopAttemptFailure | DepopAttemptSuccess;
+
   function normalizeTitleCandidate(value: any) {
     var title = normalizeString(value, "");
     if (!title) {
@@ -1376,8 +1391,11 @@
       var timeoutId =
         abortController && typeof setTimeout === "function"
           ? setTimeout(function () {
+              var controller = abortController;
               try {
-                abortController.abort();
+                if (controller) {
+                  controller.abort();
+                }
               } catch (_) {
                 // Ignore abort failures.
               }
@@ -1434,7 +1452,7 @@
   }
 
   async function tryApiSearch(query: any, payload: any, fetchImpl: any, runtimeSendMessage: any, timeoutMs: any) {
-    function buildAttemptFailure(errorCode: any, retryAfterMs: any) {
+    function buildAttemptFailure(errorCode: any, retryAfterMs: any): DepopAttemptFailure {
       return {
         ok: false,
         requestCount: 1,
@@ -1443,7 +1461,7 @@
       };
     }
 
-    function buildAttemptSuccess(candidates: any) {
+    function buildAttemptSuccess(candidates: any): DepopAttemptSuccess {
       return {
         ok: true,
         requestCount: 1,
@@ -1868,7 +1886,17 @@
     }
 
     async function executeQuerySearch(query: any, payload: any, state: any) {
-      var nextState = {
+      var nextState: {
+        requestTotal: number;
+        partial: boolean;
+        sourceType: string;
+        blockedFallbackAttempted: boolean;
+        sawNoResults: boolean;
+        sawNetworkError: boolean;
+        candidates: any[];
+        stopProcessing: boolean;
+        response: ReturnType<typeof buildSearchFailure> | null;
+      } = {
         requestTotal: normalizeNumber(state && state.requestTotal) || 0,
         partial: Boolean(state && state.partial),
         sourceType: normalizeString(state && state.sourceType, "") || "html",
@@ -1893,7 +1921,13 @@
 
       if (!fetched.ok) {
         if (nextState.requestTotal < maxRequests) {
-          var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
+          var apiOnHttpError: DepopAttemptResult = await tryApiSearch(
+            query,
+            payload,
+            fetchImpl,
+            runtimeSendMessage,
+            fetchTimeoutMs
+          );
           nextState.requestTotal += apiOnHttpError.requestCount || 0;
 
           if (apiOnHttpError.ok) {
@@ -1999,7 +2033,13 @@
       }
 
       if (!pricedParsedCandidates.length && nextState.requestTotal < maxRequests) {
-        var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
+        var apiFallback: DepopAttemptResult = await tryApiSearch(
+          query,
+          payload,
+          fetchImpl,
+          runtimeSendMessage,
+          fetchTimeoutMs
+        );
         nextState.requestTotal += apiFallback.requestCount || 0;
 
         if (apiFallback.ok) {

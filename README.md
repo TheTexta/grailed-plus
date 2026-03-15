@@ -23,45 +23,72 @@ Grailed Plus is built for in-flow browsing. Instead of opening extra tabs or doi
 - Next expected drop estimate
 - Price trend work is partially completed
 
-### Seller and Metadata Context
+# Grailed Plus
 
-- Seller account creation date
-- Metadata button that opens listing JSON in a new tab
+A browser extension that enhances your Grailed experience with powerful pricing insights, cross-market comparisons, and a clean, native UI.
 
-### Currency Conversion
+## Features
 
-- Automatic conversion from USD to your selected currency
-- Original USD value preserved in hover tooltip
-- Conversion is configurable and can be toggled on/off in settings
+- **Depop Price Comparison (NEW)**
+  - Instantly compare Grailed listings with similar items on Depop.
+  - Real-time Depop pricing data shown directly on Grailed listing pages.
+  - Make smarter buying and selling decisions with cross-market context.
 
-### Site-wide Dark Mode
+- **Refreshed Injected UI (NEW)**
+  - All extension UI components now feature a minimalist, data-dense design.
+  - Improved clarity, hierarchy, and consistency with Grailed’s native look.
+  - Full support for both light and dark modes.
 
-- Dark mode that applies across Grailed pages
-- Theme behavior options:
-  - Match device theme (default)
-  - Permanent dark mode
-- Customizable primary color
-- Default behavior ships with dark mode enabled
+- **Grailed Market Insights**
+  - View historical price trends for any listing.
+  - See recent sales, price drops, and seller context at a glance.
 
-## Roadmap
+- **Seller and Metadata Context**
+  - Seller account creation date for trust context.
+  - One-click listing metadata inspection (view listing JSON).
 
-### In Progress / Partial
+- **Currency Conversion**
+  - Automatic conversion from USD to your selected currency.
+  - Original USD value preserved in hover tooltip.
+  - Configurable and can be toggled on/off in settings.
 
-- Price trend graph view
+- **Site-wide Dark Mode**
+  - Applies across Grailed pages.
+  - Match device theme or set permanent dark mode.
+  - Customizable primary color.
 
-### Planned
+## Installation
 
-- Depop and eBay auto-comparison for similar/matching listings
-- Better inspect flow (hover inspect without clicking)
-- Potential ML-assisted image matching for closer listing similarity
+1. Clone this repository.
+2. Run `npm install` to install dependencies.
+3. Build the extension with `npm run build`.
+4. Load the extension into your browser (see your browser’s extension documentation).
 
-### Already Completed (Previously Planned)
+## Usage
 
-- Dark mode integration
-- Improved UI integration
-- Updated logo and screenshots
-- Automatic currency conversion
-- Improved settings UI
+- Browse Grailed as usual.
+- On any listing page, view Depop price comparisons and enhanced market insights.
+- All features are available in both light and dark mode.
+
+## Settings
+
+### Currency
+1. Click the Grailed Plus extension icon.
+2. Open Settings from the popup, or use Extension options in chrome://extensions.
+3. Select a curated currency or enter a custom 3-letter code, then save.
+4. Enable currency conversion (disabled by default).
+5. Refresh open listing tabs to apply changes.
+
+*Exchange rates are fetched from Frankfurter (https://api.frankfurter.app/latest?base=USD) and cached for 1 hour. If unavailable, values remain in USD.*
+
+### Dark Mode
+1. Open Grailed Plus Settings.
+2. Enable site-wide dark mode.
+3. Choose behavior: match device theme (default) or permanent dark mode.
+4. Choose a primary color (default: #000000).
+5. Save and refresh open Grailed tabs.
+
+*Dark mode uses a CSS-first approach for high contrast and fidelity. Images/media are counter-filtered to preserve appearance.*
 
 ## Project Layout
 
@@ -82,69 +109,33 @@ Grailed Plus is built for in-flow browsing. Instead of opening extra tabs or doi
 
 ## Scripts
 
-- npm run build  
-  Rebuilds src/contentScript.js from modules.
-
-- npm run test  
-  Runs unit tests.
-
-- npm run lint  
-  Runs syntax checks for source and tests.
-
-- npm run zip:chrome  
-  Builds and packages a Chrome sideload zip into artifacts.
-
-- npm run release:chrome  
-  Runs lint and tests, then builds/packages a Chrome release zip.
+- `npm run build` – Rebuilds src/contentScript.js from modules.
+- `npm run test` – Runs unit tests.
+- `npm run lint` – Runs syntax checks for source and tests.
+- `npm run zip:chrome` – Builds and packages a Chrome sideload zip into artifacts.
+- `npm run release:chrome` – Runs lint and tests, then builds/packages a Chrome release zip.
 
 ## Chrome Sideload Setup
 
-1. Run npm run build.
+1. Run `npm run build`.
 2. Open chrome://extensions.
 3. Enable Developer mode.
 4. Click Load unpacked and select the src directory.
 5. Open a Grailed listing URL like https://www.grailed.com/listings/... and verify panel rendering.
-
-## Currency Settings
-
-1. Click the Grailed Plus extension icon.
-2. Open Settings from the popup, or use Extension options in chrome://extensions.
-3. Select a curated currency or enter a custom 3-letter code, then save.
-4. Enable currency conversion (disabled by default).
-5. Refresh open listing tabs to apply changes.
-
-### Currency Notes
-
-- Exchange rates are fetched from Frankfurter: https://api.frankfurter.app/latest?base=USD
-- Rates are cached in chrome.storage.local for 1 hour.
-- If network fetch fails, stale cache is used when available.
-- If neither network nor cache is available, values remain in USD.
-
-## Dark Mode Settings
-
-1. Open Grailed Plus Settings.
-2. Enable site-wide dark mode.
-3. Choose behavior:
-   - Match device theme (default)
-   - Permanent dark mode
-4. Choose a primary color using picker or hex value (default: #000000).
-5. Save and refresh open Grailed tabs.
-
-### Dark Mode Notes
-
-- Applies across grailed.com pages.
-- CSS-first implementation that inverts most page colors.
-- Non-default primary colors enable a smooth fixed-position gradient depth tint site-wide.
-- Color selection controls hue; tint brightness remains fixed for consistent contrast.
-- Overscroll and backdrop remain pure black in dark mode.
-- Images and media are counter-filtered to preserve visual fidelity.
-- Default custom color #000000 keeps extra tint disabled.
 
 ## Browser Support
 
 - Chrome Manifest V3 is the active target.
 - Firefox manifest template exists for Phase 2 progression.
 
-## Status
+## Contributing
 
-Grailed Plus V2 currently delivers pricing insights, seller data, metadata access, custom currency conversion, and integrated dark mode with configurable theming.
+1. Fork the repo and create your branch: `git checkout -b feature/your-feature`
+2. Commit your changes: `git commit -am 'Add new feature'`
+3. Push to the branch: `git push origin feature/your-feature`
+4. Open a pull request.
+
+## License
+
+MIT
+- Default custom color #000000 keeps extra tint disabled.

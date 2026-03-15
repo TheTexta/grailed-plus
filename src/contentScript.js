@@ -2657,8 +2657,11 @@
             var abortController = typeof AbortController === "function" ? new AbortController() : null;
             var timeoutId = abortController && typeof setTimeout === "function"
                 ? setTimeout(function () {
+                    var controller = abortController;
                     try {
-                        abortController.abort();
+                        if (controller) {
+                            controller.abort();
+                        }
                     }
                     catch (_) {
                         // Ignore abort failures.

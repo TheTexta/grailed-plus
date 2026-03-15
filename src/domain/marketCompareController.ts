@@ -208,7 +208,7 @@ interface MCGlobalRoot {
     return Math.round(value * factor) / factor;
   }
 
-  function formatDeltaLabel(candidate: MCCandidate): string {
+  function formatDeltaLabel(candidate: { deltaPercent?: unknown } | null | undefined): string {
     const deltaPercent = normalizeNumber(candidate && candidate.deltaPercent);
     if (deltaPercent == null) {
       return "";
