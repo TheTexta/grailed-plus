@@ -10,6 +10,10 @@ const {
 } = require("../.tmp/ts-build/src/content/runLifecycle");
 const { prepareListingRenderContext } = require("../.tmp/ts-build/src/content/listingPipelineLifecycle");
 const { renderListingWithCurrency } = require("../.tmp/ts-build/src/content/listingRenderLifecycle");
+const {
+  triggerMarketCompare,
+  renderPanelWithMarketCompare
+} = require("../.tmp/ts-build/src/content/marketCompareLifecycle");
 const { renderUnavailable } = require("../.tmp/ts-build/src/content/unavailableLifecycle");
 
 function waitForAsyncTick() {
@@ -274,6 +278,10 @@ test("listing render lifecycle renders with resolved currency", async () => {
       mountNode: { id: "mount" },
       mountPosition: "afterend"
     },
+    marketCompareEnabled: true,
+    marketCompareRankingFormula: "visual",
+    marketCompareStrictMode: true,
+    marketCompareResultsLimit: 10,
     resolveCurrencyContext: () => Promise.resolve({ selectedCurrency: "EUR", rate: 0.9 }),
     renderPanelWithMarketCompare: (options) => {
       calls.renderedOptions = options;
@@ -301,6 +309,10 @@ test("listing render lifecycle renders with resolved currency", async () => {
 
   assert.equal(calls.renderedOptions.listing.id, 3);
   assert.equal(calls.renderedOptions.mountPosition, "afterend");
+  assert.equal(calls.renderedOptions.marketCompareEnabled, true);
+  assert.equal(calls.renderedOptions.marketCompareRankingFormula, "visual");
+  assert.equal(calls.renderedOptions.marketCompareStrictMode, true);
+  assert.equal(calls.renderedOptions.marketCompareResultsLimit, 10);
   assert.deepEqual(calls.sidebarCurrency, { selectedCurrency: "EUR", rate: 0.9 });
   assert.deepEqual(calls.cardCurrency, { selectedCurrency: "EUR", rate: 0.9 });
   assert.deepEqual(calls.syncedCurrency, { selectedCurrency: "EUR", rate: 0.9 });
@@ -359,6 +371,88 @@ test("listing render lifecycle uses USD fallback when currency resolution fails"
   assert.equal(calls.logs[0][0], "rendered_with_currency_fallback");
 });
 
+test("market compare lifecycle does not create controller or render market state when disabled", () => {
+  const state = {
+    marketCompareController: null,
+    marketCompareUnsubscribe: null,
+    latestPanelContext: null,
+    renderToken: 7
+  };
+  const calls = {
+    ensured: 0,
+    renderedOptions: null
+  };
+
+  renderPanelWithMarketCompare({
+    state,
+    ensureController: function () {
+      calls.ensured += 1;
+      return {
+        resetForListing() {
+          throw new Error("controller should not be used when disabled");
+        }
+      };
+    },
+    renderListingInsightsPanel: function (options) {
+      calls.renderedOptions = options;
+      return options;
+    },
+    panelOptions: {
+      listing: { id: 12 },
+      marketCompareEnabled: false,
+      marketCompareRankingFormula: "metadata",
+      marketCompareStrictMode: true,
+      marketCompareResultsLimit: 10
+    }
+  });
+
+  assert.equal(calls.ensured, 0);
+  assert.equal(calls.renderedOptions.marketCompareEnabled, false);
+  assert.equal(calls.renderedOptions.marketCompare, null);
+  assert.equal(state.latestPanelContext.marketCompareEnabled, false);
+  assert.equal(state.latestPanelContext.marketCompareRankingFormula, "metadata");
+  assert.equal(state.latestPanelContext.marketCompareStrictMode, true);
+});
+
+test("market compare lifecycle forwards ranking formula and hardcoded show-all threshold to compare flow", () => {
+  let comparePayload = null;
+
+  triggerMarketCompare({
+    state: {
+      latestPanelContext: {
+        listing: { id: 99 },
+        currencyContext: {
+          selectedCurrency: "CAD",
+          rate: 1.35,
+          usdRates: { CAD: 1.35 }
+        },
+        marketCompareEnabled: true,
+        marketCompareRankingFormula: "metadata",
+        marketCompareStrictMode: true,
+        marketCompareResultsLimit: 10
+      }
+    },
+    ensureController: function () {
+      return {
+        compare: function (payload) {
+          comparePayload = payload;
+        }
+      };
+    }
+  });
+
+  assert.deepEqual(comparePayload, {
+    listing: { id: 99 },
+    currency: "CAD",
+    limit: 10,
+    currencyRate: 1.35,
+    currencyRates: { CAD: 1.35 },
+    minScore: 0,
+    rankingFormula: "metadata",
+    allowCategoryFallback: false
+  });
+});
+
 test("unavailable lifecycle renders unavailable panel on listing routes", async () => {
   const state = {
     renderToken: 0
@@ -381,6 +475,13 @@ test("unavailable lifecycle renders unavailable panel on listing routes", async 
     documentObj: {},
     resolveMountTarget: () => ({ mountNode: { id: "mount" }, mountPosition: "afterend" }),
     resolveCurrencyContext: () => Promise.resolve({ selectedCurrency: "USD", rate: null }),
+    resolveMarketCompareSettings: () =>
+      Promise.resolve({
+        enabled: false,
+        rankingFormula: "visual",
+        strictMode: true,
+        expandedAmountEnabled: true
+      }),
     renderPanelWithMarketCompare: (options) => {
       calls.renderedOptions = options;
     },
@@ -401,6 +502,10 @@ test("unavailable lifecycle renders unavailable panel on listing routes", async 
   assert.equal(state.renderToken, 1);
   assert.equal(calls.renderedOptions.listing.id, "unknown");
   assert.equal(calls.renderedOptions.statusMessage, "Feature unavailable");
+  assert.equal(calls.renderedOptions.marketCompareEnabled, false);
+  assert.equal(calls.renderedOptions.marketCompareRankingFormula, "visual");
+  assert.equal(calls.renderedOptions.marketCompareStrictMode, true);
+  assert.equal(calls.renderedOptions.marketCompareResultsLimit, 10);
   assert.deepEqual(calls.sidebarCurrency, { selectedCurrency: "USD", rate: null });
   assert.deepEqual(calls.cardCurrency, { selectedCurrency: "USD", rate: null });
   assert.deepEqual(calls.syncedCurrency, { selectedCurrency: "USD", rate: null });

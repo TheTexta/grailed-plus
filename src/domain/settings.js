@@ -12,16 +12,28 @@
     const DEFAULT_CONVERSION_ENABLED = false;
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
     const DEFAULT_LISTING_METADATA_BUTTON_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+    const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
     const DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
     const CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
+    const MARKET_COMPARE_RANKING_FORMULA_OPTIONS = [
+        "balanced",
+        "visual",
+        "metadata",
+        "variant"
+    ];
     const CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
     const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
+    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY = "grailed_plus_market_compare_ranking_formula_v1";
+    const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
@@ -83,6 +95,13 @@
             return null;
         }
         return trimmed;
+    }
+    function normalizeMarketCompareRankingFormula(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        const normalized = input.trim().toLowerCase();
+        return MARKET_COMPARE_RANKING_FORMULA_OPTIONS.indexOf(normalized) >= 0 ? normalized : null;
     }
     function getStorageLocal() {
         return BrowserStorage && typeof BrowserStorage.getStorageLocal === "function"
@@ -177,6 +196,9 @@
     const currencyConversionSetting = createBooleanSetting(CONVERSION_ENABLED_STORAGE_KEY, DEFAULT_CONVERSION_ENABLED, "conversion status");
     const listingInsightsSetting = createBooleanSetting(LISTING_INSIGHTS_ENABLED_STORAGE_KEY, DEFAULT_LISTING_INSIGHTS_ENABLED, "listing insights status");
     const listingMetadataButtonSetting = createBooleanSetting(LISTING_METADATA_BUTTON_STORAGE_KEY, DEFAULT_LISTING_METADATA_BUTTON_ENABLED, "listing metadata button status");
+    const marketCompareEnabledSetting = createBooleanSetting(MARKET_COMPARE_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ENABLED, "market compare status");
+    const marketCompareRankingFormulaSetting = createValidatedSetting(MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY, DEFAULT_MARKET_COMPARE_RANKING_FORMULA, normalizeMarketCompareRankingFormula, "Market compare ranking formula must match a supported option.", "Failed to persist market compare ranking formula.");
+    const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
     const darkModeEnabledSetting = createBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, DEFAULT_DARK_MODE_ENABLED, "dark mode status");
     const darkModeBehaviorSetting = createValidatedSetting(DARK_MODE_BEHAVIOR_STORAGE_KEY, DEFAULT_DARK_MODE_BEHAVIOR, normalizeDarkModeBehavior, "Dark mode behavior must be either 'system' or 'permanent'.", "Failed to persist dark mode behavior.");
@@ -206,11 +228,44 @@
     function setListingMetadataButtonEnabled(enabled) {
         return listingMetadataButtonSetting.set(enabled);
     }
+    function getMarketCompareEnabled() {
+        return marketCompareEnabledSetting.get();
+    }
+    function setMarketCompareEnabled(enabled) {
+        return marketCompareEnabledSetting.set(enabled);
+    }
+    function getMarketCompareRankingFormula() {
+        return marketCompareRankingFormulaSetting.get();
+    }
+    function setMarketCompareRankingFormula(formula) {
+        return marketCompareRankingFormulaSetting.set(formula);
+    }
+    function getMarketCompareStrictMode() {
+        return marketCompareStrictModeSetting.get();
+    }
+    function setMarketCompareStrictMode(enabled) {
+        return marketCompareStrictModeSetting.set(enabled);
+    }
     function getMarketCompareExpandedAmountEnabled() {
         return marketCompareExpandedAmountSetting.get();
     }
     function setMarketCompareExpandedAmountEnabled(enabled) {
         return marketCompareExpandedAmountSetting.set(enabled);
+    }
+    function getMarketCompareSettings() {
+        return Promise.all([
+            getMarketCompareEnabled(),
+            getMarketCompareRankingFormula(),
+            getMarketCompareStrictMode(),
+            getMarketCompareExpandedAmountEnabled()
+        ]).then(function (values) {
+            return {
+                enabled: values[0],
+                rankingFormula: values[1],
+                strictMode: values[2],
+                expandedAmountEnabled: values[3]
+            };
+        });
     }
     function getDarkModeEnabled() {
         return darkModeEnabledSetting.get();
@@ -241,16 +296,23 @@
         DEFAULT_CONVERSION_ENABLED,
         DEFAULT_LISTING_INSIGHTS_ENABLED,
         DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
+        DEFAULT_MARKET_COMPARE_ENABLED,
+        DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
+        DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
         DEFAULT_DARK_MODE_ENABLED,
         DEFAULT_DARK_MODE_BEHAVIOR,
         DEFAULT_DARK_MODE_PRIMARY_COLOR,
         DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED,
         CURATED_CURRENCIES,
+        MARKET_COMPARE_RANKING_FORMULA_OPTIONS,
         CURRENCY_STORAGE_KEY,
         CONVERSION_ENABLED_STORAGE_KEY,
         LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
         LISTING_METADATA_BUTTON_STORAGE_KEY,
+        MARKET_COMPARE_ENABLED_STORAGE_KEY,
+        MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
+        MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
         DARK_MODE_ENABLED_STORAGE_KEY,
         DARK_MODE_BEHAVIOR_STORAGE_KEY,
@@ -260,6 +322,7 @@
         normalizeCurrencyCode,
         normalizeHexColor,
         normalizeDarkModeBehavior,
+        normalizeMarketCompareRankingFormula,
         getSelectedCurrency,
         setSelectedCurrency,
         getCurrencyConversionEnabled,
@@ -268,8 +331,15 @@
         setListingInsightsEnabled,
         getListingMetadataButtonEnabled,
         setListingMetadataButtonEnabled,
+        getMarketCompareEnabled,
+        setMarketCompareEnabled,
+        getMarketCompareRankingFormula,
+        setMarketCompareRankingFormula,
+        getMarketCompareStrictMode,
+        setMarketCompareStrictMode,
         getMarketCompareExpandedAmountEnabled,
         setMarketCompareExpandedAmountEnabled,
+        getMarketCompareSettings,
         getDarkModeEnabled,
         setDarkModeEnabled,
         getDarkModeBehavior,

@@ -428,6 +428,87 @@ test("market compare controller keeps depop fallback results when strict score t
   assert.equal(finalState.results[0].id, "intl-1");
 });
 
+test("market compare controller forwards strict mode to query synthesis without changing fallback rerank behavior", async () => {
+  const registry = createRegistry();
+  registry.register({
+    market: "depop",
+    search: async function () {
+      return {
+        ok: true,
+        candidates: [
+          {
+            id: "strict-query-1",
+            market: "depop",
+            title: "drain gang world tour",
+            url: "https://depop.test/item/strict-query-1",
+            price: 100,
+            currency: "USD"
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "html"
+      };
+    }
+  });
+
+  const observedBuildOptions = [];
+  const observedMinScores = [];
+  const observedRankingFormulas = [];
+  const controller = createController({
+    providerRegistry: registry,
+    synthesizeQueries: function (_listing, options) {
+      observedBuildOptions.push(options);
+      return {
+        ok: true,
+        queries: ["drain gang world tour"],
+        reason: "ok"
+      };
+    },
+    rankCandidates: function (_listing, candidates, options) {
+      observedMinScores.push(options.minScore);
+      observedRankingFormulas.push(options.rankingFormula);
+
+      if (options.minScore > 0) {
+        return [];
+      }
+
+      return candidates.map(function (candidate) {
+        return {
+          id: candidate.id,
+          title: candidate.title,
+          url: candidate.url,
+          imageUrl: candidate.imageUrl || "",
+          market: candidate.market || "depop",
+          currency: candidate.currency || "USD",
+          originalCurrency: candidate.currency || "USD",
+          originalPrice: candidate.price,
+          price: candidate.price,
+          score: 12,
+          usedImage: false,
+          imageUnavailableReason: "",
+          deltaPercent: 0
+        };
+      });
+    }
+  });
+
+  const finalState = await controller.compare({
+    listing: sampleListing(),
+    currency: "USD",
+    minScore: 50,
+    rankingFormula: "visual",
+    allowCategoryFallback: false
+  });
+
+  assert.equal(observedBuildOptions.length, 1);
+  assert.equal(observedBuildOptions[0].allowCategoryFallback, false);
+  assert.deepEqual(observedMinScores, [50, 0]);
+  assert.deepEqual(observedRankingFormulas, ["visual", "visual"]);
+  assert.equal(finalState.status, "results");
+  assert.equal(finalState.results[0].id, "strict-query-1");
+});
+
 test("market compare controller keeps hybrid source and reranks depop fallback", async () => {
   const registry = createRegistry();
   registry.register({

@@ -213,8 +213,11 @@
     if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.ensureMarketCompareController !== "function") {
       return null;
     }
+
+    var currentContext = state.latestPanelContext as any;
     return MarketCompareLifecycle.ensureMarketCompareController({
       state: state,
+      enabled: !currentContext || currentContext.marketCompareEnabled !== false,
       marketCompareControllerApi: MarketCompareController,
       marketProviders: MarketProviders,
       depopProviderFactory: DepopProviderFactory,
@@ -238,8 +241,12 @@
           rawListing: context.rawListing,
           statusMessage: context.statusMessage,
           currencyContext: context.currencyContext,
+          marketCompareEnabled: context.marketCompareEnabled !== false,
+          marketCompareRankingFormula: context.marketCompareRankingFormula,
+          marketCompareStrictMode: context.marketCompareStrictMode,
           marketCompareResultsLimit: context.marketCompareResultsLimit,
-          marketCompare: nextState,
+          showMetadataButton: context.showMetadataButton !== false,
+          marketCompare: context.marketCompareEnabled === false ? null : nextState,
           onMarketCompareClick: triggerMarketCompare
         });
       }
@@ -319,23 +326,62 @@
     return ListingInsightsLifecycle.resolveListingInsightsEnabled(Settings);
   }
 
-  function resolveMarketCompareResultsLimit(): Promise<number> {
-    var defaultExpanded =
-      Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
-        ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
-        : false;
-    var defaultLimit = defaultExpanded ? 10 : 5;
+  function createDefaultMarketCompareSettings(): {
+    enabled: boolean;
+    rankingFormula: string;
+    strictMode: boolean;
+    expandedAmountEnabled: boolean;
+  } {
+    return {
+      enabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_ENABLED
+          : false,
+      rankingFormula:
+        typeof (Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA) === "string"
+          ? String(Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA)
+          : "balanced",
+      strictMode:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE
+          : false,
+      expandedAmountEnabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
+          : false
+    };
+  }
 
-    if (!Settings || typeof Settings.getMarketCompareExpandedAmountEnabled !== "function") {
-      return Promise.resolve(defaultLimit);
+  function resolveMarketCompareSettings(): Promise<{
+    enabled: boolean;
+    rankingFormula: string;
+    strictMode: boolean;
+    expandedAmountEnabled: boolean;
+  }> {
+    var fallback = createDefaultMarketCompareSettings();
+
+    if (!Settings || typeof Settings.getMarketCompareSettings !== "function") {
+      return Promise.resolve(fallback);
     }
 
-    return Settings.getMarketCompareExpandedAmountEnabled()
-      .then(function (enabled: any) {
-        return Boolean(enabled) ? 10 : 5;
+    return Settings.getMarketCompareSettings()
+      .then(function (value: any) {
+        return {
+          enabled: value && typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
+          rankingFormula:
+            value && typeof value.rankingFormula === "string"
+              ? value.rankingFormula
+              : fallback.rankingFormula,
+          strictMode:
+            value && typeof value.strictMode === "boolean" ? value.strictMode : fallback.strictMode,
+          expandedAmountEnabled:
+            value && typeof value.expandedAmountEnabled === "boolean"
+              ? value.expandedAmountEnabled
+              : fallback.expandedAmountEnabled
+        };
       })
       .catch(function () {
-        return defaultLimit;
+        return fallback;
       });
   }
 
@@ -595,7 +641,7 @@
       applyCardCurrency: applyCardCurrency,
       syncCardCurrencyObserver: syncCardCurrencyObserver,
       statusMessage: statusMessage,
-      resolveMarketCompareResultsLimit: resolveMarketCompareResultsLimit,
+      resolveMarketCompareSettings: resolveMarketCompareSettings,
       resolveListingMetadataButtonEnabled: resolveListingMetadataButtonEnabled
     });
   }
@@ -651,12 +697,18 @@
 
     Promise.all([
       resolveListingInsightsEnabled(),
-      resolveMarketCompareResultsLimit(),
+      resolveMarketCompareSettings(),
       resolveListingMetadataButtonEnabled()
     ]).then(function (values: any[]) {
       var listingInsightsEnabled = Boolean(values[0]);
-      var marketCompareResultsLimit =
-        Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
+      var marketCompareSettings = values[1] && typeof values[1] === "object" ? values[1] : {};
+      var marketCompareEnabled = marketCompareSettings.enabled !== false;
+      var marketCompareRankingFormula =
+        typeof marketCompareSettings.rankingFormula === "string"
+          ? marketCompareSettings.rankingFormula
+          : "balanced";
+      var marketCompareStrictMode = marketCompareSettings.strictMode === true;
+      var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
       var showMetadataButton = Boolean(values[2]);
 
       if (!Url.isListingPath(location.pathname)) {
@@ -727,6 +779,9 @@
         listing: preparedContext.listing,
         metrics: preparedContext.metrics,
         mountTarget: preparedContext.mountTarget,
+        marketCompareEnabled: marketCompareEnabled,
+        marketCompareRankingFormula: marketCompareRankingFormula,
+        marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,
         showMetadataButton: showMetadataButton,
         resolveCurrencyContext: resolveCurrencyContext,

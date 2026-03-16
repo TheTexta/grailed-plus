@@ -47,20 +47,52 @@
         <section class="gp-options__section">
           <h2 class="gp-options__section-title">Listing Insights</h2>
 
-            <label class="gp-options__toggle">
-              <input id="listing-insights-enabled" type="checkbox" />
-              <span>Enable listing insights panel on listing pages</span>
-            </label>
+          <label class="gp-options__toggle">
+            <input id="listing-insights-enabled" type="checkbox" />
+            <span>Enable listing insights panel on listing pages</span>
+          </label>
+
+          <label class="gp-options__toggle">
+            <input id="listing-metadata-button-enabled" type="checkbox" />
+            <span>Show metadata button in listing insights panel</span>
+          </label>
+
+          <div class="gp-options__setting-card">
+            <h3 class="gp-options__label">Market Compare</h3>
 
             <label class="gp-options__toggle">
-              <input id="listing-metadata-button-enabled" type="checkbox" />
-              <span>Show metadata button in listing insights panel</span>
+              <input id="market-compare-enabled" type="checkbox" />
+              <span>Enable market compare on listing pages</span>
+            </label>
+
+            <label for="market-compare-ranking-formula" class="gp-options__label">Ranking formula</label>
+            <select id="market-compare-ranking-formula" class="gp-options__control"></select>
+            <div
+              id="market-compare-ranking-formula-description"
+              class="gp-options__formula-note"
+              aria-live="polite"
+            ></div>
+
+            <label class="gp-options__toggle">
+              <input id="market-compare-strict-mode" type="checkbox" />
+              <span>Strict mode: disable broad category fallback</span>
             </label>
 
             <label class="gp-options__toggle">
               <input id="market-compare-expanded-amount-enabled" type="checkbox" />
-              <span>Expanded amount: show 10 market compare results</span>
+              <span>Expanded results: show 10 market compare results</span>
             </label>
+
+            <div class="gp-options__setting-card gp-options__setting-card--future" aria-disabled="true">
+              <label class="gp-options__toggle gp-options__toggle--disabled">
+                <input id="market-compare-ml-sorting-placeholder" type="checkbox" disabled />
+                <span>ML image-based similar listing sorting</span>
+              </label>
+              <p class="gp-options__hint gp-options__hint--inline">
+                Coming soon. Will re-rank similar listings using image embeddings.
+              </p>
+            </div>
+          </div>
 
         </section>
 

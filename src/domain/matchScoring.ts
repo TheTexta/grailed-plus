@@ -34,6 +34,7 @@ interface MSOptions {
   rate?: unknown;
   ratesByUsd?: Record<string, unknown> | null;
   minScore?: unknown;
+  rankingFormula?: unknown;
 }
 
 interface MSScoredCandidate {
@@ -148,6 +149,20 @@ interface MSGlobalRoot {
         return fallback;
       }
       return upper;
+    }
+
+    function normalizeRankingFormula(
+      value: unknown
+    ): "balanced" | "visual" | "metadata" | "variant" {
+      const normalized = normalizeString(value, "").toLowerCase();
+      if (
+        normalized === "visual" ||
+        normalized === "metadata" ||
+        normalized === "variant"
+      ) {
+        return normalized;
+      }
+      return "balanced";
     }
 
     function tokenize(value: unknown): string[] {
@@ -367,12 +382,81 @@ interface MSGlobalRoot {
       return convertUsdPrice(amount, selectedCurrency, rate);
     }
 
+    function computeWeightedScore(
+      rankingFormula: "balanced" | "visual" | "metadata" | "variant",
+      imageScore: number | null,
+      titleScore: number,
+      brandScore: number,
+      sizeScore: number,
+      conditionScore: number
+    ): number {
+      if (imageScore == null) {
+        if (rankingFormula === "visual") {
+          return (
+            (titleScore * 0.42 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.12) *
+            0.9
+          );
+        }
+
+        if (rankingFormula === "metadata") {
+          return titleScore * 0.48 + brandScore * 0.24 + sizeScore * 0.18 + conditionScore * 0.1;
+        }
+
+        if (rankingFormula === "variant") {
+          return titleScore * 0.3 + brandScore * 0.25 + sizeScore * 0.28 + conditionScore * 0.17;
+        }
+
+        return (
+          (titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09) * 0.95
+        );
+      }
+
+      if (rankingFormula === "visual") {
+        return (
+          imageScore * 0.62 +
+          titleScore * 0.16 +
+          brandScore * 0.1 +
+          sizeScore * 0.08 +
+          conditionScore * 0.04
+        );
+      }
+
+      if (rankingFormula === "metadata") {
+        return (
+          imageScore * 0.18 +
+          titleScore * 0.4 +
+          brandScore * 0.2 +
+          sizeScore * 0.14 +
+          conditionScore * 0.08
+        );
+      }
+
+      if (rankingFormula === "variant") {
+        return (
+          imageScore * 0.08 +
+          titleScore * 0.24 +
+          brandScore * 0.24 +
+          sizeScore * 0.28 +
+          conditionScore * 0.16
+        );
+      }
+
+      return (
+        imageScore * 0.45 +
+        titleScore * 0.25 +
+        brandScore * 0.15 +
+        sizeScore * 0.1 +
+        conditionScore * 0.05
+      );
+    }
+
     function scoreCandidate(
       listing: MSListingInput,
       candidate: MSCandidateInput,
       options: unknown
     ): MSScoredCandidate {
       const config = options && typeof options === "object" ? (options as MSOptions) : {};
+      const rankingFormula = normalizeRankingFormula(config.rankingFormula);
       const listingTitle = normalizeString(listing && listing.title, "");
       const candidateTitle = normalizeString(candidate && candidate.title, "");
       const candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
@@ -392,18 +476,14 @@ interface MSGlobalRoot {
       const sizeScore = scoreSize(listing, candidate);
       const conditionScore = scoreCondition(listing, candidate);
 
-      let weightedScore: number;
-      if (imageScore == null) {
-        weightedScore = titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09;
-        weightedScore = weightedScore * 0.95;
-      } else {
-        weightedScore =
-          imageScore * 0.45 +
-          titleScore * 0.25 +
-          brandScore * 0.15 +
-          sizeScore * 0.1 +
-          conditionScore * 0.05;
-      }
+      const weightedScore = computeWeightedScore(
+        rankingFormula,
+        imageScore,
+        titleScore,
+        brandScore,
+        sizeScore,
+        conditionScore
+      );
 
       const finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
 
@@ -471,7 +551,7 @@ interface MSGlobalRoot {
     function rankCandidates(listing: MSListingInput, candidates: unknown, options: unknown): MSScoredCandidate[] {
       const list = Array.isArray(candidates) ? (candidates as MSCandidateInput[]) : [];
       const config = options && typeof options === "object" ? (options as MSOptions) : {};
-      const minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 40;
+      const minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 0;
 
       const scored = list
         .map(function (candidate) {

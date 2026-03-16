@@ -458,6 +458,37 @@ test("renderInsightsPanel renders market compare result rows", () => {
   assert.match(flattenText(panel), /score 71/);
 });
 
+test("renderInsightsPanel omits the market compare section when market compare is disabled", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompareEnabled: false,
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r-hidden",
+          title: "Hidden listing",
+          url: "https://depop.test/item/hidden",
+          price: 88,
+          currency: "USD",
+          score: 71,
+          deltaLabel: "-12.0% cheaper"
+        }
+      ]
+    }
+  });
+
+  assert.equal(panel.querySelector(".grailed-plus__market"), null);
+  assert.doesNotMatch(flattenText(panel), /Other Markets/);
+  assert.doesNotMatch(flattenText(panel), /Hidden listing/);
+});
+
 test("renderInsightsPanel caps market compare rows to five by default", () => {
   const { anchor } = createPanelHarness();
 

@@ -652,16 +652,28 @@
     const DEFAULT_CONVERSION_ENABLED = false;
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
     const DEFAULT_LISTING_METADATA_BUTTON_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+    const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
     const DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
     const CURATED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
+    const MARKET_COMPARE_RANKING_FORMULA_OPTIONS = [
+        "balanced",
+        "visual",
+        "metadata",
+        "variant"
+    ];
     const CURRENCY_STORAGE_KEY = "grailed_plus_selected_currency_v1";
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
     const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
+    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY = "grailed_plus_market_compare_ranking_formula_v1";
+    const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
@@ -723,6 +735,13 @@
             return null;
         }
         return trimmed;
+    }
+    function normalizeMarketCompareRankingFormula(input) {
+        if (typeof input !== "string") {
+            return null;
+        }
+        const normalized = input.trim().toLowerCase();
+        return MARKET_COMPARE_RANKING_FORMULA_OPTIONS.indexOf(normalized) >= 0 ? normalized : null;
     }
     function getStorageLocal() {
         return BrowserStorage && typeof BrowserStorage.getStorageLocal === "function"
@@ -817,6 +836,9 @@
     const currencyConversionSetting = createBooleanSetting(CONVERSION_ENABLED_STORAGE_KEY, DEFAULT_CONVERSION_ENABLED, "conversion status");
     const listingInsightsSetting = createBooleanSetting(LISTING_INSIGHTS_ENABLED_STORAGE_KEY, DEFAULT_LISTING_INSIGHTS_ENABLED, "listing insights status");
     const listingMetadataButtonSetting = createBooleanSetting(LISTING_METADATA_BUTTON_STORAGE_KEY, DEFAULT_LISTING_METADATA_BUTTON_ENABLED, "listing metadata button status");
+    const marketCompareEnabledSetting = createBooleanSetting(MARKET_COMPARE_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ENABLED, "market compare status");
+    const marketCompareRankingFormulaSetting = createValidatedSetting(MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY, DEFAULT_MARKET_COMPARE_RANKING_FORMULA, normalizeMarketCompareRankingFormula, "Market compare ranking formula must match a supported option.", "Failed to persist market compare ranking formula.");
+    const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
     const darkModeEnabledSetting = createBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, DEFAULT_DARK_MODE_ENABLED, "dark mode status");
     const darkModeBehaviorSetting = createValidatedSetting(DARK_MODE_BEHAVIOR_STORAGE_KEY, DEFAULT_DARK_MODE_BEHAVIOR, normalizeDarkModeBehavior, "Dark mode behavior must be either 'system' or 'permanent'.", "Failed to persist dark mode behavior.");
@@ -846,11 +868,44 @@
     function setListingMetadataButtonEnabled(enabled) {
         return listingMetadataButtonSetting.set(enabled);
     }
+    function getMarketCompareEnabled() {
+        return marketCompareEnabledSetting.get();
+    }
+    function setMarketCompareEnabled(enabled) {
+        return marketCompareEnabledSetting.set(enabled);
+    }
+    function getMarketCompareRankingFormula() {
+        return marketCompareRankingFormulaSetting.get();
+    }
+    function setMarketCompareRankingFormula(formula) {
+        return marketCompareRankingFormulaSetting.set(formula);
+    }
+    function getMarketCompareStrictMode() {
+        return marketCompareStrictModeSetting.get();
+    }
+    function setMarketCompareStrictMode(enabled) {
+        return marketCompareStrictModeSetting.set(enabled);
+    }
     function getMarketCompareExpandedAmountEnabled() {
         return marketCompareExpandedAmountSetting.get();
     }
     function setMarketCompareExpandedAmountEnabled(enabled) {
         return marketCompareExpandedAmountSetting.set(enabled);
+    }
+    function getMarketCompareSettings() {
+        return Promise.all([
+            getMarketCompareEnabled(),
+            getMarketCompareRankingFormula(),
+            getMarketCompareStrictMode(),
+            getMarketCompareExpandedAmountEnabled()
+        ]).then(function (values) {
+            return {
+                enabled: values[0],
+                rankingFormula: values[1],
+                strictMode: values[2],
+                expandedAmountEnabled: values[3]
+            };
+        });
     }
     function getDarkModeEnabled() {
         return darkModeEnabledSetting.get();
@@ -881,16 +936,23 @@
         DEFAULT_CONVERSION_ENABLED,
         DEFAULT_LISTING_INSIGHTS_ENABLED,
         DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
+        DEFAULT_MARKET_COMPARE_ENABLED,
+        DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
+        DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
         DEFAULT_DARK_MODE_ENABLED,
         DEFAULT_DARK_MODE_BEHAVIOR,
         DEFAULT_DARK_MODE_PRIMARY_COLOR,
         DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED,
         CURATED_CURRENCIES,
+        MARKET_COMPARE_RANKING_FORMULA_OPTIONS,
         CURRENCY_STORAGE_KEY,
         CONVERSION_ENABLED_STORAGE_KEY,
         LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
         LISTING_METADATA_BUTTON_STORAGE_KEY,
+        MARKET_COMPARE_ENABLED_STORAGE_KEY,
+        MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
+        MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
         DARK_MODE_ENABLED_STORAGE_KEY,
         DARK_MODE_BEHAVIOR_STORAGE_KEY,
@@ -900,6 +962,7 @@
         normalizeCurrencyCode,
         normalizeHexColor,
         normalizeDarkModeBehavior,
+        normalizeMarketCompareRankingFormula,
         getSelectedCurrency,
         setSelectedCurrency,
         getCurrencyConversionEnabled,
@@ -908,8 +971,15 @@
         setListingInsightsEnabled,
         getListingMetadataButtonEnabled,
         setListingMetadataButtonEnabled,
+        getMarketCompareEnabled,
+        setMarketCompareEnabled,
+        getMarketCompareRankingFormula,
+        setMarketCompareRankingFormula,
+        getMarketCompareStrictMode,
+        setMarketCompareStrictMode,
         getMarketCompareExpandedAmountEnabled,
         setMarketCompareExpandedAmountEnabled,
+        getMarketCompareSettings,
         getDarkModeEnabled,
         setDarkModeEnabled,
         getDarkModeBehavior,
@@ -3707,6 +3777,15 @@
         }
         return upper;
     }
+    function normalizeRankingFormula(value) {
+        const normalized = normalizeString(value, "").toLowerCase();
+        if (normalized === "visual" ||
+            normalized === "metadata" ||
+            normalized === "variant") {
+            return normalized;
+        }
+        return "balanced";
+    }
     function tokenize(value) {
         const normalized = normalizeString(value, "")
             .toLowerCase()
@@ -3860,8 +3939,50 @@
         }
         return convertUsdPrice(amount, selectedCurrency, rate);
     }
+    function computeWeightedScore(rankingFormula, imageScore, titleScore, brandScore, sizeScore, conditionScore) {
+        if (imageScore == null) {
+            if (rankingFormula === "visual") {
+                return ((titleScore * 0.42 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.12) *
+                    0.9);
+            }
+            if (rankingFormula === "metadata") {
+                return titleScore * 0.48 + brandScore * 0.24 + sizeScore * 0.18 + conditionScore * 0.1;
+            }
+            if (rankingFormula === "variant") {
+                return titleScore * 0.3 + brandScore * 0.25 + sizeScore * 0.28 + conditionScore * 0.17;
+            }
+            return ((titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09) * 0.95);
+        }
+        if (rankingFormula === "visual") {
+            return (imageScore * 0.62 +
+                titleScore * 0.16 +
+                brandScore * 0.1 +
+                sizeScore * 0.08 +
+                conditionScore * 0.04);
+        }
+        if (rankingFormula === "metadata") {
+            return (imageScore * 0.18 +
+                titleScore * 0.4 +
+                brandScore * 0.2 +
+                sizeScore * 0.14 +
+                conditionScore * 0.08);
+        }
+        if (rankingFormula === "variant") {
+            return (imageScore * 0.08 +
+                titleScore * 0.24 +
+                brandScore * 0.24 +
+                sizeScore * 0.28 +
+                conditionScore * 0.16);
+        }
+        return (imageScore * 0.45 +
+            titleScore * 0.25 +
+            brandScore * 0.15 +
+            sizeScore * 0.1 +
+            conditionScore * 0.05);
+    }
     function scoreCandidate(listing, candidate, options) {
         const config = options && typeof options === "object" ? options : {};
+        const rankingFormula = normalizeRankingFormula(config.rankingFormula);
         const listingTitle = normalizeString(listing && listing.title, "");
         const candidateTitle = normalizeString(candidate && candidate.title, "");
         const candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
@@ -3875,19 +3996,7 @@
         const brandScore = scoreBrand(listing, candidate);
         const sizeScore = scoreSize(listing, candidate);
         const conditionScore = scoreCondition(listing, candidate);
-        let weightedScore;
-        if (imageScore == null) {
-            weightedScore = titleScore * 0.45 + brandScore * 0.28 + sizeScore * 0.18 + conditionScore * 0.09;
-            weightedScore = weightedScore * 0.95;
-        }
-        else {
-            weightedScore =
-                imageScore * 0.45 +
-                    titleScore * 0.25 +
-                    brandScore * 0.15 +
-                    sizeScore * 0.1 +
-                    conditionScore * 0.05;
-        }
+        const weightedScore = computeWeightedScore(rankingFormula, imageScore, titleScore, brandScore, sizeScore, conditionScore);
         const finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
         const listingPriceUsd = normalizeNumber(config.listingPriceUsd);
         const candidateAmount = normalizeNumber(candidate && candidate.price);
@@ -3935,7 +4044,7 @@
     function rankCandidates(listing, candidates, options) {
         const list = Array.isArray(candidates) ? candidates : [];
         const config = options && typeof options === "object" ? options : {};
-        const minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 40;
+        const minScore = Number.isFinite(Number(config.minScore)) ? Number(config.minScore) : 0;
         const scored = list
             .map(function (candidate) {
             return scoreCandidate(listing, candidate, config);
@@ -4402,11 +4511,12 @@
             });
             return getState();
         }
-        function buildQueryResult(listing) {
+        function buildQueryResult(listing, payload) {
             if (synthesizeQueries && listing) {
                 return synthesizeQueries(listing, {
                     maxQueries: 4,
-                    maxTokens: 6
+                    maxTokens: 6,
+                    allowCategoryFallback: payload && payload.allowCategoryFallback === false ? false : true
                 });
             }
             return {
@@ -4450,14 +4560,15 @@
                 selectedCurrency: normalizeString(payload.currency, "USD"),
                 rate: normalizeNumber(payload.currencyRate),
                 ratesByUsd: ratesByUsd,
-                minScore: minScore
+                minScore: minScore,
+                rankingFormula: normalizeString(payload.rankingFormula, "balanced")
             };
         }
         function rankFilteredCandidates(listing, payload, filteredCandidates, listingPrice) {
             if (!rankCandidates) {
                 return filteredCandidates;
             }
-            const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
+            const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 0;
             const strictRankingOptions = buildRankingOptions(payload, listingPrice, strictMinScore);
             let rankedCandidates = rankCandidates(listing, filteredCandidates, strictRankingOptions);
             if ((!Array.isArray(rankedCandidates) || rankedCandidates.length === 0) && filteredCandidates.length > 0) {
@@ -4571,7 +4682,7 @@
             const requestToken = activeRequestToken + 1;
             activeRequestToken = requestToken;
             const listingPrice = pickListingPrice(listing);
-            const queryResult = buildQueryResult(listing);
+            const queryResult = buildQueryResult(listing, payload);
             const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
             if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
                 return Promise.resolve(finishWithError(queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA"));
@@ -6303,6 +6414,7 @@
         var rawListing = options && options.rawListing ? options.rawListing : null;
         var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
         var currencyContext = options && options.currencyContext ? options.currencyContext : null;
+        var marketCompareEnabled = !options || options.marketCompareEnabled !== false;
         var marketCompare = options && options.marketCompare ? options.marketCompare : null;
         var marketCompareResultsLimit = options && options.marketCompareResultsLimit != null
             ? options.marketCompareResultsLimit
@@ -6362,7 +6474,9 @@
         panel.appendChild(avgSignal);
         panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics), "grailed-plus__row--support"));
         panel.appendChild(createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt), "grailed-plus__row--support"));
-        panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick, marketCompareResultsLimit));
+        if (marketCompareEnabled) {
+            panel.appendChild(createMarketCompareSection(doc, marketCompare, onMarketCompareClick, marketCompareResultsLimit));
+        }
         if (showMetadataButton) {
             var actions = doc.createElement("div");
             actions.className = "grailed-plus__actions";
@@ -7677,11 +7791,15 @@
     function ensureMarketCompareController(options) {
         var config = options && typeof options === "object" ? options : {};
         var state = config.state;
+        var enabled = config.enabled !== false;
         var marketCompareControllerApi = config.marketCompareControllerApi;
         var marketProviders = config.marketProviders;
         var depopProviderFactory = config.depopProviderFactory;
         var onStateUpdate = typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () { };
         if (!state || typeof state !== "object") {
+            return null;
+        }
+        if (!enabled) {
             return null;
         }
         if (state.marketCompareController) {
@@ -7734,8 +7852,11 @@
         if (!state || typeof state !== "object") {
             return;
         }
-        var controller = ensureController();
         var context = state.latestPanelContext;
+        if (!context || context.marketCompareEnabled === false) {
+            return;
+        }
+        var controller = ensureController();
         if (!controller || !context || typeof controller.compare !== "function") {
             return;
         }
@@ -7755,7 +7876,12 @@
                 context.currencyContext.usdRates &&
                 typeof context.currencyContext.usdRates === "object"
                 ? context.currencyContext.usdRates
-                : null
+                : null,
+            minScore: 0,
+            rankingFormula: typeof context.marketCompareRankingFormula === "string"
+                ? context.marketCompareRankingFormula
+                : "balanced",
+            allowCategoryFallback: context.marketCompareStrictMode !== true
         });
     }
     function renderPanelWithMarketCompare(options) {
@@ -7774,7 +7900,12 @@
         if (!state || typeof state !== "object") {
             return null;
         }
-        var controller = ensureController();
+        var marketCompareEnabled = panelOptions.marketCompareEnabled !== false;
+        var marketCompareRankingFormula = typeof panelOptions.marketCompareRankingFormula === "string"
+            ? panelOptions.marketCompareRankingFormula
+            : "balanced";
+        var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
+        var controller = marketCompareEnabled ? ensureController() : null;
         if (controller && typeof controller.resetForListing === "function") {
             controller.resetForListing(panelOptions.listing || null);
         }
@@ -7787,6 +7918,9 @@
             rawListing: panelOptions.rawListing || null,
             statusMessage: panelOptions.statusMessage || "",
             currencyContext: panelOptions.currencyContext || null,
+            marketCompareEnabled: marketCompareEnabled,
+            marketCompareRankingFormula: marketCompareRankingFormula,
+            marketCompareStrictMode: marketCompareStrictMode,
             marketCompareResultsLimit: Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
                 Number(panelOptions.marketCompareResultsLimit) > 0
                 ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
@@ -7802,9 +7936,12 @@
             rawListing: state.latestPanelContext.rawListing,
             statusMessage: state.latestPanelContext.statusMessage,
             currencyContext: state.latestPanelContext.currencyContext,
+            marketCompareEnabled: state.latestPanelContext.marketCompareEnabled,
+            marketCompareRankingFormula: state.latestPanelContext.marketCompareRankingFormula,
+            marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
             marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
             showMetadataButton: state.latestPanelContext.showMetadataButton,
-            marketCompare: marketCompareState,
+            marketCompare: marketCompareEnabled ? marketCompareState : null,
             onMarketCompareClick: onMarketCompareClick
         });
     }
@@ -8093,6 +8230,11 @@
                 rawListing: panelOptions.rawListing || null,
                 statusMessage: panelOptions.statusMessage || "",
                 currencyContext: panelOptions.currencyContext || null,
+                marketCompareEnabled: panelOptions.marketCompareEnabled !== false,
+                marketCompareRankingFormula: typeof panelOptions.marketCompareRankingFormula === "string"
+                    ? panelOptions.marketCompareRankingFormula
+                    : "balanced",
+                marketCompareStrictMode: panelOptions.marketCompareStrictMode === true,
                 marketCompareResultsLimit: Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
                     Number(panelOptions.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
@@ -8187,10 +8329,15 @@
         var renderPanelWithMarketCompare = typeof config.renderPanelWithMarketCompare === "function"
             ? config.renderPanelWithMarketCompare
             : function () { };
-        var resolveMarketCompareResultsLimit = typeof config.resolveMarketCompareResultsLimit === "function"
-            ? config.resolveMarketCompareResultsLimit
+        var resolveMarketCompareSettings = typeof config.resolveMarketCompareSettings === "function"
+            ? config.resolveMarketCompareSettings
             : function () {
-                return Promise.resolve(5);
+                return Promise.resolve({
+                    enabled: true,
+                    rankingFormula: "balanced",
+                    strictMode: false,
+                    expandedAmountEnabled: false
+                });
             };
         var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
         var applyCardCurrency = typeof config.applyCardCurrency === "function" ? config.applyCardCurrency : function () { };
@@ -8220,11 +8367,19 @@
         }
         Promise.all([
             resolveCurrencyContext(),
-            resolveMarketCompareResultsLimit(),
+            resolveMarketCompareSettings(),
             resolveListingMetadataButtonEnabled()
         ]).then(function (values) {
             var currencyContext = values[0];
-            var marketCompareResultsLimit = Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
+            var marketCompareSettings = values[1] && typeof values[1] === "object"
+                ? values[1]
+                : {};
+            var marketCompareEnabled = marketCompareSettings.enabled !== false;
+            var marketCompareRankingFormula = typeof marketCompareSettings.rankingFormula === "string"
+                ? marketCompareSettings.rankingFormula
+                : "balanced";
+            var marketCompareStrictMode = marketCompareSettings.strictMode === true;
+            var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
             var showMetadataButton = values[2] !== false;
             var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
             if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
@@ -8238,6 +8393,9 @@
                 rawListing: null,
                 statusMessage: statusMessage,
                 currencyContext: currencyContext,
+                marketCompareEnabled: marketCompareEnabled,
+                marketCompareRankingFormula: marketCompareRankingFormula,
+                marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
                 showMetadataButton: showMetadataButton
             });
@@ -8517,6 +8675,11 @@
                 mountPosition: mountTarget ? mountTarget.mountPosition || "afterend" : "afterend",
                 rawListing: listing && listing.rawListing ? listing.rawListing : null,
                 currencyContext: currencyContext,
+                marketCompareEnabled: config.marketCompareEnabled !== false,
+                marketCompareRankingFormula: typeof config.marketCompareRankingFormula === "string"
+                    ? config.marketCompareRankingFormula
+                    : "balanced",
+                marketCompareStrictMode: config.marketCompareStrictMode === true,
                 marketCompareResultsLimit: Number.isFinite(Number(config.marketCompareResultsLimit)) &&
                     Number(config.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(config.marketCompareResultsLimit))
@@ -8548,6 +8711,11 @@
                 mountPosition: mountTarget ? mountTarget.mountPosition || "afterend" : "afterend",
                 rawListing: listing && listing.rawListing ? listing.rawListing : null,
                 currencyContext: fallbackCurrency,
+                marketCompareEnabled: config.marketCompareEnabled !== false,
+                marketCompareRankingFormula: typeof config.marketCompareRankingFormula === "string"
+                    ? config.marketCompareRankingFormula
+                    : "balanced",
+                marketCompareStrictMode: config.marketCompareStrictMode === true,
                 marketCompareResultsLimit: Number.isFinite(Number(config.marketCompareResultsLimit)) &&
                     Number(config.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(config.marketCompareResultsLimit))
@@ -8828,8 +8996,10 @@
         if (!MarketCompareLifecycle || typeof MarketCompareLifecycle.ensureMarketCompareController !== "function") {
             return null;
         }
+        var currentContext = state.latestPanelContext;
         return MarketCompareLifecycle.ensureMarketCompareController({
             state: state,
+            enabled: !currentContext || currentContext.marketCompareEnabled !== false,
             marketCompareControllerApi: MarketCompareController,
             marketProviders: MarketProviders,
             depopProviderFactory: DepopProviderFactory,
@@ -8852,8 +9022,12 @@
                     rawListing: context.rawListing,
                     statusMessage: context.statusMessage,
                     currencyContext: context.currencyContext,
+                    marketCompareEnabled: context.marketCompareEnabled !== false,
+                    marketCompareRankingFormula: context.marketCompareRankingFormula,
+                    marketCompareStrictMode: context.marketCompareStrictMode,
                     marketCompareResultsLimit: context.marketCompareResultsLimit,
-                    marketCompare: nextState,
+                    showMetadataButton: context.showMetadataButton !== false,
+                    marketCompare: context.marketCompareEnabled === false ? null : nextState,
                     onMarketCompareClick: triggerMarketCompare
                 });
             }
@@ -8923,20 +9097,42 @@
         }
         return ListingInsightsLifecycle.resolveListingInsightsEnabled(Settings);
     }
-    function resolveMarketCompareResultsLimit() {
-        var defaultExpanded = Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
-            ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
-            : false;
-        var defaultLimit = defaultExpanded ? 10 : 5;
-        if (!Settings || typeof Settings.getMarketCompareExpandedAmountEnabled !== "function") {
-            return Promise.resolve(defaultLimit);
+    function createDefaultMarketCompareSettings() {
+        return {
+            enabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_ENABLED
+                : false,
+            rankingFormula: typeof (Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA) === "string"
+                ? String(Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA)
+                : "balanced",
+            strictMode: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE
+                : false,
+            expandedAmountEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
+                : false
+        };
+    }
+    function resolveMarketCompareSettings() {
+        var fallback = createDefaultMarketCompareSettings();
+        if (!Settings || typeof Settings.getMarketCompareSettings !== "function") {
+            return Promise.resolve(fallback);
         }
-        return Settings.getMarketCompareExpandedAmountEnabled()
-            .then(function (enabled) {
-            return Boolean(enabled) ? 10 : 5;
+        return Settings.getMarketCompareSettings()
+            .then(function (value) {
+            return {
+                enabled: value && typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
+                rankingFormula: value && typeof value.rankingFormula === "string"
+                    ? value.rankingFormula
+                    : fallback.rankingFormula,
+                strictMode: value && typeof value.strictMode === "boolean" ? value.strictMode : fallback.strictMode,
+                expandedAmountEnabled: value && typeof value.expandedAmountEnabled === "boolean"
+                    ? value.expandedAmountEnabled
+                    : fallback.expandedAmountEnabled
+            };
         })
             .catch(function () {
-            return defaultLimit;
+            return fallback;
         });
     }
     function resolveListingMetadataButtonEnabled() {
@@ -9150,7 +9346,7 @@
             applyCardCurrency: applyCardCurrency,
             syncCardCurrencyObserver: syncCardCurrencyObserver,
             statusMessage: statusMessage,
-            resolveMarketCompareResultsLimit: resolveMarketCompareResultsLimit,
+            resolveMarketCompareSettings: resolveMarketCompareSettings,
             resolveListingMetadataButtonEnabled: resolveListingMetadataButtonEnabled
         });
     }
@@ -9198,11 +9394,17 @@
         syncCardCurrencyObserver(null);
         Promise.all([
             resolveListingInsightsEnabled(),
-            resolveMarketCompareResultsLimit(),
+            resolveMarketCompareSettings(),
             resolveListingMetadataButtonEnabled()
         ]).then(function (values) {
             var listingInsightsEnabled = Boolean(values[0]);
-            var marketCompareResultsLimit = Number.isFinite(Number(values[1])) && Number(values[1]) > 0 ? Math.floor(Number(values[1])) : 5;
+            var marketCompareSettings = values[1] && typeof values[1] === "object" ? values[1] : {};
+            var marketCompareEnabled = marketCompareSettings.enabled !== false;
+            var marketCompareRankingFormula = typeof marketCompareSettings.rankingFormula === "string"
+                ? marketCompareSettings.rankingFormula
+                : "balanced";
+            var marketCompareStrictMode = marketCompareSettings.strictMode === true;
+            var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
             var showMetadataButton = Boolean(values[2]);
             if (!Url.isListingPath(location.pathname)) {
                 return;
@@ -9261,6 +9463,9 @@
                 listing: preparedContext.listing,
                 metrics: preparedContext.metrics,
                 mountTarget: preparedContext.mountTarget,
+                marketCompareEnabled: marketCompareEnabled,
+                marketCompareRankingFormula: marketCompareRankingFormula,
+                marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
                 showMetadataButton: showMetadataButton,
                 resolveCurrencyContext: resolveCurrencyContext,

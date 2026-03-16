@@ -682,11 +682,15 @@ interface MCGlobalRoot {
       return getState();
     }
 
-    function buildQueryResult(listing: MCListing | null): MCQueryResult {
+    function buildQueryResult(
+      listing: MCListing | null,
+      payload?: Record<string, unknown>
+    ): MCQueryResult {
       if (synthesizeQueries && listing) {
         return synthesizeQueries(listing, {
           maxQueries: 4,
-          maxTokens: 6
+          maxTokens: 6,
+          allowCategoryFallback: payload && payload.allowCategoryFallback === false ? false : true
         });
       }
 
@@ -747,6 +751,7 @@ interface MCGlobalRoot {
       rate: number | null;
       ratesByUsd: Record<string, unknown> | null;
       minScore: number;
+      rankingFormula: string;
     } {
       const ratesByUsd =
         payload && payload.currencyRates && typeof payload.currencyRates === "object"
@@ -758,7 +763,8 @@ interface MCGlobalRoot {
         selectedCurrency: normalizeString(payload.currency, "USD"),
         rate: normalizeNumber(payload.currencyRate),
         ratesByUsd: ratesByUsd,
-        minScore: minScore
+        minScore: minScore,
+        rankingFormula: normalizeString(payload.rankingFormula, "balanced")
       };
     }
 
@@ -772,7 +778,7 @@ interface MCGlobalRoot {
         return filteredCandidates;
       }
 
-      const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 40;
+      const strictMinScore = Number.isFinite(Number(payload.minScore)) ? Number(payload.minScore) : 0;
       const strictRankingOptions = buildRankingOptions(payload, listingPrice, strictMinScore);
       let rankedCandidates = rankCandidates(listing, filteredCandidates, strictRankingOptions);
 
@@ -921,7 +927,7 @@ interface MCGlobalRoot {
       const requestToken = activeRequestToken + 1;
       activeRequestToken = requestToken;
       const listingPrice = pickListingPrice(listing);
-      const queryResult = buildQueryResult(listing);
+      const queryResult = buildQueryResult(listing, payload);
       const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
 
       if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {

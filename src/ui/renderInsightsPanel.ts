@@ -2039,6 +2039,7 @@
     var rawListing = options && options.rawListing ? options.rawListing : null;
     var statusMessage = options && options.statusMessage ? String(options.statusMessage) : "";
     var currencyContext = options && options.currencyContext ? options.currencyContext : null;
+    var marketCompareEnabled = !options || options.marketCompareEnabled !== false;
     var marketCompare = options && options.marketCompare ? options.marketCompare : null;
     var marketCompareResultsLimit =
       options && options.marketCompareResultsLimit != null
@@ -2136,14 +2137,17 @@
         "grailed-plus__row--support"
       )
     );
-    panel.appendChild(
-      createMarketCompareSection(
-        doc,
-        marketCompare,
-        onMarketCompareClick,
-        marketCompareResultsLimit
-      )
-    );
+
+    if (marketCompareEnabled) {
+      panel.appendChild(
+        createMarketCompareSection(
+          doc,
+          marketCompare,
+          onMarketCompareClick,
+          marketCompareResultsLimit
+        )
+      );
+    }
 
     if (showMetadataButton) {
       var actions = doc.createElement("div");

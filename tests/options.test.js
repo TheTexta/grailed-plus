@@ -1,0 +1,393 @@
+"use strict";
+
+const fs = require("node:fs");
+const test = require("node:test");
+const assert = require("node:assert/strict");
+
+const { MockDocument } = require("./helpers/mockDocument");
+
+function flushAsync() {
+  return Promise.resolve().then(function () {
+    return Promise.resolve();
+  });
+}
+
+function createNode(doc, tagName, id) {
+  const node = doc.createElement(tagName);
+  if (id) {
+    node.id = id;
+    doc.registerElementById(id, node);
+  }
+  return node;
+}
+
+function createOptionsDocument() {
+  const doc = new MockDocument();
+  doc.readyState = "complete";
+  doc.addEventListener = function () {};
+
+  const form = createNode(doc, "form", "currency-form");
+  const status = createNode(doc, "p", "status");
+  const resetButton = createNode(doc, "button", "reset-button");
+
+  const idsByTag = [
+    ["input", "conversion-enabled"],
+    ["input", "listing-insights-enabled"],
+    ["input", "listing-metadata-button-enabled"],
+    ["input", "market-compare-enabled"],
+    ["select", "market-compare-ranking-formula"],
+    ["div", "market-compare-ranking-formula-description"],
+    ["input", "market-compare-strict-mode"],
+    ["input", "market-compare-expanded-amount-enabled"],
+    ["input", "market-compare-ml-sorting-placeholder"],
+    ["select", "currency-select"],
+    ["input", "currency-custom"],
+    ["input", "dark-mode-enabled"],
+    ["select", "dark-mode-behavior"],
+    ["input", "dark-mode-legacy-color-enabled"],
+    ["div", "dark-mode-legacy-color-controls"],
+    ["input", "dark-mode-primary"],
+    ["input", "dark-mode-primary-hex"]
+  ];
+
+  const nodes = {
+    form,
+    status,
+    resetButton
+  };
+
+  idsByTag.forEach(function (entry) {
+    const node = createNode(doc, entry[0], entry[1]);
+    form.appendChild(node);
+    nodes[entry[1]] = node;
+  });
+
+  doc.body.appendChild(form);
+  doc.body.appendChild(resetButton);
+  doc.body.appendChild(status);
+
+  nodes["currency-custom"].value = "";
+  nodes["currency-select"].value = "USD";
+  nodes["market-compare-ranking-formula"].value = "balanced";
+  nodes["dark-mode-behavior"].value = "system";
+  nodes["dark-mode-primary"].value = "#000000";
+  nodes["dark-mode-primary-hex"].value = "#000000";
+  nodes["market-compare-ml-sorting-placeholder"].checked = false;
+
+  return {
+    document: doc,
+    nodes
+  };
+}
+
+function createSettingsMock(overrides) {
+  const state = {
+    marketCompare: {
+      enabled: false,
+      rankingFormula: "balanced",
+      strictMode: false,
+      expandedAmountEnabled: false
+    }
+  };
+  const saveCalls = [];
+  const settings = {
+    CURATED_CURRENCIES: ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"],
+    MARKET_COMPARE_RANKING_FORMULA_OPTIONS: ["balanced", "visual", "metadata", "variant"],
+    DEFAULT_CURRENCY: "USD",
+    DEFAULT_CONVERSION_ENABLED: false,
+    DEFAULT_LISTING_INSIGHTS_ENABLED: true,
+    DEFAULT_LISTING_METADATA_BUTTON_ENABLED: true,
+    DEFAULT_MARKET_COMPARE_ENABLED: false,
+    DEFAULT_MARKET_COMPARE_RANKING_FORMULA: "balanced",
+    DEFAULT_MARKET_COMPARE_STRICT_MODE: false,
+    DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: false,
+    DEFAULT_DARK_MODE_ENABLED: true,
+    DEFAULT_DARK_MODE_BEHAVIOR: "system",
+    DEFAULT_DARK_MODE_PRIMARY_COLOR: "#000000",
+    DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED: false,
+    normalizeCurrencyCode: function (input) {
+      if (typeof input !== "string") {
+        return null;
+      }
+      const trimmed = input.trim().toUpperCase();
+      return /^[A-Z]{3}$/.test(trimmed) ? trimmed : null;
+    },
+    normalizeHexColor: function (input) {
+      if (typeof input !== "string") {
+        return null;
+      }
+      const trimmed = input.trim().toUpperCase();
+      return /^#[0-9A-F]{6}$/.test(trimmed) ? trimmed : null;
+    },
+    normalizeDarkModeBehavior: function (input) {
+      if (typeof input !== "string") {
+        return null;
+      }
+      const trimmed = input.trim().toLowerCase();
+      return trimmed === "system" || trimmed === "permanent" ? trimmed : null;
+    },
+    normalizeMarketCompareRankingFormula: function (input) {
+      if (typeof input !== "string") {
+        return null;
+      }
+      const normalized = input.trim().toLowerCase();
+      return ["balanced", "visual", "metadata", "variant"].includes(normalized)
+        ? normalized
+        : null;
+    },
+    getSelectedCurrency: () => Promise.resolve("USD"),
+    setSelectedCurrency: function (value) {
+      saveCalls.push(["currency", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getCurrencyConversionEnabled: () => Promise.resolve(false),
+    setCurrencyConversionEnabled: function (value) {
+      saveCalls.push(["conversion", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getListingInsightsEnabled: () => Promise.resolve(true),
+    setListingInsightsEnabled: function (value) {
+      saveCalls.push(["listingInsights", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getListingMetadataButtonEnabled: () => Promise.resolve(true),
+    setListingMetadataButtonEnabled: function (value) {
+      saveCalls.push(["metadataButton", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getMarketCompareSettings: function () {
+      return Promise.resolve(Object.assign({}, state.marketCompare));
+    },
+    setMarketCompareEnabled: function (value) {
+      saveCalls.push(["marketCompareEnabled", value]);
+      state.marketCompare.enabled = Boolean(value);
+      return Promise.resolve({ ok: true });
+    },
+    setMarketCompareRankingFormula: function (value) {
+      saveCalls.push(["marketCompareRankingFormula", value]);
+      state.marketCompare.rankingFormula = String(value);
+      return Promise.resolve({ ok: true });
+    },
+    setMarketCompareStrictMode: function (value) {
+      saveCalls.push(["marketCompareStrictMode", value]);
+      state.marketCompare.strictMode = Boolean(value);
+      return Promise.resolve({ ok: true });
+    },
+    getMarketCompareExpandedAmountEnabled: () => Promise.resolve(false),
+    setMarketCompareExpandedAmountEnabled: function (value) {
+      saveCalls.push(["marketCompareExpandedAmountEnabled", value]);
+      state.marketCompare.expandedAmountEnabled = Boolean(value);
+      return Promise.resolve({ ok: true });
+    },
+    getDarkModeEnabled: () => Promise.resolve(true),
+    setDarkModeEnabled: function (value) {
+      saveCalls.push(["darkModeEnabled", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getDarkModeBehavior: () => Promise.resolve("system"),
+    setDarkModeBehavior: function (value) {
+      saveCalls.push(["darkModeBehavior", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getDarkModePrimaryColor: () => Promise.resolve("#000000"),
+    setDarkModePrimaryColor: function (value) {
+      saveCalls.push(["darkModePrimaryColor", value]);
+      return Promise.resolve({ ok: true });
+    },
+    getDarkModeLegacyColorCustomizationEnabled: () => Promise.resolve(false),
+    setDarkModeLegacyColorCustomizationEnabled: function (value) {
+      saveCalls.push(["darkModeLegacyColorCustomizationEnabled", value]);
+      return Promise.resolve({ ok: true });
+    }
+  };
+
+  return {
+    settings: Object.assign(settings, overrides || {}),
+    state,
+    saveCalls
+  };
+}
+
+function loadOptionsModule(documentObj, settings, currency) {
+  const previousDocument = global.document;
+  const previousCurrency = global.GrailedPlusCurrency;
+  const previousSettings = global.GrailedPlusSettings;
+  const modulePath = require.resolve("../.tmp/ts-build/src/options");
+
+  delete require.cache[modulePath];
+  global.document = documentObj;
+  global.GrailedPlusSettings = settings;
+  global.GrailedPlusCurrency =
+    currency ||
+    {
+      getRates: () => Promise.resolve({ rates: { USD: 1 } }),
+      hasCurrencyCode: () => true
+    };
+
+  require(modulePath);
+
+  return function cleanup() {
+    delete require.cache[modulePath];
+    global.document = previousDocument;
+    global.GrailedPlusSettings = previousSettings;
+    global.GrailedPlusCurrency = previousCurrency;
+  };
+}
+
+test("options page loads market compare settings and keeps saved subordinate values while disabled", async () => {
+  const { document, nodes } = createOptionsDocument();
+  const env = createSettingsMock({
+    getMarketCompareSettings: () =>
+      Promise.resolve({
+        enabled: false,
+        rankingFormula: "visual",
+        strictMode: true,
+        expandedAmountEnabled: true
+      })
+  });
+  const cleanup = loadOptionsModule(document, env.settings);
+
+  try {
+    await flushAsync();
+
+    assert.equal(nodes["market-compare-enabled"].checked, false);
+    assert.equal(nodes["market-compare-ranking-formula"].value, "visual");
+    assert.match(
+      nodes["market-compare-ranking-formula-description"].textContent,
+      /image similarity first/i
+    );
+    assert.equal(nodes["market-compare-strict-mode"].checked, true);
+    assert.equal(nodes["market-compare-expanded-amount-enabled"].checked, true);
+    assert.equal(nodes["market-compare-ranking-formula"].disabled, true);
+    assert.equal(nodes["market-compare-strict-mode"].disabled, true);
+    assert.equal(nodes["market-compare-expanded-amount-enabled"].disabled, true);
+    assert.equal(nodes["market-compare-ml-sorting-placeholder"].disabled, true);
+  } finally {
+    cleanup();
+  }
+});
+
+test("options page keeps the ML sorting placeholder disabled and future-facing", async () => {
+  const { document, nodes } = createOptionsDocument();
+  const env = createSettingsMock();
+  const cleanup = loadOptionsModule(document, env.settings);
+
+  try {
+    await flushAsync();
+
+    const placeholder = nodes["market-compare-ml-sorting-placeholder"];
+    assert.equal(placeholder.disabled, true);
+    assert.equal(placeholder.checked, false);
+    const html = fs.readFileSync("src/options.html", "utf8");
+    const css = fs.readFileSync("src/ui.css", "utf8");
+    assert.match(html, /market-compare-ranking-formula-description/);
+    assert.match(html, /market-compare-ml-sorting-placeholder/);
+    assert.match(html, /ML image-based similar listing sorting/);
+    assert.match(html, /Coming soon\. Will re-rank similar listings using image embeddings\./);
+    assert.match(html, /aria-disabled="true"/);
+    assert.match(css, /\.gp-options__section\s*\{[^}]*border-radius:\s*0;/s);
+    assert.match(css, /\.gp-options__setting-card\s*\{[^}]*border-radius:\s*0;/s);
+    assert.match(css, /\.gp-options__control\s*\{[^}]*border-radius:\s*0;/s);
+    assert.match(css, /\.gp-options__formula-note\s*\{[^}]*border-radius:\s*0;/s);
+    assert.match(css, /\.gp-options__legacy-group\s*\{[^}]*border-radius:\s*0;/s);
+  } finally {
+    cleanup();
+  }
+});
+
+test("options page saves live market compare settings without treating the ML placeholder as a real setting", async () => {
+  const { document, nodes } = createOptionsDocument();
+  const env = createSettingsMock();
+  const cleanup = loadOptionsModule(document, env.settings);
+
+  try {
+    await flushAsync();
+
+    nodes["market-compare-enabled"].checked = true;
+    nodes["market-compare-enabled"]._listeners.change();
+    nodes["market-compare-ranking-formula"].value = "metadata";
+    nodes["market-compare-strict-mode"].checked = true;
+    nodes["market-compare-expanded-amount-enabled"].checked = true;
+
+    nodes.form._listeners.submit({
+      preventDefault() {}
+    });
+
+    await flushAsync();
+
+    assert.deepEqual(
+      env.saveCalls.filter(function (entry) {
+        return String(entry[0]).indexOf("marketCompare") === 0;
+      }),
+      [
+        ["marketCompareEnabled", true],
+        ["marketCompareRankingFormula", "metadata"],
+        ["marketCompareStrictMode", true],
+        ["marketCompareExpandedAmountEnabled", true]
+      ]
+    );
+    assert.match(nodes.status.textContent, /Saved/);
+  } finally {
+    cleanup();
+  }
+});
+
+test("options page updates the ranking formula description when the selection changes", async () => {
+  const { document, nodes } = createOptionsDocument();
+  const env = createSettingsMock();
+  const cleanup = loadOptionsModule(document, env.settings);
+
+  try {
+    await flushAsync();
+
+    assert.match(
+      nodes["market-compare-ranking-formula-description"].textContent,
+      /general use/i
+    );
+
+    nodes["market-compare-ranking-formula"].value = "variant";
+    nodes["market-compare-ranking-formula"]._listeners.change();
+
+    assert.match(
+      nodes["market-compare-ranking-formula-description"].textContent,
+      /closest item variant/i
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("options page reset restores default market compare values and disables subordinate controls", async () => {
+  const { document, nodes } = createOptionsDocument();
+  const env = createSettingsMock({
+    DEFAULT_MARKET_COMPARE_ENABLED: false,
+    DEFAULT_MARKET_COMPARE_RANKING_FORMULA: "balanced",
+    DEFAULT_MARKET_COMPARE_STRICT_MODE: false,
+    DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: false,
+    getMarketCompareSettings: () =>
+      Promise.resolve({
+        enabled: true,
+        rankingFormula: "visual",
+        strictMode: true,
+        expandedAmountEnabled: true
+      })
+  });
+  const cleanup = loadOptionsModule(document, env.settings);
+
+  try {
+    await flushAsync();
+    nodes.resetButton._listeners.click();
+    await flushAsync();
+
+    assert.equal(nodes["market-compare-enabled"].checked, false);
+    assert.equal(nodes["market-compare-ranking-formula"].value, "balanced");
+    assert.equal(nodes["market-compare-strict-mode"].checked, false);
+    assert.equal(nodes["market-compare-expanded-amount-enabled"].checked, false);
+    assert.equal(nodes["market-compare-ranking-formula"].disabled, true);
+    assert.equal(nodes["market-compare-strict-mode"].disabled, true);
+    assert.equal(nodes["market-compare-expanded-amount-enabled"].disabled, true);
+    assert.match(nodes.status.textContent, /Reset to defaults/);
+  } finally {
+    cleanup();
+  }
+});

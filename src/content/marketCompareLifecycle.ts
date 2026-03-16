@@ -9,6 +9,9 @@ interface CMarketCompareState {
     rawListing: any;
     statusMessage: string;
     currencyContext: any;
+    marketCompareEnabled: boolean;
+    marketCompareRankingFormula: string;
+    marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
     showMetadataButton: boolean;
     renderToken: number;
@@ -37,6 +40,7 @@ interface CDepopProviderFactory {
 
 interface CEnsureControllerOptions {
   state: CMarketCompareState;
+  enabled?: boolean;
   marketCompareControllerApi?: CMarketCompareControllerApi | null;
   marketProviders?: CMarketProvidersApi | null;
   depopProviderFactory?: CDepopProviderFactory | null;
@@ -59,6 +63,9 @@ interface CRenderPanelOptions {
     rawListing: any;
     statusMessage: string;
     currencyContext: any;
+    marketCompareEnabled: boolean;
+    marketCompareRankingFormula: string;
+    marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
     showMetadataButton: boolean;
     marketCompare: any;
@@ -73,6 +80,9 @@ interface CRenderPanelOptions {
     rawListing?: any;
     statusMessage?: string;
     currencyContext?: any;
+    marketCompareEnabled?: boolean;
+    marketCompareRankingFormula?: string;
+    marketCompareStrictMode?: boolean;
     marketCompareResultsLimit?: number;
     showMetadataButton?: boolean;
   };
@@ -100,6 +110,7 @@ interface CMarketCompareGlobal {
   function ensureMarketCompareController(options: CEnsureControllerOptions | null | undefined): any {
     var config = options && typeof options === "object" ? options : ({} as CEnsureControllerOptions);
     var state = config.state;
+    var enabled = config.enabled !== false;
     var marketCompareControllerApi = config.marketCompareControllerApi;
     var marketProviders = config.marketProviders;
     var depopProviderFactory = config.depopProviderFactory;
@@ -107,6 +118,10 @@ interface CMarketCompareGlobal {
       typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () {};
 
     if (!state || typeof state !== "object") {
+      return null;
+    }
+
+    if (!enabled) {
       return null;
     }
 
@@ -176,8 +191,12 @@ interface CMarketCompareGlobal {
       return;
     }
 
-    var controller = ensureController();
     var context = state.latestPanelContext;
+    if (!context || context.marketCompareEnabled === false) {
+      return;
+    }
+
+    var controller = ensureController();
     if (!controller || !context || typeof controller.compare !== "function") {
       return;
     }
@@ -202,7 +221,12 @@ interface CMarketCompareGlobal {
         context.currencyContext.usdRates &&
         typeof context.currencyContext.usdRates === "object"
           ? context.currencyContext.usdRates
-          : null
+          : null,
+      minScore: 0,
+      rankingFormula: typeof context.marketCompareRankingFormula === "string"
+        ? context.marketCompareRankingFormula
+        : "balanced",
+      allowCategoryFallback: context.marketCompareStrictMode !== true
     });
   }
 
@@ -227,7 +251,13 @@ interface CMarketCompareGlobal {
       return null;
     }
 
-    var controller = ensureController();
+    var marketCompareEnabled = panelOptions.marketCompareEnabled !== false;
+    var marketCompareRankingFormula =
+      typeof panelOptions.marketCompareRankingFormula === "string"
+        ? panelOptions.marketCompareRankingFormula
+        : "balanced";
+    var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
+    var controller = marketCompareEnabled ? ensureController() : null;
     if (controller && typeof controller.resetForListing === "function") {
       controller.resetForListing(panelOptions.listing || null);
     }
@@ -243,6 +273,9 @@ interface CMarketCompareGlobal {
       rawListing: panelOptions.rawListing || null,
       statusMessage: panelOptions.statusMessage || "",
       currencyContext: panelOptions.currencyContext || null,
+      marketCompareEnabled: marketCompareEnabled,
+      marketCompareRankingFormula: marketCompareRankingFormula,
+      marketCompareStrictMode: marketCompareStrictMode,
       marketCompareResultsLimit:
         Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
         Number(panelOptions.marketCompareResultsLimit) > 0
@@ -260,9 +293,12 @@ interface CMarketCompareGlobal {
       rawListing: state.latestPanelContext.rawListing,
       statusMessage: state.latestPanelContext.statusMessage,
       currencyContext: state.latestPanelContext.currencyContext,
+      marketCompareEnabled: state.latestPanelContext.marketCompareEnabled,
+      marketCompareRankingFormula: state.latestPanelContext.marketCompareRankingFormula,
+      marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
       marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
       showMetadataButton: state.latestPanelContext.showMetadataButton,
-      marketCompare: marketCompareState,
+      marketCompare: marketCompareEnabled ? marketCompareState : null,
       onMarketCompareClick: onMarketCompareClick
     });
   }

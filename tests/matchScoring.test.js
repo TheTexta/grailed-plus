@@ -225,3 +225,112 @@ test("scoreCandidate uses URL slug tokens to avoid zero-only title scores", () =
   assert.ok(Number.isFinite(scored.score));
   assert.ok(scored.score > 0);
 });
+
+test("rankCandidates changes ordering when ranking formula switches between visual and metadata", () => {
+  const listing = {
+    title: "Stone Island Jacket Blue",
+    brand: "Stone Island",
+    size: "M",
+    imageUrl: "https://cdn.example.com/stone-island-jacket-blue-front.jpg",
+    pricing: {
+      history: [220]
+    },
+    rawListing: {
+      condition: "Good"
+    }
+  };
+
+  const candidates = [
+    {
+      id: "visual-first",
+      title: "Outerwear piece",
+      url: "https://depop.test/item/visual-first",
+      imageUrl: "https://cdn.example.com/stone-island-jacket-blue-front.jpg",
+      price: 210,
+      currency: "USD"
+    },
+    {
+      id: "metadata-first",
+      title: "Stone Island Jacket Blue",
+      url: "https://depop.test/item/metadata-first",
+      imageUrl: "https://images.depop.test/plain-red-shirt.jpg",
+      price: 215,
+      currency: "USD",
+      brand: "Stone Island",
+      size: "M",
+      condition: "Good"
+    }
+  ];
+
+  const visualRanked = rankCandidates(listing, candidates, {
+    listingPriceUsd: 220,
+    selectedCurrency: "USD",
+    minScore: 0,
+    rankingFormula: "visual"
+  });
+  const metadataRanked = rankCandidates(listing, candidates, {
+    listingPriceUsd: 220,
+    selectedCurrency: "USD",
+    minScore: 0,
+    rankingFormula: "metadata"
+  });
+
+  assert.equal(visualRanked[0].id, "visual-first");
+  assert.equal(metadataRanked[0].id, "metadata-first");
+});
+
+test("rankCandidates lets variant formula prefer matching size and condition", () => {
+  const listing = {
+    title: "Kapital fleece zip jacket",
+    brand: "Kapital",
+    size: "L",
+    imageUrl: "https://images.example.com/kapital-fleece-front.jpg",
+    pricing: {
+      history: [310]
+    },
+    rawListing: {
+      condition: "Excellent"
+    }
+  };
+
+  const candidates = [
+    {
+      id: "title-heavy",
+      title: "Kapital fleece zip jacket L",
+      url: "https://depop.test/item/title-heavy",
+      imageUrl: "https://images.example.com/kapital-fleece-front.jpg",
+      price: 305,
+      currency: "USD",
+      brand: "Kapital",
+      size: "M",
+      condition: "Good"
+    },
+    {
+      id: "variant-heavy",
+      title: "Kapital jacket",
+      url: "https://depop.test/item/variant-heavy",
+      imageUrl: "https://cdn.other.net/p/42.jpg",
+      price: 300,
+      currency: "USD",
+      brand: "Kapital",
+      size: "L",
+      condition: "Excellent"
+    }
+  ];
+
+  const metadataRanked = rankCandidates(listing, candidates, {
+    listingPriceUsd: 310,
+    selectedCurrency: "USD",
+    minScore: 0,
+    rankingFormula: "metadata"
+  });
+  const variantRanked = rankCandidates(listing, candidates, {
+    listingPriceUsd: 310,
+    selectedCurrency: "USD",
+    minScore: 0,
+    rankingFormula: "variant"
+  });
+
+  assert.equal(metadataRanked[0].id, "title-heavy");
+  assert.equal(variantRanked[0].id, "variant-heavy");
+});

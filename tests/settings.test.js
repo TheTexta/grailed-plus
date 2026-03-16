@@ -8,6 +8,9 @@ const {
   DEFAULT_CONVERSION_ENABLED,
   DEFAULT_LISTING_INSIGHTS_ENABLED,
   DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
+  DEFAULT_MARKET_COMPARE_ENABLED,
+  DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
+  DEFAULT_MARKET_COMPARE_STRICT_MODE,
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
   DEFAULT_DARK_MODE_ENABLED,
   DEFAULT_DARK_MODE_BEHAVIOR,
@@ -17,14 +20,19 @@ const {
   CONVERSION_ENABLED_STORAGE_KEY,
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
   LISTING_METADATA_BUTTON_STORAGE_KEY,
+  MARKET_COMPARE_ENABLED_STORAGE_KEY,
+  MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
+  MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
   DARK_MODE_ENABLED_STORAGE_KEY,
   DARK_MODE_BEHAVIOR_STORAGE_KEY,
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
   DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY,
+  MARKET_COMPARE_RANKING_FORMULA_OPTIONS,
   normalizeCurrencyCode,
   normalizeHexColor,
   normalizeDarkModeBehavior,
+  normalizeMarketCompareRankingFormula,
   getSelectedCurrency,
   setSelectedCurrency,
   getCurrencyConversionEnabled,
@@ -33,8 +41,15 @@ const {
   setListingInsightsEnabled,
   getListingMetadataButtonEnabled,
   setListingMetadataButtonEnabled,
+  getMarketCompareEnabled,
+  setMarketCompareEnabled,
+  getMarketCompareRankingFormula,
+  setMarketCompareRankingFormula,
+  getMarketCompareStrictMode,
+  setMarketCompareStrictMode,
   getMarketCompareExpandedAmountEnabled,
   setMarketCompareExpandedAmountEnabled,
+  getMarketCompareSettings,
   getDarkModeEnabled,
   setDarkModeEnabled,
   getDarkModeBehavior,
@@ -88,6 +103,21 @@ test("normalizeDarkModeBehavior supports known behavior values", () => {
   assert.equal(normalizeDarkModeBehavior("system"), "system");
   assert.equal(normalizeDarkModeBehavior("PERMANENT"), "permanent");
   assert.equal(normalizeDarkModeBehavior("auto"), null);
+});
+
+test("normalizeMarketCompareRankingFormula only accepts curated formula options", () => {
+  assert.equal(normalizeMarketCompareRankingFormula("balanced"), "balanced");
+  assert.equal(normalizeMarketCompareRankingFormula(" VISUAL "), "visual");
+  assert.equal(normalizeMarketCompareRankingFormula("metadata"), "metadata");
+  assert.equal(normalizeMarketCompareRankingFormula("variant"), "variant");
+  assert.equal(normalizeMarketCompareRankingFormula("random"), null);
+  assert.equal(normalizeMarketCompareRankingFormula(40), null);
+  assert.deepEqual(MARKET_COMPARE_RANKING_FORMULA_OPTIONS, [
+    "balanced",
+    "visual",
+    "metadata",
+    "variant"
+  ]);
 });
 
 test("getSelectedCurrency falls back to USD when unset or invalid", async () => {
@@ -297,6 +327,149 @@ test("setListingMetadataButtonEnabled persists boolean values", async () => {
   }
 });
 
+test("getMarketCompareEnabled defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getMarketCompareEnabled();
+    assert.equal(enabled, DEFAULT_MARKET_COMPARE_ENABLED);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setMarketCompareEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_ENABLED_STORAGE_KEY], true);
+    assert.equal(await getMarketCompareEnabled(), true);
+
+    const offResult = await setMarketCompareEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_ENABLED_STORAGE_KEY], false);
+    assert.equal(await getMarketCompareEnabled(), false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getMarketCompareRankingFormula defaults to configured formula and ignores invalid stored values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const defaultFormula = await getMarketCompareRankingFormula();
+    assert.equal(defaultFormula, DEFAULT_MARKET_COMPARE_RANKING_FORMULA);
+
+    chromeMock.__state[MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY] = "random";
+    const invalidFormula = await getMarketCompareRankingFormula();
+    assert.equal(invalidFormula, DEFAULT_MARKET_COMPARE_RANKING_FORMULA);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareRankingFormula persists curated formula values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const result = await setMarketCompareRankingFormula("visual");
+    assert.deepEqual(result, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY], "visual");
+    assert.equal(await getMarketCompareRankingFormula(), "visual");
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareRankingFormula rejects unsupported formula values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const result = await setMarketCompareRankingFormula("random");
+    assert.equal(result.ok, false);
+    assert.match(result.error, /supported option/i);
+    assert.equal(chromeMock.__state[MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY], undefined);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getMarketCompareStrictMode defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getMarketCompareStrictMode();
+    assert.equal(enabled, DEFAULT_MARKET_COMPARE_STRICT_MODE);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareStrictMode persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setMarketCompareStrictMode(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_STRICT_MODE_STORAGE_KEY], true);
+    assert.equal(await getMarketCompareStrictMode(), true);
+
+    const offResult = await setMarketCompareStrictMode(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_STRICT_MODE_STORAGE_KEY], false);
+    assert.equal(await getMarketCompareStrictMode(), false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
 test("getMarketCompareExpandedAmountEnabled defaults to disabled", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
@@ -333,6 +506,33 @@ test("setMarketCompareExpandedAmountEnabled persists boolean values", async () =
     assert.deepEqual(offResult, { ok: true });
     assert.equal(chromeMock.__state[MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY], false);
     assert.equal(await getMarketCompareExpandedAmountEnabled(), false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getMarketCompareSettings returns the grouped market compare state", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({
+    [MARKET_COMPARE_ENABLED_STORAGE_KEY]: true,
+    [MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY]: "metadata",
+    [MARKET_COMPARE_STRICT_MODE_STORAGE_KEY]: true,
+    [MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY]: true
+  });
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const settings = await getMarketCompareSettings();
+    assert.deepEqual(settings, {
+      enabled: true,
+      rankingFormula: "metadata",
+      strictMode: true,
+      expandedAmountEnabled: true
+    });
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;

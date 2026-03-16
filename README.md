@@ -1,8 +1,34 @@
+
 # Grailed Plus (V2)
+
+## 🚀 Feature Quick Reference
+
+| Feature                        | Description                                                      |
+|--------------------------------|------------------------------------------------------------------|
+| Listing Insights Panel         | Injects price trends, drops, and seller context on listings       |
+| Depop Price Comparison         | Real-time cross-market price data from Depop                     |
+| Seller Metadata                | Shows seller account age and trust context                       |
+| One-click Metadata Inspection  | View raw listing JSON directly                                   |
+| Currency Conversion            | USD→local currency, configurable, Frankfurter API                |
+| Site-wide Dark Mode            | CSS-driven, device/permanent, custom primary color               |
+| Minimalist UI                  | Data-dense, native-feeling, light/dark support                   |
+| Modular Bootstrapping          | Lifecycle-based feature loading                                  |
+| Settings Management            | Currency, theme, feature toggles                                 |
+| Query Synthesis                | Generates search queries for cross-market providers               |
+| Browser Storage Abstraction    | Unified storage for settings and state                           |
+
 
 Credit: Forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
 
 Grailed Plus enhances Grailed listing pages with fast, decision-ready marketplace context: pricing intelligence, seller metadata, listing JSON access, optional currency conversion, and site-wide dark mode controls.
+
+
+## 🏗️ Technical Architecture Overview
+
+Grailed Plus uses a modular, lifecycle-driven architecture:
+- **Bootstrapping:** Features are loaded based on URL and DOM state via a central registry.
+- **Lifecycles:** Each feature (insights, currency, dark mode, etc.) is encapsulated in its own lifecycle module for maintainability and extensibility.
+- **Settings & Storage:** User preferences are managed via a browser storage abstraction, supporting easy configuration and persistence.
 
 ## Why Grailed Plus
 
@@ -14,20 +40,20 @@ Grailed Plus is built for in-flow browsing. Instead of opening extra tabs or doi
 - Optional USD conversion into your selected currency
 - Grailed-wide dark mode with configurable primary color
 
-## Current Feature Set
 
-### Listing Intelligence
+## 🧩 Extensibility & Contribution
 
-- Listing insights panel injected on Grailed listing pages
-- Average price-drop signal
-- Next expected drop estimate
-- Price trend work is partially completed
+- Add new features by creating a new lifecycle module in `src/content/` and registering it in the bootstrapper.
+- UI components are modular and styled via `src/ui.css` for consistency.
+- Settings and storage utilities are reusable for new feature toggles.
+
 
 # Grailed Plus
 
 A browser extension that enhances your Grailed experience with powerful pricing insights, cross-market comparisons, and a clean, native UI.
 
-## Features
+
+## 🌟 Features (Detailed)
 
 - **Depop Price Comparison (NEW)**
   - Instantly compare Grailed listings with similar items on Depop.
@@ -57,7 +83,18 @@ A browser extension that enhances your Grailed experience with powerful pricing 
   - Match device theme or set permanent dark mode.
   - Customizable primary color.
 
-## Installation
+
+## 🧪 Testing & Debugging
+
+- **Unit tests:** Run with `npm run test` (see `tests/` for coverage of core modules).
+- **Linting:** Run with `npm run lint` for code quality.
+- **Live E2E validation:** Use `npm run e2e:live:grailed` to verify extension behavior on real Grailed listings.
+- **Debugging:** Use browser devtools and extension logs for troubleshooting.
+
+## 🔌 API & Integration Details
+
+- **Frankfurter API** for currency conversion: https://api.frankfurter.app/latest?base=USD
+- **Depop integration** for cross-market price comparison (see `src/domain/depopProvider.ts`).
 
 1. Clone this repository.
 2. Run `npm install` to install dependencies.
@@ -70,7 +107,15 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 - On any listing page, view Depop price comparisons and enhanced market insights.
 - All features are available in both light and dark mode.
 
-## Settings
+
+## ⚙️ Settings Reference
+
+| Setting           | Description                                 | Location/How to Change                |
+|-------------------|---------------------------------------------|---------------------------------------|
+| Currency          | Select or enter 3-letter code, enable/disable| Extension popup > Settings            |
+| Dark Mode         | Enable, match device, or permanent, color   | Extension popup > Settings            |
+| Depop Comparison  | Toggle feature (if available)               | Extension popup > Settings            |
+
 
 ### Currency
 1. Click the Grailed Plus extension icon.
@@ -90,7 +135,8 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 
 *Dark mode uses a CSS-first approach for high contrast and fidelity. Images/media are counter-filtered to preserve appearance.*
 
-## Project Layout
+
+## 🗂️ Project Layout
 
 - src/manifest.json: Chrome MV3 manifest
 - src/manifest.firefox.json: Firefox MV3 manifest template (Phase 2)
@@ -107,7 +153,8 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 - src/options.js: Settings UI logic
 - src/contentScript.js: Generated content-script bundle
 
-## Scripts
+
+## 🛠️ Scripts
 
 - `npm run build` – Rebuilds src/contentScript.js from modules.
 - `npm run test` – Runs unit tests.
@@ -115,7 +162,8 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 - `npm run zip:chrome` – Builds and packages a Chrome sideload zip into artifacts.
 - `npm run release:chrome` – Runs lint and tests, then builds/packages a Chrome release zip.
 
-## Chrome Sideload Setup
+
+## 🧑‍💻 Chrome Sideload Setup
 
 1. Run `npm run build`.
 2. Open chrome://extensions.
@@ -123,19 +171,30 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 4. Click Load unpacked and select the src directory.
 5. Open a Grailed listing URL like https://www.grailed.com/listings/... and verify panel rendering.
 
-## Browser Support
+
+## 🌐 Browser Support
 
 - Chrome Manifest V3 is the active target.
 - Firefox manifest template exists for Phase 2 progression.
 
-## Contributing
+
+## 🤝 Contributing
 
 1. Fork the repo and create your branch: `git checkout -b feature/your-feature`
 2. Commit your changes: `git commit -am 'Add new feature'`
 3. Push to the branch: `git push origin feature/your-feature`
 4. Open a pull request.
 
-## License
+
+## 📝 Roadmap & Known Limitations
+
+- [ ] Firefox support (manifest template exists, not yet production-ready)
+- [ ] More granular price trend analytics
+- [ ] Additional cross-market integrations (e.g., eBay)
+- [ ] Improved mobile/responsive UI
+- [ ] User feedback-driven feature requests
+
+---
 
 MIT
-- Default custom color #000000 keeps extra tint disabled.
+*Default custom color #000000 keeps extra tint disabled.*

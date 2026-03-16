@@ -19,6 +19,399 @@ html[data-grailed-plus-dark-mode="1"] {
 [data-theme="dark"] .SellerRating_title__RBlIH {
   color: #fff !important;
 }
+/* Dark-mode fixups for saved-items surfaces and module-based controls. */
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) h1.text-page-fg {
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset::before,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset::after,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset .-tab,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset ._tab-nav,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset .-tab span,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-tabset ._tab-nav span {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-select,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-select::before,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-select::after,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-select .--input,
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) .-select .--icons {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="SellerScore-module__rating__"],
+  [class*="SellerScore-module__reviews__"],
+  [class*="ContentGridModule_title__"],
+  [class*="ContentGridModule_"] .Text,
+  [class*="ListingMetadata-module__metadata__"] .Text,
+  [class*="ListingMetadata-module__metadata__"] p,
+  [class*="ListingMetadata-module__designer__"],
+  [class*="ListingMetadata-module__size__"],
+  [class*="ListingMetadata-module__title__"],
+  [class*="UserItem_title__"],
+  [class*="DesignerCard-module__contentContainer__"] .Text,
+  [class*="DesignerCard-module__name__"]
+):not(svg *) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  button[class*="Button-module__button__"][class*="Button-module__secondary__"],
+  button[class*="UserShareDropdown-module__button__"],
+  button[class*="MobileMenu-module__trigger__"]
+),
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  button[class*="Button-module__button__"][class*="Button-module__secondary__"],
+  button[class*="UserShareDropdown-module__button__"],
+  button[class*="MobileMenu-module__trigger__"]
+):is(:hover, :focus-visible, :active) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: var(--gp-dm-border-soft, rgba(255, 255, 255, 0.68)) !important;
+  box-shadow: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) button[class*="Search-module__searchButton__"],
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) button[class*="Search-module__searchButton__"]:is(:hover, :focus-visible, :active),
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) button[class*="Search_searchButton__"],
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) button[class*="Search_searchButton__"]:is(:hover, :focus-visible, :active) {
+  background: #fff !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border-color: #fff !important;
+  box-shadow: none !important;
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong-invert, #000) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search_searchButton__"].bg-white.text-primary,
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search_searchButton__"].bg-white.text-primary:is(:hover, :focus-visible, :active) {
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong-invert, #000) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search-module__searchButton__"].bg-white.text-primary,
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search-module__searchButton__"].bg-white.text-primary:is(:hover, :focus-visible, :active) {
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong-invert, #000) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search-module__searchButton__"],
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search-module__searchButton__"]:is(:hover, :focus-visible, :active),
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search_searchButton__"],
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) button[class*="Search_searchButton__"]:is(:hover, :focus-visible, :active) {
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong-invert, #000) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) button[class*="UserShareDropdown-module__button__"] svg path {
+  fill: currentColor !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) button[class*="MobileMenu-module__trigger__"] svg rect {
+  fill: transparent !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="WideImageWithPlacecard_info__"] .Text,
+  [class*="WideImageWithPlacecard_tag__"],
+  [class*="WideImageWithPlacecard_title__"]
+):not(svg *) {
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  .conversation-item,
+  .conversation-item a,
+  .conversation-last-action,
+  .conversation-details,
+  .conversation-interlocutor,
+  .conversation-interlocutor a,
+  .activity-log-item-content,
+  .messages,
+  .messages span,
+  .messages p,
+  .messages .--text,
+  .SimpleFormat,
+  .SimpleFormat-Paragraph,
+  .-disclaimer,
+  .-disclaimer .-message,
+  .settings-cog,
+  [class*="ConversationListingDetails-module__wrapper__"],
+  [class*="ConversationListingDetails-module__link__"],
+  [class*="ConversationListingDetails-module__details__"],
+  [class*="ConversationListingDetails-module__designers__"],
+  [class*="ConversationListingDetails-module__title__"],
+  [class*="ConversationListingDetails-module__preview__"],
+  [class*="ConversationActivityLogItem-module__activityLogItemContent__"],
+  [class*="BotMessage-module__botMessage__"],
+  [class*="BotMessage-module__grailed__"],
+  [class*="BotMessage-module__bot__"],
+  [class*="ConversationTimestamp-module__root__"],
+  [class*="ConversationTimestamp-module__timestamp__"],
+  [class*="ConversationTimestamp-module__timeSince__"]
+):not(svg *) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  .settings-cog,
+  .settings-cog svg,
+  [class*="ConversationTimestamp-module__root__"] svg
+) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  .settings-cog svg path,
+  [class*="ConversationListingDetails-module__link__"] svg path,
+  [class*="ConversationTimestamp-module__root__"] svg path
+) {
+  fill: currentColor !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  input.Field-Control,
+  textarea.Field-Control,
+  select.Field-Control
+) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  background-image: none !important;
+  border: 1px solid var(--gp-dm-border-strong, #fff) !important;
+  box-shadow: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  input.Field-Control,
+  textarea.Field-Control
+)::placeholder {
+  color: var(--gp-dm-text-placeholder, rgba(255, 255, 255, 0.75)) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) input[class*="ToggleControl-module__input__"] {
+  accent-color: var(--gp-dm-text-strong, #fff) !important;
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  border: 1px solid var(--gp-dm-border-strong, #fff) !important;
+  box-shadow: none !important;
+  color-scheme: dark !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) input[class*="ToggleControl-module__input__"]:checked {
+  background: var(--gp-dm-text-strong, #fff) !important;
+  background-color: var(--gp-dm-text-strong, #fff) !important;
+  border-color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) input[class*="ToggleControl-module__input__"]:not(:checked) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  border-color: var(--gp-dm-border-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  .NotificationItem,
+  .NotificationItem .-details,
+  .NotificationItem .--checkbox,
+  .NotificationItem .--icons
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="Content_content__"],
+  [class*="Content_container__"],
+  [class*="Content_column__"]
+) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) [class*="Content_content__"] :is(
+  [class*="Content_header__"],
+  [class*="Content_link__"],
+  [class*="Content_link__"] div,
+  [class*="Content_capitalize__"],
+  [class*="Content_cta__"],
+  [class*="Content_cta__"] div
+):not(svg *) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="LayoutContainer-module__layoutContainer__"],
+  [class*="LayoutContainer-module__responsiveGutter__"],
+  [class*="index-module__header__"],
+  [class*="index-module__statsAndAppliedFilters__"],
+  [class*="index-module__actions__"],
+  [class*="index-module__container__"],
+  [class*="Filters-module__filters__"],
+  [class*="index-module__filtersContainer__"],
+  [class*="index-module__mySizesControls__"],
+  [class*="index-module__collapsible__"],
+  [class*="Collapsible-module__collapsibleContent__"],
+  [class*="index-module__contentContainer__"],
+  [class*="index-module__content__"],
+  [class*="index-module__searchContainer__"],
+  [class*="ColorRefinementList-module__container__"],
+  [class*="index-module__sortWidget__"],
+  [class*="index-module__list__"],
+  [class*="Feed-module__empty__"],
+  [class*="Empty-module__root__"]
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="LayoutContainer-module__layoutContainer__"],
+  [class*="Filters-module__filters__"]
+) :is(
+  .Text,
+  [class*="SortBy-module__prefix__"],
+  [class*="SortBy-module__select__"],
+  [class*="index-module__stats__"],
+  [class*="index-module__label__"],
+  [class*="index-module__search__"],
+  [class*="index-module__input__"],
+  [class*="index-module__dollarSign__"],
+  [class*="index-module__sortItem__"],
+  [class*="MySizesToggle-module__caption__"],
+  [class*="MySizesToggle-module__toggle__"] div,
+  [class*="MySizesToggle-module__toggle__"] span,
+  [class*="Empty-module__header__"]
+):not(svg *) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="SortBy-module__select__"],
+  [class*="index-module__search__"],
+  .ais-SearchBox-input[class*="index-module__input__"],
+  [class*="index-module__priceInputWrapper__"],
+  [class*="index-module__submitButton__"],
+  [class*="index-module__resetButton__"]
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: var(--gp-dm-border-soft, rgba(255, 255, 255, 0.68)) !important;
+  box-shadow: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="SortBy-module__select__"],
+  [class*="index-module__search__"],
+  .ais-SearchBox-input[class*="index-module__input__"],
+  [class*="index-module__priceInputWrapper__"] input
+)::placeholder {
+  color: var(--gp-dm-text-placeholder, rgba(255, 255, 255, 0.75)) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="index-module__searchIcon__"],
+  [class*="index-module__submitIcon__"],
+  [class*="index-module__resetIcon__"],
+  [class*="index-module__caret__"]
+) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
+  [class*="index-module__searchIcon__"],
+  [class*="index-module__submitIcon__"]
+) path {
+  fill: currentColor !important;
+}
+
 :root {
   --gp-ui-surface: #ffffff;
   --gp-ui-surface-soft: #fcfcfc;
@@ -67,6 +460,7 @@ body.gp-ui-body {
 .gp-button {
   appearance: none;
   border: 1px solid var(--gp-ui-border-strong);
+  border-radius: 0;
   background: transparent;
   color: var(--gp-ui-text);
   padding: 8px 12px;
@@ -343,6 +737,7 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   min-width: 260px;
   padding: 12px;
   border: 1px solid var(--gp-ui-border);
+  border-radius: 0;
   background: transparent;
   color: var(--gp-ui-text);
   font-size: 13px;
@@ -390,6 +785,7 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   gap: 8px;
   padding: 12px;
   border: 1px solid var(--gp-ui-border);
+  border-radius: 0;
 }
 
 .gp-options__section-title {
@@ -408,7 +804,7 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--gp-ui-setting-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--gp-ui-surface-soft);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -416,6 +812,10 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
 .gp-options__setting-card:focus-within {
   border-color: var(--gp-ui-accent);
   box-shadow: 0 0 0 2px var(--gp-ui-accent-soft);
+}
+
+.gp-options__setting-card[aria-disabled="true"] {
+  opacity: 0.72;
 }
 
 .gp-options__label {
@@ -440,9 +840,18 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   height: 16px;
 }
 
+.gp-options__toggle--disabled {
+  cursor: not-allowed;
+}
+
+.gp-options__toggle--disabled span {
+  color: var(--gp-ui-muted);
+}
+
 .gp-options__control {
   width: 100%;
   border: 1px solid var(--gp-ui-border);
+  border-radius: 0;
   padding: 10px;
   font-size: 14px;
   background: transparent;
@@ -454,6 +863,17 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   background: var(--gp-ui-border-soft);
 }
 
+.gp-options__formula-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--gp-ui-border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--gp-ui-surface-soft) 82%, white 18%);
+  color: var(--gp-ui-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .gp-options__color-row {
   display: flex;
   gap: 8px;
@@ -463,6 +883,7 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   width: 56px;
   height: 42px;
   border: 1px solid var(--gp-ui-border);
+  border-radius: 0;
   background: transparent;
   padding: 0;
   cursor: pointer;
@@ -497,7 +918,7 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus-panel[data-grailed-plus-pane
   margin-top: 2px;
   padding: 10px 12px;
   border: 1px dashed var(--gp-ui-setting-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--gp-ui-surface-soft);
 }
 
