@@ -1,0 +1,54 @@
+{
+  "next-data-active.json": {
+    "id": 123456,
+    "title": "Sample Listing",
+    "pricing": {
+      "history": [1000, 900, 810],
+      "updatedAt": "2026-01-11T00:00:00.000Z"
+    },
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "sellerCreatedAt": "2020-01-01T00:00:00.000Z",
+    "prettyPath": "/listings/123456-sample-listing",
+    "sold": false,
+    "sourceStatus": "ok"
+  },
+  "next-data-no-drops.json": {
+    "id": 222,
+    "title": "No Drops",
+    "pricing": {
+      "history": [],
+      "updatedAt": "2026-02-02T00:00:00.000Z"
+    },
+    "createdAt": "2026-02-01T00:00:00.000Z",
+    "sellerCreatedAt": "2021-05-01T00:00:00.000Z",
+    "prettyPath": null,
+    "sold": false,
+    "sourceStatus": "ok"
+  },
+  "next-data-missing-seller.json": {
+    "id": 333,
+    "title": "Missing Seller",
+    "pricing": {
+      "history": [500, 450],
+      "updatedAt": "2026-02-03T00:00:00.000Z"
+    },
+    "createdAt": "2026-02-01T00:00:00.000Z",
+    "sellerCreatedAt": null,
+    "prettyPath": "/listings/333-missing-seller",
+    "sold": false,
+    "sourceStatus": "ok"
+  },
+  "next-data-sold.json": {
+    "id": 444,
+    "title": "Sold Listing",
+    "pricing": {
+      "history": [350, 300, 275],
+      "updatedAt": "2025-11-20T10:00:00.000Z"
+    },
+    "createdAt": "2025-11-01T10:00:00.000Z",
+    "sellerCreatedAt": "2019-06-15T00:00:00.000Z",
+    "prettyPath": "/listings/444-sold-listing",
+    "sold": true,
+    "sourceStatus": "ok"
+  }
+}
