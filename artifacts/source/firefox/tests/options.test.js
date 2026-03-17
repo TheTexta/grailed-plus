@@ -83,7 +83,7 @@ function createOptionsDocument() {
 function createSettingsMock(overrides) {
   const state = {
     marketCompare: {
-      enabled: false,
+      enabled: true,
       rankingFormula: "balanced",
       strictMode: false,
       expandedAmountEnabled: false
@@ -97,7 +97,7 @@ function createSettingsMock(overrides) {
     DEFAULT_CONVERSION_ENABLED: false,
     DEFAULT_LISTING_INSIGHTS_ENABLED: true,
     DEFAULT_LISTING_METADATA_BUTTON_ENABLED: true,
-    DEFAULT_MARKET_COMPARE_ENABLED: false,
+    DEFAULT_MARKET_COMPARE_ENABLED: true,
     DEFAULT_MARKET_COMPARE_RANKING_FORMULA: "balanced",
     DEFAULT_MARKET_COMPARE_STRICT_MODE: false,
     DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: false,
@@ -359,10 +359,10 @@ test("options page updates the ranking formula description when the selection ch
   }
 });
 
-test("options page reset restores default market compare values and disables subordinate controls", async () => {
+test("options page reset restores default market compare values and keeps subordinate controls available", async () => {
   const { document, nodes } = createOptionsDocument();
   const env = createSettingsMock({
-    DEFAULT_MARKET_COMPARE_ENABLED: false,
+    DEFAULT_MARKET_COMPARE_ENABLED: true,
     DEFAULT_MARKET_COMPARE_RANKING_FORMULA: "balanced",
     DEFAULT_MARKET_COMPARE_STRICT_MODE: false,
     DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: false,
@@ -381,13 +381,13 @@ test("options page reset restores default market compare values and disables sub
     nodes.resetButton._listeners.click();
     await flushAsync();
 
-    assert.equal(nodes["market-compare-enabled"].checked, false);
+    assert.equal(nodes["market-compare-enabled"].checked, true);
     assert.equal(nodes["market-compare-ranking-formula"].value, "balanced");
     assert.equal(nodes["market-compare-strict-mode"].checked, false);
     assert.equal(nodes["market-compare-expanded-amount-enabled"].checked, false);
-    assert.equal(nodes["market-compare-ranking-formula"].disabled, true);
-    assert.equal(nodes["market-compare-strict-mode"].disabled, true);
-    assert.equal(nodes["market-compare-expanded-amount-enabled"].disabled, true);
+    assert.equal(nodes["market-compare-ranking-formula"].disabled, false);
+    assert.equal(nodes["market-compare-strict-mode"].disabled, false);
+    assert.equal(nodes["market-compare-expanded-amount-enabled"].disabled, false);
     assert.match(nodes.status.textContent, /Reset to defaults/);
   } finally {
     cleanup();

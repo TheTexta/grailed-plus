@@ -375,7 +375,7 @@ test("setListingMetadataButtonEnabled persists boolean values", async () => {
   }
 });
 
-test("getMarketCompareEnabled defaults to disabled", async () => {
+test("getMarketCompareEnabled defaults to enabled", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
 
@@ -386,7 +386,7 @@ test("getMarketCompareEnabled defaults to disabled", async () => {
   try {
     const enabled = await getMarketCompareEnabled();
     assert.equal(enabled, DEFAULT_MARKET_COMPARE_ENABLED);
-    assert.equal(enabled, false);
+    assert.equal(enabled, true);
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;
