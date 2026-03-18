@@ -223,7 +223,8 @@ test("scoreCandidate strips boilerplate and hash-like tokens from the image heur
 
   assert.equal(scored.usedImage, true);
   assert.equal(scored.imageUnavailableReason, "");
-  assert.equal(scored.components.imageHeuristicScore, 100);
+  assert.equal(scored.imageSignalType, "url_heuristic");
+  assert.equal(scored.components.imageSimilarityScore, 100);
 });
 
 test("scoreCandidate does not mark usedImage when URLs have no usable heuristic stem", () => {
@@ -249,7 +250,8 @@ test("scoreCandidate does not mark usedImage when URLs have no usable heuristic 
 
   assert.equal(scored.usedImage, false);
   assert.equal(scored.imageUnavailableReason, "no_usable_signal");
-  assert.equal(scored.components.imageHeuristicScore, null);
+  assert.equal(scored.imageSignalType, "");
+  assert.equal(scored.components.imageSimilarityScore, null);
 });
 
 test("scoreCandidate uses URL slug tokens to avoid zero-only title scores", () => {

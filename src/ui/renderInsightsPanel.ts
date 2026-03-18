@@ -1873,6 +1873,12 @@
     var results = Array.isArray(state.results) ? state.results : [];
     var displayLimit = normalizeMarketCompareResultsLimit(marketCompareResultsLimit);
     var displayResults = results.slice(0, displayLimit);
+    var allDisplayResultsUseMlSorting =
+      status === "results" &&
+      displayResults.length > 0 &&
+      displayResults.every(function (entry: any) {
+        return entry && entry.imageSignalType === "ml_embedding";
+      });
 
     var section = doc.createElement("div");
     section.className = "grailed-plus__market";
@@ -1886,6 +1892,8 @@
 
     var chip = doc.createElement("span");
     chip.className = "grailed-plus__market-chip";
+    var chipGroup = doc.createElement("div");
+    chipGroup.className = "grailed-plus__market-chip-group";
 
     if (status === "loading") {
       chip.textContent = "Searching";
@@ -1907,7 +1915,14 @@
     }
 
     header.appendChild(title);
-    header.appendChild(chip);
+    chipGroup.appendChild(chip);
+    if (allDisplayResultsUseMlSorting) {
+      var sortingChip = doc.createElement("span");
+      sortingChip.className = "grailed-plus__market-chip";
+      sortingChip.textContent = "ML Sorted";
+      chipGroup.appendChild(sortingChip);
+    }
+    header.appendChild(chipGroup);
     section.appendChild(header);
 
     var providerLabel = doc.createElement("div");

@@ -9,6 +9,7 @@ interface MCCandidate {
   originalPrice?: unknown;
   score?: unknown;
   usedImage?: unknown;
+  imageSignalType?: unknown;
   imageUnavailableReason?: unknown;
   deltaLabel?: unknown;
   deltaPercent?: unknown;
@@ -61,6 +62,7 @@ interface MCControllerStateResult {
   originalPrice: number | null;
   score: number | null;
   usedImage: boolean;
+  imageSignalType: string;
   imageUnavailableReason: string;
   deltaLabel: string;
 }
@@ -770,6 +772,7 @@ interface MCGlobalRoot {
       ratesByUsd: Record<string, unknown> | null;
       minScore: number;
       rankingFormula: string;
+      mlSimilarityEnabled: boolean;
     } {
       const ratesByUsd =
         payload && payload.currencyRates && typeof payload.currencyRates === "object"
@@ -782,7 +785,8 @@ interface MCGlobalRoot {
         rate: normalizeNumber(payload.currencyRate),
         ratesByUsd: ratesByUsd,
         minScore: minScore,
-        rankingFormula: normalizeString(payload.rankingFormula, "balanced")
+        rankingFormula: normalizeString(payload.rankingFormula, "balanced"),
+        mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
       };
     }
 
@@ -888,6 +892,7 @@ interface MCGlobalRoot {
             originalPrice: normalizeNumber(candidate.originalPrice),
             score: normalizeNumber(candidate.score),
             usedImage: Boolean(candidate.usedImage),
+            imageSignalType: normalizeString(candidate.imageSignalType, ""),
             imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
             deltaLabel: deltaLabel || formatDeltaLabel(candidate)
           };

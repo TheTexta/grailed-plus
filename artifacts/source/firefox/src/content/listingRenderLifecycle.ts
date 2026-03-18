@@ -30,6 +30,7 @@ interface CListingRenderOptions {
   marketCompareRankingFormula?: string;
   marketCompareStrictMode?: boolean;
   marketCompareResultsLimit?: number;
+  marketCompareMlSimilarityEnabled?: boolean;
   showMetadataButton?: boolean;
   resolveCurrencyContext?: () => Promise<CListingRenderCurrencyContext | null>;
   createUsdCurrencyContext?: () => CListingRenderCurrencyContext;
@@ -44,6 +45,7 @@ interface CListingRenderOptions {
     marketCompareRankingFormula: string;
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
+    marketCompareMlSimilarityEnabled: boolean;
     showMetadataButton: boolean;
   }) => void;
   applySidebarCurrency?: (currencyContext: CListingRenderCurrencyContext | null) => void;
@@ -143,6 +145,7 @@ interface CListingRenderGlobal {
             Number(config.marketCompareResultsLimit) > 0
               ? Math.floor(Number(config.marketCompareResultsLimit))
               : 5,
+          marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
           showMetadataButton: config.showMetadataButton !== false
         });
         applySidebarCurrency(currencyContext);
@@ -184,6 +187,7 @@ interface CListingRenderGlobal {
             Number(config.marketCompareResultsLimit) > 0
               ? Math.floor(Number(config.marketCompareResultsLimit))
               : 5,
+          marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
           showMetadataButton: config.showMetadataButton !== false
         });
         applySidebarCurrency(fallbackCurrency);

@@ -35,6 +35,7 @@ interface MSOptions {
   ratesByUsd?: Record<string, unknown> | null;
   minScore?: unknown;
   rankingFormula?: unknown;
+  mlSimilarityEnabled?: unknown;
 }
 
 interface MSScoredCandidate {
@@ -49,9 +50,10 @@ interface MSScoredCandidate {
   originalPrice: number | null;
   score: number;
   usedImage: boolean;
+  imageSignalType: string;
   imageUnavailableReason: string;
   components: {
-    imageHeuristicScore: number | null;
+    imageSimilarityScore: number | null;
     titleScore: number;
     brandScore: number | null;
     sizeScore: number | null;
@@ -96,8 +98,10 @@ interface MSGlobalRoot {
   GrailedPlusImageSimilarity?: {
     compareImageUrls?: (
       leftUrl: unknown,
-      rightUrl: unknown
-    ) => Promise<{ score: number | null; usedImage: boolean; reason: string }>;
+      rightUrl: unknown,
+      options?: unknown
+    ) => Promise<{ score: number | null; usedImage: boolean; reason: string; signalType?: string }>;
+    preloadModel?: () => Promise<void>;
   };
   GrailedPlusMatchScoring?: MSModule;
 }
@@ -480,7 +484,7 @@ interface MSGlobalRoot {
     function imageHeuristicScore(
       listingImageUrl: unknown,
       candidateImageUrl: unknown
-    ): { score: number | null; usedImage: boolean; reason: string } {
+    ): { score: number | null; usedImage: boolean; reason: string; signalType: string } {
       const left = normalizeString(listingImageUrl, "");
       const right = normalizeString(candidateImageUrl, "");
 
@@ -488,7 +492,8 @@ interface MSGlobalRoot {
         return {
           score: null,
           usedImage: false,
-          reason: "missing_url"
+          reason: "missing_url",
+          signalType: ""
         };
       }
 
@@ -498,7 +503,8 @@ interface MSGlobalRoot {
         return {
           score: null,
           usedImage: false,
-          reason: "no_usable_signal"
+          reason: "no_usable_signal",
+          signalType: ""
         };
       }
 
@@ -516,7 +522,8 @@ interface MSGlobalRoot {
       return {
         score: Math.max(0, Math.min(100, Math.round(score))),
         usedImage: true,
-        reason: "ok"
+        reason: "ok",
+        signalType: "url_heuristic"
       };
     }
 
@@ -720,22 +727,31 @@ interface MSGlobalRoot {
 
     async function resolveVisualImageScore(
       listingImageUrl: string,
-      candidateImageUrl: unknown
-    ): Promise<{ score: number | null; usedImage: boolean; reason: string }> {
+      candidateImageUrl: unknown,
+      config: MSOptions
+    ): Promise<{ score: number | null; usedImage: boolean; reason: string; signalType: string }> {
       if (
         ImageSimilarity &&
         typeof ImageSimilarity.compareImageUrls === "function"
       ) {
         try {
-          const result = await ImageSimilarity.compareImageUrls(listingImageUrl, candidateImageUrl);
+          const result = await ImageSimilarity.compareImageUrls(listingImageUrl, candidateImageUrl, {
+            mlEnabled: config.mlSimilarityEnabled !== false
+          });
           if (result && result.reason !== "unsupported_environment") {
-            return result;
+            return {
+              score: result.score,
+              usedImage: result.usedImage,
+              reason: result.reason,
+              signalType: normalizeString(result.signalType, result.usedImage ? "thumbnail_fingerprint" : "")
+            };
           }
         } catch (_) {
           return {
             score: null,
             usedImage: false,
-            reason: "visual_unavailable"
+            reason: "visual_unavailable",
+            signalType: ""
           };
         }
       }
@@ -747,14 +763,14 @@ interface MSGlobalRoot {
       listing: MSListingInput,
       candidate: MSCandidateInput,
       config: MSOptions,
-      imageResult: { score: number | null; usedImage: boolean; reason: string }
+      imageResult: { score: number | null; usedImage: boolean; reason: string; signalType: string }
     ): MSScoredCandidate {
       const rankingFormula = normalizeRankingFormula(config.rankingFormula);
       const listingTitle = normalizeString(listing && listing.title, "");
       const candidateTitle = normalizeString(candidate && candidate.title, "");
       const candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
       const candidateTitleForScore = [candidateTitle, candidateTitleHint].filter(Boolean).join(" ");
-      const imageHeuristicScoreValue = imageResult.score;
+      const imageSimilarityScoreValue = imageResult.score;
       const titleScore = Math.max(
         overlapScore(listingTitle, candidateTitle),
         overlapScore(listingTitle, candidateTitleForScore)
@@ -798,7 +814,7 @@ interface MSGlobalRoot {
       const priceScore = scorePriceDelta(listingComparable, candidateComparable);
       const weightedScore = computeWeightedScore(
         rankingFormula,
-        imageHeuristicScoreValue,
+        imageSimilarityScoreValue,
         titleScore,
         brandScore,
         sizeScore,
@@ -821,9 +837,10 @@ interface MSGlobalRoot {
         originalPrice: candidateAmount,
         score: finalScore,
         usedImage: imageResult.usedImage,
+        imageSignalType: imageResult.usedImage ? normalizeString(imageResult.signalType, "") : "",
         imageUnavailableReason: imageResult.usedImage ? "" : imageResult.reason,
         components: {
-          imageHeuristicScore: imageHeuristicScoreValue,
+          imageSimilarityScore: imageSimilarityScoreValue,
           titleScore: Math.round(titleScore),
           brandScore: brandScore == null ? null : Math.round(brandScore),
           sizeScore: sizeScore == null ? null : Math.round(sizeScore),
@@ -844,7 +861,8 @@ interface MSGlobalRoot {
       const config = options && typeof options === "object" ? (options as MSOptions) : {};
       const imageResult = await resolveVisualImageScore(
         buildListingImageUrl(listing),
-        candidate && candidate.imageUrl
+        candidate && candidate.imageUrl,
+        config
       );
       return scoreCandidateFromImageResult(listing, candidate, config, imageResult);
     }

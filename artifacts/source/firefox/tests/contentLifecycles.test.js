@@ -449,6 +449,7 @@ test("market compare lifecycle forwards ranking formula and hardcoded show-all t
     currencyRates: { CAD: 1.35 },
     minScore: 0,
     rankingFormula: "metadata",
+    mlSimilarityEnabled: true,
     allowCategoryFallback: false
   });
 });

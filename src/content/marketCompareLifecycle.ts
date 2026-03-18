@@ -13,6 +13,7 @@ interface CMarketCompareState {
     marketCompareRankingFormula: string;
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
+    marketCompareMlSimilarityEnabled: boolean;
     showMetadataButton: boolean;
     renderToken: number;
   } | null;
@@ -67,6 +68,7 @@ interface CRenderPanelOptions {
     marketCompareRankingFormula: string;
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
+    marketCompareMlSimilarityEnabled: boolean;
     showMetadataButton: boolean;
     marketCompare: any;
     onMarketCompareClick: () => void;
@@ -84,6 +86,7 @@ interface CRenderPanelOptions {
     marketCompareRankingFormula?: string;
     marketCompareStrictMode?: boolean;
     marketCompareResultsLimit?: number;
+    marketCompareMlSimilarityEnabled?: boolean;
     showMetadataButton?: boolean;
   };
 }
@@ -95,6 +98,9 @@ interface CMarketCompareLifecycleModule {
 }
 
 interface CMarketCompareGlobal {
+  GrailedPlusImageSimilarity?: {
+    preloadModel?: () => Promise<unknown>;
+  };
   GrailedPlusMarketCompareLifecycle?: CMarketCompareLifecycleModule;
 }
 
@@ -106,6 +112,18 @@ interface CMarketCompareGlobal {
   }
 })(typeof globalThis !== "undefined" ? (globalThis as unknown as CMarketCompareGlobal) : {}, function () {
   "use strict";
+
+  let ImageSimilarity: CMarketCompareGlobal["GrailedPlusImageSimilarity"] | null = null;
+  if (typeof globalThis !== "undefined" && (globalThis as unknown as CMarketCompareGlobal).GrailedPlusImageSimilarity) {
+    ImageSimilarity = (globalThis as unknown as CMarketCompareGlobal).GrailedPlusImageSimilarity || null;
+  }
+  if (!ImageSimilarity && typeof require === "function") {
+    try {
+      ImageSimilarity = require("../domain/imageSimilarity");
+    } catch (_) {
+      ImageSimilarity = null;
+    }
+  }
 
   function ensureMarketCompareController(options: CEnsureControllerOptions | null | undefined): any {
     var config = options && typeof options === "object" ? options : ({} as CEnsureControllerOptions);
@@ -226,6 +244,7 @@ interface CMarketCompareGlobal {
       rankingFormula: typeof context.marketCompareRankingFormula === "string"
         ? context.marketCompareRankingFormula
         : "balanced",
+      mlSimilarityEnabled: context.marketCompareMlSimilarityEnabled !== false,
       allowCategoryFallback: context.marketCompareStrictMode !== true
     });
   }
@@ -257,6 +276,7 @@ interface CMarketCompareGlobal {
         ? panelOptions.marketCompareRankingFormula
         : "balanced";
     var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
+    var marketCompareMlSimilarityEnabled = panelOptions.marketCompareMlSimilarityEnabled !== false;
     var controller = marketCompareEnabled ? ensureController() : null;
     if (controller && typeof controller.resetForListing === "function") {
       controller.resetForListing(panelOptions.listing || null);
@@ -281,9 +301,21 @@ interface CMarketCompareGlobal {
         Number(panelOptions.marketCompareResultsLimit) > 0
           ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
           : 5,
+      marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
       showMetadataButton: panelOptions.showMetadataButton !== false,
       renderToken: state.renderToken
     };
+
+    if (
+      state.latestPanelContext.marketCompareEnabled &&
+      state.latestPanelContext.marketCompareMlSimilarityEnabled &&
+      ImageSimilarity &&
+      typeof ImageSimilarity.preloadModel === "function"
+    ) {
+      Promise.resolve(ImageSimilarity.preloadModel()).catch(function () {
+        // Keep warmup failures silent so panel rendering is unaffected.
+      });
+    }
 
     return renderListingInsightsPanel({
       listing: state.latestPanelContext.listing,
@@ -297,6 +329,7 @@ interface CMarketCompareGlobal {
       marketCompareRankingFormula: state.latestPanelContext.marketCompareRankingFormula,
       marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
       marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
+      marketCompareMlSimilarityEnabled: state.latestPanelContext.marketCompareMlSimilarityEnabled,
       showMetadataButton: state.latestPanelContext.showMetadataButton,
       marketCompare: marketCompareEnabled ? marketCompareState : null,
       onMarketCompareClick: onMarketCompareClick

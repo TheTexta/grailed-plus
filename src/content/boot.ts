@@ -331,6 +331,7 @@
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
+    mlSimilarityEnabled: boolean;
   } {
     return {
       enabled:
@@ -348,7 +349,11 @@
       expandedAmountEnabled:
         Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
           ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
-          : false
+          : false,
+      mlSimilarityEnabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
+          : true
     };
   }
 
@@ -357,6 +362,7 @@
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
+    mlSimilarityEnabled: boolean;
   }> {
     var fallback = createDefaultMarketCompareSettings();
 
@@ -377,7 +383,11 @@
           expandedAmountEnabled:
             value && typeof value.expandedAmountEnabled === "boolean"
               ? value.expandedAmountEnabled
-              : fallback.expandedAmountEnabled
+              : fallback.expandedAmountEnabled,
+          mlSimilarityEnabled:
+            value && typeof value.mlSimilarityEnabled === "boolean"
+              ? value.mlSimilarityEnabled
+              : fallback.mlSimilarityEnabled
         };
       })
       .catch(function () {
@@ -709,6 +719,7 @@
           : "balanced";
       var marketCompareStrictMode = marketCompareSettings.strictMode === true;
       var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
+      var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
       var showMetadataButton = Boolean(values[2]);
 
       if (!Url.isListingPath(location.pathname)) {
@@ -783,6 +794,7 @@
         marketCompareRankingFormula: marketCompareRankingFormula,
         marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,
+        marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
         showMetadataButton: showMetadataButton,
         resolveCurrencyContext: resolveCurrencyContext,
         createUsdCurrencyContext: createUsdCurrencyContext,

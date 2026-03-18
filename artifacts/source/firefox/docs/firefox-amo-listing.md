@@ -1,10 +1,10 @@
 # Firefox AMO Listing Copy
 
-Last updated: March 16, 2026
+Last updated: March 17, 2026
 
 ## Summary
 
-Grailed listing insights, Depop comparison, currency conversion, and dark mode in one Firefox add-on.
+Grailed listing insights, Depop comparison, local ML visual reranking, currency conversion, and dark mode in one Firefox add-on.
 
 ## Description
 
@@ -12,7 +12,8 @@ Grailed Plus adds decision-ready context directly to Grailed listing pages:
 
 - listing price history and expected drop signals
 - seller account age and listing metadata access
-- Depop market compare results with thumbnail similarity reranking
+- Depop market compare results with local MobileCLIP thumbnail-embedding reranking
+- a visible `ML Sorted` panel label when the displayed results all used the embedding path
 - optional currency conversion using Frankfurter exchange rates
 - Grailed-wide dark mode controls
 
@@ -35,6 +36,15 @@ Remote requests are limited to:
 - Depop search HTML/API responses used for market compare
 - Depop thumbnail bytes used for local similarity scoring
 - Frankfurter exchange-rate JSON for optional currency conversion
+
+Market Compare image similarity runs locally in the content script with bundled assets:
+
+- MobileCLIP-S1 ONNX vision model shipped inside the extension package
+- ONNX Runtime Web JavaScript/WASM files shipped inside the extension package
+- fallback to local thumbnail fingerprints when the ML session is still cold or unavailable
+- `ML Sorted` is shown only when the displayed results were actually embedding-ranked
+
+No model files or runtime code are downloaded from a CDN at runtime.
 
 ## Screenshot Checklist
 

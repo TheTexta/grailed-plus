@@ -7,6 +7,7 @@
     var DEFAULT_DARK_MODE_BEHAVIOR = "system";
     var DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
     var DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+    var DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
     var CURRENCY_LABELS = {
         USD: "USD - US Dollar",
         EUR: "EUR - Euro",
@@ -22,10 +23,10 @@
         variant: "Variant-first"
     };
     var MARKET_COMPARE_RANKING_FORMULA_DESCRIPTIONS = {
-        balanced: "Balanced: score = 0.22*thumbnail similarity + 0.34*title + 0.06*brand + 0.16*size + 0.08*condition + 0.14*price delta. Missing signals are redistributed across the signals that exist.",
-        visual: "Thumbnail-first: score = 0.50*thumbnail similarity + 0.20*title + 0.08*brand + 0.10*size + 0.05*condition + 0.07*price delta. Missing signals are redistributed across the signals that exist.",
-        metadata: "Title-first: score = 0.08*thumbnail similarity + 0.58*title + 0.08*brand + 0.10*size + 0.06*condition + 0.10*price delta. Missing signals are redistributed across the signals that exist.",
-        variant: "Variant-first: score = 0.06*thumbnail similarity + 0.22*title + 0.16*brand + 0.30*size + 0.18*condition + 0.08*price delta. Missing signals are redistributed across the signals that exist."
+        balanced: "Balanced: score = 0.22*image similarity + 0.34*title + 0.06*brand + 0.16*size + 0.08*condition + 0.14*price delta. Missing signals are redistributed across the signals that exist.",
+        visual: "Thumbnail-first: score = 0.50*image similarity + 0.20*title + 0.08*brand + 0.10*size + 0.05*condition + 0.07*price delta. Missing signals are redistributed across the signals that exist.",
+        metadata: "Title-first: score = 0.08*image similarity + 0.58*title + 0.08*brand + 0.10*size + 0.06*condition + 0.10*price delta. Missing signals are redistributed across the signals that exist.",
+        variant: "Variant-first: score = 0.06*image similarity + 0.22*title + 0.16*brand + 0.30*size + 0.18*condition + 0.08*price delta. Missing signals are redistributed across the signals that exist."
     };
     function normalizeCurrencyCode(input) {
         if (Settings && typeof Settings.normalizeCurrencyCode === "function") {
@@ -193,7 +194,10 @@
                 : false,
             expandedAmountEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
                 ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
-                : false
+                : false,
+            mlSimilarityEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
+                : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
         };
         if (!Settings || typeof Settings.getMarketCompareSettings !== "function") {
             return Promise.resolve(fallback);
@@ -206,7 +210,10 @@
                 strictMode: value && typeof value.strictMode === "boolean" ? value.strictMode : fallback.strictMode,
                 expandedAmountEnabled: value && typeof value.expandedAmountEnabled === "boolean"
                     ? value.expandedAmountEnabled
-                    : fallback.expandedAmountEnabled
+                    : fallback.expandedAmountEnabled,
+                mlSimilarityEnabled: value && typeof value.mlSimilarityEnabled === "boolean"
+                    ? value.mlSimilarityEnabled
+                    : fallback.mlSimilarityEnabled
             };
         });
     }
@@ -256,6 +263,15 @@
             });
         }
         return Settings.setMarketCompareExpandedAmountEnabled(Boolean(enabled));
+    }
+    function saveMarketCompareMlSimilarityEnabled(enabled) {
+        if (!Settings || typeof Settings.setMarketCompareMlSimilarityEnabled !== "function") {
+            return Promise.resolve({
+                ok: false,
+                error: "Settings module unavailable."
+            });
+        }
+        return Settings.setMarketCompareMlSimilarityEnabled(Boolean(enabled));
     }
     function loadDarkModeEnabled() {
         var fallbackEnabled = Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
@@ -421,19 +437,19 @@
         selectNode.value = "CUSTOM";
         customInputNode.value = selectedCurrency;
     }
-    function syncMarketCompareInputs(enabledNode, rankingFormulaNode, strictModeNode, expandedAmountNode, mlSortingPlaceholderNode) {
+    function syncMarketCompareInputs(enabledNode, rankingFormulaNode, strictModeNode, expandedAmountNode, mlSimilarityEnabledNode) {
         if (!enabledNode ||
             !rankingFormulaNode ||
             !strictModeNode ||
             !expandedAmountNode ||
-            !mlSortingPlaceholderNode) {
+            !mlSimilarityEnabledNode) {
             return;
         }
         var marketCompareEnabled = Boolean(enabledNode.checked);
         rankingFormulaNode.disabled = !marketCompareEnabled;
         strictModeNode.disabled = !marketCompareEnabled;
         expandedAmountNode.disabled = !marketCompareEnabled;
-        mlSortingPlaceholderNode.disabled = true;
+        mlSimilarityEnabledNode.disabled = !marketCompareEnabled;
     }
     function syncDarkModeInputs(enabledNode, behaviorNode, legacyColorEnabledNode, legacyColorControlsNode, colorPickerNode, colorHexNode) {
         if (!enabledNode ||
@@ -470,7 +486,7 @@
         var marketCompareRankingFormulaDescriptionNode = document.getElementById("market-compare-ranking-formula-description");
         var marketCompareStrictModeNode = document.getElementById("market-compare-strict-mode");
         var marketCompareExpandedAmountEnabledNode = document.getElementById("market-compare-expanded-amount-enabled");
-        var marketCompareMlSortingPlaceholderNode = document.getElementById("market-compare-ml-sorting-placeholder");
+        var marketCompareMlSimilarityEnabledNode = document.getElementById("market-compare-ml-similarity-enabled");
         var selectNode = document.getElementById("currency-select");
         var customInputNode = document.getElementById("currency-custom");
         var darkModeEnabledNode = document.getElementById("dark-mode-enabled");
@@ -490,7 +506,7 @@
             !marketCompareRankingFormulaDescriptionNode ||
             !marketCompareStrictModeNode ||
             !marketCompareExpandedAmountEnabledNode ||
-            !marketCompareMlSortingPlaceholderNode ||
+            !marketCompareMlSimilarityEnabledNode ||
             !selectNode ||
             !customInputNode ||
             !darkModeEnabledNode ||
@@ -537,6 +553,9 @@
                 DEFAULT_MARKET_COMPARE_RANKING_FORMULA;
             var marketCompareStrictMode = Boolean(marketCompareSettings.strictMode);
             var marketCompareExpandedAmountEnabled = Boolean(marketCompareSettings.expandedAmountEnabled);
+            var marketCompareMlSimilarityEnabled = typeof marketCompareSettings.mlSimilarityEnabled === "boolean"
+                ? marketCompareSettings.mlSimilarityEnabled
+                : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED;
             var darkModeEnabled = values[5];
             var darkModeBehavior = values[6];
             var darkModePrimaryColor = values[7];
@@ -551,7 +570,8 @@
             updateMarketCompareRankingFormulaDescription(marketCompareRankingFormulaDescriptionNode, marketCompareRankingFormula);
             marketCompareStrictModeNode.checked = marketCompareStrictMode;
             marketCompareExpandedAmountEnabledNode.checked = marketCompareExpandedAmountEnabled;
-            syncMarketCompareInputs(marketCompareEnabledNode, marketCompareRankingFormulaNode, marketCompareStrictModeNode, marketCompareExpandedAmountEnabledNode, marketCompareMlSortingPlaceholderNode);
+            marketCompareMlSimilarityEnabledNode.checked = marketCompareMlSimilarityEnabled;
+            syncMarketCompareInputs(marketCompareEnabledNode, marketCompareRankingFormulaNode, marketCompareStrictModeNode, marketCompareExpandedAmountEnabledNode, marketCompareMlSimilarityEnabledNode);
             darkModeEnabledNode.checked = darkModeEnabled;
             darkModeBehaviorNode.value = darkModeBehavior;
             darkModeLegacyColorEnabledNode.checked = darkModeLegacyColorCustomizationEnabled;
@@ -582,7 +602,7 @@
         }
         if (typeof marketCompareEnabledNode.addEventListener === "function") {
             marketCompareEnabledNode.addEventListener("change", function () {
-                syncMarketCompareInputs(marketCompareEnabledNode, marketCompareRankingFormulaNode, marketCompareStrictModeNode, marketCompareExpandedAmountEnabledNode, marketCompareMlSortingPlaceholderNode);
+                syncMarketCompareInputs(marketCompareEnabledNode, marketCompareRankingFormulaNode, marketCompareStrictModeNode, marketCompareExpandedAmountEnabledNode, marketCompareMlSimilarityEnabledNode);
                 setStatus(statusNode, null, "");
             });
         }
@@ -599,6 +619,11 @@
         }
         if (typeof marketCompareExpandedAmountEnabledNode.addEventListener === "function") {
             marketCompareExpandedAmountEnabledNode.addEventListener("change", function () {
+                setStatus(statusNode, null, "");
+            });
+        }
+        if (typeof marketCompareMlSimilarityEnabledNode.addEventListener === "function") {
+            marketCompareMlSimilarityEnabledNode.addEventListener("change", function () {
                 setStatus(statusNode, null, "");
             });
         }
@@ -651,6 +676,7 @@
                 var marketCompareRankingFormula = normalizeMarketCompareRankingFormula(marketCompareRankingFormulaNode.value);
                 var marketCompareStrictMode = Boolean(marketCompareStrictModeNode.checked);
                 var marketCompareExpandedAmountEnabled = Boolean(marketCompareExpandedAmountEnabledNode.checked);
+                var marketCompareMlSimilarityEnabled = Boolean(marketCompareMlSimilarityEnabledNode.checked);
                 var usingCustom = selectNode.value === "CUSTOM";
                 var darkModeEnabled = Boolean(darkModeEnabledNode.checked);
                 var darkModeLegacyColorCustomizationEnabled = Boolean(darkModeLegacyColorEnabledNode.checked);
@@ -709,6 +735,7 @@
                         saveMarketCompareRankingFormula(safeMarketCompareRankingFormula),
                         saveMarketCompareStrictMode(marketCompareStrictMode),
                         saveMarketCompareExpandedAmountEnabled(marketCompareExpandedAmountEnabled),
+                        saveMarketCompareMlSimilarityEnabled(marketCompareMlSimilarityEnabled),
                         saveDarkModeEnabled(darkModeEnabled),
                         saveDarkModeBehavior(safeDarkModeBehavior),
                         saveDarkModePrimaryColor(safeDarkModePrimaryColor),
@@ -752,6 +779,9 @@
                 var defaultMarketCompareExpandedAmountEnabled = Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
                     ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
                     : false;
+                var defaultMarketCompareMlSimilarityEnabled = Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
+                    ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
+                    : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED;
                 var defaultDarkModeEnabled = Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
                     ? Settings.DEFAULT_DARK_MODE_ENABLED
                     : true;
@@ -771,6 +801,7 @@
                     saveMarketCompareRankingFormula(defaultMarketCompareRankingFormula),
                     saveMarketCompareStrictMode(defaultMarketCompareStrictMode),
                     saveMarketCompareExpandedAmountEnabled(defaultMarketCompareExpandedAmountEnabled),
+                    saveMarketCompareMlSimilarityEnabled(defaultMarketCompareMlSimilarityEnabled),
                     saveDarkModeEnabled(defaultDarkModeEnabled),
                     saveDarkModeBehavior(defaultDarkModeBehavior),
                     saveDarkModePrimaryColor(defaultDarkModePrimaryColor),
@@ -793,7 +824,8 @@
                     updateMarketCompareRankingFormulaDescription(marketCompareRankingFormulaDescriptionNode, defaultMarketCompareRankingFormula);
                     marketCompareStrictModeNode.checked = defaultMarketCompareStrictMode;
                     marketCompareExpandedAmountEnabledNode.checked = defaultMarketCompareExpandedAmountEnabled;
-                    syncMarketCompareInputs(marketCompareEnabledNode, marketCompareRankingFormulaNode, marketCompareStrictModeNode, marketCompareExpandedAmountEnabledNode, marketCompareMlSortingPlaceholderNode);
+                    marketCompareMlSimilarityEnabledNode.checked = defaultMarketCompareMlSimilarityEnabled;
+                    syncMarketCompareInputs(marketCompareEnabledNode, marketCompareRankingFormulaNode, marketCompareStrictModeNode, marketCompareExpandedAmountEnabledNode, marketCompareMlSimilarityEnabledNode);
                     darkModeEnabledNode.checked = defaultDarkModeEnabled;
                     darkModeBehaviorNode.value = defaultDarkModeBehavior;
                     darkModeLegacyColorEnabledNode.checked =

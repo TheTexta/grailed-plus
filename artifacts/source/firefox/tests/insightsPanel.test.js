@@ -737,6 +737,82 @@ test("renderInsightsPanel shows no-results market state and keeps action enabled
   assert.match(flattenText(panel), /No matching listings found/);
 });
 
+test("renderInsightsPanel shows ML sorting status when displayed results all use embedding ranking", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r-ml-1",
+          title: "ML ranked listing 1",
+          url: "https://depop.test/item/ml-1",
+          price: 88,
+          currency: "USD",
+          imageSignalType: "ml_embedding"
+        },
+        {
+          id: "r-ml-2",
+          title: "ML ranked listing 2",
+          url: "https://depop.test/item/ml-2",
+          price: 92,
+          currency: "USD",
+          imageSignalType: "ml_embedding"
+        }
+      ]
+    }
+  });
+
+  const chips = panel.querySelectorAll(".grailed-plus__market-chip");
+  assert.equal(chips.length, 2);
+  assert.equal(chips[0].textContent, "Results");
+  assert.equal(chips[1].textContent, "ML Sorted");
+});
+
+test("renderInsightsPanel omits ML sorting status when displayed results include fallback image signals", () => {
+  const { anchor } = createPanelHarness();
+
+  const panel = renderInsightsPanel({
+    listing: sampleListing(),
+    metrics: sampleMetrics(),
+    mountNode: anchor,
+    rawListing: { id: 123 },
+    marketCompare: {
+      status: "results",
+      provider: "Depop",
+      results: [
+        {
+          id: "r-mixed-1",
+          title: "ML ranked listing",
+          url: "https://depop.test/item/mixed-1",
+          price: 88,
+          currency: "USD",
+          imageSignalType: "ml_embedding"
+        },
+        {
+          id: "r-mixed-2",
+          title: "Fallback ranked listing",
+          url: "https://depop.test/item/mixed-2",
+          price: 92,
+          currency: "USD",
+          imageSignalType: "thumbnail_fingerprint"
+        }
+      ]
+    }
+  });
+
+  const chips = panel.querySelectorAll(".grailed-plus__market-chip");
+  assert.equal(chips.length, 1);
+  assert.equal(chips[0].textContent, "Results");
+  assert.doesNotMatch(flattenText(panel), /ML Sorted/);
+});
+
 test("renderInsightsPanel omits score fragment when score is not finite", () => {
   const { anchor } = createPanelHarness();
 

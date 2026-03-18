@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Grailed Plus",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "Listing insights, currency conversion, and dark mode for grailed.com.",
   "icons": {
     "64": "icons/Logo0.5x.png",
@@ -31,12 +31,24 @@
         "https://*.grailed.com/*"
       ],
       "js": [
+        "vendor/onnxruntime/ort.wasm.min.js",
         "contentScript.js"
       ],
       "css": [
         "contentScript.css"
       ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "vendor/onnxruntime/ort-wasm-simd-threaded.wasm",
+        "vendor/mobileclip-s1/vision_model_uint8.onnx"
+      ],
+      "matches": [
+        "https://*.grailed.com/*"
+      ]
     }
   ],
   "background": {

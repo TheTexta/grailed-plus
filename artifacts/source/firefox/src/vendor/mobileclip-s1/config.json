@@ -1,0 +1,15 @@
+{
+  "model_type": "clip",
+  "transformers.js_config": {
+    "dtype": {
+      "vision_model": "fp32"
+    },
+    "device_config": {
+      "webnn": {
+        "free_dimension_overrides": {
+          "batch_size": 1
+        }
+      }
+    }
+  }
+}

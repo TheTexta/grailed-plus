@@ -73,7 +73,7 @@
               aria-live="polite"
             ></div>
             <p class="gp-options__hint gp-options__hint--inline">
-              Current image input uses local thumbnail fingerprints from the listing image and Depop search-result thumbnails.
+              Image similarity uses local MobileCLIP thumbnail embeddings when available and falls back to fast local thumbnail fingerprints.
             </p>
 
             <label class="gp-options__toggle">
@@ -86,13 +86,13 @@
               <span>Expanded results: show 10 market compare results</span>
             </label>
 
-            <div class="gp-options__setting-card gp-options__setting-card--future" aria-disabled="true">
-              <label class="gp-options__toggle gp-options__toggle--disabled">
-                <input id="market-compare-ml-sorting-placeholder" type="checkbox" disabled />
-                <span>ML image-based similar listing sorting</span>
+            <div class="gp-options__setting-card">
+              <label class="gp-options__toggle">
+                <input id="market-compare-ml-similarity-enabled" type="checkbox" />
+                <span>Use ML visual similarity when available</span>
               </label>
               <p class="gp-options__hint gp-options__hint--inline">
-                Coming soon. Will re-rank similar listings using image embeddings.
+                Uses local MobileCLIP thumbnail embeddings and falls back to fast thumbnail fingerprints when the model is cold or unavailable.
               </p>
             </div>
           </div>

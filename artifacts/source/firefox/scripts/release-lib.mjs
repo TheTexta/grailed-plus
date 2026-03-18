@@ -125,6 +125,15 @@ function collectManifestAssetPaths(manifest) {
     });
   }
 
+  if (Array.isArray(safeManifest.web_accessible_resources)) {
+    safeManifest.web_accessible_resources.forEach(function (entry) {
+      const resources = Array.isArray(entry && entry.resources) ? entry.resources : [];
+      resources.forEach(function (value) {
+        addNormalizedAssetPath(assetPaths, value);
+      });
+    });
+  }
+
   if (safeManifest.action && typeof safeManifest.action.default_popup === "string") {
     addNormalizedAssetPath(assetPaths, safeManifest.action.default_popup);
   }
@@ -246,9 +255,18 @@ export function buildManifest(browser) {
     content_scripts: [
       {
         matches: ["https://*.grailed.com/*"],
-        js: ["contentScript.js"],
+        js: ["vendor/onnxruntime/ort.wasm.min.js", "contentScript.js"],
         css: ["contentScript.css"],
         run_at: "document_idle"
+      }
+    ],
+    web_accessible_resources: [
+      {
+        resources: [
+          "vendor/onnxruntime/ort-wasm-simd-threaded.wasm",
+          "vendor/mobileclip-s1/vision_model_uint8.onnx"
+        ],
+        matches: ["https://*.grailed.com/*"]
       }
     ]
   };

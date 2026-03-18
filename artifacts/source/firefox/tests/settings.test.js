@@ -12,6 +12,7 @@ const {
   DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
   DEFAULT_MARKET_COMPARE_STRICT_MODE,
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
+  DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
   DEFAULT_DARK_MODE_ENABLED,
   DEFAULT_DARK_MODE_BEHAVIOR,
   DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -24,6 +25,7 @@ const {
   MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
   MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
+  MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
   DARK_MODE_ENABLED_STORAGE_KEY,
   DARK_MODE_BEHAVIOR_STORAGE_KEY,
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -49,6 +51,8 @@ const {
   setMarketCompareStrictMode,
   getMarketCompareExpandedAmountEnabled,
   setMarketCompareExpandedAmountEnabled,
+  getMarketCompareMlSimilarityEnabled,
+  setMarketCompareMlSimilarityEnabled,
   getMarketCompareSettings,
   getDarkModeEnabled,
   setDarkModeEnabled,
@@ -560,6 +564,48 @@ test("setMarketCompareExpandedAmountEnabled persists boolean values", async () =
   }
 });
 
+test("getMarketCompareMlSimilarityEnabled defaults to enabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getMarketCompareMlSimilarityEnabled();
+    assert.equal(enabled, DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED);
+    assert.equal(enabled, true);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareMlSimilarityEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setMarketCompareMlSimilarityEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY], true);
+    assert.equal(await getMarketCompareMlSimilarityEnabled(), true);
+
+    const offResult = await setMarketCompareMlSimilarityEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY], false);
+    assert.equal(await getMarketCompareMlSimilarityEnabled(), false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
 test("getMarketCompareSettings returns the grouped market compare state", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
@@ -568,7 +614,8 @@ test("getMarketCompareSettings returns the grouped market compare state", async 
     [MARKET_COMPARE_ENABLED_STORAGE_KEY]: true,
     [MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY]: "metadata",
     [MARKET_COMPARE_STRICT_MODE_STORAGE_KEY]: true,
-    [MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY]: true
+    [MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY]: true,
+    [MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY]: true
   });
   global.chrome = chromeMock;
   global.browser = undefined;
@@ -579,7 +626,8 @@ test("getMarketCompareSettings returns the grouped market compare state", async 
       enabled: true,
       rankingFormula: "metadata",
       strictMode: true,
-      expandedAmountEnabled: true
+      expandedAmountEnabled: true,
+      mlSimilarityEnabled: true
     });
   } finally {
     global.chrome = previousChrome;

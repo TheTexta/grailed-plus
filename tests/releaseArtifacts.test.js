@@ -40,21 +40,37 @@ test("staged Firefox package includes required runtime files and validation fail
   const staged = releaseLib.stageExtension("firefox");
   const browserStoragePath = path.join(staged.stageDir, "domain", "browserStorage.js");
   const backgroundPath = path.join(staged.stageDir, "background.js");
+  const ortRuntimePath = path.join(staged.stageDir, "vendor", "onnxruntime", "ort.wasm.min.js");
+  const ortWasmPath = path.join(
+    staged.stageDir,
+    "vendor",
+    "onnxruntime",
+    "ort-wasm-simd-threaded.wasm"
+  );
+  const modelPath = path.join(
+    staged.stageDir,
+    "vendor",
+    "mobileclip-s1",
+    "vision_model_uint8.onnx"
+  );
   const brokenStageDir = path.join(releaseLib.artifactsDir, "staging", "firefox-broken");
 
   assert.equal(fs.existsSync(backgroundPath), true);
   assert.equal(fs.existsSync(browserStoragePath), true);
+  assert.equal(fs.existsSync(ortRuntimePath), true);
+  assert.equal(fs.existsSync(ortWasmPath), true);
+  assert.equal(fs.existsSync(modelPath), true);
 
   fs.rmSync(brokenStageDir, { recursive: true, force: true });
   fs.cpSync(staged.stageDir, brokenStageDir, { recursive: true });
-  fs.unlinkSync(path.join(brokenStageDir, "domain", "browserStorage.js"));
+  fs.unlinkSync(path.join(brokenStageDir, "vendor", "mobileclip-s1", "vision_model_uint8.onnx"));
 
   try {
     assert.throws(
       function () {
         releaseLib.validateStagedExtension("firefox", brokenStageDir);
       },
-      /missing referenced asset domain\/browserStorage\.js/i
+      /missing referenced asset vendor\/mobileclip-s1\/vision_model_uint8\.onnx/i
     );
   } finally {
     fs.rmSync(brokenStageDir, { recursive: true, force: true });
@@ -72,6 +88,10 @@ test("Firefox source submission stage excludes generated first-party files and k
   assert.equal(fs.existsSync(path.join(staged.stageDir, "src", "background.js")), false);
   assert.equal(fs.existsSync(path.join(staged.stageDir, "src", "contentScript.js")), false);
   assert.equal(fs.existsSync(path.join(staged.stageDir, "src", "manifest.firefox.json")), false);
+  assert.equal(
+    fs.existsSync(path.join(staged.stageDir, "src", "vendor", "THIRD_PARTY_NOTICES.md")),
+    true
+  );
   assert.match(readme, /npm run zip:firefox/);
   assert.match(readme, /npm run source:firefox/);
   assert.match(readme, /Node\.js[:\s`]*22\.18\.0/);

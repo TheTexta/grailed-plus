@@ -43,6 +43,7 @@ interface URenderUnavailableOptions {
         rankingFormula: string;
         strictMode: boolean;
         expandedAmountEnabled: boolean;
+        mlSimilarityEnabled: boolean;
       }>)
     | null;
   resolveListingMetadataButtonEnabled?: (() => Promise<boolean>) | null;
@@ -59,6 +60,7 @@ interface URenderUnavailableOptions {
         marketCompareRankingFormula: string;
         marketCompareStrictMode: boolean;
         marketCompareResultsLimit: number;
+        marketCompareMlSimilarityEnabled: boolean;
         showMetadataButton: boolean;
       }) => void)
     | null;
@@ -144,7 +146,8 @@ interface UUnavailableGlobal {
               enabled: true,
               rankingFormula: "balanced",
               strictMode: false,
-              expandedAmountEnabled: false
+              expandedAmountEnabled: false,
+              mlSimilarityEnabled: true
             });
           };
     var applySidebarCurrency =
@@ -195,6 +198,7 @@ interface UUnavailableGlobal {
               rankingFormula?: string;
               strictMode?: boolean;
               expandedAmountEnabled?: boolean;
+              mlSimilarityEnabled?: boolean;
             })
           : {};
       var marketCompareEnabled = marketCompareSettings.enabled !== false;
@@ -205,6 +209,7 @@ interface UUnavailableGlobal {
       var marketCompareStrictMode = marketCompareSettings.strictMode === true;
       var marketCompareResultsLimit =
         marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
+      var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
       var showMetadataButton = values[2] !== false;
       var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
       if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
@@ -223,6 +228,7 @@ interface UUnavailableGlobal {
         marketCompareRankingFormula: marketCompareRankingFormula,
         marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,
+        marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
         showMetadataButton: showMetadataButton
       });
       applySidebarCurrency(currencyContext);

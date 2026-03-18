@@ -6,7 +6,7 @@
 | Feature                        | Description                                                      |
 |--------------------------------|------------------------------------------------------------------|
 | Listing Insights Panel         | Injects price trends, drops, and seller context on listings       |
-| Depop Price Comparison         | Real-time cross-market price data from Depop                     |
+| Depop Market Compare           | Depop reranking with local MobileCLIP-S1 image similarity        |
 | Seller Metadata                | Shows seller account age and trust context                       |
 | One-click Metadata Inspection  | View raw listing JSON directly                                   |
 | Currency Conversion            | USD→local currency, configurable, Frankfurter API                |
@@ -20,7 +20,7 @@
 
 Credit: Forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
 
-Grailed Plus enhances Grailed listing pages with fast, decision-ready marketplace context: pricing intelligence, seller metadata, listing JSON access, optional currency conversion, and site-wide dark mode controls.
+Grailed Plus enhances Grailed listing pages with fast, decision-ready marketplace context: pricing intelligence, seller metadata, listing JSON access, optional currency conversion, site-wide dark mode controls, and local ML reranking for Depop market compare.
 
 
 ## 🏗️ Technical Architecture Overview
@@ -38,6 +38,7 @@ Grailed Plus is built for in-flow browsing. Instead of opening extra tabs or doi
 - Seller account age for trust context
 - One-click listing metadata inspection
 - Optional USD conversion into your selected currency
+- Local MobileCLIP-S1 visual similarity for small-set Depop reranking
 - Grailed-wide dark mode with configurable primary color
 
 
@@ -57,8 +58,24 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 
 - **Depop Price Comparison (NEW)**
   - Instantly compare Grailed listings with similar items on Depop.
-  - Real-time Depop pricing data shown directly on Grailed listing pages.
+  - Local MobileCLIP-S1 image embeddings rerank Depop search-result thumbnails inside the browser.
+  - Falls back to local thumbnail fingerprints and then a URL heuristic if ML inference is cold or unavailable.
   - Make smarter buying and selling decisions with cross-market context.
+
+## Recent Changes
+
+This session shipped the first real ML image-matching upgrade for Market Compare:
+
+- MobileCLIP-S1 ONNX embeddings are now the primary image-similarity signal for Depop reranking.
+- ONNX Runtime Web and the MobileCLIP-S1 vision model are bundled with the extension package and loaded locally.
+- The old thumbnail fingerprint path remains as the automatic fallback, with the legacy URL heuristic retained as a last resort.
+- The options page now includes `Use ML visual similarity when available`, enabled by default.
+- The Market Compare panel can show `ML Sorted` when the displayed results were all ranked through the embedding path.
+
+Supporting documentation:
+
+- [docs/market-compare-image-similarity.md](/Users/dexteryoung/Git%20Repos/grailed-plus/docs/market-compare-image-similarity.md)
+- [src/vendor/THIRD_PARTY_NOTICES.md](/Users/dexteryoung/Git%20Repos/grailed-plus/src/vendor/THIRD_PARTY_NOTICES.md)
 
 - **Refreshed Injected UI (NEW)**
   - All extension UI components now feature a minimalist, data-dense design.
@@ -106,6 +123,8 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 - Browse Grailed as usual.
 - On any listing page, view Depop price comparisons and enhanced market insights.
 - All features are available in both light and dark mode.
+- Market Compare uses only the Grailed listing image and Depop search-result thumbnails; it does not fetch each candidate listing page just to score similarity.
+- When all displayed Market Compare results were ranked by the embedding pipeline, the panel shows `ML Sorted`.
 
 
 ## ⚙️ Settings Reference
@@ -114,7 +133,8 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 |-------------------|---------------------------------------------|---------------------------------------|
 | Currency          | Select or enter 3-letter code, enable/disable| Extension popup > Settings            |
 | Dark Mode         | Enable, match device, or permanent, color   | Extension popup > Settings            |
-| Depop Comparison  | Toggle feature (if available)               | Extension popup > Settings            |
+| Depop Comparison  | Toggle feature, formula, strict mode, count | Extension popup > Settings            |
+| Market Compare ML | Toggle local MobileCLIP similarity with fallback | Extension popup > Settings        |
 
 
 ### Currency
@@ -135,6 +155,14 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 
 *Dark mode uses a CSS-first approach for high contrast and fidelity. Images/media are counter-filtered to preserve appearance.*
 
+### Market Compare Image Similarity
+1. Open Grailed Plus Settings.
+2. Enable market compare and leave `Use ML visual similarity when available` on to use the local MobileCLIP-S1 reranker.
+3. Trigger compare from a Grailed listing page.
+4. The first compare in a cold tab may use the fingerprint fallback while the model warms in the background.
+
+*The model and ONNX Runtime WASM assets are bundled with the extension. No CDN or remote model download is used.*
+
 
 ## 🗂️ Project Layout
 
@@ -146,12 +174,16 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 - scripts/release-lib.mjs: Shared manifest generation, staging, and package validation
 - src/domain/settings.js: Selected currency persistence helpers
 - src/domain/currency.js: Exchange-rate cache and conversion helpers
+- src/domain/imageSimilarity.ts: MobileCLIP-S1 embeddings, fingerprint fallback, and image preprocessing
 - src/domain/url.js: Listing URL parsing helpers
 - src/ui/renderInsightsPanel.js: Insights panel rendering and mount heuristics
 - src/ui/theme.js: Dark-mode attribute and CSS variable application
 - src/ui.css: Shared extension UI styles
 - src/options.html: Extension settings page
 - src/options.js: Settings UI logic
+- src/vendor/mobileclip-s1/: Vendored MobileCLIP-S1 ONNX vision model assets
+- src/vendor/onnxruntime/: Vendored ONNX Runtime Web JS/WASM assets
+- src/vendor/THIRD_PARTY_NOTICES.md: Provenance and license notes for vendored assets
 - src/contentScript.js: Generated content-script bundle
 
 
@@ -205,6 +237,8 @@ The source archive intentionally excludes generated first-party build outputs:
 - `src/manifest.firefox.json`
 
 These files are recreated from the original source and build scripts.
+
+The source archive also includes the vendored MobileCLIP-S1 model assets, ONNX Runtime Web assets, and `[src/vendor/THIRD_PARTY_NOTICES.md](/Users/dexteryoung/Git Repos/grailed-plus/src/vendor/THIRD_PARTY_NOTICES.md)` for provenance and licensing.
 
 Step-by-step exact Firefox build:
 

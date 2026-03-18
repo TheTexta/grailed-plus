@@ -656,6 +656,7 @@
     const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
@@ -675,6 +676,7 @@
     const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY = "grailed_plus_market_compare_ranking_formula_v1";
     const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
+    const MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY = "grailed_plus_market_compare_ml_similarity_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
@@ -840,6 +842,7 @@
     const marketCompareRankingFormulaSetting = createValidatedSetting(MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY, DEFAULT_MARKET_COMPARE_RANKING_FORMULA, normalizeMarketCompareRankingFormula, "Market compare ranking formula must match a supported option.", "Failed to persist market compare ranking formula.");
     const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
+    const marketCompareMlSimilaritySetting = createBooleanSetting(MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED, "market compare ml similarity status");
     const darkModeEnabledSetting = createBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, DEFAULT_DARK_MODE_ENABLED, "dark mode status");
     const darkModeBehaviorSetting = createValidatedSetting(DARK_MODE_BEHAVIOR_STORAGE_KEY, DEFAULT_DARK_MODE_BEHAVIOR, normalizeDarkModeBehavior, "Dark mode behavior must be either 'system' or 'permanent'.", "Failed to persist dark mode behavior.");
     const darkModePrimaryColorSetting = createValidatedSetting(DARK_MODE_PRIMARY_COLOR_STORAGE_KEY, DEFAULT_DARK_MODE_PRIMARY_COLOR, normalizeHexColor, "Primary color must be a valid hex value.", "Failed to persist dark mode primary color.");
@@ -892,18 +895,26 @@
     function setMarketCompareExpandedAmountEnabled(enabled) {
         return marketCompareExpandedAmountSetting.set(enabled);
     }
+    function getMarketCompareMlSimilarityEnabled() {
+        return marketCompareMlSimilaritySetting.get();
+    }
+    function setMarketCompareMlSimilarityEnabled(enabled) {
+        return marketCompareMlSimilaritySetting.set(enabled);
+    }
     function getMarketCompareSettings() {
         return Promise.all([
             getMarketCompareEnabled(),
             getMarketCompareRankingFormula(),
             getMarketCompareStrictMode(),
-            getMarketCompareExpandedAmountEnabled()
+            getMarketCompareExpandedAmountEnabled(),
+            getMarketCompareMlSimilarityEnabled()
         ]).then(function (values) {
             return {
                 enabled: values[0],
                 rankingFormula: values[1],
                 strictMode: values[2],
-                expandedAmountEnabled: values[3]
+                expandedAmountEnabled: values[3],
+                mlSimilarityEnabled: values[4]
             };
         });
     }
@@ -940,6 +951,7 @@
         DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
         DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
+        DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
         DEFAULT_DARK_MODE_ENABLED,
         DEFAULT_DARK_MODE_BEHAVIOR,
         DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -954,6 +966,7 @@
         MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
         MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
+        MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
         DARK_MODE_ENABLED_STORAGE_KEY,
         DARK_MODE_BEHAVIOR_STORAGE_KEY,
         DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -979,6 +992,8 @@
         setMarketCompareStrictMode,
         getMarketCompareExpandedAmountEnabled,
         setMarketCompareExpandedAmountEnabled,
+        getMarketCompareMlSimilarityEnabled,
+        setMarketCompareMlSimilarityEnabled,
         getMarketCompareSettings,
         getDarkModeEnabled,
         setDarkModeEnabled,
@@ -3730,6 +3745,11 @@
     const IMAGE_FETCH_MESSAGE_VERSION = 1;
     const HASH_GRID_WIDTH = 9;
     const HASH_GRID_HEIGHT = 8;
+    const MODEL_IMAGE_SIZE = 256;
+    const DEFAULT_CACHE_MAX_ENTRIES = 128;
+    const DEFAULT_COLD_START_BUDGET_MS = 40;
+    const MODEL_ASSET_PATH = "vendor/mobileclip-s1/vision_model_uint8.onnx";
+    const WASM_ASSET_PATH = "vendor/onnxruntime/ort-wasm-simd-threaded.wasm";
     function normalizeString(value, fallback) {
         if (typeof value !== "string") {
             return fallback;
@@ -3744,8 +3764,18 @@
         }
         return Math.max(1, Math.floor(parsed));
     }
+    function normalizeDurationMs(value, fallback) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+            return fallback;
+        }
+        return Math.max(0, Math.floor(parsed));
+    }
     function isPromiseLike(value) {
         return Boolean(value) && typeof value.then === "function";
+    }
+    function isObjectRecord(value) {
+        return Boolean(value) && typeof value === "object";
     }
     function hasBitmapDecodeSupport() {
         return typeof createImageBitmap === "function" && typeof OffscreenCanvas === "function";
@@ -3761,15 +3791,21 @@
     function getRuntime() {
         if (typeof globalThis !== "undefined" &&
             globalThis.chrome &&
-            globalThis.chrome?.runtime &&
-            typeof globalThis.chrome?.runtime?.sendMessage === "function") {
+            globalThis.chrome?.runtime) {
             return globalThis.chrome?.runtime || null;
         }
         if (typeof globalThis !== "undefined" &&
             globalThis.browser &&
-            globalThis.browser?.runtime &&
-            typeof globalThis.browser?.runtime?.sendMessage === "function") {
+            globalThis.browser?.runtime) {
             return globalThis.browser?.runtime || null;
+        }
+        return null;
+    }
+    function getOrt() {
+        if (typeof globalThis !== "undefined" &&
+            globalThis.ort &&
+            typeof globalThis.ort === "object") {
+            return globalThis.ort || null;
         }
         return null;
     }
@@ -3863,26 +3899,18 @@
         }
         return fetchImageBlobDirect(url);
     }
-    function toLumaGrid(data, width, height) {
-        const grid = [];
-        for (let y = 0; y < height; y += 1) {
-            for (let x = 0; x < width; x += 1) {
-                const index = (y * width + x) * 4;
-                const red = Number(data[index] || 0);
-                const green = Number(data[index + 1] || 0);
-                const blue = Number(data[index + 2] || 0);
-                grid.push(Math.round(red * 0.299 + green * 0.587 + blue * 0.114));
-            }
-        }
-        return grid;
-    }
-    async function drawBlobToGridWithBitmap(blob, width, height) {
+    async function drawBlobToImageWithBitmap(blob) {
         if (!hasBitmapDecodeSupport()) {
             return null;
         }
         let bitmap = null;
         try {
             bitmap = await createImageBitmap(blob);
+            const width = normalizePositiveInteger(bitmap.width, 0);
+            const height = normalizePositiveInteger(bitmap.height, 0);
+            if (!width || !height) {
+                return null;
+            }
             const canvas = new OffscreenCanvas(width, height);
             const context = canvas.getContext("2d", {
                 willReadFrequently: true
@@ -3892,7 +3920,11 @@
             }
             context.drawImage(bitmap, 0, 0, width, height);
             const imageData = context.getImageData(0, 0, width, height);
-            return toLumaGrid(imageData.data, width, height);
+            return {
+                data: imageData.data,
+                width: width,
+                height: height
+            };
         }
         catch (_) {
             return null;
@@ -3908,20 +3940,8 @@
             }
         }
     }
-    async function drawBlobToGridWithDomCanvas(blob, width, height) {
+    async function drawBlobToImageWithDomCanvas(blob) {
         if (!hasDomCanvasSupport()) {
-            return null;
-        }
-        const canvas = document.createElement("canvas");
-        if (!canvas || typeof canvas.getContext !== "function") {
-            return null;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext("2d", {
-            willReadFrequently: true
-        });
-        if (!context) {
             return null;
         }
         const objectUrl = URL.createObjectURL(blob);
@@ -3939,9 +3959,30 @@
             if (!image) {
                 return null;
             }
+            const width = normalizePositiveInteger(image.naturalWidth || image.width, 0);
+            const height = normalizePositiveInteger(image.naturalHeight || image.height, 0);
+            if (!width || !height) {
+                return null;
+            }
+            const canvas = document.createElement("canvas");
+            if (!canvas || typeof canvas.getContext !== "function") {
+                return null;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d", {
+                willReadFrequently: true
+            });
+            if (!context) {
+                return null;
+            }
             context.drawImage(image, 0, 0, width, height);
             const imageData = context.getImageData(0, 0, width, height);
-            return toLumaGrid(imageData.data, width, height);
+            return {
+                data: imageData.data,
+                width: width,
+                height: height
+            };
         }
         catch (_) {
             return null;
@@ -3957,16 +3998,102 @@
             }
         }
     }
-    async function defaultLoadGrayscaleGrid(url, width, height) {
+    async function defaultLoadDecodedImage(url) {
         const blob = await fetchImageBlob(url);
         if (!blob) {
             return null;
         }
-        const bitmapGrid = await drawBlobToGridWithBitmap(blob, width, height);
-        if (bitmapGrid) {
-            return bitmapGrid;
+        const decodedWithBitmap = await drawBlobToImageWithBitmap(blob);
+        if (decodedWithBitmap) {
+            return decodedWithBitmap;
         }
-        return drawBlobToGridWithDomCanvas(blob, width, height);
+        return drawBlobToImageWithDomCanvas(blob);
+    }
+    function resizeRgbaBilinear(source, sourceWidth, sourceHeight, targetWidth, targetHeight) {
+        const output = new Uint8ClampedArray(targetWidth * targetHeight * 4);
+        const xRatio = sourceWidth / targetWidth;
+        const yRatio = sourceHeight / targetHeight;
+        for (let y = 0; y < targetHeight; y += 1) {
+            const srcY = Math.max(0, Math.min(sourceHeight - 1, (y + 0.5) * yRatio - 0.5));
+            const y0 = Math.floor(srcY);
+            const y1 = Math.min(sourceHeight - 1, y0 + 1);
+            const yWeight = srcY - y0;
+            for (let x = 0; x < targetWidth; x += 1) {
+                const srcX = Math.max(0, Math.min(sourceWidth - 1, (x + 0.5) * xRatio - 0.5));
+                const x0 = Math.floor(srcX);
+                const x1 = Math.min(sourceWidth - 1, x0 + 1);
+                const xWeight = srcX - x0;
+                const topLeft = (y0 * sourceWidth + x0) * 4;
+                const topRight = (y0 * sourceWidth + x1) * 4;
+                const bottomLeft = (y1 * sourceWidth + x0) * 4;
+                const bottomRight = (y1 * sourceWidth + x1) * 4;
+                const outIndex = (y * targetWidth + x) * 4;
+                for (let channel = 0; channel < 4; channel += 1) {
+                    const top = Number(source[topLeft + channel] || 0) * (1 - xWeight) +
+                        Number(source[topRight + channel] || 0) * xWeight;
+                    const bottom = Number(source[bottomLeft + channel] || 0) * (1 - xWeight) +
+                        Number(source[bottomRight + channel] || 0) * xWeight;
+                    output[outIndex + channel] = Math.round(top * (1 - yWeight) + bottom * yWeight);
+                }
+            }
+        }
+        return output;
+    }
+    function cropRgba(source, sourceWidth, sourceHeight, startX, startY, cropWidth, cropHeight) {
+        const output = new Uint8ClampedArray(cropWidth * cropHeight * 4);
+        for (let y = 0; y < cropHeight; y += 1) {
+            const sourceY = Math.max(0, Math.min(sourceHeight - 1, startY + y));
+            for (let x = 0; x < cropWidth; x += 1) {
+                const sourceX = Math.max(0, Math.min(sourceWidth - 1, startX + x));
+                const sourceIndex = (sourceY * sourceWidth + sourceX) * 4;
+                const outputIndex = (y * cropWidth + x) * 4;
+                output[outputIndex] = source[sourceIndex];
+                output[outputIndex + 1] = source[sourceIndex + 1];
+                output[outputIndex + 2] = source[sourceIndex + 2];
+                output[outputIndex + 3] = source[sourceIndex + 3];
+            }
+        }
+        return output;
+    }
+    function toLumaGrid(data, width, height) {
+        const grid = [];
+        for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+                const index = (y * width + x) * 4;
+                const red = Number(data[index] || 0);
+                const green = Number(data[index + 1] || 0);
+                const blue = Number(data[index + 2] || 0);
+                grid.push(Math.round(red * 0.299 + green * 0.587 + blue * 0.114));
+            }
+        }
+        return grid;
+    }
+    function buildModelInputTensor(data, width, height) {
+        const pixels = data instanceof Uint8ClampedArray ? data : null;
+        const sourceWidth = normalizePositiveInteger(width, 0);
+        const sourceHeight = normalizePositiveInteger(height, 0);
+        if (!pixels || !sourceWidth || !sourceHeight || pixels.length < sourceWidth * sourceHeight * 4) {
+            return null;
+        }
+        const scale = MODEL_IMAGE_SIZE / Math.min(sourceWidth, sourceHeight);
+        const resizedWidth = Math.max(1, Math.round(sourceWidth * scale));
+        const resizedHeight = Math.max(1, Math.round(sourceHeight * scale));
+        const resized = resizeRgbaBilinear(pixels, sourceWidth, sourceHeight, resizedWidth, resizedHeight);
+        const cropX = Math.max(0, Math.floor((resizedWidth - MODEL_IMAGE_SIZE) / 2));
+        const cropY = Math.max(0, Math.floor((resizedHeight - MODEL_IMAGE_SIZE) / 2));
+        const cropped = cropRgba(resized, resizedWidth, resizedHeight, cropX, cropY, MODEL_IMAGE_SIZE, MODEL_IMAGE_SIZE);
+        const planeSize = MODEL_IMAGE_SIZE * MODEL_IMAGE_SIZE;
+        const tensor = new Float32Array(planeSize * 3);
+        for (let index = 0; index < planeSize; index += 1) {
+            const pixelOffset = index * 4;
+            tensor[index] = Number(cropped[pixelOffset] || 0) / 255;
+            tensor[planeSize + index] = Number(cropped[pixelOffset + 1] || 0) / 255;
+            tensor[planeSize * 2 + index] = Number(cropped[pixelOffset + 2] || 0) / 255;
+        }
+        return {
+            data: tensor,
+            dims: [1, 3, MODEL_IMAGE_SIZE, MODEL_IMAGE_SIZE]
+        };
     }
     function computeDifferenceHash(grid, width, height) {
         const normalizedWidth = normalizePositiveInteger(width, HASH_GRID_WIDTH);
@@ -3999,34 +4126,158 @@
         }
         return Math.max(0, Math.min(100, Math.round((1 - distance / left.length) * 100)));
     }
+    function l2NormalizeVector(value) {
+        let input = null;
+        if (value instanceof Float32Array) {
+            input = value;
+        }
+        else if (Array.isArray(value)) {
+            input = new Float32Array(value.map(function (entry) {
+                return Number(entry) || 0;
+            }));
+        }
+        else if (ArrayBuffer.isView(value)) {
+            input = new Float32Array(Array.from(value, function (entry) {
+                return Number(entry) || 0;
+            }));
+        }
+        if (!input || !input.length) {
+            return null;
+        }
+        let sumSquares = 0;
+        for (let index = 0; index < input.length; index += 1) {
+            const current = Number(input[index] || 0);
+            sumSquares += current * current;
+        }
+        if (!Number.isFinite(sumSquares) || sumSquares <= 0) {
+            return null;
+        }
+        const norm = Math.sqrt(sumSquares);
+        if (!Number.isFinite(norm) || norm <= 0) {
+            return null;
+        }
+        const normalized = new Float32Array(input.length);
+        for (let index = 0; index < input.length; index += 1) {
+            normalized[index] = Number(input[index] || 0) / norm;
+        }
+        return normalized;
+    }
+    function cosineSimilarity(left, right) {
+        const normalizedLeft = l2NormalizeVector(left);
+        const normalizedRight = l2NormalizeVector(right);
+        if (!normalizedLeft || !normalizedRight || normalizedLeft.length !== normalizedRight.length) {
+            return null;
+        }
+        let dot = 0;
+        for (let index = 0; index < normalizedLeft.length; index += 1) {
+            dot += normalizedLeft[index] * normalizedRight[index];
+        }
+        if (!Number.isFinite(dot)) {
+            return null;
+        }
+        return Math.max(-1, Math.min(1, dot));
+    }
     function createImageSimilarityService(options) {
         const config = options && typeof options === "object" ? options : {};
-        const cacheMaxEntries = normalizePositiveInteger(config.cacheMaxEntries, 128);
-        const hasCustomLoader = typeof config.loadGrayscaleGrid === "function";
-        const loadGrayscaleGrid = hasCustomLoader
-            ? config.loadGrayscaleGrid
-            : defaultLoadGrayscaleGrid;
+        const cacheMaxEntries = normalizePositiveInteger(config.cacheMaxEntries, DEFAULT_CACHE_MAX_ENTRIES);
+        const serviceColdStartBudgetMs = normalizeDurationMs(config.coldStartBudgetMs, DEFAULT_COLD_START_BUDGET_MS);
+        const loadGrayscaleGrid = typeof config.loadGrayscaleGrid === "function" ? config.loadGrayscaleGrid : null;
+        const loadDecodedImage = typeof config.loadDecodedImage === "function" ? config.loadDecodedImage : defaultLoadDecodedImage;
+        const resolveAssetUrl = typeof config.resolveAssetUrl === "function"
+            ? config.resolveAssetUrl
+            : function (assetPath) {
+                const runtime = getRuntime();
+                if (runtime && typeof runtime.getURL === "function") {
+                    try {
+                        return runtime.getURL(assetPath);
+                    }
+                    catch (_) {
+                        return assetPath;
+                    }
+                }
+                return assetPath;
+            };
+        const createInputTensor = typeof config.createInputTensor === "function"
+            ? config.createInputTensor
+            : function (data, dims) {
+                const ort = getOrt();
+                if (!ort || typeof ort.Tensor !== "function") {
+                    return null;
+                }
+                return new ort.Tensor("float32", data, dims);
+            };
+        const createInferenceSession = typeof config.createInferenceSession === "function"
+            ? config.createInferenceSession
+            : function (modelUrl, sessionOptions) {
+                const ort = getOrt();
+                if (!ort ||
+                    !ort.env ||
+                    !ort.env.wasm ||
+                    !ort.InferenceSession ||
+                    typeof ort.InferenceSession.create !== "function") {
+                    return Promise.resolve(null);
+                }
+                ort.env.wasm.proxy = false;
+                ort.env.wasm.numThreads = 1;
+                ort.env.wasm.wasmPaths = {
+                    "ort-wasm-simd-threaded.wasm": resolveAssetUrl(normalizeString(config.wasmAssetPath, WASM_ASSET_PATH))
+                };
+                return ort.InferenceSession.create(modelUrl, sessionOptions).catch(function () {
+                    return null;
+                });
+            };
+        const decodedImagePromiseByUrl = new Map();
         const hashPromiseByUrl = new Map();
-        function pruneCache() {
-            while (hashPromiseByUrl.size > cacheMaxEntries) {
-                const firstKey = hashPromiseByUrl.keys().next();
+        const embeddingPromiseByUrl = new Map();
+        let sessionPromise = null;
+        function touchCacheEntry(cache, key, value) {
+            cache.delete(key);
+            cache.set(key, value);
+            while (cache.size > cacheMaxEntries) {
+                const firstKey = cache.keys().next();
                 if (firstKey && !firstKey.done) {
-                    hashPromiseByUrl.delete(firstKey.value);
+                    cache.delete(firstKey.value);
                 }
                 else {
                     break;
                 }
             }
         }
-        function getHash(url) {
+        function getDecodedImage(url) {
             const normalizedUrl = normalizeString(url, "");
             if (!normalizedUrl) {
                 return Promise.resolve(null);
             }
-            if (hashPromiseByUrl.has(normalizedUrl)) {
-                return hashPromiseByUrl.get(normalizedUrl);
+            const cached = decodedImagePromiseByUrl.get(normalizedUrl);
+            if (cached) {
+                touchCacheEntry(decodedImagePromiseByUrl, normalizedUrl, cached);
+                return cached;
             }
-            const promise = Promise.resolve(loadGrayscaleGrid(normalizedUrl, HASH_GRID_WIDTH, HASH_GRID_HEIGHT))
+            const promise = Promise.resolve(loadDecodedImage(normalizedUrl)).catch(function () {
+                return null;
+            });
+            touchCacheEntry(decodedImagePromiseByUrl, normalizedUrl, promise);
+            return promise;
+        }
+        function getFingerprintHash(url) {
+            const normalizedUrl = normalizeString(url, "");
+            if (!normalizedUrl) {
+                return Promise.resolve(null);
+            }
+            const cached = hashPromiseByUrl.get(normalizedUrl);
+            if (cached) {
+                touchCacheEntry(hashPromiseByUrl, normalizedUrl, cached);
+                return cached;
+            }
+            const promise = (loadGrayscaleGrid
+                ? Promise.resolve(loadGrayscaleGrid(normalizedUrl, HASH_GRID_WIDTH, HASH_GRID_HEIGHT))
+                : getDecodedImage(normalizedUrl).then(function (decoded) {
+                    if (!decoded) {
+                        return null;
+                    }
+                    const resized = resizeRgbaBilinear(decoded.data, decoded.width, decoded.height, HASH_GRID_WIDTH, HASH_GRID_HEIGHT);
+                    return toLumaGrid(resized, HASH_GRID_WIDTH, HASH_GRID_HEIGHT);
+                }))
                 .then(function (grid) {
                 if (!Array.isArray(grid) || grid.length !== HASH_GRID_WIDTH * HASH_GRID_HEIGHT) {
                     return null;
@@ -4037,52 +4288,171 @@
                 .catch(function () {
                 return null;
             });
-            hashPromiseByUrl.set(normalizedUrl, promise);
-            pruneCache();
+            touchCacheEntry(hashPromiseByUrl, normalizedUrl, promise);
             return promise;
         }
-        async function compareImageUrls(leftUrl, rightUrl) {
+        function getSession() {
+            if (sessionPromise) {
+                return sessionPromise;
+            }
+            const modelUrl = resolveAssetUrl(normalizeString(config.modelAssetPath, MODEL_ASSET_PATH));
+            sessionPromise = Promise.resolve(createInferenceSession(modelUrl, {
+                executionProviders: ["wasm"]
+            })).catch(function () {
+                return null;
+            });
+            return sessionPromise;
+        }
+        function waitForWarmSession(coldStartBudgetMs) {
+            const session = getSession();
+            if (coldStartBudgetMs <= 0) {
+                return Promise.resolve(null);
+            }
+            return Promise.race([
+                session,
+                new Promise(function (resolve) {
+                    if (typeof setTimeout !== "function") {
+                        resolve(null);
+                        return;
+                    }
+                    setTimeout(function () {
+                        resolve(null);
+                    }, coldStartBudgetMs);
+                })
+            ]);
+        }
+        function extractEmbeddingVector(value) {
+            if (!isObjectRecord(value)) {
+                return null;
+            }
+            const data = value.data;
+            return l2NormalizeVector(data);
+        }
+        async function getEmbedding(url, session) {
+            const normalizedUrl = normalizeString(url, "");
+            if (!normalizedUrl || !session || typeof session.run !== "function") {
+                return null;
+            }
+            const runSession = session.run.bind(session);
+            const cached = embeddingPromiseByUrl.get(normalizedUrl);
+            if (cached) {
+                touchCacheEntry(embeddingPromiseByUrl, normalizedUrl, cached);
+                return cached;
+            }
+            const promise = getDecodedImage(normalizedUrl)
+                .then(async function (decoded) {
+                if (!decoded) {
+                    return null;
+                }
+                const modelInput = buildModelInputTensor(decoded.data, decoded.width, decoded.height);
+                if (!modelInput) {
+                    return null;
+                }
+                const inputTensor = createInputTensor(modelInput.data, modelInput.dims);
+                if (!inputTensor) {
+                    return null;
+                }
+                const inputName = Array.isArray(session.inputNames) && session.inputNames.length
+                    ? normalizeString(session.inputNames[0], "pixel_values")
+                    : "pixel_values";
+                const outputs = await runSession({
+                    [inputName]: inputTensor
+                });
+                if (!isObjectRecord(outputs)) {
+                    return null;
+                }
+                const outputName = Array.isArray(session.outputNames) && session.outputNames.length
+                    ? normalizeString(session.outputNames[0], "")
+                    : "";
+                const firstValue = (outputName && outputs[outputName]) ||
+                    outputs[Object.keys(outputs)[0] || ""] ||
+                    null;
+                return extractEmbeddingVector(firstValue);
+            })
+                .catch(function () {
+                return null;
+            });
+            touchCacheEntry(embeddingPromiseByUrl, normalizedUrl, promise);
+            return promise;
+        }
+        async function preloadModel() {
+            await getSession();
+        }
+        async function compareImageUrls(leftUrl, rightUrl, options) {
+            const compareOptions = options && typeof options === "object" ? options : {};
             const left = normalizeString(leftUrl, "");
             const right = normalizeString(rightUrl, "");
             if (!left || !right) {
                 return {
                     score: null,
                     usedImage: false,
-                    reason: "missing_url"
+                    reason: "missing_url",
+                    signalType: ""
                 };
             }
-            if (!hasCustomLoader && !hasBitmapDecodeSupport() && !hasDomCanvasSupport()) {
+            const mlEnabled = compareOptions.mlEnabled !== false;
+            const coldStartBudgetMs = normalizeDurationMs(compareOptions.coldStartBudgetMs, serviceColdStartBudgetMs);
+            if (mlEnabled) {
+                const session = await waitForWarmSession(coldStartBudgetMs);
+                if (session) {
+                    const [leftEmbedding, rightEmbedding] = await Promise.all([
+                        getEmbedding(left, session),
+                        getEmbedding(right, session)
+                    ]);
+                    const cosine = cosineSimilarity(leftEmbedding, rightEmbedding);
+                    if (cosine != null) {
+                        return {
+                            score: Math.max(0, Math.min(100, Math.round(Math.max(0, cosine) * 100))),
+                            usedImage: true,
+                            reason: "ok",
+                            signalType: "ml_embedding"
+                        };
+                    }
+                }
+            }
+            else {
+                void getSession();
+            }
+            if (!loadGrayscaleGrid && !hasBitmapDecodeSupport() && !hasDomCanvasSupport() && typeof config.loadDecodedImage !== "function") {
                 return {
                     score: null,
                     usedImage: false,
-                    reason: "unsupported_environment"
+                    reason: "unsupported_environment",
+                    signalType: ""
                 };
             }
-            const [leftHash, rightHash] = await Promise.all([getHash(left), getHash(right)]);
-            const score = compareHashes(leftHash, rightHash);
-            if (score == null) {
+            const [leftHash, rightHash] = await Promise.all([getFingerprintHash(left), getFingerprintHash(right)]);
+            const hashScore = compareHashes(leftHash, rightHash);
+            if (hashScore != null) {
                 return {
-                    score: null,
-                    usedImage: false,
-                    reason: "visual_unavailable"
+                    score: hashScore,
+                    usedImage: true,
+                    reason: "ok",
+                    signalType: "thumbnail_fingerprint"
                 };
             }
             return {
-                score: score,
-                usedImage: true,
-                reason: "ok"
+                score: null,
+                usedImage: false,
+                reason: "visual_unavailable",
+                signalType: ""
             };
         }
         return {
-            compareImageUrls: compareImageUrls
+            compareImageUrls: compareImageUrls,
+            preloadModel: preloadModel
         };
     }
     const defaultService = createImageSimilarityService();
     return {
         createImageSimilarityService: createImageSimilarityService,
         compareImageUrls: defaultService.compareImageUrls,
+        preloadModel: defaultService.preloadModel,
         computeDifferenceHash: computeDifferenceHash,
-        compareHashes: compareHashes
+        compareHashes: compareHashes,
+        buildModelInputTensor: buildModelInputTensor,
+        l2NormalizeVector: l2NormalizeVector,
+        cosineSimilarity: cosineSimilarity
     };
 });
 
@@ -4418,7 +4788,8 @@
             return {
                 score: null,
                 usedImage: false,
-                reason: "missing_url"
+                reason: "missing_url",
+                signalType: ""
             };
         }
         const leftSignal = extractImagePathSignal(left);
@@ -4427,7 +4798,8 @@
             return {
                 score: null,
                 usedImage: false,
-                reason: "no_usable_signal"
+                reason: "no_usable_signal",
+                signalType: ""
             };
         }
         let score = overlapScore(leftSignal.combinedStem, rightSignal.combinedStem);
@@ -4442,7 +4814,8 @@
         return {
             score: Math.max(0, Math.min(100, Math.round(score))),
             usedImage: true,
-            reason: "ok"
+            reason: "ok",
+            signalType: "url_heuristic"
         };
     }
     function buildListingImageUrl(listing) {
@@ -4572,20 +4945,28 @@
         const imageResult = imageHeuristicScore(buildListingImageUrl(listing), candidate && candidate.imageUrl);
         return scoreCandidateFromImageResult(listing, candidate, config, imageResult);
     }
-    async function resolveVisualImageScore(listingImageUrl, candidateImageUrl) {
+    async function resolveVisualImageScore(listingImageUrl, candidateImageUrl, config) {
         if (ImageSimilarity &&
             typeof ImageSimilarity.compareImageUrls === "function") {
             try {
-                const result = await ImageSimilarity.compareImageUrls(listingImageUrl, candidateImageUrl);
+                const result = await ImageSimilarity.compareImageUrls(listingImageUrl, candidateImageUrl, {
+                    mlEnabled: config.mlSimilarityEnabled !== false
+                });
                 if (result && result.reason !== "unsupported_environment") {
-                    return result;
+                    return {
+                        score: result.score,
+                        usedImage: result.usedImage,
+                        reason: result.reason,
+                        signalType: normalizeString(result.signalType, result.usedImage ? "thumbnail_fingerprint" : "")
+                    };
                 }
             }
             catch (_) {
                 return {
                     score: null,
                     usedImage: false,
-                    reason: "visual_unavailable"
+                    reason: "visual_unavailable",
+                    signalType: ""
                 };
             }
         }
@@ -4597,7 +4978,7 @@
         const candidateTitle = normalizeString(candidate && candidate.title, "");
         const candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
         const candidateTitleForScore = [candidateTitle, candidateTitleHint].filter(Boolean).join(" ");
-        const imageHeuristicScoreValue = imageResult.score;
+        const imageSimilarityScoreValue = imageResult.score;
         const titleScore = Math.max(overlapScore(listingTitle, candidateTitle), overlapScore(listingTitle, candidateTitleForScore));
         const brandScore = scoreBrand(listing, candidate);
         const sizeScore = scoreSize(listing, candidate);
@@ -4619,7 +5000,7 @@
             deltaPercent = (deltaAbsolute / listingComparable) * 100;
         }
         const priceScore = scorePriceDelta(listingComparable, candidateComparable);
-        const weightedScore = computeWeightedScore(rankingFormula, imageHeuristicScoreValue, titleScore, brandScore, sizeScore, conditionScore, priceScore);
+        const weightedScore = computeWeightedScore(rankingFormula, imageSimilarityScoreValue, titleScore, brandScore, sizeScore, conditionScore, priceScore);
         const finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
         const displayPrice = candidateComparable != null ? candidateComparable : candidateAmount;
         const displayCurrency = candidateComparable != null ? selectedCurrency : candidateCurrency;
@@ -4635,9 +5016,10 @@
             originalPrice: candidateAmount,
             score: finalScore,
             usedImage: imageResult.usedImage,
+            imageSignalType: imageResult.usedImage ? normalizeString(imageResult.signalType, "") : "",
             imageUnavailableReason: imageResult.usedImage ? "" : imageResult.reason,
             components: {
-                imageHeuristicScore: imageHeuristicScoreValue,
+                imageSimilarityScore: imageSimilarityScoreValue,
                 titleScore: Math.round(titleScore),
                 brandScore: brandScore == null ? null : Math.round(brandScore),
                 sizeScore: sizeScore == null ? null : Math.round(sizeScore),
@@ -4651,7 +5033,7 @@
     }
     async function scoreCandidateAsync(listing, candidate, options) {
         const config = options && typeof options === "object" ? options : {};
-        const imageResult = await resolveVisualImageScore(buildListingImageUrl(listing), candidate && candidate.imageUrl);
+        const imageResult = await resolveVisualImageScore(buildListingImageUrl(listing), candidate && candidate.imageUrl, config);
         return scoreCandidateFromImageResult(listing, candidate, config, imageResult);
     }
     function rankCandidates(listing, candidates, options) {
@@ -5204,7 +5586,8 @@
                 rate: normalizeNumber(payload.currencyRate),
                 ratesByUsd: ratesByUsd,
                 minScore: minScore,
-                rankingFormula: normalizeString(payload.rankingFormula, "balanced")
+                rankingFormula: normalizeString(payload.rankingFormula, "balanced"),
+                mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
             };
         }
         function runRankCandidates(listing, filteredCandidates, rankingOptions) {
@@ -5277,6 +5660,7 @@
                     originalPrice: normalizeNumber(candidate.originalPrice),
                     score: normalizeNumber(candidate.score),
                     usedImage: Boolean(candidate.usedImage),
+                    imageSignalType: normalizeString(candidate.imageSignalType, ""),
                     imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
                     deltaLabel: deltaLabel || formatDeltaLabel(candidate)
                 };
@@ -6926,6 +7310,11 @@
         var results = Array.isArray(state.results) ? state.results : [];
         var displayLimit = normalizeMarketCompareResultsLimit(marketCompareResultsLimit);
         var displayResults = results.slice(0, displayLimit);
+        var allDisplayResultsUseMlSorting = status === "results" &&
+            displayResults.length > 0 &&
+            displayResults.every(function (entry) {
+                return entry && entry.imageSignalType === "ml_embedding";
+            });
         var section = doc.createElement("div");
         section.className = "grailed-plus__market";
         var header = doc.createElement("div");
@@ -6935,6 +7324,8 @@
         title.textContent = "Other Markets";
         var chip = doc.createElement("span");
         chip.className = "grailed-plus__market-chip";
+        var chipGroup = doc.createElement("div");
+        chipGroup.className = "grailed-plus__market-chip-group";
         if (status === "loading") {
             chip.textContent = "Searching";
             chip.setAttribute("aria-busy", "true");
@@ -6958,7 +7349,14 @@
             chip.textContent = "Ready";
         }
         header.appendChild(title);
-        header.appendChild(chip);
+        chipGroup.appendChild(chip);
+        if (allDisplayResultsUseMlSorting) {
+            var sortingChip = doc.createElement("span");
+            sortingChip.className = "grailed-plus__market-chip";
+            sortingChip.textContent = "ML Sorted";
+            chipGroup.appendChild(sortingChip);
+        }
+        header.appendChild(chipGroup);
         section.appendChild(header);
         var providerLabel = doc.createElement("div");
         providerLabel.className = "grailed-plus__market-provider";
@@ -8444,6 +8842,18 @@
     }
 })(typeof globalThis !== "undefined" ? globalThis : {}, function () {
     "use strict";
+    let ImageSimilarity = null;
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusImageSimilarity) {
+        ImageSimilarity = globalThis.GrailedPlusImageSimilarity || null;
+    }
+    if (!ImageSimilarity && typeof require === "function") {
+        try {
+            ImageSimilarity = require("../domain/imageSimilarity");
+        }
+        catch (_) {
+            ImageSimilarity = null;
+        }
+    }
     function ensureMarketCompareController(options) {
         var config = options && typeof options === "object" ? options : {};
         var state = config.state;
@@ -8537,6 +8947,7 @@
             rankingFormula: typeof context.marketCompareRankingFormula === "string"
                 ? context.marketCompareRankingFormula
                 : "balanced",
+            mlSimilarityEnabled: context.marketCompareMlSimilarityEnabled !== false,
             allowCategoryFallback: context.marketCompareStrictMode !== true
         });
     }
@@ -8561,6 +8972,7 @@
             ? panelOptions.marketCompareRankingFormula
             : "balanced";
         var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
+        var marketCompareMlSimilarityEnabled = panelOptions.marketCompareMlSimilarityEnabled !== false;
         var controller = marketCompareEnabled ? ensureController() : null;
         if (controller && typeof controller.resetForListing === "function") {
             controller.resetForListing(panelOptions.listing || null);
@@ -8581,9 +8993,18 @@
                 Number(panelOptions.marketCompareResultsLimit) > 0
                 ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
                 : 5,
+            marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
             showMetadataButton: panelOptions.showMetadataButton !== false,
             renderToken: state.renderToken
         };
+        if (state.latestPanelContext.marketCompareEnabled &&
+            state.latestPanelContext.marketCompareMlSimilarityEnabled &&
+            ImageSimilarity &&
+            typeof ImageSimilarity.preloadModel === "function") {
+            Promise.resolve(ImageSimilarity.preloadModel()).catch(function () {
+                // Keep warmup failures silent so panel rendering is unaffected.
+            });
+        }
         return renderListingInsightsPanel({
             listing: state.latestPanelContext.listing,
             metrics: state.latestPanelContext.metrics,
@@ -8596,6 +9017,7 @@
             marketCompareRankingFormula: state.latestPanelContext.marketCompareRankingFormula,
             marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
             marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
+            marketCompareMlSimilarityEnabled: state.latestPanelContext.marketCompareMlSimilarityEnabled,
             showMetadataButton: state.latestPanelContext.showMetadataButton,
             marketCompare: marketCompareEnabled ? marketCompareState : null,
             onMarketCompareClick: onMarketCompareClick
@@ -8992,7 +9414,8 @@
                     enabled: true,
                     rankingFormula: "balanced",
                     strictMode: false,
-                    expandedAmountEnabled: false
+                    expandedAmountEnabled: false,
+                    mlSimilarityEnabled: true
                 });
             };
         var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
@@ -9036,6 +9459,7 @@
                 : "balanced";
             var marketCompareStrictMode = marketCompareSettings.strictMode === true;
             var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
+            var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
             var showMetadataButton = values[2] !== false;
             var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
             if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
@@ -9053,6 +9477,7 @@
                 marketCompareRankingFormula: marketCompareRankingFormula,
                 marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
+                marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
                 showMetadataButton: showMetadataButton
             });
             applySidebarCurrency(currencyContext);
@@ -9340,6 +9765,7 @@
                     Number(config.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(config.marketCompareResultsLimit))
                     : 5,
+                marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
                 showMetadataButton: config.showMetadataButton !== false
             });
             applySidebarCurrency(currencyContext);
@@ -9376,6 +9802,7 @@
                     Number(config.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(config.marketCompareResultsLimit))
                     : 5,
+                marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
                 showMetadataButton: config.showMetadataButton !== false
             });
             applySidebarCurrency(fallbackCurrency);
@@ -9766,7 +10193,10 @@
                 : false,
             expandedAmountEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
                 ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
-                : false
+                : false,
+            mlSimilarityEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
+                : true
         };
     }
     function resolveMarketCompareSettings() {
@@ -9784,7 +10214,10 @@
                 strictMode: value && typeof value.strictMode === "boolean" ? value.strictMode : fallback.strictMode,
                 expandedAmountEnabled: value && typeof value.expandedAmountEnabled === "boolean"
                     ? value.expandedAmountEnabled
-                    : fallback.expandedAmountEnabled
+                    : fallback.expandedAmountEnabled,
+                mlSimilarityEnabled: value && typeof value.mlSimilarityEnabled === "boolean"
+                    ? value.mlSimilarityEnabled
+                    : fallback.mlSimilarityEnabled
             };
         })
             .catch(function () {
@@ -10061,6 +10494,7 @@
                 : "balanced";
             var marketCompareStrictMode = marketCompareSettings.strictMode === true;
             var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
+            var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
             var showMetadataButton = Boolean(values[2]);
             if (!Url.isListingPath(location.pathname)) {
                 return;
@@ -10123,6 +10557,7 @@
                 marketCompareRankingFormula: marketCompareRankingFormula,
                 marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
+                marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
                 showMetadataButton: showMetadataButton,
                 resolveCurrencyContext: resolveCurrencyContext,
                 createUsdCurrencyContext: createUsdCurrencyContext,

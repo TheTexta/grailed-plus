@@ -1,7 +1,7 @@
 {
   "name": "grailed-plus",
   "version": "2.1.0-beta.0",
-  "extensionVersion": "2.3.1",
+  "extensionVersion": "2.3.2",
   "firefoxExtensionId": "grailed-plus@dexteryoung.dev",
   "packageManager": "npm@11.11.0",
   "private": true,
@@ -10,7 +10,9 @@
     "node": "22.18.0",
     "npm": "11.11.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "onnxruntime-web": "^1.23.2"
+  },
   "devDependencies": {
     "@types/node": "^24.3.0",
     "playwright": "^1.53.2",

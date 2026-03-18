@@ -39,7 +39,7 @@ function createOptionsDocument() {
     ["div", "market-compare-ranking-formula-description"],
     ["input", "market-compare-strict-mode"],
     ["input", "market-compare-expanded-amount-enabled"],
-    ["input", "market-compare-ml-sorting-placeholder"],
+    ["input", "market-compare-ml-similarity-enabled"],
     ["select", "currency-select"],
     ["input", "currency-custom"],
     ["input", "dark-mode-enabled"],
@@ -72,7 +72,7 @@ function createOptionsDocument() {
   nodes["dark-mode-behavior"].value = "system";
   nodes["dark-mode-primary"].value = "#000000";
   nodes["dark-mode-primary-hex"].value = "#000000";
-  nodes["market-compare-ml-sorting-placeholder"].checked = false;
+  nodes["market-compare-ml-similarity-enabled"].checked = false;
 
   return {
     document: doc,
@@ -86,7 +86,8 @@ function createSettingsMock(overrides) {
       enabled: true,
       rankingFormula: "balanced",
       strictMode: false,
-      expandedAmountEnabled: false
+      expandedAmountEnabled: false,
+      mlSimilarityEnabled: true
     }
   };
   const saveCalls = [];
@@ -101,6 +102,7 @@ function createSettingsMock(overrides) {
     DEFAULT_MARKET_COMPARE_RANKING_FORMULA: "balanced",
     DEFAULT_MARKET_COMPARE_STRICT_MODE: false,
     DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: false,
+    DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED: true,
     DEFAULT_DARK_MODE_ENABLED: true,
     DEFAULT_DARK_MODE_BEHAVIOR: "system",
     DEFAULT_DARK_MODE_PRIMARY_COLOR: "#000000",
@@ -179,6 +181,11 @@ function createSettingsMock(overrides) {
       state.marketCompare.expandedAmountEnabled = Boolean(value);
       return Promise.resolve({ ok: true });
     },
+    setMarketCompareMlSimilarityEnabled: function (value) {
+      saveCalls.push(["marketCompareMlSimilarityEnabled", value]);
+      state.marketCompare.mlSimilarityEnabled = Boolean(value);
+      return Promise.resolve({ ok: true });
+    },
     getDarkModeEnabled: () => Promise.resolve(true),
     setDarkModeEnabled: function (value) {
       saveCalls.push(["darkModeEnabled", value]);
@@ -242,7 +249,8 @@ test("options page loads market compare settings and keeps saved subordinate val
         enabled: false,
         rankingFormula: "visual",
         strictMode: true,
-        expandedAmountEnabled: true
+        expandedAmountEnabled: true,
+        mlSimilarityEnabled: false
       })
   });
   const cleanup = loadOptionsModule(document, env.settings);
@@ -254,20 +262,21 @@ test("options page loads market compare settings and keeps saved subordinate val
     assert.equal(nodes["market-compare-ranking-formula"].value, "visual");
     assert.match(
       nodes["market-compare-ranking-formula-description"].textContent,
-      /Thumbnail-first: score = 0\.50\*thumbnail similarity \+ 0\.20\*title/i
+      /Thumbnail-first: score = 0\.50\*image similarity \+ 0\.20\*title/i
     );
     assert.equal(nodes["market-compare-strict-mode"].checked, true);
     assert.equal(nodes["market-compare-expanded-amount-enabled"].checked, true);
+    assert.equal(nodes["market-compare-ml-similarity-enabled"].checked, false);
     assert.equal(nodes["market-compare-ranking-formula"].disabled, true);
     assert.equal(nodes["market-compare-strict-mode"].disabled, true);
     assert.equal(nodes["market-compare-expanded-amount-enabled"].disabled, true);
-    assert.equal(nodes["market-compare-ml-sorting-placeholder"].disabled, true);
+    assert.equal(nodes["market-compare-ml-similarity-enabled"].disabled, true);
   } finally {
     cleanup();
   }
 });
 
-test("options page keeps the ML sorting placeholder disabled and future-facing", async () => {
+test("options page exposes the ML similarity toggle and updated image-similarity copy", async () => {
   const { document, nodes } = createOptionsDocument();
   const env = createSettingsMock();
   const cleanup = loadOptionsModule(document, env.settings);
@@ -275,18 +284,20 @@ test("options page keeps the ML sorting placeholder disabled and future-facing",
   try {
     await flushAsync();
 
-    const placeholder = nodes["market-compare-ml-sorting-placeholder"];
-    assert.equal(placeholder.disabled, true);
-    assert.equal(placeholder.checked, false);
+    const mlToggle = nodes["market-compare-ml-similarity-enabled"];
+    assert.equal(mlToggle.disabled, false);
+    assert.equal(mlToggle.checked, true);
     const html = fs.readFileSync("src/options.html", "utf8");
     const css = fs.readFileSync("src/ui.css", "utf8");
     assert.match(html, /market-compare-ranking-formula-description/);
-    assert.match(html, /market-compare-ml-sorting-placeholder/);
-    assert.match(html, /Current image input uses local thumbnail fingerprints/);
-    assert.match(html, /Depop search-result thumbnails\./);
-    assert.match(html, /ML image-based similar listing sorting/);
-    assert.match(html, /Coming soon\. Will re-rank similar listings using image embeddings\./);
-    assert.match(html, /aria-disabled="true"/);
+    assert.match(html, /market-compare-ml-similarity-enabled/);
+    assert.match(html, /Image similarity uses local MobileCLIP thumbnail embeddings/i);
+    assert.match(html, /falls back to fast local thumbnail fingerprints/i);
+    assert.match(html, /Use ML visual similarity when available/i);
+    assert.match(
+      html,
+      /Uses local MobileCLIP thumbnail embeddings and falls back to fast thumbnail fingerprints when the model is cold or unavailable\./i
+    );
     assert.match(css, /\.gp-options__section\s*\{[^}]*border-radius:\s*0;/s);
     assert.match(css, /\.gp-options__setting-card\s*\{[^}]*border-radius:\s*0;/s);
     assert.match(css, /\.gp-options__control\s*\{[^}]*border-radius:\s*0;/s);
@@ -297,7 +308,7 @@ test("options page keeps the ML sorting placeholder disabled and future-facing",
   }
 });
 
-test("options page saves live market compare settings without treating the ML placeholder as a real setting", async () => {
+test("options page saves live market compare settings including ML similarity", async () => {
   const { document, nodes } = createOptionsDocument();
   const env = createSettingsMock();
   const cleanup = loadOptionsModule(document, env.settings);
@@ -310,6 +321,7 @@ test("options page saves live market compare settings without treating the ML pl
     nodes["market-compare-ranking-formula"].value = "metadata";
     nodes["market-compare-strict-mode"].checked = true;
     nodes["market-compare-expanded-amount-enabled"].checked = true;
+    nodes["market-compare-ml-similarity-enabled"].checked = false;
 
     nodes.form._listeners.submit({
       preventDefault() {}
@@ -325,7 +337,8 @@ test("options page saves live market compare settings without treating the ML pl
         ["marketCompareEnabled", true],
         ["marketCompareRankingFormula", "metadata"],
         ["marketCompareStrictMode", true],
-        ["marketCompareExpandedAmountEnabled", true]
+        ["marketCompareExpandedAmountEnabled", true],
+        ["marketCompareMlSimilarityEnabled", false]
       ]
     );
     assert.match(nodes.status.textContent, /Saved/);
@@ -344,7 +357,7 @@ test("options page updates the ranking formula description when the selection ch
 
     assert.match(
       nodes["market-compare-ranking-formula-description"].textContent,
-      /0\.22\*thumbnail similarity \+ 0\.34\*title/i
+      /0\.22\*image similarity \+ 0\.34\*title/i
     );
 
     nodes["market-compare-ranking-formula"].value = "variant";
@@ -366,12 +379,14 @@ test("options page reset restores default market compare values and keeps subord
     DEFAULT_MARKET_COMPARE_RANKING_FORMULA: "balanced",
     DEFAULT_MARKET_COMPARE_STRICT_MODE: false,
     DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: false,
+    DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED: true,
     getMarketCompareSettings: () =>
       Promise.resolve({
         enabled: true,
         rankingFormula: "visual",
         strictMode: true,
-        expandedAmountEnabled: true
+        expandedAmountEnabled: true,
+        mlSimilarityEnabled: false
       })
   });
   const cleanup = loadOptionsModule(document, env.settings);
@@ -385,9 +400,11 @@ test("options page reset restores default market compare values and keeps subord
     assert.equal(nodes["market-compare-ranking-formula"].value, "balanced");
     assert.equal(nodes["market-compare-strict-mode"].checked, false);
     assert.equal(nodes["market-compare-expanded-amount-enabled"].checked, false);
+    assert.equal(nodes["market-compare-ml-similarity-enabled"].checked, true);
     assert.equal(nodes["market-compare-ranking-formula"].disabled, false);
     assert.equal(nodes["market-compare-strict-mode"].disabled, false);
     assert.equal(nodes["market-compare-expanded-amount-enabled"].disabled, false);
+    assert.equal(nodes["market-compare-ml-similarity-enabled"].disabled, false);
     assert.match(nodes.status.textContent, /Reset to defaults/);
   } finally {
     cleanup();

@@ -1,6 +1,6 @@
 # Firefox Release Guide
 
-Last updated: March 16, 2026
+Last updated: March 17, 2026
 
 ## Prerequisites
 
@@ -32,6 +32,8 @@ Expected outputs:
 
 The source archive excludes generated first-party files such as `src/contentScript.js`, `src/contentScript.css`, `src/background.js`, `src/options.js`, `src/popup.js`, `src/domain/browserStorage.js`, `src/domain/settings.js`, `src/domain/currency.js`, and the generated manifest files. Reviewers can recreate them with the build steps above.
 
+The source archive includes the vendored MobileCLIP-S1 model assets, ONNX Runtime Web assets, and third-party notices used by the Market Compare ML image-similarity feature.
+
 ## Temporary Install For QA
 
 1. Open `about:debugging#/runtime/this-firefox`.
@@ -45,7 +47,10 @@ The source archive excludes generated first-party files such as `src/contentScri
 - Popup opens the options page from Firefox browser action.
 - Currency conversion settings persist and re-apply after refresh.
 - Dark mode toggles between system and permanent modes.
-- Depop market compare search works end to end, including image-based thumbnail similarity.
+- Options page shows `Use ML visual similarity when available` and keeps it enabled by default.
+- Depop market compare search works end to end, including MobileCLIP image similarity with fallback behavior.
+- When all displayed results use the embedding path, the Market Compare panel shows `ML Sorted`.
+- A cold first compare can still fall back once while the model warms, without breaking the compare flow.
 - Expected fallback states still render correctly for no-results, blocked, and fetch-failure cases.
 
 ## AMO Submission Flow
@@ -84,6 +89,8 @@ Grailed Plus enhances Grailed listing pages with:
 - optional currency conversion using `api.frankfurter.app`
 - optional Depop market compare requests to `*.depop.com`
 - thumbnail fetches used only to score visual similarity for market compare results
+- bundled MobileCLIP-S1 and ONNX Runtime assets loaded locally from the extension package
+- a panel-level `ML Sorted` status label when the displayed result set was fully embedding-ranked
 
 The extension does not execute remote code. All remote requests are data fetches for page enhancement and comparison results.
 
