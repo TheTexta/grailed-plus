@@ -239,10 +239,41 @@
             }
         });
     }
+    function storageRemove(storage, key) {
+        if (!storage || typeof storage.remove !== "function") {
+            return Promise.resolve(false);
+        }
+        try {
+            const result = storage.remove(key);
+            if (result && typeof result.then === "function") {
+                return result.then(function () {
+                    return true;
+                });
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.remove(key, function () {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve(false);
+                        return;
+                    }
+                    resolve(true);
+                });
+            }
+            catch (_) {
+                resolve(false);
+            }
+        });
+    }
     return {
         getStorageLocal,
         storageGet,
-        storageSet
+        storageSet,
+        storageRemove
     };
 });
 
@@ -653,9 +684,12 @@
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
     const DEFAULT_LISTING_METADATA_BUTTON_ENABLED = true;
     const DEFAULT_MARKET_COMPARE_ENABLED = true;
-    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+    const DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "visual";
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_DEBUG_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
@@ -671,14 +705,20 @@
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
     const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
-    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v2";
+    const MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY = "grailed_plus_market_compare_auto_search_enabled_v1";
     const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY = "grailed_plus_market_compare_ranking_formula_v1";
     const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
+    const MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY = "grailed_plus_market_compare_ml_similarity_enabled_v1";
+    const MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_debug_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
     const DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY = "grailed_plus_dark_mode_legacy_color_customization_enabled_v1";
+    let legacyMarketCompareEnabledCleanupPromise = null;
+    let legacyMarketCompareEnabledCleanupStorage = null;
     let BrowserStorage = null;
     if (typeof globalThis !== "undefined" && globalThis.GrailedPlusBrowserStorage) {
         BrowserStorage = globalThis.GrailedPlusBrowserStorage || null;
@@ -757,6 +797,31 @@
         return BrowserStorage && typeof BrowserStorage.storageSet === "function"
             ? BrowserStorage.storageSet(storage, payload)
             : Promise.resolve(false);
+    }
+    function storageRemove(storage, key) {
+        return BrowserStorage && typeof BrowserStorage.storageRemove === "function"
+            ? BrowserStorage.storageRemove(storage, key)
+            : Promise.resolve(false);
+    }
+    function cleanupLegacyMarketCompareEnabledSetting() {
+        const storage = getStorageLocal();
+        if (legacyMarketCompareEnabledCleanupPromise &&
+            legacyMarketCompareEnabledCleanupStorage === storage) {
+            return legacyMarketCompareEnabledCleanupPromise;
+        }
+        legacyMarketCompareEnabledCleanupStorage = storage;
+        if (!storage) {
+            legacyMarketCompareEnabledCleanupPromise = Promise.resolve();
+            return legacyMarketCompareEnabledCleanupPromise;
+        }
+        legacyMarketCompareEnabledCleanupPromise = storageRemove(storage, LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY)
+            .then(function () {
+            return;
+        })
+            .catch(function () {
+            return;
+        });
+        return legacyMarketCompareEnabledCleanupPromise;
     }
     function readSetting(storageKey, fallback, normalize) {
         const storage = getStorageLocal();
@@ -837,9 +902,12 @@
     const listingInsightsSetting = createBooleanSetting(LISTING_INSIGHTS_ENABLED_STORAGE_KEY, DEFAULT_LISTING_INSIGHTS_ENABLED, "listing insights status");
     const listingMetadataButtonSetting = createBooleanSetting(LISTING_METADATA_BUTTON_STORAGE_KEY, DEFAULT_LISTING_METADATA_BUTTON_ENABLED, "listing metadata button status");
     const marketCompareEnabledSetting = createBooleanSetting(MARKET_COMPARE_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ENABLED, "market compare status");
+    const marketCompareAutoSearchSetting = createBooleanSetting(MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY, DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED, "market compare auto search status");
     const marketCompareRankingFormulaSetting = createValidatedSetting(MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY, DEFAULT_MARKET_COMPARE_RANKING_FORMULA, normalizeMarketCompareRankingFormula, "Market compare ranking formula must match a supported option.", "Failed to persist market compare ranking formula.");
     const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
+    const marketCompareMlSimilaritySetting = createBooleanSetting(MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED, "market compare ml similarity status");
+    const marketCompareDebugSetting = createBooleanSetting(MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_DEBUG_ENABLED, "market compare debug status");
     const darkModeEnabledSetting = createBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, DEFAULT_DARK_MODE_ENABLED, "dark mode status");
     const darkModeBehaviorSetting = createValidatedSetting(DARK_MODE_BEHAVIOR_STORAGE_KEY, DEFAULT_DARK_MODE_BEHAVIOR, normalizeDarkModeBehavior, "Dark mode behavior must be either 'system' or 'permanent'.", "Failed to persist dark mode behavior.");
     const darkModePrimaryColorSetting = createValidatedSetting(DARK_MODE_PRIMARY_COLOR_STORAGE_KEY, DEFAULT_DARK_MODE_PRIMARY_COLOR, normalizeHexColor, "Primary color must be a valid hex value.", "Failed to persist dark mode primary color.");
@@ -869,13 +937,23 @@
         return listingMetadataButtonSetting.set(enabled);
     }
     function getMarketCompareEnabled() {
-        return marketCompareEnabledSetting.get();
+        return cleanupLegacyMarketCompareEnabledSetting().then(function () {
+            return marketCompareEnabledSetting.get();
+        });
     }
     function setMarketCompareEnabled(enabled) {
-        return marketCompareEnabledSetting.set(enabled);
+        return cleanupLegacyMarketCompareEnabledSetting().then(function () {
+            return marketCompareEnabledSetting.set(enabled);
+        });
     }
     function getMarketCompareRankingFormula() {
         return marketCompareRankingFormulaSetting.get();
+    }
+    function getMarketCompareAutoSearchEnabled() {
+        return marketCompareAutoSearchSetting.get();
+    }
+    function setMarketCompareAutoSearchEnabled(enabled) {
+        return marketCompareAutoSearchSetting.set(enabled);
     }
     function setMarketCompareRankingFormula(formula) {
         return marketCompareRankingFormulaSetting.set(formula);
@@ -892,18 +970,36 @@
     function setMarketCompareExpandedAmountEnabled(enabled) {
         return marketCompareExpandedAmountSetting.set(enabled);
     }
+    function getMarketCompareMlSimilarityEnabled() {
+        return marketCompareMlSimilaritySetting.get();
+    }
+    function setMarketCompareMlSimilarityEnabled(enabled) {
+        return marketCompareMlSimilaritySetting.set(enabled);
+    }
+    function getMarketCompareDebugEnabled() {
+        return marketCompareDebugSetting.get();
+    }
+    function setMarketCompareDebugEnabled(enabled) {
+        return marketCompareDebugSetting.set(enabled);
+    }
     function getMarketCompareSettings() {
         return Promise.all([
             getMarketCompareEnabled(),
+            getMarketCompareAutoSearchEnabled(),
             getMarketCompareRankingFormula(),
             getMarketCompareStrictMode(),
-            getMarketCompareExpandedAmountEnabled()
+            getMarketCompareExpandedAmountEnabled(),
+            getMarketCompareMlSimilarityEnabled(),
+            getMarketCompareDebugEnabled()
         ]).then(function (values) {
             return {
                 enabled: values[0],
-                rankingFormula: values[1],
-                strictMode: values[2],
-                expandedAmountEnabled: values[3]
+                autoSearchEnabled: values[1],
+                rankingFormula: values[2],
+                strictMode: values[3],
+                expandedAmountEnabled: values[4],
+                mlSimilarityEnabled: values[5],
+                debugEnabled: values[6]
             };
         });
     }
@@ -937,9 +1033,12 @@
         DEFAULT_LISTING_INSIGHTS_ENABLED,
         DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
         DEFAULT_MARKET_COMPARE_ENABLED,
+        DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED,
         DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
         DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
+        DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
+        DEFAULT_MARKET_COMPARE_DEBUG_ENABLED,
         DEFAULT_DARK_MODE_ENABLED,
         DEFAULT_DARK_MODE_BEHAVIOR,
         DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -951,9 +1050,12 @@
         LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
         LISTING_METADATA_BUTTON_STORAGE_KEY,
         MARKET_COMPARE_ENABLED_STORAGE_KEY,
+        MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY,
         MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
         MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
+        MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
+        MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY,
         DARK_MODE_ENABLED_STORAGE_KEY,
         DARK_MODE_BEHAVIOR_STORAGE_KEY,
         DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -973,12 +1075,18 @@
         setListingMetadataButtonEnabled,
         getMarketCompareEnabled,
         setMarketCompareEnabled,
+        getMarketCompareAutoSearchEnabled,
+        setMarketCompareAutoSearchEnabled,
         getMarketCompareRankingFormula,
         setMarketCompareRankingFormula,
         getMarketCompareStrictMode,
         setMarketCompareStrictMode,
         getMarketCompareExpandedAmountEnabled,
         setMarketCompareExpandedAmountEnabled,
+        getMarketCompareMlSimilarityEnabled,
+        setMarketCompareMlSimilarityEnabled,
+        getMarketCompareDebugEnabled,
+        setMarketCompareDebugEnabled,
         getMarketCompareSettings,
         getDarkModeEnabled,
         setDarkModeEnabled,
@@ -1451,9 +1559,9 @@
         const descriptor = titleTokens.slice(0, 3).join(" ");
         const coreTitle = titleTokens.slice(0, Math.min(titleTokens.length, 5)).join(" ");
         let candidates = [
-            [brand, descriptor].filter(Boolean).join(" "),
             [brand, coreTitle].filter(Boolean).join(" "),
             [coreTitle, size].filter(Boolean).join(" "),
+            [brand, descriptor].filter(Boolean).join(" "),
             [brand, size, category].filter(Boolean).join(" ")
         ];
         if (!categoryAllowed) {
@@ -1746,6 +1854,18 @@
             return { errorCode: "NETWORK_ERROR", retryAfterMs: 1500 };
         }
         return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
+    }
+    function summarizeDepopCandidate(candidate) {
+        if (!candidate || typeof candidate !== "object") {
+            return null;
+        }
+        return {
+            id: normalizeString(candidate.id, ""),
+            title: normalizeString(candidate.title, ""),
+            price: normalizeNumber(candidate.price),
+            currency: normalizeCurrencyCode(candidate.currency) || "USD",
+            imageUrl: normalizeUrlString(candidate.imageUrl || candidate.image)
+        };
     }
     function normalizeTitleCandidate(value) {
         var title = normalizeString(value, "");
@@ -2565,9 +2685,20 @@
         });
         return output;
     }
+    function isHrefFallbackCandidate(candidate) {
+        return Boolean(candidate && candidate.raw && candidate.raw.source === "href_fallback");
+    }
     function hasMeaningfulPrice(candidate) {
         var price = normalizeNumber(candidate && candidate.price);
-        return price != null && price > 0;
+        if (price == null || price <= 0) {
+            return false;
+        }
+        // Href fallback prices are inferred from nearby snippet text and are too
+        // noisy to surface directly without API or product-page hydration.
+        if (isHrefFallbackCandidate(candidate)) {
+            return false;
+        }
+        return true;
     }
     function hasAnyUsableCandidate(candidates) {
         return Array.isArray(candidates) && candidates.some(function (candidate) {
@@ -2786,7 +2917,8 @@
             };
         }
     }
-    async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, timeoutMs) {
+    async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, timeoutMs, debugLogger) {
+        var debugLog = typeof debugLogger === "function" ? debugLogger : function () { };
         function buildAttemptFailure(errorCode, retryAfterMs) {
             return {
                 ok: false,
@@ -2799,21 +2931,51 @@
             return {
                 ok: true,
                 requestCount: 1,
-                candidates: candidates
+                candidates: candidates,
+                sourceType: "api"
             };
         }
         var apiUrl = buildApiSearchUrl(query, payload);
+        debugLog("provider.api_search_start", {
+            query: normalizeString(query, ""),
+            url: apiUrl
+        });
         var fetched = await fetchSearchPage(apiUrl, fetchImpl, runtimeSendMessage, "application/json,text/plain,*/*", timeoutMs);
+        debugLog("provider.api_search_result", {
+            query: normalizeString(query, ""),
+            url: apiUrl,
+            ok: Boolean(fetched && fetched.ok),
+            status: Number(fetched && fetched.status) || 0,
+            transport: normalizeString(fetched && fetched.source, ""),
+            textLength: normalizeString(fetched && fetched.text, "").length
+        });
         if (!fetched.ok) {
             if (fetched.status === 0) {
+                debugLog("provider.api_search_failure", {
+                    query: normalizeString(query, ""),
+                    errorCode: "NETWORK_ERROR"
+                });
                 return buildAttemptFailure("NETWORK_ERROR", 1500);
             }
             var mappedError = mapHttpError(fetched.status);
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: mappedError.errorCode,
+                retryAfterMs: mappedError.retryAfterMs
+            });
             return buildAttemptFailure(mappedError.errorCode, mappedError.retryAfterMs);
         }
         var text = normalizeString(fetched.text, "");
         if (!text) {
             return buildAttemptFailure("PARSE_ERROR", 0);
+        }
+        if (isBlockedHtml(text)) {
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: "FORBIDDEN_OR_BLOCKED",
+                retryAfterMs: 120000
+            });
+            return buildAttemptFailure("FORBIDDEN_OR_BLOCKED", 120000);
         }
         var parsed = tryParseJsonLenient(text);
         if (!parsed) {
@@ -2821,17 +2983,45 @@
             // Reuse HTML parser before treating it as a hard parse failure.
             var htmlCandidates = parseHtmlCandidateState(text, null).candidates;
             if (htmlCandidates.length) {
-                return buildAttemptSuccess(htmlCandidates);
+                debugLog("provider.api_search_html_fallback", {
+                    query: normalizeString(query, ""),
+                    candidateCount: htmlCandidates.length,
+                    topCandidate: summarizeDepopCandidate(htmlCandidates[0] || null)
+                });
+                var htmlSuccess = {
+                    ok: true,
+                    requestCount: 1,
+                    candidates: htmlCandidates,
+                    sourceType: "html"
+                };
+                return htmlSuccess;
             }
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: "PARSE_ERROR"
+            });
             return buildAttemptFailure("PARSE_ERROR", 0);
         }
         var candidates = normalizeParsedCandidates(parseCandidatesFromApiPayload(parsed) || []);
         if (candidates.length) {
+            debugLog("provider.api_search_success", {
+                query: normalizeString(query, ""),
+                candidateCount: candidates.length,
+                topCandidate: summarizeDepopCandidate(candidates[0] || null)
+            });
             return buildAttemptSuccess(candidates);
         }
         if (hasNoResultsInApiPayload(parsed)) {
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: "NO_RESULTS"
+            });
             return buildAttemptFailure("NO_RESULTS", 0);
         }
+        debugLog("provider.api_search_failure", {
+            query: normalizeString(query, ""),
+            errorCode: "PARSE_ERROR"
+        });
         return buildAttemptFailure("PARSE_ERROR", 0);
     }
     function normalizeParsedCandidates(candidates) {
@@ -2861,6 +3051,7 @@
         var maxRetries = Math.max(0, Number(input.maxRetries) || 0);
         var maxAdditionalRequests = Math.max(0, Number(input.maxAdditionalRequests) || 0);
         var cooldownBaseMs = Math.max(Number(input.cooldownMs) || 0, 1200);
+        var debugLog = typeof input.debugLogger === "function" ? input.debugLogger : function () { };
         var requestCount = 0;
         var loadingAttempts = 0;
         var sawNetworkError = false;
@@ -2871,9 +3062,21 @@
             isLikelyLoadingShellHtml(latestHtml) &&
             loadingAttempts < maxRetries &&
             requestCount < maxAdditionalRequests) {
+            debugLog("provider.loading_shell_retry_wait", {
+                url: url,
+                attempt: loadingAttempts + 1
+            });
             await sleep(withJitter(cooldownBaseMs * (loadingAttempts + 1)));
             var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
             requestCount += 1;
+            debugLog("provider.loading_shell_retry_result", {
+                url: url,
+                attempt: loadingAttempts + 1,
+                ok: Boolean(retryFetched && retryFetched.ok),
+                status: Number(retryFetched && retryFetched.status) || 0,
+                transport: normalizeString(retryFetched && retryFetched.source, ""),
+                textLength: normalizeString(retryFetched && retryFetched.text, "").length
+            });
             if (!retryFetched.ok || !retryFetched.text) {
                 if (!retryFetched.ok && retryFetched.status === 0) {
                     sawNetworkError = true;
@@ -2896,9 +3099,10 @@
             blocked: blocked
         };
     }
-    async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches, timeoutMs, normalizeCandidates) {
+    async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches, timeoutMs, normalizeCandidates, debugLogger) {
         var list = Array.isArray(candidates) ? candidates : [];
         var fetchBudget = Math.max(0, Number(maxFetches) || 0);
+        var debugLog = typeof debugLogger === "function" ? debugLogger : function () { };
         if (!list.length || fetchBudget < 1) {
             return {
                 candidates: [],
@@ -2914,8 +3118,19 @@
             if (!url) {
                 continue;
             }
+            debugLog("provider.href_enrichment_fetch_start", {
+                url: url,
+                attempt: requestCount + 1
+            });
             var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
             requestCount += 1;
+            debugLog("provider.href_enrichment_fetch_result", {
+                url: url,
+                ok: Boolean(fetched && fetched.ok),
+                status: Number(fetched && fetched.status) || 0,
+                transport: normalizeString(fetched && fetched.source, ""),
+                textLength: normalizeString(fetched && fetched.text, "").length
+            });
             if (!fetched.ok || !fetched.text) {
                 continue;
             }
@@ -2931,13 +3146,18 @@
             }
             seenIds[id] = true;
             output.push(best);
+            debugLog("provider.href_enrichment_candidate_added", {
+                url: url,
+                candidate: summarizeDepopCandidate(best)
+            });
         }
         return {
             candidates: output,
             requestCount: requestCount
         };
     }
-    async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs, timeoutMs) {
+    async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs, timeoutMs, debugLogger) {
+        var debugLog = typeof debugLogger === "function" ? debugLogger : function () { };
         var fallbackQuery = normalizeString(query, "");
         if (!fallbackQuery) {
             return {
@@ -2951,7 +3171,19 @@
         }
         await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
         var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
+        debugLog("provider.single_query_fallback_start", {
+            query: fallbackQuery,
+            url: fallbackUrl
+        });
         var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
+        debugLog("provider.single_query_fallback_result", {
+            query: fallbackQuery,
+            url: fallbackUrl,
+            ok: Boolean(fetched && fetched.ok),
+            status: Number(fetched && fetched.status) || 0,
+            transport: normalizeString(fetched && fetched.source, ""),
+            textLength: normalizeString(fetched && fetched.text, "").length
+        });
         if (!fetched.ok && fetched.status === 0) {
             return {
                 ok: false,
@@ -2996,7 +3228,8 @@
                 cooldownMs: cooldownMs,
                 timeoutMs: timeoutMs,
                 maxRetries: 2,
-                maxAdditionalRequests: 2
+                maxAdditionalRequests: 2,
+                debugLogger: debugLog
             });
             latestHtml = retried.latestHtml;
             candidateState = retried.candidateState;
@@ -3039,6 +3272,7 @@
         var fetchTimeoutMs = Number.isFinite(Number(config.fetchTimeoutMs)) && Number(config.fetchTimeoutMs) > 0
             ? Math.max(100, Number(config.fetchTimeoutMs))
             : DEFAULT_FETCH_TIMEOUT_MS;
+        var debugLog = typeof config.debugLogger === "function" ? config.debugLogger : function () { };
         var imageUrlCache = Object.create(null);
         function getCandidateCacheKeys(candidate) {
             var keys = [];
@@ -3090,6 +3324,14 @@
                 .filter(Boolean)
                 .map(applyImageUrlCache);
         }
+        function summarizeCandidateList(candidates) {
+            var list = Array.isArray(candidates) ? candidates : [];
+            return {
+                candidateCount: list.length,
+                pricedCandidateCount: list.filter(hasMeaningfulPrice).length,
+                topCandidate: summarizeDepopCandidate(list[0] || null)
+            };
+        }
         function buildSearchFailure(errorCode, retryAfterMs, partial, sourceType) {
             return {
                 ok: false,
@@ -3116,8 +3358,965 @@
         function keepUsableCandidates(candidates) {
             return (Array.isArray(candidates) ? candidates : []).filter(function (candidate) {
                 var price = normalizeNumber(candidate && candidate.price);
-                return price == null || price > 0;
+                if (price == null) {
+                    return true;
+                }
+                if (hasMeaningfulPrice(candidate)) {
+                    return true;
+                }
+                // Keep href fallback candidates in the internal pool so pass-two
+                // enrichment can upgrade them, but never trust their inferred price
+                // enough to surface them directly.
+                return isHrefFallbackCandidate(candidate);
             });
+        }
+        function canonicalizeCandidateUrl(value) {
+            var normalizedUrl = normalizeUrlString(value);
+            if (!normalizedUrl) {
+                return "";
+            }
+            try {
+                var parsed = new URL(normalizedUrl);
+                parsed.hash = "";
+                parsed.search = "";
+                var pathname = parsed.pathname.replace(/\/+$/, "");
+                parsed.pathname = pathname || "/";
+                return parsed.toString();
+            }
+            catch (_) {
+                var strippedHash = normalizedUrl.split("#")[0] || "";
+                var strippedQuery = strippedHash.split("?")[0] || "";
+                return strippedQuery.replace(/\/+$/, "") || strippedQuery;
+            }
+        }
+        function getCandidateSlugValue(candidate) {
+            var normalizedUrl = canonicalizeCandidateUrl(candidate && candidate.url);
+            if (normalizedUrl) {
+                var fromUrl = normalizeSlugToken(normalizedUrl.split("/").filter(Boolean).pop());
+                if (fromUrl) {
+                    return fromUrl;
+                }
+            }
+            return normalizeSlugToken(candidate && candidate.id);
+        }
+        function buildCanonicalCandidateKey(candidate) {
+            var normalizedId = normalizeString(candidate && candidate.id, "");
+            if (normalizedId) {
+                return "id:" + normalizedId.toLowerCase();
+            }
+            var normalizedUrl = canonicalizeCandidateUrl(candidate && candidate.url);
+            if (normalizedUrl) {
+                return "url:" + normalizedUrl.toLowerCase();
+            }
+            var normalizedSlug = getCandidateSlugValue(candidate);
+            if (normalizedSlug) {
+                return "slug:" + normalizedSlug;
+            }
+            return "";
+        }
+        function buildCanonicalCandidateKeys(candidate) {
+            var keys = [];
+            var primaryKey = buildCanonicalCandidateKey(candidate);
+            var normalizedUrl = canonicalizeCandidateUrl(candidate && candidate.url);
+            var normalizedSlug = getCandidateSlugValue(candidate);
+            var normalizedId = normalizeString(candidate && candidate.id, "");
+            if (primaryKey) {
+                keys.push(primaryKey);
+            }
+            if (normalizedUrl) {
+                keys.push("url:" + normalizedUrl.toLowerCase());
+            }
+            if (normalizedSlug) {
+                keys.push("slug:" + normalizedSlug);
+            }
+            if (normalizedId) {
+                keys.push("id:" + normalizedId.toLowerCase());
+            }
+            return keys.filter(function (key, index, list) {
+                return key && list.indexOf(key) === index;
+            });
+        }
+        function getCanonicalKeyPriority(key) {
+            var normalizedKey = normalizeString(key, "");
+            if (!normalizedKey) {
+                return 0;
+            }
+            if (normalizedKey.indexOf("id:") === 0) {
+                return 3;
+            }
+            if (normalizedKey.indexOf("url:") === 0) {
+                return 2;
+            }
+            if (normalizedKey.indexOf("slug:") === 0) {
+                return 1;
+            }
+            return 0;
+        }
+        function choosePreferredCanonicalKey(existingKey, incomingKeys) {
+            var keys = Array.isArray(incomingKeys) ? incomingKeys.filter(Boolean) : [];
+            var preferredKey = normalizeString(existingKey, "");
+            var preferredPriority = getCanonicalKeyPriority(preferredKey);
+            keys.forEach(function (key) {
+                var priority = getCanonicalKeyPriority(key);
+                if (priority > preferredPriority) {
+                    preferredKey = key;
+                    preferredPriority = priority;
+                }
+            });
+            if (preferredKey) {
+                return preferredKey;
+            }
+            return keys.length ? keys[0] : "";
+        }
+        function buildUrlTitleHint(url) {
+            var normalizedUrl = canonicalizeCandidateUrl(url);
+            if (!normalizedUrl) {
+                return "";
+            }
+            var slug = normalizedUrl.split("/").filter(Boolean).pop() || "";
+            if (!slug) {
+                return "";
+            }
+            return slug.replace(/-/g, " ").trim();
+        }
+        function tokenizeScoreText(value) {
+            var normalized = normalizeString(value, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+            if (!normalized) {
+                return [];
+            }
+            return normalized
+                .split(" ")
+                .filter(Boolean)
+                .filter(function (token) {
+                return token.length > 1;
+            });
+        }
+        function computeTokenOverlapScore(leftValue, rightValue) {
+            var leftTokens = tokenizeScoreText(leftValue);
+            var rightTokens = tokenizeScoreText(rightValue);
+            if (!leftTokens.length || !rightTokens.length) {
+                return 0;
+            }
+            var rightSet = Object.create(null);
+            var overlap = 0;
+            var i;
+            for (i = 0; i < rightTokens.length; i += 1) {
+                rightSet[rightTokens[i]] = true;
+            }
+            for (i = 0; i < leftTokens.length; i += 1) {
+                if (rightSet[leftTokens[i]]) {
+                    overlap += 1;
+                }
+            }
+            var denominator = Math.max(leftTokens.length, rightTokens.length);
+            if (!denominator) {
+                return 0;
+            }
+            return Math.max(0, Math.min(100, Math.round((overlap / denominator) * 100)));
+        }
+        function getQueryPriority(index) {
+            var normalizedIndex = Number.isFinite(Number(index)) ? Number(index) : 99;
+            if (normalizedIndex <= 0) {
+                return 4;
+            }
+            if (normalizedIndex === 1) {
+                return 3;
+            }
+            if (normalizedIndex === 2) {
+                return 2;
+            }
+            return 1;
+        }
+        function getSourcePriority(sourceType) {
+            var normalizedSourceType = normalizeString(sourceType, "");
+            if (normalizedSourceType === "api") {
+                return 4;
+            }
+            if (normalizedSourceType === "enriched") {
+                return 3;
+            }
+            if (normalizedSourceType === "html") {
+                return 2;
+            }
+            if (normalizedSourceType === "href_fallback") {
+                return 1;
+            }
+            return 0;
+        }
+        function getSourceBonus(sourceType) {
+            var normalizedSourceType = normalizeString(sourceType, "");
+            if (normalizedSourceType === "api") {
+                return 3;
+            }
+            if (normalizedSourceType === "enriched") {
+                return 2;
+            }
+            if (normalizedSourceType === "href_fallback") {
+                return -2;
+            }
+            return 0;
+        }
+        function getTitleQuality(candidate) {
+            var title = normalizeString(candidate && candidate.title, "");
+            if (!title || title.toLowerCase() === "untitled") {
+                return 0;
+            }
+            var normalizedTitle = title.toLowerCase();
+            if (normalizedTitle === "price") {
+                return 0;
+            }
+            var urlHint = buildUrlTitleHint(candidate && candidate.url).toLowerCase();
+            if (urlHint && normalizedTitle === urlHint) {
+                return 1;
+            }
+            return 2;
+        }
+        function getRawQuality(raw) {
+            if (!raw || typeof raw !== "object") {
+                return 0;
+            }
+            try {
+                return JSON.stringify(raw).length;
+            }
+            catch (_) {
+                return 1;
+            }
+        }
+        function computeCompletenessScore(candidate, sourceType) {
+            var score = 0;
+            var candidatePrice = normalizeNumber(candidate && candidate.price);
+            if (normalizeString(candidate && candidate.id, "")) {
+                score += 4;
+            }
+            if (canonicalizeCandidateUrl(candidate && candidate.url)) {
+                score += 2;
+            }
+            if (candidatePrice != null && candidatePrice > 0) {
+                score += 3;
+            }
+            if (normalizeUrlString(candidate && candidate.imageUrl)) {
+                score += 3;
+            }
+            if (getTitleQuality(candidate) > 0) {
+                score += 2;
+            }
+            if (normalizeString(candidate && candidate.currency, "")) {
+                score += 2;
+            }
+            if (normalizeString(candidate && candidate.size, "")) {
+                score += 1;
+            }
+            return score + getSourceBonus(sourceType);
+        }
+        function copyArrayUnique(list, value) {
+            var output = Array.isArray(list) ? list.slice() : [];
+            if (output.indexOf(value) === -1) {
+                output.push(value);
+            }
+            return output;
+        }
+        function mergeRawMetadata(existingRaw, incomingRaw) {
+            if (!existingRaw) {
+                return incomingRaw || null;
+            }
+            if (!incomingRaw) {
+                return existingRaw;
+            }
+            if (existingRaw &&
+                incomingRaw &&
+                typeof existingRaw === "object" &&
+                typeof incomingRaw === "object" &&
+                !Array.isArray(existingRaw) &&
+                !Array.isArray(incomingRaw)) {
+                return Object.assign({}, existingRaw, incomingRaw);
+            }
+            return getRawQuality(incomingRaw) >= getRawQuality(existingRaw) ? incomingRaw : existingRaw;
+        }
+        function choosePreferredTitle(existingCandidate, incomingCandidate, existingSourcePriority, incomingSourcePriority) {
+            var existingQuality = getTitleQuality(existingCandidate);
+            var incomingQuality = getTitleQuality(incomingCandidate);
+            if (incomingQuality > existingQuality) {
+                return normalizeString(incomingCandidate && incomingCandidate.title, "");
+            }
+            if (incomingQuality === existingQuality &&
+                incomingQuality > 0 &&
+                incomingSourcePriority > existingSourcePriority) {
+                return normalizeString(incomingCandidate && incomingCandidate.title, "");
+            }
+            return normalizeString(existingCandidate && existingCandidate.title, "");
+        }
+        function createCanonicalCandidateRecord(candidate, metadata) {
+            var sourceType = normalizeString(metadata && metadata.sourceType, "") || "html";
+            var queryIndex = Number.isFinite(Number(metadata && metadata.queryIndex)) ? Number(metadata.queryIndex) : 99;
+            var aliases = buildCanonicalCandidateKeys(candidate);
+            return {
+                key: choosePreferredCanonicalKey("", aliases),
+                aliases: aliases,
+                candidate: applyImageUrlCache(Object.assign({}, candidate)),
+                queryIndices: [queryIndex],
+                sourceTypes: [sourceType],
+                sourcePriority: getSourcePriority(sourceType),
+                completenessScore: computeCompletenessScore(candidate, sourceType),
+                titleQuality: getTitleQuality(candidate),
+                rawQuality: getRawQuality(candidate && candidate.raw),
+                bestQueryIndex: queryIndex,
+                enrichmentAttempted: false
+            };
+        }
+        function mergeCanonicalCandidateRecord(existingRecord, incomingCandidate, metadata) {
+            var existing = existingRecord && typeof existingRecord === "object" ? existingRecord : null;
+            if (!existing) {
+                return createCanonicalCandidateRecord(incomingCandidate, metadata);
+            }
+            var sourceType = normalizeString(metadata && metadata.sourceType, "") || "html";
+            var incomingSourcePriority = getSourcePriority(sourceType);
+            var queryIndex = Number.isFinite(Number(metadata && metadata.queryIndex)) ? Number(metadata.queryIndex) : 99;
+            var mergedCandidate = Object.assign({}, existing.candidate || {});
+            var incoming = applyImageUrlCache(Object.assign({}, incomingCandidate));
+            var incomingAliases = buildCanonicalCandidateKeys(incoming);
+            var existingPrice = normalizeNumber(mergedCandidate.price);
+            var incomingPrice = normalizeNumber(incoming.price);
+            if (incomingPrice != null &&
+                incomingPrice > 0 &&
+                (existingPrice == null || existingPrice <= 0 || incomingSourcePriority > existing.sourcePriority)) {
+                mergedCandidate.price = incomingPrice;
+                if (normalizeString(incoming.currency, "")) {
+                    mergedCandidate.currency = incoming.currency;
+                }
+            }
+            else if (!normalizeString(mergedCandidate.currency, "") && normalizeString(incoming.currency, "")) {
+                mergedCandidate.currency = incoming.currency;
+            }
+            var existingImageUrl = normalizeUrlString(mergedCandidate.imageUrl);
+            var incomingImageUrl = normalizeUrlString(incoming.imageUrl);
+            if (incomingImageUrl &&
+                (!existingImageUrl || incomingSourcePriority > existing.sourcePriority)) {
+                mergedCandidate.imageUrl = incomingImageUrl;
+            }
+            var preferredTitle = choosePreferredTitle(mergedCandidate, incoming, existing.sourcePriority, incomingSourcePriority);
+            if (preferredTitle) {
+                mergedCandidate.title = preferredTitle;
+            }
+            if (normalizeString(incoming.id, "") &&
+                (!normalizeString(mergedCandidate.id, "") || incomingSourcePriority > existing.sourcePriority)) {
+                mergedCandidate.id = incoming.id;
+            }
+            if (canonicalizeCandidateUrl(incoming.url) &&
+                (!canonicalizeCandidateUrl(mergedCandidate.url) || incomingSourcePriority > existing.sourcePriority)) {
+                mergedCandidate.url = incoming.url;
+            }
+            if (normalizeString(incoming.market, "")) {
+                mergedCandidate.market = incoming.market;
+            }
+            mergedCandidate.raw = mergeRawMetadata(mergedCandidate.raw, incoming.raw);
+            return {
+                key: choosePreferredCanonicalKey(existing.key, (existing.aliases || []).concat(incomingAliases)),
+                aliases: (existing.aliases || []).concat(incomingAliases).filter(function (key, index, list) {
+                    return key && list.indexOf(key) === index;
+                }),
+                candidate: mergedCandidate,
+                queryIndices: copyArrayUnique(existing.queryIndices, queryIndex),
+                sourceTypes: copyArrayUnique(existing.sourceTypes, sourceType),
+                sourcePriority: Math.max(existing.sourcePriority || 0, incomingSourcePriority),
+                completenessScore: Math.max(computeCompletenessScore(mergedCandidate, sourceType), existing.completenessScore || 0),
+                titleQuality: Math.max(existing.titleQuality || 0, getTitleQuality(mergedCandidate)),
+                rawQuality: Math.max(existing.rawQuality || 0, getRawQuality(mergedCandidate.raw)),
+                bestQueryIndex: Math.min(existing.bestQueryIndex, queryIndex),
+                enrichmentAttempted: Boolean(existing.enrichmentAttempted)
+            };
+        }
+        function getPreferredRecordSourceType(record) {
+            var sourceTypes = Array.isArray(record && record.sourceTypes) ? record.sourceTypes.slice() : [];
+            sourceTypes.sort(function (left, right) {
+                return getSourcePriority(right) - getSourcePriority(left);
+            });
+            return sourceTypes.length ? sourceTypes[0] : "html";
+        }
+        function mergeCanonicalRecords(existingRecord, incomingRecord) {
+            if (!existingRecord) {
+                return incomingRecord;
+            }
+            if (!incomingRecord) {
+                return existingRecord;
+            }
+            if (existingRecord === incomingRecord) {
+                return existingRecord;
+            }
+            var merged = mergeCanonicalCandidateRecord(existingRecord, incomingRecord.candidate, {
+                queryIndex: incomingRecord.bestQueryIndex,
+                sourceType: getPreferredRecordSourceType(incomingRecord)
+            });
+            merged.queryIndices = (existingRecord.queryIndices || []).concat(incomingRecord.queryIndices || []).filter(function (value, index, list) {
+                return list.indexOf(value) === index;
+            });
+            merged.sourceTypes = (existingRecord.sourceTypes || []).concat(incomingRecord.sourceTypes || []).filter(function (value, index, list) {
+                return list.indexOf(value) === index;
+            });
+            merged.aliases = (existingRecord.aliases || []).concat(incomingRecord.aliases || []).filter(function (value, index, list) {
+                return value && list.indexOf(value) === index;
+            });
+            merged.key = choosePreferredCanonicalKey(merged.key, merged.aliases);
+            merged.sourcePriority = Math.max(existingRecord.sourcePriority || 0, incomingRecord.sourcePriority || 0);
+            merged.completenessScore = Math.max(existingRecord.completenessScore || 0, incomingRecord.completenessScore || 0, merged.completenessScore || 0);
+            merged.titleQuality = Math.max(existingRecord.titleQuality || 0, incomingRecord.titleQuality || 0, merged.titleQuality || 0);
+            merged.rawQuality = Math.max(existingRecord.rawQuality || 0, incomingRecord.rawQuality || 0, merged.rawQuality || 0);
+            merged.bestQueryIndex = Math.min(Number.isFinite(Number(existingRecord.bestQueryIndex)) ? Number(existingRecord.bestQueryIndex) : 99, Number.isFinite(Number(incomingRecord.bestQueryIndex)) ? Number(incomingRecord.bestQueryIndex) : 99);
+            merged.enrichmentAttempted = Boolean(existingRecord.enrichmentAttempted || incomingRecord.enrichmentAttempted);
+            return merged;
+        }
+        function mergeCandidatesIntoCanonicalMap(canonicalByKey, candidates, metadata) {
+            var map = canonicalByKey instanceof Map ? canonicalByKey : new Map();
+            (Array.isArray(candidates) ? candidates : []).forEach(function (candidate) {
+                var normalizedCandidate = candidate && typeof candidate === "object" ? candidate : null;
+                if (!normalizedCandidate) {
+                    return;
+                }
+                var sourceType = normalizeString(metadata && metadata.sourceType, "");
+                if (sourceType === "html" && isHrefFallbackCandidate(normalizedCandidate)) {
+                    sourceType = "href_fallback";
+                }
+                var keys = buildCanonicalCandidateKeys(normalizedCandidate);
+                if (!keys.length) {
+                    return;
+                }
+                var matchedRecords = [];
+                keys.forEach(function (key) {
+                    var existingRecord = map.get(key);
+                    if (existingRecord && matchedRecords.indexOf(existingRecord) === -1) {
+                        matchedRecords.push(existingRecord);
+                    }
+                });
+                var mergedRecord = matchedRecords.length ? matchedRecords[0] : null;
+                for (var i = 1; i < matchedRecords.length; i += 1) {
+                    mergedRecord = mergeCanonicalRecords(mergedRecord, matchedRecords[i]);
+                }
+                mergedRecord = mergeCanonicalCandidateRecord(mergedRecord, normalizedCandidate, {
+                    queryIndex: metadata && metadata.queryIndex,
+                    sourceType: sourceType || "html"
+                });
+                mergedRecord.aliases = (mergedRecord.aliases || []).concat(keys).filter(function (key, index, list) {
+                    return key && list.indexOf(key) === index;
+                });
+                mergedRecord.key = choosePreferredCanonicalKey(mergedRecord.key, mergedRecord.aliases);
+                mergedRecord.aliases.forEach(function (key) {
+                    map.set(key, mergedRecord);
+                });
+            });
+            return map;
+        }
+        function listCanonicalRecords(canonicalByKey) {
+            var map = canonicalByKey instanceof Map ? canonicalByKey : new Map();
+            var seenKeys = Object.create(null);
+            return Array.from(map.values()).filter(function (record) {
+                var key = normalizeString(record && record.key, "");
+                if (!key) {
+                    return false;
+                }
+                if (seenKeys[key]) {
+                    return false;
+                }
+                seenKeys[key] = true;
+                return true;
+            });
+        }
+        function listCanonicalCandidates(canonicalByKey) {
+            return listCanonicalRecords(canonicalByKey).map(function (record) {
+                return record.candidate;
+            });
+        }
+        function summarizeCanonicalMap(canonicalByKey) {
+            var records = listCanonicalRecords(canonicalByKey).slice().sort(function (left, right) {
+                if ((left.bestQueryIndex || 99) !== (right.bestQueryIndex || 99)) {
+                    return (left.bestQueryIndex || 99) - (right.bestQueryIndex || 99);
+                }
+                return (right.completenessScore || 0) - (left.completenessScore || 0);
+            });
+            var candidates = records.map(function (record) {
+                return record.candidate;
+            });
+            return Object.assign({
+                canonicalCandidateCount: records.length,
+                withImageCount: candidates.filter(function (candidate) {
+                    return Boolean(normalizeUrlString(candidate && candidate.imageUrl));
+                }).length
+            }, summarizeCandidateList(candidates));
+        }
+        function isTerminalErrorCode(errorCode) {
+            return errorCode === "FORBIDDEN_OR_BLOCKED" || errorCode === "RATE_LIMITED";
+        }
+        function hasPositivePriceAndImage(candidate) {
+            var candidatePrice = normalizeNumber(candidate && candidate.price);
+            return Boolean(candidate &&
+                candidatePrice != null &&
+                candidatePrice > 0 &&
+                normalizeUrlString(candidate.imageUrl));
+        }
+        function computePricePlausibility(candidate, listingPrice) {
+            var candidatePrice = normalizeNumber(candidate && candidate.price);
+            var baseline = normalizeNumber(listingPrice);
+            if (candidatePrice == null || candidatePrice <= 0 || baseline == null || baseline <= 0) {
+                return 0;
+            }
+            var ratio = candidatePrice / baseline;
+            if (ratio >= 0.5 && ratio <= 1.5) {
+                return 15;
+            }
+            if (ratio >= 0.25 && ratio <= 2.25) {
+                return 8;
+            }
+            return 0;
+        }
+        function computeRetrievalPreRank(record, payload) {
+            var candidate = record && record.candidate ? record.candidate : {};
+            var listingTitle = normalizeString(payload && payload.title, "");
+            var candidateTitle = normalizeString(candidate.title, "");
+            var titleHint = buildUrlTitleHint(candidate.url);
+            var titleScore = Math.max(computeTokenOverlapScore(listingTitle, candidateTitle), computeTokenOverlapScore(listingTitle, titleHint), computeTokenOverlapScore(listingTitle, candidateTitle + " " + titleHint));
+            var queryPriorityScore = getQueryPriority(record && record.bestQueryIndex) * 20;
+            var completenessScore = Math.max(0, record && record.completenessScore || 0) * 2;
+            var imageBonus = normalizeUrlString(candidate.imageUrl) ? 10 : 0;
+            return queryPriorityScore + titleScore + completenessScore + imageBonus + computePricePlausibility(candidate, payload && payload.listingPrice);
+        }
+        function shouldCandidateBeEnriched(record) {
+            var candidate = record && record.candidate ? record.candidate : {};
+            var hasTitle = getTitleQuality(candidate) > 1;
+            var candidatePrice = normalizeNumber(candidate.price);
+            var hasPrice = candidatePrice != null && candidatePrice > 0;
+            var hasImage = Boolean(normalizeUrlString(candidate.imageUrl));
+            return Boolean(canonicalizeCandidateUrl(candidate.url)) && (!hasTitle || !hasPrice || !hasImage);
+        }
+        function selectEnrichmentTarget(canonicalByKey, payload) {
+            var records = listCanonicalRecords(canonicalByKey)
+                .filter(function (record) {
+                return !record.enrichmentAttempted && shouldCandidateBeEnriched(record);
+            })
+                .map(function (record) {
+                return {
+                    record: record,
+                    score: computeRetrievalPreRank(record, payload)
+                };
+            })
+                .filter(function (entry) {
+                return entry.score >= 70;
+            })
+                .sort(function (left, right) {
+                if (right.score !== left.score) {
+                    return right.score - left.score;
+                }
+                return (left.record.bestQueryIndex || 99) - (right.record.bestQueryIndex || 99);
+            });
+            return records.length ? records[0].record : null;
+        }
+        function hasStrongCanonicalCandidateForQuery(canonicalByKey, queryIndex) {
+            return listCanonicalRecords(canonicalByKey).some(function (record) {
+                return (Array.isArray(record && record.queryIndices) &&
+                    record.queryIndices.indexOf(queryIndex) !== -1 &&
+                    hasPositivePriceAndImage(record.candidate));
+            });
+        }
+        function filterFinalProviderCandidates(canonicalByKey) {
+            return listCanonicalRecords(canonicalByKey)
+                .filter(function (record) {
+                var candidate = record && record.candidate ? record.candidate : null;
+                var sourceTypes = Array.isArray(record && record.sourceTypes) ? record.sourceTypes : [];
+                var hasTrustedSource = sourceTypes.some(function (sourceType) {
+                    return normalizeString(sourceType, "") !== "href_fallback";
+                });
+                var id = normalizeString(candidate && candidate.id, "");
+                var url = canonicalizeCandidateUrl(candidate && candidate.url);
+                var price = normalizeNumber(candidate && candidate.price);
+                return Boolean(hasTrustedSource && id && url && price != null && price > 0);
+            })
+                .map(function (record) {
+                return record.candidate;
+            });
+        }
+        function buildQueryExecutionPlan(queries) {
+            var list = Array.isArray(queries) ? queries.filter(Boolean) : [];
+            var plan = [];
+            var seen = Object.create(null);
+            var i;
+            function appendIndex(index) {
+                if (!Number.isFinite(index) || index < 0 || index >= list.length || seen[index]) {
+                    return;
+                }
+                seen[index] = true;
+                plan.push({
+                    query: list[index],
+                    index: index
+                });
+            }
+            for (i = 0; i < list.length; i += 1) {
+                appendIndex(i);
+            }
+            return plan;
+        }
+        function createEmptyQuerySnapshot(planEntry) {
+            var entry = planEntry && typeof planEntry === "object" ? planEntry : {};
+            return {
+                query: normalizeString(entry.query, ""),
+                index: Number.isFinite(Number(entry.index)) ? Number(entry.index) : 99,
+                url: "",
+                htmlFetched: false,
+                htmlOk: false,
+                status: 0,
+                loadingShell: false,
+                onlyHrefFallback: false,
+                parserMismatchLikely: false,
+                sawNoResults: false,
+                sawNetworkError: false,
+                candidates: [],
+                candidatesWithPrice: [],
+                apiAttempted: false,
+                htmlAttemptedInPass2: false
+            };
+        }
+        function executeHtmlOnlyQuerySearch(planEntry, payload, state) {
+            return (async function () {
+                var snapshot = createEmptyQuerySnapshot(planEntry);
+                var nextState = {
+                    requestTotal: normalizeNumber(state && state.requestTotal) || 0,
+                    partial: Boolean(state && state.partial),
+                    blockedFallbackAttempted: Boolean(state && state.blockedFallbackAttempted),
+                    sawNoResults: false,
+                    sawNetworkError: false,
+                    response: null,
+                    snapshot: snapshot
+                };
+                var fallbackQuery = normalizeString(state && state.fallbackQuery, "");
+                var url = "https://www.depop.com/search/?q=" + encodeURIComponent(snapshot.query);
+                snapshot.url = url;
+                debugLog("provider.query_start", {
+                    query: snapshot.query,
+                    url: url,
+                    requestTotal: nextState.requestTotal,
+                    maxRequests: maxRequests
+                });
+                var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
+                snapshot.htmlFetched = true;
+                snapshot.htmlOk = Boolean(fetched && fetched.ok);
+                snapshot.status = Number(fetched && fetched.status) || 0;
+                debugLog("provider.html_fetch_result", {
+                    query: snapshot.query,
+                    url: url,
+                    ok: snapshot.htmlOk,
+                    status: snapshot.status,
+                    transport: normalizeString(fetched && fetched.source, ""),
+                    textLength: normalizeString(fetched && fetched.text, "").length
+                });
+                nextState.requestTotal += 1;
+                if (!snapshot.htmlOk && snapshot.status === 0) {
+                    snapshot.sawNetworkError = true;
+                    nextState.sawNetworkError = true;
+                    nextState.partial = true;
+                    debugLog("provider.query_network_error", {
+                        query: snapshot.query
+                    });
+                    debugLog("provider.pass1_html_snapshot", {
+                        query: snapshot.query,
+                        index: snapshot.index,
+                        htmlOk: snapshot.htmlOk,
+                        status: snapshot.status,
+                        loadingShell: snapshot.loadingShell,
+                        onlyHrefFallback: snapshot.onlyHrefFallback
+                    });
+                    return nextState;
+                }
+                if (!snapshot.htmlOk) {
+                    var mapped = mapHttpError(snapshot.status);
+                    if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+                        if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !nextState.blockedFallbackAttempted) {
+                            nextState.blockedFallbackAttempted = true;
+                            var fallbackAttempt = await trySingleQueryFallback(fetchImpl, runtimeSendMessage, fallbackQuery, cooldownMs, fetchTimeoutMs, debugLog);
+                            nextState.requestTotal += fallbackAttempt.requestCount || 0;
+                            if (fallbackAttempt.ok) {
+                                snapshot.candidates = keepUsableCandidates(fallbackAttempt.candidates || []);
+                                snapshot.candidatesWithPrice = snapshot.candidates.filter(function (candidate) {
+                                    var candidatePrice = normalizeNumber(candidate && candidate.price);
+                                    return candidatePrice != null && candidatePrice > 0;
+                                });
+                                debugLog("provider.pass1_html_snapshot", Object.assign({
+                                    query: snapshot.query,
+                                    index: snapshot.index,
+                                    via: "single_query_fallback"
+                                }, summarizeCandidateList(snapshot.candidates)));
+                                return nextState;
+                            }
+                            nextState.response = buildSearchFailure(fallbackAttempt.errorCode || mapped.errorCode, normalizeNumber(fallbackAttempt.retryAfterMs) || mapped.retryAfterMs, true, "html");
+                            return nextState;
+                        }
+                        debugLog("provider.query_terminal_http_error", {
+                            query: snapshot.query,
+                            errorCode: mapped.errorCode,
+                            retryAfterMs: mapped.retryAfterMs
+                        });
+                        nextState.response = buildSearchFailure(mapped.errorCode, mapped.retryAfterMs, nextState.partial, "html");
+                        return nextState;
+                    }
+                    nextState.partial = true;
+                    debugLog("provider.query_http_error_partial", {
+                        query: snapshot.query,
+                        status: snapshot.status
+                    });
+                    debugLog("provider.pass1_html_snapshot", {
+                        query: snapshot.query,
+                        index: snapshot.index,
+                        htmlOk: snapshot.htmlOk,
+                        status: snapshot.status,
+                        loadingShell: snapshot.loadingShell,
+                        onlyHrefFallback: snapshot.onlyHrefFallback
+                    });
+                    return nextState;
+                }
+                var html = normalizeString(fetched && fetched.text, "");
+                if (!html) {
+                    nextState.partial = true;
+                    debugLog("provider.pass1_html_snapshot", {
+                        query: snapshot.query,
+                        index: snapshot.index,
+                        htmlOk: snapshot.htmlOk,
+                        status: snapshot.status,
+                        loadingShell: snapshot.loadingShell,
+                        onlyHrefFallback: snapshot.onlyHrefFallback
+                    });
+                    return nextState;
+                }
+                if (isBlockedHtml(html)) {
+                    debugLog("provider.blocked_html_detected", {
+                        query: snapshot.query
+                    });
+                    nextState.response = buildSearchFailure("FORBIDDEN_OR_BLOCKED", 120000, nextState.partial, "html");
+                    return nextState;
+                }
+                var candidateState = parseHtmlCandidateState(html, normalizeAndHydrateCandidates);
+                snapshot.loadingShell = isLikelyLoadingShellHtml(html);
+                snapshot.parserMismatchLikely = Boolean(candidateState && candidateState.parsed && candidateState.parsed.parserMismatchLikely);
+                snapshot.onlyHrefFallback =
+                    Array.isArray(candidateState.candidates) &&
+                        candidateState.candidates.length > 0 &&
+                        candidateState.candidates.every(isHrefFallbackCandidate);
+                snapshot.candidates = keepUsableCandidates(candidateState.candidates || []);
+                snapshot.candidatesWithPrice = (candidateState.candidatesWithPrice || []).filter(function (candidate) {
+                    var candidatePrice = normalizeNumber(candidate && candidate.price);
+                    return candidatePrice != null && candidatePrice > 0;
+                });
+                snapshot.sawNoResults =
+                    !snapshot.candidates.length &&
+                        !hasAnyUsableCandidate(candidateState.candidates || []) &&
+                        shouldReturnNoResults(html);
+                nextState.sawNoResults = snapshot.sawNoResults;
+                nextState.partial = nextState.partial || snapshot.loadingShell;
+                debugLog("provider.pass1_html_snapshot", Object.assign({
+                    query: snapshot.query,
+                    index: snapshot.index,
+                    loadingShell: snapshot.loadingShell,
+                    onlyHrefFallback: snapshot.onlyHrefFallback,
+                    sawNoResults: snapshot.sawNoResults
+                }, summarizeCandidateList(snapshot.candidates)));
+                return nextState;
+            })();
+        }
+        function shouldAttemptExactQueryApi(snapshot, canonicalByKey) {
+            if (!snapshot || snapshot.apiAttempted) {
+                return false;
+            }
+            if (!snapshot.htmlFetched || !snapshot.htmlOk) {
+                return true;
+            }
+            if (snapshot.loadingShell || snapshot.onlyHrefFallback) {
+                return true;
+            }
+            if (!Array.isArray(snapshot.candidates) || !snapshot.candidates.length) {
+                return true;
+            }
+            return !hasStrongCanonicalCandidateForQuery(canonicalByKey, snapshot.index);
+        }
+        function selectNextUnfetchedQuery(queryPlan, snapshotsByIndex) {
+            var list = Array.isArray(queryPlan) ? queryPlan : [];
+            for (var i = 0; i < list.length; i += 1) {
+                var snapshot = snapshotsByIndex[list[i].index];
+                if (!snapshot || !snapshot.htmlFetched) {
+                    return list[i];
+                }
+            }
+            return null;
+        }
+        function selectNextApiFallbackQuery(queryPlan, snapshotsByIndex, canonicalByKey) {
+            var list = Array.isArray(queryPlan) ? queryPlan : [];
+            for (var i = 0; i < list.length; i += 1) {
+                var planEntry = list[i];
+                var snapshot = snapshotsByIndex[planEntry.index];
+                if (!snapshot || !snapshot.htmlFetched || snapshot.apiAttempted) {
+                    continue;
+                }
+                if (snapshot.loadingShell ||
+                    !snapshot.htmlOk ||
+                    snapshot.onlyHrefFallback ||
+                    !Array.isArray(snapshot.candidates) ||
+                    !snapshot.candidates.length ||
+                    !hasStrongCanonicalCandidateForQuery(canonicalByKey, snapshot.index)) {
+                    return planEntry;
+                }
+            }
+            return null;
+        }
+        function selectNextFollowupAction(options) {
+            var config = options && typeof options === "object" ? options : {};
+            var exactSnapshot = config.exactSnapshot || null;
+            var canonicalByKey = config.canonicalByKey;
+            var payload = config.payload;
+            var queryPlan = config.queryPlan;
+            var snapshotsByIndex = config.snapshotsByIndex || {};
+            if (shouldAttemptExactQueryApi(exactSnapshot, canonicalByKey)) {
+                return {
+                    type: "query_api",
+                    planEntry: exactSnapshot
+                };
+            }
+            var enrichmentTarget = selectEnrichmentTarget(canonicalByKey, payload);
+            if (enrichmentTarget) {
+                return {
+                    type: "candidate_enrich",
+                    record: enrichmentTarget
+                };
+            }
+            var nextUnfetchedQuery = selectNextUnfetchedQuery(queryPlan, snapshotsByIndex);
+            if (nextUnfetchedQuery) {
+                return {
+                    type: "query_html",
+                    planEntry: nextUnfetchedQuery
+                };
+            }
+            var nextApiQuery = selectNextApiFallbackQuery(queryPlan, snapshotsByIndex, canonicalByKey);
+            if (nextApiQuery) {
+                return {
+                    type: "query_api",
+                    planEntry: nextApiQuery
+                };
+            }
+            return null;
+        }
+        async function executeApiOnlySearch(payload, queries) {
+            var queryPlan = buildQueryExecutionPlan(queries);
+            var canonicalByKey = new Map();
+            var requestTotal = 0;
+            var partial = false;
+            var queriesTried = 0;
+            var sawNoResults = false;
+            var sawNetworkError = false;
+            var sourceType = "api";
+            debugLog("provider.api_only_query_plan", {
+                queries: queryPlan.map(function (entry) {
+                    return {
+                        query: entry.query,
+                        index: entry.index,
+                        priority: getQueryPriority(entry.index)
+                    };
+                }),
+                totalQueries: queryPlan.length
+            });
+            for (var i = 0; i < queryPlan.length && requestTotal < maxRequests; i += 1) {
+                var planEntry = queryPlan[i];
+                queriesTried += 1;
+                debugLog("provider.pass2_action_selected", {
+                    action: "query_api",
+                    query: planEntry.query,
+                    index: planEntry.index,
+                    reason: i === 0 ? "api_only_exact_query" : "api_only_query"
+                });
+                var apiResult = await tryApiSearch(planEntry.query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs, debugLog);
+                requestTotal += apiResult.requestCount || 0;
+                if (!apiResult.ok) {
+                    if (apiResult.errorCode === "NO_RESULTS") {
+                        sawNoResults = true;
+                        partial = true;
+                    }
+                    else if (apiResult.errorCode === "NETWORK_ERROR") {
+                        sawNetworkError = true;
+                        partial = true;
+                    }
+                    else if (isTerminalErrorCode(apiResult.errorCode)) {
+                        debugLog("provider.search_failure", {
+                            errorCode: apiResult.errorCode,
+                            requestTotal: requestTotal
+                        });
+                        return buildSearchFailure(apiResult.errorCode, apiResult.retryAfterMs, partial, sourceType);
+                    }
+                    else {
+                        partial = true;
+                    }
+                    debugLog("provider.pass2_action_result", {
+                        action: "query_api",
+                        query: planEntry.query,
+                        index: planEntry.index,
+                        ok: false,
+                        errorCode: apiResult.errorCode,
+                        requestTotal: requestTotal
+                    });
+                    if (requestTotal < maxRequests && i < queryPlan.length - 1) {
+                        await sleep(withJitter(cooldownMs));
+                    }
+                    continue;
+                }
+                var apiCandidates = (Array.isArray(apiResult.candidates) ? apiResult.candidates : []).map(applyImageUrlCache);
+                mergeCandidatesIntoCanonicalMap(canonicalByKey, keepUsableCandidates(apiCandidates), {
+                    queryIndex: planEntry.index,
+                    sourceType: apiResult.sourceType === "html" ? "html" : "api"
+                });
+                if (apiResult.sourceType === "html") {
+                    partial = true;
+                    sourceType = "hybrid";
+                }
+                debugLog("provider.pass2_action_result", Object.assign({
+                    action: "query_api",
+                    query: planEntry.query,
+                    index: planEntry.index,
+                    ok: true,
+                    requestTotal: requestTotal
+                }, summarizeCanonicalMap(canonicalByKey)));
+                if (requestTotal < maxRequests && i < queryPlan.length - 1) {
+                    await sleep(withJitter(cooldownMs));
+                }
+            }
+            if (queriesTried < queryPlan.length) {
+                partial = true;
+            }
+            var normalized = filterFinalProviderCandidates(canonicalByKey);
+            if (normalized.length) {
+                debugLog("provider.search_success", Object.assign({
+                    sourceType: sourceType,
+                    partial: partial,
+                    requestTotal: requestTotal,
+                    via: "api_only"
+                }, summarizeCandidateList(normalized)));
+                return buildSearchSuccess(normalized, partial, sourceType, requestTotal);
+            }
+            if (sawNoResults) {
+                debugLog("provider.search_failure", {
+                    errorCode: "NO_RESULTS",
+                    partial: partial,
+                    requestTotal: requestTotal
+                });
+                return buildSearchFailure("NO_RESULTS", 0, partial, sourceType);
+            }
+            if (sawNetworkError) {
+                debugLog("provider.search_failure", {
+                    errorCode: "NETWORK_ERROR",
+                    partial: true,
+                    requestTotal: requestTotal
+                });
+                return buildSearchFailure("NETWORK_ERROR", 1500, true, sourceType);
+            }
+            debugLog("provider.search_failure", {
+                errorCode: "PARSE_ERROR",
+                partial: partial,
+                requestTotal: requestTotal
+            });
+            return buildSearchFailure("PARSE_ERROR", 0, partial, sourceType);
         }
         async function tryBroadFallbackSearch(query, requestTotal, limit, sourceType) {
             var broadQuery = buildBroadFallbackQuery(query);
@@ -3129,9 +4328,22 @@
                 };
             }
             var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
+            debugLog("provider.broad_fallback_start", {
+                originalQuery: normalizeString(query, ""),
+                broadQuery: broadQuery,
+                url: broadUrl,
+                sourceType: normalizeString(sourceType, "html")
+            });
             var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
             var nextRequestTotal = requestTotal + 1;
             var sawNetworkError = !broadFetched.ok && broadFetched.status === 0;
+            debugLog("provider.broad_fallback_result", {
+                broadQuery: broadQuery,
+                ok: Boolean(broadFetched && broadFetched.ok),
+                status: Number(broadFetched && broadFetched.status) || 0,
+                transport: normalizeString(broadFetched && broadFetched.source, ""),
+                textLength: normalizeString(broadFetched && broadFetched.text, "").length
+            });
             if (!broadFetched.ok || !broadFetched.text) {
                 return {
                     requestTotal: nextRequestTotal,
@@ -3144,6 +4356,9 @@
             if (limit != null) {
                 broadCandidates = broadCandidates.slice(0, limit);
             }
+            debugLog("provider.broad_fallback_candidates", Object.assign({
+                broadQuery: broadQuery
+            }, summarizeCandidateList(broadCandidates)));
             return {
                 requestTotal: nextRequestTotal,
                 candidates: broadCandidates,
@@ -3162,18 +4377,38 @@
                 stopProcessing: false,
                 response: null
             };
+            var queryMaxRequests = Number.isFinite(Number(state && state.queryMaxRequests))
+                ? Math.max(1, Number(state.queryMaxRequests))
+                : maxRequests;
             var fallbackQuery = normalizeString(state && state.fallbackQuery, "");
             var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
+            debugLog("provider.query_start", {
+                query: normalizeString(query, ""),
+                url: url,
+                requestTotal: nextState.requestTotal,
+                maxRequests: queryMaxRequests
+            });
             var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
+            debugLog("provider.html_fetch_result", {
+                query: normalizeString(query, ""),
+                url: url,
+                ok: Boolean(fetched && fetched.ok),
+                status: Number(fetched && fetched.status) || 0,
+                transport: normalizeString(fetched && fetched.source, ""),
+                textLength: normalizeString(fetched && fetched.text, "").length
+            });
             if (!fetched.ok && fetched.status === 0) {
                 nextState.sawNetworkError = true;
                 nextState.partial = true;
+                debugLog("provider.query_network_error", {
+                    query: normalizeString(query, "")
+                });
                 return nextState;
             }
             nextState.requestTotal += 1;
             if (!fetched.ok) {
-                if (nextState.requestTotal < maxRequests) {
-                    var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
+                if (nextState.requestTotal < queryMaxRequests) {
+                    var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs, debugLog);
                     nextState.requestTotal += apiOnHttpError.requestCount || 0;
                     if (apiOnHttpError.ok) {
                         nextState.candidates = apiOnHttpError.candidates || [];
@@ -3189,7 +4424,7 @@
                 var mapped = mapHttpError(fetched.status);
                 if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !nextState.blockedFallbackAttempted) {
                     nextState.blockedFallbackAttempted = true;
-                    var fallbackAttempt = await trySingleQueryFallback(fetchImpl, runtimeSendMessage, fallbackQuery, cooldownMs, fetchTimeoutMs);
+                    var fallbackAttempt = await trySingleQueryFallback(fetchImpl, runtimeSendMessage, fallbackQuery, cooldownMs, fetchTimeoutMs, debugLog);
                     nextState.requestTotal += fallbackAttempt.requestCount || 0;
                     if (fallbackAttempt.ok) {
                         nextState.candidates = fallbackAttempt.candidates || [];
@@ -3201,10 +4436,19 @@
                     return nextState;
                 }
                 if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+                    debugLog("provider.query_terminal_http_error", {
+                        query: normalizeString(query, ""),
+                        errorCode: mapped.errorCode,
+                        retryAfterMs: mapped.retryAfterMs
+                    });
                     nextState.response = buildSearchFailure(mapped.errorCode, mapped.retryAfterMs, nextState.partial, "html");
                     return nextState;
                 }
                 nextState.partial = true;
+                debugLog("provider.query_http_error_partial", {
+                    query: normalizeString(query, ""),
+                    status: Number(fetched && fetched.status) || 0
+                });
                 return nextState;
             }
             var html = fetched.text;
@@ -3214,6 +4458,9 @@
             }
             var latestHtml = html;
             if (isBlockedHtml(html)) {
+                debugLog("provider.blocked_html_detected", {
+                    query: normalizeString(query, "")
+                });
                 nextState.response = buildSearchFailure("FORBIDDEN_OR_BLOCKED", 120000, nextState.partial, "html");
                 return nextState;
             }
@@ -3222,7 +4469,7 @@
             var pricedParsedCandidates = candidateState.candidatesWithPrice;
             if (!pricedParsedCandidates.length &&
                 isLikelyLoadingShellHtml(latestHtml) &&
-                nextState.requestTotal + 1 < maxRequests) {
+                nextState.requestTotal + 1 < queryMaxRequests) {
                 var retriedState = await retryLoadingShellCandidates({
                     url: url,
                     html: latestHtml,
@@ -3232,7 +4479,8 @@
                     cooldownMs: cooldownMs,
                     timeoutMs: fetchTimeoutMs,
                     maxRetries: 2,
-                    maxAdditionalRequests: Math.max(0, maxRequests - nextState.requestTotal - 1)
+                    maxAdditionalRequests: Math.max(0, queryMaxRequests - nextState.requestTotal - 1),
+                    debugLogger: debugLog
                 });
                 nextState.requestTotal += retriedState.requestCount;
                 if (retriedState.sawNetworkError) {
@@ -3249,8 +4497,8 @@
                 parsedCandidates = retriedState.candidateState.candidates;
                 pricedParsedCandidates = retriedState.candidateState.candidatesWithPrice;
             }
-            if (!pricedParsedCandidates.length && nextState.requestTotal < maxRequests) {
-                var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
+            if (!pricedParsedCandidates.length && nextState.requestTotal < queryMaxRequests) {
+                var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs, debugLog);
                 nextState.requestTotal += apiFallback.requestCount || 0;
                 if (apiFallback.ok) {
                     parsedCandidates = normalizeAndHydrateCandidates(apiFallback.candidates || []);
@@ -3262,9 +4510,14 @@
                     return nextState;
                 }
             }
-            if (!pricedParsedCandidates.length && parsedCandidates.length && nextState.requestTotal < maxRequests) {
-                var remainingBudget = Math.max(0, maxRequests - nextState.requestTotal);
-                var enriched = await enrichHrefFallbackCandidates(parsedCandidates, fetchImpl, runtimeSendMessage, remainingBudget, fetchTimeoutMs, normalizeAndHydrateCandidates);
+            if (!pricedParsedCandidates.length && parsedCandidates.length && nextState.requestTotal < queryMaxRequests) {
+                var remainingBudget = Math.max(0, queryMaxRequests - nextState.requestTotal);
+                debugLog("provider.href_enrichment_start", {
+                    query: normalizeString(query, ""),
+                    candidateCount: parsedCandidates.length,
+                    remainingBudget: remainingBudget
+                });
+                var enriched = await enrichHrefFallbackCandidates(parsedCandidates, fetchImpl, runtimeSendMessage, remainingBudget, fetchTimeoutMs, normalizeAndHydrateCandidates, debugLog);
                 nextState.requestTotal += enriched.requestCount || 0;
                 pricedParsedCandidates = normalizeAndHydrateCandidates(enriched.candidates || [])
                     .filter(hasMeaningfulPrice);
@@ -3279,80 +4532,40 @@
                 pricedParsedCandidates = keepUsableCandidates(parsedCandidates);
             }
             nextState.candidates = pricedParsedCandidates;
+            debugLog("provider.query_candidates_ready", Object.assign({
+                query: normalizeString(query, ""),
+                sourceType: nextState.sourceType
+            }, summarizeCandidateList(pricedParsedCandidates)));
             return nextState;
         }
         return {
             market: "depop",
             search: async function (input) {
                 if (!fetchImpl && !runtimeSendMessage) {
-                    return buildSearchFailure("NETWORK_ERROR", 1500, false, "html");
+                    return buildSearchFailure("NETWORK_ERROR", 1500, false, "api");
                 }
                 var payload = input && typeof input === "object" ? input : {};
                 var queries = Array.isArray(payload.queries) ? payload.queries.filter(Boolean) : [];
+                var strictMode = payload.strictMode === true;
                 var limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Number(payload.limit)) : null;
-                var requestTotal = 0;
-                var partial = false;
-                var merged = [];
-                var blockedFallbackAttempted = false;
-                var sourceType = "html";
-                var sawNoResults = false;
-                var sawNetworkError = false;
+                debugLog("provider.search_start", {
+                    listingId: normalizeString(payload.listingId, ""),
+                    queries: queries.slice(),
+                    strictMode: strictMode,
+                    limit: limit,
+                    currency: normalizeCurrencyCode(payload.currency) || "USD",
+                    title: normalizeString(payload.title, ""),
+                    brand: normalizeString(payload.brand, ""),
+                    size: normalizeString(payload.size, ""),
+                    category: normalizeString(payload.category, "")
+                });
                 if (!queries.length) {
-                    return buildSearchFailure("MISSING_LISTING_DATA", 0, false, "html");
-                }
-                for (var i = 0; i < queries.length && requestTotal < maxRequests; i += 1) {
-                    var queryResult = await executeQuerySearch(queries[i], payload, {
-                        requestTotal: requestTotal,
-                        partial: partial,
-                        sourceType: sourceType,
-                        blockedFallbackAttempted: blockedFallbackAttempted,
-                        fallbackQuery: queries[0]
+                    debugLog("provider.search_failure", {
+                        errorCode: "MISSING_LISTING_DATA"
                     });
-                    if (queryResult.response) {
-                        return queryResult.response;
-                    }
-                    requestTotal = queryResult.requestTotal;
-                    partial = queryResult.partial;
-                    sourceType = queryResult.sourceType;
-                    blockedFallbackAttempted = queryResult.blockedFallbackAttempted;
-                    if (queryResult.sawNoResults) {
-                        sawNoResults = true;
-                    }
-                    if (queryResult.sawNetworkError) {
-                        sawNetworkError = true;
-                    }
-                    merged = merged.concat(queryResult.candidates || []);
-                    if (queryResult.stopProcessing) {
-                        break;
-                    }
-                    if (requestTotal < maxRequests && i < queries.length - 1) {
-                        await sleep(withJitter(cooldownMs));
-                    }
+                    return buildSearchFailure("MISSING_LISTING_DATA", 0, false, "api");
                 }
-                var normalized = dedupeById(merged);
-                if (limit != null) {
-                    normalized = normalized.slice(0, limit);
-                }
-                if (!normalized.length) {
-                    if (sawNoResults && queries.length && requestTotal < maxRequests) {
-                        var broadFallback = await tryBroadFallbackSearch(queries[0], requestTotal, limit, sourceType);
-                        requestTotal = broadFallback.requestTotal;
-                        if (broadFallback.sawNetworkError) {
-                            sawNetworkError = true;
-                        }
-                        if (broadFallback.candidates.length) {
-                            return buildSearchSuccess(broadFallback.candidates, true, sourceType, requestTotal);
-                        }
-                    }
-                    if (sawNoResults) {
-                        return buildSearchFailure("NO_RESULTS", 0, partial, "html");
-                    }
-                    if (sawNetworkError) {
-                        return buildSearchFailure("NETWORK_ERROR", 1500, partial, "html");
-                    }
-                    return buildSearchFailure("PARSE_ERROR", 0, partial, "html");
-                }
-                return buildSearchSuccess(normalized, partial, sourceType, requestTotal);
+                return executeApiOnlySearch(payload, queries);
             }
         };
     }
@@ -3479,6 +4692,20 @@
             return "";
         }
     }
+    function summarizeSearchInput(input) {
+        const payload = input && typeof input === "object" ? input : {};
+        return {
+            queries: Array.isArray(payload.queries)
+                ? payload.queries.filter(function (query) {
+                    return typeof query === "string" && query.trim();
+                })
+                : [],
+            currency: normalizeString(payload.currency, "USD"),
+            limit: normalizeNumber(payload.limit),
+            listingId: normalizeString(payload.listingId, ""),
+            title: normalizeString(payload.title, "")
+        };
+    }
     function createRegistry(options) {
         const providersByMarket = new Map();
         const inFlightByKey = new Map();
@@ -3490,6 +4717,9 @@
             ? Math.max(1, Math.floor(Number(options.cacheMaxEntries)))
             : 100;
         const diagnosticsEnabled = Boolean(options && options.enableDiagnostics);
+        const debugLog = options && typeof options.debugLogger === "function"
+            ? options.debugLogger
+            : function () { };
         const diagnostics = {
             searchCalls: 0,
             cacheHits: 0,
@@ -3538,7 +4768,7 @@
             }
             cacheByKey.delete(cacheKey);
         }
-        function upsertCacheEntry(cacheKey, value) {
+        function upsertCacheEntry(cacheKey, value, market) {
             if (!cacheKey) {
                 return;
             }
@@ -3554,6 +4784,10 @@
                 }
                 cacheByKey.delete(oldestKey);
                 incrementDiagnostic("evictions");
+                debugLog("registry.cache_evict", {
+                    market: market,
+                    cacheSize: cacheByKey.size
+                });
             }
         }
         function register(provider) {
@@ -3580,8 +4814,12 @@
         }
         function search(market, input) {
             incrementDiagnostic("searchCalls");
+            const searchSummary = summarizeSearchInput(input);
             const provider = get(market);
             if (!provider) {
+                debugLog("registry.provider_missing", {
+                    market: normalizeString(market, "")
+                });
                 return Promise.resolve({
                     ok: false,
                     candidates: [],
@@ -3600,23 +4838,49 @@
                 const cached = cacheByKey.get(cacheKey);
                 if (cached && cached.expiresAt > Date.now()) {
                     incrementDiagnostic("cacheHits");
+                    debugLog("registry.cache_hit", Object.assign({
+                        market: provider.market
+                    }, searchSummary));
                     return Promise.resolve(normalizeProviderResult(cached.value, provider.market));
                 }
                 incrementDiagnostic("cacheMisses");
+                debugLog("registry.cache_miss", Object.assign({
+                    market: provider.market
+                }, searchSummary));
                 if (cached && cached.expiresAt <= Date.now()) {
                     removeCacheEntry(cacheKey);
                     incrementDiagnostic("expiredRemovals");
+                    debugLog("registry.cache_expired", {
+                        market: provider.market
+                    });
                 }
                 if (inFlightByKey.has(cacheKey)) {
                     incrementDiagnostic("inFlightHits");
+                    debugLog("registry.in_flight_hit", Object.assign({
+                        market: provider.market
+                    }, searchSummary));
                     return inFlightByKey.get(cacheKey);
                 }
             }
             const executeSearchPromise = Promise.resolve(provider.search(input)).then(function (result) {
                 const normalized = normalizeProviderResult(result, provider.market);
+                debugLog("registry.search_result", {
+                    market: provider.market,
+                    ok: normalized.ok,
+                    sourceType: normalized.sourceType,
+                    partial: normalized.partial,
+                    requestCount: normalized.requestCount,
+                    candidateCount: normalized.candidates.length,
+                    errorCode: normalized.errorCode
+                });
                 if (cacheKey && cacheTtlMs > 0 && normalized.ok) {
-                    upsertCacheEntry(cacheKey, normalized);
+                    upsertCacheEntry(cacheKey, normalized, provider.market);
                     incrementDiagnostic("cacheStores");
+                    debugLog("registry.cache_store", {
+                        market: provider.market,
+                        candidateCount: normalized.candidates.length,
+                        sourceType: normalized.sourceType
+                    });
                 }
                 return normalized;
             });
@@ -3730,6 +4994,11 @@
     const IMAGE_FETCH_MESSAGE_VERSION = 1;
     const HASH_GRID_WIDTH = 9;
     const HASH_GRID_HEIGHT = 8;
+    const MODEL_IMAGE_SIZE = 256;
+    const DEFAULT_CACHE_MAX_ENTRIES = 128;
+    const DEFAULT_COLD_START_BUDGET_MS = 40;
+    const MODEL_ASSET_PATH = "vendor/mobileclip-s1/vision_model_uint8.onnx";
+    const WASM_ASSET_PATH = "vendor/onnxruntime/ort-wasm-simd-threaded.wasm";
     function normalizeString(value, fallback) {
         if (typeof value !== "string") {
             return fallback;
@@ -3744,8 +5013,18 @@
         }
         return Math.max(1, Math.floor(parsed));
     }
+    function normalizeDurationMs(value, fallback) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+            return fallback;
+        }
+        return Math.max(0, Math.floor(parsed));
+    }
     function isPromiseLike(value) {
         return Boolean(value) && typeof value.then === "function";
+    }
+    function isObjectRecord(value) {
+        return Boolean(value) && typeof value === "object";
     }
     function hasBitmapDecodeSupport() {
         return typeof createImageBitmap === "function" && typeof OffscreenCanvas === "function";
@@ -3761,15 +5040,21 @@
     function getRuntime() {
         if (typeof globalThis !== "undefined" &&
             globalThis.chrome &&
-            globalThis.chrome?.runtime &&
-            typeof globalThis.chrome?.runtime?.sendMessage === "function") {
+            globalThis.chrome?.runtime) {
             return globalThis.chrome?.runtime || null;
         }
         if (typeof globalThis !== "undefined" &&
             globalThis.browser &&
-            globalThis.browser?.runtime &&
-            typeof globalThis.browser?.runtime?.sendMessage === "function") {
+            globalThis.browser?.runtime) {
             return globalThis.browser?.runtime || null;
+        }
+        return null;
+    }
+    function getOrt() {
+        if (typeof globalThis !== "undefined" &&
+            globalThis.ort &&
+            typeof globalThis.ort === "object") {
+            return globalThis.ort || null;
         }
         return null;
     }
@@ -3863,26 +5148,18 @@
         }
         return fetchImageBlobDirect(url);
     }
-    function toLumaGrid(data, width, height) {
-        const grid = [];
-        for (let y = 0; y < height; y += 1) {
-            for (let x = 0; x < width; x += 1) {
-                const index = (y * width + x) * 4;
-                const red = Number(data[index] || 0);
-                const green = Number(data[index + 1] || 0);
-                const blue = Number(data[index + 2] || 0);
-                grid.push(Math.round(red * 0.299 + green * 0.587 + blue * 0.114));
-            }
-        }
-        return grid;
-    }
-    async function drawBlobToGridWithBitmap(blob, width, height) {
+    async function drawBlobToImageWithBitmap(blob) {
         if (!hasBitmapDecodeSupport()) {
             return null;
         }
         let bitmap = null;
         try {
             bitmap = await createImageBitmap(blob);
+            const width = normalizePositiveInteger(bitmap.width, 0);
+            const height = normalizePositiveInteger(bitmap.height, 0);
+            if (!width || !height) {
+                return null;
+            }
             const canvas = new OffscreenCanvas(width, height);
             const context = canvas.getContext("2d", {
                 willReadFrequently: true
@@ -3892,7 +5169,11 @@
             }
             context.drawImage(bitmap, 0, 0, width, height);
             const imageData = context.getImageData(0, 0, width, height);
-            return toLumaGrid(imageData.data, width, height);
+            return {
+                data: imageData.data,
+                width: width,
+                height: height
+            };
         }
         catch (_) {
             return null;
@@ -3908,20 +5189,8 @@
             }
         }
     }
-    async function drawBlobToGridWithDomCanvas(blob, width, height) {
+    async function drawBlobToImageWithDomCanvas(blob) {
         if (!hasDomCanvasSupport()) {
-            return null;
-        }
-        const canvas = document.createElement("canvas");
-        if (!canvas || typeof canvas.getContext !== "function") {
-            return null;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext("2d", {
-            willReadFrequently: true
-        });
-        if (!context) {
             return null;
         }
         const objectUrl = URL.createObjectURL(blob);
@@ -3939,9 +5208,30 @@
             if (!image) {
                 return null;
             }
+            const width = normalizePositiveInteger(image.naturalWidth || image.width, 0);
+            const height = normalizePositiveInteger(image.naturalHeight || image.height, 0);
+            if (!width || !height) {
+                return null;
+            }
+            const canvas = document.createElement("canvas");
+            if (!canvas || typeof canvas.getContext !== "function") {
+                return null;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d", {
+                willReadFrequently: true
+            });
+            if (!context) {
+                return null;
+            }
             context.drawImage(image, 0, 0, width, height);
             const imageData = context.getImageData(0, 0, width, height);
-            return toLumaGrid(imageData.data, width, height);
+            return {
+                data: imageData.data,
+                width: width,
+                height: height
+            };
         }
         catch (_) {
             return null;
@@ -3957,16 +5247,102 @@
             }
         }
     }
-    async function defaultLoadGrayscaleGrid(url, width, height) {
+    async function defaultLoadDecodedImage(url) {
         const blob = await fetchImageBlob(url);
         if (!blob) {
             return null;
         }
-        const bitmapGrid = await drawBlobToGridWithBitmap(blob, width, height);
-        if (bitmapGrid) {
-            return bitmapGrid;
+        const decodedWithBitmap = await drawBlobToImageWithBitmap(blob);
+        if (decodedWithBitmap) {
+            return decodedWithBitmap;
         }
-        return drawBlobToGridWithDomCanvas(blob, width, height);
+        return drawBlobToImageWithDomCanvas(blob);
+    }
+    function resizeRgbaBilinear(source, sourceWidth, sourceHeight, targetWidth, targetHeight) {
+        const output = new Uint8ClampedArray(targetWidth * targetHeight * 4);
+        const xRatio = sourceWidth / targetWidth;
+        const yRatio = sourceHeight / targetHeight;
+        for (let y = 0; y < targetHeight; y += 1) {
+            const srcY = Math.max(0, Math.min(sourceHeight - 1, (y + 0.5) * yRatio - 0.5));
+            const y0 = Math.floor(srcY);
+            const y1 = Math.min(sourceHeight - 1, y0 + 1);
+            const yWeight = srcY - y0;
+            for (let x = 0; x < targetWidth; x += 1) {
+                const srcX = Math.max(0, Math.min(sourceWidth - 1, (x + 0.5) * xRatio - 0.5));
+                const x0 = Math.floor(srcX);
+                const x1 = Math.min(sourceWidth - 1, x0 + 1);
+                const xWeight = srcX - x0;
+                const topLeft = (y0 * sourceWidth + x0) * 4;
+                const topRight = (y0 * sourceWidth + x1) * 4;
+                const bottomLeft = (y1 * sourceWidth + x0) * 4;
+                const bottomRight = (y1 * sourceWidth + x1) * 4;
+                const outIndex = (y * targetWidth + x) * 4;
+                for (let channel = 0; channel < 4; channel += 1) {
+                    const top = Number(source[topLeft + channel] || 0) * (1 - xWeight) +
+                        Number(source[topRight + channel] || 0) * xWeight;
+                    const bottom = Number(source[bottomLeft + channel] || 0) * (1 - xWeight) +
+                        Number(source[bottomRight + channel] || 0) * xWeight;
+                    output[outIndex + channel] = Math.round(top * (1 - yWeight) + bottom * yWeight);
+                }
+            }
+        }
+        return output;
+    }
+    function cropRgba(source, sourceWidth, sourceHeight, startX, startY, cropWidth, cropHeight) {
+        const output = new Uint8ClampedArray(cropWidth * cropHeight * 4);
+        for (let y = 0; y < cropHeight; y += 1) {
+            const sourceY = Math.max(0, Math.min(sourceHeight - 1, startY + y));
+            for (let x = 0; x < cropWidth; x += 1) {
+                const sourceX = Math.max(0, Math.min(sourceWidth - 1, startX + x));
+                const sourceIndex = (sourceY * sourceWidth + sourceX) * 4;
+                const outputIndex = (y * cropWidth + x) * 4;
+                output[outputIndex] = source[sourceIndex];
+                output[outputIndex + 1] = source[sourceIndex + 1];
+                output[outputIndex + 2] = source[sourceIndex + 2];
+                output[outputIndex + 3] = source[sourceIndex + 3];
+            }
+        }
+        return output;
+    }
+    function toLumaGrid(data, width, height) {
+        const grid = [];
+        for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+                const index = (y * width + x) * 4;
+                const red = Number(data[index] || 0);
+                const green = Number(data[index + 1] || 0);
+                const blue = Number(data[index + 2] || 0);
+                grid.push(Math.round(red * 0.299 + green * 0.587 + blue * 0.114));
+            }
+        }
+        return grid;
+    }
+    function buildModelInputTensor(data, width, height) {
+        const pixels = data instanceof Uint8ClampedArray ? data : null;
+        const sourceWidth = normalizePositiveInteger(width, 0);
+        const sourceHeight = normalizePositiveInteger(height, 0);
+        if (!pixels || !sourceWidth || !sourceHeight || pixels.length < sourceWidth * sourceHeight * 4) {
+            return null;
+        }
+        const scale = MODEL_IMAGE_SIZE / Math.min(sourceWidth, sourceHeight);
+        const resizedWidth = Math.max(1, Math.round(sourceWidth * scale));
+        const resizedHeight = Math.max(1, Math.round(sourceHeight * scale));
+        const resized = resizeRgbaBilinear(pixels, sourceWidth, sourceHeight, resizedWidth, resizedHeight);
+        const cropX = Math.max(0, Math.floor((resizedWidth - MODEL_IMAGE_SIZE) / 2));
+        const cropY = Math.max(0, Math.floor((resizedHeight - MODEL_IMAGE_SIZE) / 2));
+        const cropped = cropRgba(resized, resizedWidth, resizedHeight, cropX, cropY, MODEL_IMAGE_SIZE, MODEL_IMAGE_SIZE);
+        const planeSize = MODEL_IMAGE_SIZE * MODEL_IMAGE_SIZE;
+        const tensor = new Float32Array(planeSize * 3);
+        for (let index = 0; index < planeSize; index += 1) {
+            const pixelOffset = index * 4;
+            tensor[index] = Number(cropped[pixelOffset] || 0) / 255;
+            tensor[planeSize + index] = Number(cropped[pixelOffset + 1] || 0) / 255;
+            tensor[planeSize * 2 + index] = Number(cropped[pixelOffset + 2] || 0) / 255;
+        }
+        return {
+            data: tensor,
+            dims: [1, 3, MODEL_IMAGE_SIZE, MODEL_IMAGE_SIZE]
+        };
     }
     function computeDifferenceHash(grid, width, height) {
         const normalizedWidth = normalizePositiveInteger(width, HASH_GRID_WIDTH);
@@ -3999,34 +5375,158 @@
         }
         return Math.max(0, Math.min(100, Math.round((1 - distance / left.length) * 100)));
     }
+    function l2NormalizeVector(value) {
+        let input = null;
+        if (value instanceof Float32Array) {
+            input = value;
+        }
+        else if (Array.isArray(value)) {
+            input = new Float32Array(value.map(function (entry) {
+                return Number(entry) || 0;
+            }));
+        }
+        else if (ArrayBuffer.isView(value)) {
+            input = new Float32Array(Array.from(value, function (entry) {
+                return Number(entry) || 0;
+            }));
+        }
+        if (!input || !input.length) {
+            return null;
+        }
+        let sumSquares = 0;
+        for (let index = 0; index < input.length; index += 1) {
+            const current = Number(input[index] || 0);
+            sumSquares += current * current;
+        }
+        if (!Number.isFinite(sumSquares) || sumSquares <= 0) {
+            return null;
+        }
+        const norm = Math.sqrt(sumSquares);
+        if (!Number.isFinite(norm) || norm <= 0) {
+            return null;
+        }
+        const normalized = new Float32Array(input.length);
+        for (let index = 0; index < input.length; index += 1) {
+            normalized[index] = Number(input[index] || 0) / norm;
+        }
+        return normalized;
+    }
+    function cosineSimilarity(left, right) {
+        const normalizedLeft = l2NormalizeVector(left);
+        const normalizedRight = l2NormalizeVector(right);
+        if (!normalizedLeft || !normalizedRight || normalizedLeft.length !== normalizedRight.length) {
+            return null;
+        }
+        let dot = 0;
+        for (let index = 0; index < normalizedLeft.length; index += 1) {
+            dot += normalizedLeft[index] * normalizedRight[index];
+        }
+        if (!Number.isFinite(dot)) {
+            return null;
+        }
+        return Math.max(-1, Math.min(1, dot));
+    }
     function createImageSimilarityService(options) {
         const config = options && typeof options === "object" ? options : {};
-        const cacheMaxEntries = normalizePositiveInteger(config.cacheMaxEntries, 128);
-        const hasCustomLoader = typeof config.loadGrayscaleGrid === "function";
-        const loadGrayscaleGrid = hasCustomLoader
-            ? config.loadGrayscaleGrid
-            : defaultLoadGrayscaleGrid;
+        const cacheMaxEntries = normalizePositiveInteger(config.cacheMaxEntries, DEFAULT_CACHE_MAX_ENTRIES);
+        const serviceColdStartBudgetMs = normalizeDurationMs(config.coldStartBudgetMs, DEFAULT_COLD_START_BUDGET_MS);
+        const loadGrayscaleGrid = typeof config.loadGrayscaleGrid === "function" ? config.loadGrayscaleGrid : null;
+        const loadDecodedImage = typeof config.loadDecodedImage === "function" ? config.loadDecodedImage : defaultLoadDecodedImage;
+        const resolveAssetUrl = typeof config.resolveAssetUrl === "function"
+            ? config.resolveAssetUrl
+            : function (assetPath) {
+                const runtime = getRuntime();
+                if (runtime && typeof runtime.getURL === "function") {
+                    try {
+                        return runtime.getURL(assetPath);
+                    }
+                    catch (_) {
+                        return assetPath;
+                    }
+                }
+                return assetPath;
+            };
+        const createInputTensor = typeof config.createInputTensor === "function"
+            ? config.createInputTensor
+            : function (data, dims) {
+                const ort = getOrt();
+                if (!ort || typeof ort.Tensor !== "function") {
+                    return null;
+                }
+                return new ort.Tensor("float32", data, dims);
+            };
+        const createInferenceSession = typeof config.createInferenceSession === "function"
+            ? config.createInferenceSession
+            : function (modelUrl, sessionOptions) {
+                const ort = getOrt();
+                if (!ort ||
+                    !ort.env ||
+                    !ort.env.wasm ||
+                    !ort.InferenceSession ||
+                    typeof ort.InferenceSession.create !== "function") {
+                    return Promise.resolve(null);
+                }
+                ort.env.wasm.proxy = false;
+                ort.env.wasm.numThreads = 1;
+                ort.env.wasm.wasmPaths = {
+                    "ort-wasm-simd-threaded.wasm": resolveAssetUrl(normalizeString(config.wasmAssetPath, WASM_ASSET_PATH))
+                };
+                return ort.InferenceSession.create(modelUrl, sessionOptions).catch(function () {
+                    return null;
+                });
+            };
+        const decodedImagePromiseByUrl = new Map();
         const hashPromiseByUrl = new Map();
-        function pruneCache() {
-            while (hashPromiseByUrl.size > cacheMaxEntries) {
-                const firstKey = hashPromiseByUrl.keys().next();
+        const embeddingPromiseByUrl = new Map();
+        let sessionPromise = null;
+        function touchCacheEntry(cache, key, value) {
+            cache.delete(key);
+            cache.set(key, value);
+            while (cache.size > cacheMaxEntries) {
+                const firstKey = cache.keys().next();
                 if (firstKey && !firstKey.done) {
-                    hashPromiseByUrl.delete(firstKey.value);
+                    cache.delete(firstKey.value);
                 }
                 else {
                     break;
                 }
             }
         }
-        function getHash(url) {
+        function getDecodedImage(url) {
             const normalizedUrl = normalizeString(url, "");
             if (!normalizedUrl) {
                 return Promise.resolve(null);
             }
-            if (hashPromiseByUrl.has(normalizedUrl)) {
-                return hashPromiseByUrl.get(normalizedUrl);
+            const cached = decodedImagePromiseByUrl.get(normalizedUrl);
+            if (cached) {
+                touchCacheEntry(decodedImagePromiseByUrl, normalizedUrl, cached);
+                return cached;
             }
-            const promise = Promise.resolve(loadGrayscaleGrid(normalizedUrl, HASH_GRID_WIDTH, HASH_GRID_HEIGHT))
+            const promise = Promise.resolve(loadDecodedImage(normalizedUrl)).catch(function () {
+                return null;
+            });
+            touchCacheEntry(decodedImagePromiseByUrl, normalizedUrl, promise);
+            return promise;
+        }
+        function getFingerprintHash(url) {
+            const normalizedUrl = normalizeString(url, "");
+            if (!normalizedUrl) {
+                return Promise.resolve(null);
+            }
+            const cached = hashPromiseByUrl.get(normalizedUrl);
+            if (cached) {
+                touchCacheEntry(hashPromiseByUrl, normalizedUrl, cached);
+                return cached;
+            }
+            const promise = (loadGrayscaleGrid
+                ? Promise.resolve(loadGrayscaleGrid(normalizedUrl, HASH_GRID_WIDTH, HASH_GRID_HEIGHT))
+                : getDecodedImage(normalizedUrl).then(function (decoded) {
+                    if (!decoded) {
+                        return null;
+                    }
+                    const resized = resizeRgbaBilinear(decoded.data, decoded.width, decoded.height, HASH_GRID_WIDTH, HASH_GRID_HEIGHT);
+                    return toLumaGrid(resized, HASH_GRID_WIDTH, HASH_GRID_HEIGHT);
+                }))
                 .then(function (grid) {
                 if (!Array.isArray(grid) || grid.length !== HASH_GRID_WIDTH * HASH_GRID_HEIGHT) {
                     return null;
@@ -4037,52 +5537,171 @@
                 .catch(function () {
                 return null;
             });
-            hashPromiseByUrl.set(normalizedUrl, promise);
-            pruneCache();
+            touchCacheEntry(hashPromiseByUrl, normalizedUrl, promise);
             return promise;
         }
-        async function compareImageUrls(leftUrl, rightUrl) {
+        function getSession() {
+            if (sessionPromise) {
+                return sessionPromise;
+            }
+            const modelUrl = resolveAssetUrl(normalizeString(config.modelAssetPath, MODEL_ASSET_PATH));
+            sessionPromise = Promise.resolve(createInferenceSession(modelUrl, {
+                executionProviders: ["wasm"]
+            })).catch(function () {
+                return null;
+            });
+            return sessionPromise;
+        }
+        function waitForWarmSession(coldStartBudgetMs) {
+            const session = getSession();
+            if (coldStartBudgetMs <= 0) {
+                return Promise.resolve(null);
+            }
+            return Promise.race([
+                session,
+                new Promise(function (resolve) {
+                    if (typeof setTimeout !== "function") {
+                        resolve(null);
+                        return;
+                    }
+                    setTimeout(function () {
+                        resolve(null);
+                    }, coldStartBudgetMs);
+                })
+            ]);
+        }
+        function extractEmbeddingVector(value) {
+            if (!isObjectRecord(value)) {
+                return null;
+            }
+            const data = value.data;
+            return l2NormalizeVector(data);
+        }
+        async function getEmbedding(url, session) {
+            const normalizedUrl = normalizeString(url, "");
+            if (!normalizedUrl || !session || typeof session.run !== "function") {
+                return null;
+            }
+            const runSession = session.run.bind(session);
+            const cached = embeddingPromiseByUrl.get(normalizedUrl);
+            if (cached) {
+                touchCacheEntry(embeddingPromiseByUrl, normalizedUrl, cached);
+                return cached;
+            }
+            const promise = getDecodedImage(normalizedUrl)
+                .then(async function (decoded) {
+                if (!decoded) {
+                    return null;
+                }
+                const modelInput = buildModelInputTensor(decoded.data, decoded.width, decoded.height);
+                if (!modelInput) {
+                    return null;
+                }
+                const inputTensor = createInputTensor(modelInput.data, modelInput.dims);
+                if (!inputTensor) {
+                    return null;
+                }
+                const inputName = Array.isArray(session.inputNames) && session.inputNames.length
+                    ? normalizeString(session.inputNames[0], "pixel_values")
+                    : "pixel_values";
+                const outputs = await runSession({
+                    [inputName]: inputTensor
+                });
+                if (!isObjectRecord(outputs)) {
+                    return null;
+                }
+                const outputName = Array.isArray(session.outputNames) && session.outputNames.length
+                    ? normalizeString(session.outputNames[0], "")
+                    : "";
+                const firstValue = (outputName && outputs[outputName]) ||
+                    outputs[Object.keys(outputs)[0] || ""] ||
+                    null;
+                return extractEmbeddingVector(firstValue);
+            })
+                .catch(function () {
+                return null;
+            });
+            touchCacheEntry(embeddingPromiseByUrl, normalizedUrl, promise);
+            return promise;
+        }
+        async function preloadModel() {
+            await getSession();
+        }
+        async function compareImageUrls(leftUrl, rightUrl, options) {
+            const compareOptions = options && typeof options === "object" ? options : {};
             const left = normalizeString(leftUrl, "");
             const right = normalizeString(rightUrl, "");
             if (!left || !right) {
                 return {
                     score: null,
                     usedImage: false,
-                    reason: "missing_url"
+                    reason: "missing_url",
+                    signalType: ""
                 };
             }
-            if (!hasCustomLoader && !hasBitmapDecodeSupport() && !hasDomCanvasSupport()) {
+            const mlEnabled = compareOptions.mlEnabled !== false;
+            const coldStartBudgetMs = normalizeDurationMs(compareOptions.coldStartBudgetMs, serviceColdStartBudgetMs);
+            if (mlEnabled) {
+                const session = await waitForWarmSession(coldStartBudgetMs);
+                if (session) {
+                    const [leftEmbedding, rightEmbedding] = await Promise.all([
+                        getEmbedding(left, session),
+                        getEmbedding(right, session)
+                    ]);
+                    const cosine = cosineSimilarity(leftEmbedding, rightEmbedding);
+                    if (cosine != null) {
+                        return {
+                            score: Math.max(0, Math.min(100, Math.round(Math.max(0, cosine) * 100))),
+                            usedImage: true,
+                            reason: "ok",
+                            signalType: "ml_embedding"
+                        };
+                    }
+                }
+            }
+            else {
+                void getSession();
+            }
+            if (!loadGrayscaleGrid && !hasBitmapDecodeSupport() && !hasDomCanvasSupport() && typeof config.loadDecodedImage !== "function") {
                 return {
                     score: null,
                     usedImage: false,
-                    reason: "unsupported_environment"
+                    reason: "unsupported_environment",
+                    signalType: ""
                 };
             }
-            const [leftHash, rightHash] = await Promise.all([getHash(left), getHash(right)]);
-            const score = compareHashes(leftHash, rightHash);
-            if (score == null) {
+            const [leftHash, rightHash] = await Promise.all([getFingerprintHash(left), getFingerprintHash(right)]);
+            const hashScore = compareHashes(leftHash, rightHash);
+            if (hashScore != null) {
                 return {
-                    score: null,
-                    usedImage: false,
-                    reason: "visual_unavailable"
+                    score: hashScore,
+                    usedImage: true,
+                    reason: "ok",
+                    signalType: "thumbnail_fingerprint"
                 };
             }
             return {
-                score: score,
-                usedImage: true,
-                reason: "ok"
+                score: null,
+                usedImage: false,
+                reason: "visual_unavailable",
+                signalType: ""
             };
         }
         return {
-            compareImageUrls: compareImageUrls
+            compareImageUrls: compareImageUrls,
+            preloadModel: preloadModel
         };
     }
     const defaultService = createImageSimilarityService();
     return {
         createImageSimilarityService: createImageSimilarityService,
         compareImageUrls: defaultService.compareImageUrls,
+        preloadModel: defaultService.preloadModel,
         computeDifferenceHash: computeDifferenceHash,
-        compareHashes: compareHashes
+        compareHashes: compareHashes,
+        buildModelInputTensor: buildModelInputTensor,
+        l2NormalizeVector: l2NormalizeVector,
+        cosineSimilarity: cosineSimilarity
     };
 });
 
@@ -4249,7 +5868,7 @@
             normalized === "variant") {
             return normalized;
         }
-        return "balanced";
+        return "visual";
     }
     function tokenize(value) {
         const normalized = normalizeString(value, "")
@@ -4418,7 +6037,8 @@
             return {
                 score: null,
                 usedImage: false,
-                reason: "missing_url"
+                reason: "missing_url",
+                signalType: ""
             };
         }
         const leftSignal = extractImagePathSignal(left);
@@ -4427,7 +6047,8 @@
             return {
                 score: null,
                 usedImage: false,
-                reason: "no_usable_signal"
+                reason: "no_usable_signal",
+                signalType: ""
             };
         }
         let score = overlapScore(leftSignal.combinedStem, rightSignal.combinedStem);
@@ -4442,7 +6063,8 @@
         return {
             score: Math.max(0, Math.min(100, Math.round(score))),
             usedImage: true,
-            reason: "ok"
+            reason: "ok",
+            signalType: "url_heuristic"
         };
     }
     function buildListingImageUrl(listing) {
@@ -4572,20 +6194,28 @@
         const imageResult = imageHeuristicScore(buildListingImageUrl(listing), candidate && candidate.imageUrl);
         return scoreCandidateFromImageResult(listing, candidate, config, imageResult);
     }
-    async function resolveVisualImageScore(listingImageUrl, candidateImageUrl) {
+    async function resolveVisualImageScore(listingImageUrl, candidateImageUrl, config) {
         if (ImageSimilarity &&
             typeof ImageSimilarity.compareImageUrls === "function") {
             try {
-                const result = await ImageSimilarity.compareImageUrls(listingImageUrl, candidateImageUrl);
+                const result = await ImageSimilarity.compareImageUrls(listingImageUrl, candidateImageUrl, {
+                    mlEnabled: config.mlSimilarityEnabled !== false
+                });
                 if (result && result.reason !== "unsupported_environment") {
-                    return result;
+                    return {
+                        score: result.score,
+                        usedImage: result.usedImage,
+                        reason: result.reason,
+                        signalType: normalizeString(result.signalType, result.usedImage ? "thumbnail_fingerprint" : "")
+                    };
                 }
             }
             catch (_) {
                 return {
                     score: null,
                     usedImage: false,
-                    reason: "visual_unavailable"
+                    reason: "visual_unavailable",
+                    signalType: ""
                 };
             }
         }
@@ -4597,7 +6227,7 @@
         const candidateTitle = normalizeString(candidate && candidate.title, "");
         const candidateTitleHint = getUrlTitleHint(candidate && candidate.url);
         const candidateTitleForScore = [candidateTitle, candidateTitleHint].filter(Boolean).join(" ");
-        const imageHeuristicScoreValue = imageResult.score;
+        const imageSimilarityScoreValue = imageResult.score;
         const titleScore = Math.max(overlapScore(listingTitle, candidateTitle), overlapScore(listingTitle, candidateTitleForScore));
         const brandScore = scoreBrand(listing, candidate);
         const sizeScore = scoreSize(listing, candidate);
@@ -4619,7 +6249,7 @@
             deltaPercent = (deltaAbsolute / listingComparable) * 100;
         }
         const priceScore = scorePriceDelta(listingComparable, candidateComparable);
-        const weightedScore = computeWeightedScore(rankingFormula, imageHeuristicScoreValue, titleScore, brandScore, sizeScore, conditionScore, priceScore);
+        const weightedScore = computeWeightedScore(rankingFormula, imageSimilarityScoreValue, titleScore, brandScore, sizeScore, conditionScore, priceScore);
         const finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
         const displayPrice = candidateComparable != null ? candidateComparable : candidateAmount;
         const displayCurrency = candidateComparable != null ? selectedCurrency : candidateCurrency;
@@ -4635,9 +6265,10 @@
             originalPrice: candidateAmount,
             score: finalScore,
             usedImage: imageResult.usedImage,
+            imageSignalType: imageResult.usedImage ? normalizeString(imageResult.signalType, "") : "",
             imageUnavailableReason: imageResult.usedImage ? "" : imageResult.reason,
             components: {
-                imageHeuristicScore: imageHeuristicScoreValue,
+                imageSimilarityScore: imageSimilarityScoreValue,
                 titleScore: Math.round(titleScore),
                 brandScore: brandScore == null ? null : Math.round(brandScore),
                 sizeScore: sizeScore == null ? null : Math.round(sizeScore),
@@ -4651,7 +6282,7 @@
     }
     async function scoreCandidateAsync(listing, candidate, options) {
         const config = options && typeof options === "object" ? options : {};
-        const imageResult = await resolveVisualImageScore(buildListingImageUrl(listing), candidate && candidate.imageUrl);
+        const imageResult = await resolveVisualImageScore(buildListingImageUrl(listing), candidate && candidate.imageUrl, config);
         return scoreCandidateFromImageResult(listing, candidate, config, imageResult);
     }
     function rankCandidates(listing, candidates, options) {
@@ -5028,13 +6659,59 @@
         }
         return pickRawListingPrice(listing && typeof listing === "object" ? listing.rawListing : null);
     }
+    function summarizeListing(listing) {
+        return {
+            listingId: listing && listing.id != null ? String(listing.id) : "",
+            title: normalizeString(listing && listing.title, ""),
+            brand: normalizeString(listing && listing.brand, ""),
+            size: normalizeString(listing && listing.size, ""),
+            category: normalizeString(listing && listing.category, ""),
+            priceHistoryCount: listing && listing.pricing && Array.isArray(listing.pricing.history)
+                ? listing.pricing.history.length
+                : 0,
+            hasRawListing: Boolean(listing && listing.rawListing)
+        };
+    }
+    function summarizeTopResult(candidate) {
+        if (!candidate || typeof candidate !== "object") {
+            return null;
+        }
+        return {
+            id: candidate.id != null ? String(candidate.id) : "",
+            title: normalizeString(candidate.title, ""),
+            score: normalizeNumber(candidate.score),
+            price: normalizeNumber(candidate.price),
+            currency: normalizeCurrencyCode(candidate.currency || candidate.originalCurrency, "USD"),
+            usedImage: Boolean(candidate.usedImage),
+            imageSignalType: normalizeString(candidate.imageSignalType, "")
+        };
+    }
+    function summarizeImageSignals(candidates) {
+        const summary = Object.create(null);
+        let usedImageCount = 0;
+        (Array.isArray(candidates) ? candidates : []).forEach(function (candidate) {
+            const signalType = normalizeString(candidate && candidate.imageSignalType, "none");
+            summary[signalType] = (summary[signalType] || 0) + 1;
+            if (candidate && candidate.usedImage) {
+                usedImageCount += 1;
+            }
+        });
+        return {
+            total: Array.isArray(candidates) ? candidates.length : 0,
+            usedImageCount: usedImageCount,
+            signalCounts: summary
+        };
+    }
     function createController(options) {
         const config = options && typeof options === "object" ? options : {};
         const hasExternalRegistry = Boolean(config.providerRegistry && typeof config.providerRegistry.search === "function");
+        const debugLog = typeof config.debugLogger === "function" ? config.debugLogger : function () { };
         const providerRegistry = hasExternalRegistry
             ? config.providerRegistry
             : MarketProviders && typeof MarketProviders.createRegistry === "function"
-                ? MarketProviders.createRegistry()
+                ? MarketProviders.createRegistry({
+                    debugLogger: debugLog
+                })
                 : null;
         const listeners = [];
         let state = createInitialState();
@@ -5142,15 +6819,24 @@
         function finishWithError(errorCode, options) {
             const mappedError = toErrorModel(errorCode, options && options.retryAfterMs, options && options.parserMismatchLikely);
             const messageSuffix = normalizeString(options && options.messageSuffix, "");
+            const normalizedSourceType = normalizeString(options && options.sourceType, "");
             updateState({
                 status: mappedError.status,
                 errorCode: mappedError.errorCode,
                 retryable: mappedError.retryable,
                 cooldownMs: mappedError.cooldownMs,
                 message: messageSuffix ? mappedError.message + " " + messageSuffix : mappedError.message,
-                sourceType: normalizeString(options && options.sourceType, ""),
+                sourceType: normalizedSourceType,
                 results: [],
                 lastCheckedAt: Date.now()
+            });
+            debugLog("compare.finish_error", {
+                errorCode: mappedError.errorCode,
+                status: mappedError.status,
+                retryable: mappedError.retryable,
+                cooldownMs: mappedError.cooldownMs,
+                sourceType: normalizedSourceType,
+                messageSuffix: messageSuffix
             });
             return getState();
         }
@@ -5178,6 +6864,7 @@
                 size: normalizeString(listing && listing.size, ""),
                 category: normalizeString(listing && listing.category, ""),
                 queries: queries,
+                strictMode: payload.allowCategoryFallback === false,
                 listingPrice: listingPrice,
                 currency: normalizeString(payload.currency, "USD"),
                 limit: resultLimit
@@ -5204,7 +6891,8 @@
                 rate: normalizeNumber(payload.currencyRate),
                 ratesByUsd: ratesByUsd,
                 minScore: minScore,
-                rankingFormula: normalizeString(payload.rankingFormula, "balanced")
+                rankingFormula: normalizeString(payload.rankingFormula, "visual"),
+                mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
             };
         }
         function runRankCandidates(listing, filteredCandidates, rankingOptions) {
@@ -5235,6 +6923,10 @@
                 }
                 // Depop can return valid cross-border fallback listings that score
                 // below strict similarity thresholds.
+                debugLog("compare.ranking_relaxed_threshold", {
+                    filteredCandidateCount: filteredCandidates.length,
+                    strictMinScore: strictMinScore
+                });
                 return runRankCandidates(listing, filteredCandidates, buildRankingOptions(payload, listingPrice, 0));
             });
         }
@@ -5277,6 +6969,7 @@
                     originalPrice: normalizeNumber(candidate.originalPrice),
                     score: normalizeNumber(candidate.score),
                     usedImage: Boolean(candidate.usedImage),
+                    imageSignalType: normalizeString(candidate.imageSignalType, ""),
                     imageUnavailableReason: normalizeString(candidate.imageUnavailableReason, ""),
                     deltaLabel: deltaLabel || formatDeltaLabel(candidate)
                 };
@@ -5289,6 +6982,15 @@
         function handleProviderSuccess(result, payload, listing, listingPrice, searchModeHint) {
             const sourceType = normalizeString(result && result.sourceType, "html");
             const filteredCandidates = filterCandidates(result, payload);
+            debugLog("compare.provider_success", {
+                sourceType: sourceType,
+                partial: Boolean(result && result.partial),
+                requestCount: normalizeNumber(result && result.requestCount),
+                candidateCount: Array.isArray(result && result.candidates) ? result.candidates.length : 0,
+                filteredCandidateCount: filteredCandidates.length,
+                parserMismatchLikely: Boolean(result && result.parserMismatchLikely),
+                searchModeHint: searchModeHint || ""
+            });
             if (!filteredCandidates.length) {
                 return Promise.resolve(finishWithError("NO_RESULTS", {
                     sourceType: sourceType,
@@ -5296,6 +6998,11 @@
                 }));
             }
             return rankFilteredCandidates(listing, payload, filteredCandidates, listingPrice).then(function (rankedCandidates) {
+                debugLog("compare.ranking_complete", {
+                    rankedCandidateCount: rankedCandidates.length,
+                    imageSignals: summarizeImageSignals(rankedCandidates),
+                    topCandidate: summarizeTopResult(rankedCandidates[0] || null)
+                });
                 if (!rankedCandidates.length) {
                     return finishWithError("NO_RESULTS", {
                         sourceType: sourceType,
@@ -5319,6 +7026,13 @@
                     results: normalizedResults,
                     lastCheckedAt: Date.now()
                 });
+                debugLog("compare.finish_success", {
+                    sourceType: sourceType,
+                    resultCount: normalizedResults.length,
+                    imageSignals: summarizeImageSignals(normalizedResults),
+                    topResult: summarizeTopResult(normalizedResults[0] || null),
+                    searchModeHint: searchModeHint || ""
+                });
                 return getState();
             });
         }
@@ -5326,6 +7040,16 @@
             const payload = input && typeof input === "object" ? input : {};
             const listing = payload.listing && typeof payload.listing === "object" ? payload.listing : null;
             resetForListing(listing);
+            debugLog("compare.start", {
+                listing: summarizeListing(listing),
+                currency: normalizeString(payload.currency, "USD"),
+                limit: Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
+                    ? Math.floor(Number(payload.limit))
+                    : null,
+                rankingFormula: normalizeString(payload.rankingFormula, "visual"),
+                strictMode: payload.allowCategoryFallback === false,
+                mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
+            });
             if (!currentListingKey) {
                 return Promise.resolve(finishWithError("MISSING_LISTING_DATA"));
             }
@@ -5333,6 +7057,9 @@
                 return Promise.resolve(finishWithError("NETWORK_ERROR"));
             }
             if (state.status === "loading" && inFlightPromise) {
+                debugLog("compare.in_flight_reused", {
+                    listingId: currentListingKey
+                });
                 return inFlightPromise;
             }
             const requestToken = activeRequestToken + 1;
@@ -5340,9 +7067,19 @@
             const listingPrice = pickListingPrice(listing);
             const queryResult = buildQueryResult(listing, payload);
             const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
+            debugLog("compare.queries_built", {
+                ok: Boolean(queryResult && queryResult.ok),
+                reason: normalizeString(queryResult && queryResult.reason, ""),
+                errorCode: normalizeString(queryResult && queryResult.errorCode, ""),
+                queries: queryResult && Array.isArray(queryResult.queries)
+                    ? queryResult.queries.slice()
+                    : [],
+                listingPrice: listingPrice
+            });
             if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
                 return Promise.resolve(finishWithError(queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA"));
             }
+            const searchPayload = buildSearchPayload(payload, listing, listingPrice, queryResult.queries);
             updateState({
                 status: "loading",
                 errorCode: "",
@@ -5352,13 +7089,33 @@
                 sourceType: "",
                 results: []
             });
+            debugLog("compare.search_dispatch", {
+                listingId: normalizeString(searchPayload.listingId, ""),
+                queries: Array.isArray(searchPayload.queries) ? searchPayload.queries.slice() : [],
+                currency: normalizeString(searchPayload.currency, "USD"),
+                limit: normalizeNumber(searchPayload.limit),
+                title: normalizeString(searchPayload.title, ""),
+                brand: normalizeString(searchPayload.brand, ""),
+                size: normalizeString(searchPayload.size, ""),
+                category: normalizeString(searchPayload.category, ""),
+                listingPrice: normalizeNumber(searchPayload.listingPrice)
+            });
             inFlightPromise = providerRegistry
-                .search("depop", buildSearchPayload(payload, listing, listingPrice, queryResult.queries))
+                .search("depop", searchPayload)
                 .then(function (result) {
                 if (requestToken !== activeRequestToken) {
+                    debugLog("compare.stale_response_ignored", {
+                        listingId: currentListingKey
+                    });
                     return getState();
                 }
                 if (!result.ok) {
+                    debugLog("compare.provider_error", {
+                        errorCode: normalizeString(result && result.errorCode, "NETWORK_ERROR"),
+                        sourceType: normalizeString(result && result.sourceType, "html"),
+                        retryAfterMs: normalizeNumber(result && result.retryAfterMs),
+                        parserMismatchLikely: Boolean(result && result.parserMismatchLikely)
+                    });
                     return finishWithError(result.errorCode || "NETWORK_ERROR", {
                         retryAfterMs: result.retryAfterMs,
                         parserMismatchLikely: Boolean(result.parserMismatchLikely),
@@ -5367,10 +7124,16 @@
                 }
                 return handleProviderSuccess(result, payload, listing, listingPrice, searchModeHint);
             })
-                .catch(function () {
+                .catch(function (error) {
                 if (requestToken !== activeRequestToken) {
+                    debugLog("compare.stale_error_ignored", {
+                        listingId: currentListingKey
+                    });
                     return getState();
                 }
+                debugLog("compare.exception", {
+                    message: error && error.message ? String(error.message) : "unknown_error"
+                });
                 return finishWithError("NETWORK_ERROR");
             })
                 .finally(function () {
@@ -6799,22 +8562,6 @@
         }
         return "Not enough data to estimate";
     }
-    function buildAvgDropSignal(metrics) {
-        var avgDrop = Number(metrics && metrics.averageDropPercent);
-        if (!Number.isFinite(avgDrop)) {
-            return "Trend signal is limited. Compare against external listings before buying.";
-        }
-        if (avgDrop >= 14) {
-            return "Strong markdown trend. Waiting may unlock a better price.";
-        }
-        if (avgDrop >= 8) {
-            return "Moderate markdown trend. There is room for additional price movement.";
-        }
-        if (avgDrop > 0) {
-            return "Light markdown trend. Price changes are gradual so timing matters less.";
-        }
-        return "No markdown trend detected. Compare with other markets before committing.";
-    }
     function formatRelativeTimestamp(timestampMs) {
         if (!Number.isFinite(Number(timestampMs))) {
             return "";
@@ -6926,6 +8673,11 @@
         var results = Array.isArray(state.results) ? state.results : [];
         var displayLimit = normalizeMarketCompareResultsLimit(marketCompareResultsLimit);
         var displayResults = results.slice(0, displayLimit);
+        var allDisplayResultsUseMlSorting = status === "results" &&
+            displayResults.length > 0 &&
+            displayResults.every(function (entry) {
+                return entry && entry.imageSignalType === "ml_embedding";
+            });
         var section = doc.createElement("div");
         section.className = "grailed-plus__market";
         var header = doc.createElement("div");
@@ -6935,6 +8687,8 @@
         title.textContent = "Other Markets";
         var chip = doc.createElement("span");
         chip.className = "grailed-plus__market-chip";
+        var chipGroup = doc.createElement("div");
+        chipGroup.className = "grailed-plus__market-chip-group";
         if (status === "loading") {
             chip.textContent = "Searching";
             chip.setAttribute("aria-busy", "true");
@@ -6958,7 +8712,14 @@
             chip.textContent = "Ready";
         }
         header.appendChild(title);
-        header.appendChild(chip);
+        chipGroup.appendChild(chip);
+        if (allDisplayResultsUseMlSorting) {
+            var sortingChip = doc.createElement("span");
+            sortingChip.className = "grailed-plus__market-chip";
+            sortingChip.textContent = "ML Sorted";
+            chipGroup.appendChild(sortingChip);
+        }
+        header.appendChild(chipGroup);
         section.appendChild(header);
         var providerLabel = doc.createElement("div");
         providerLabel.className = "grailed-plus__market-provider";
@@ -7124,10 +8885,6 @@
             avgValueNode.className += " " + avgToneClass;
         }
         panel.appendChild(avgRow);
-        var avgSignal = doc.createElement("p");
-        avgSignal.className = "grailed-plus__history-signal";
-        avgSignal.textContent = buildAvgDropSignal(metrics);
-        panel.appendChild(avgSignal);
         panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics), "grailed-plus__row--support"));
         panel.appendChild(createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt), "grailed-plus__row--support"));
         if (marketCompareEnabled) {
@@ -7551,6 +9308,7 @@
             cardCurrencyContext: null,
             marketCompareController: null,
             marketCompareUnsubscribe: null,
+            marketCompareAutoSearchRenderToken: null,
             latestPanelContext: null
         };
     }
@@ -8444,6 +10202,56 @@
     }
 })(typeof globalThis !== "undefined" ? globalThis : {}, function () {
     "use strict";
+    let ImageSimilarity = null;
+    if (typeof globalThis !== "undefined" && globalThis.GrailedPlusImageSimilarity) {
+        ImageSimilarity = globalThis.GrailedPlusImageSimilarity || null;
+    }
+    if (!ImageSimilarity && typeof require === "function") {
+        try {
+            ImageSimilarity = require("../domain/imageSimilarity");
+        }
+        catch (_) {
+            ImageSimilarity = null;
+        }
+    }
+    function isGlobalDepopDebugEnabled() {
+        var globalScope = typeof globalThis !== "undefined" ? globalThis : null;
+        if (globalScope && globalScope.GRAILED_PLUS_DEBUG === true) {
+            return true;
+        }
+        try {
+            if (typeof localStorage !== "undefined" && localStorage.getItem("grailed-plus:debug") === "1") {
+                return true;
+            }
+        }
+        catch (_) {
+            // Ignore localStorage access failures.
+        }
+        try {
+            var search = globalScope &&
+                globalScope.location &&
+                typeof globalScope.location.search === "string"
+                ? globalScope.location.search
+                : "";
+            var params = new URLSearchParams(search);
+            return params.get("gp_debug") === "1";
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    function createDepopDebugLogger(enabled) {
+        if (!enabled && !isGlobalDepopDebugEnabled()) {
+            return null;
+        }
+        return function (stage, payload) {
+            if (payload && typeof payload === "object") {
+                console.debug("[Grailed+][Depop Debug]", stage, payload);
+                return;
+            }
+            console.debug("[Grailed+][Depop Debug]", stage);
+        };
+    }
     function ensureMarketCompareController(options) {
         var config = options && typeof options === "object" ? options : {};
         var state = config.state;
@@ -8452,6 +10260,8 @@
         var marketProviders = config.marketProviders;
         var depopProviderFactory = config.depopProviderFactory;
         var onStateUpdate = typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () { };
+        var currentContext = state && state.latestPanelContext ? state.latestPanelContext : null;
+        var debugLogger = createDepopDebugLogger(Boolean(currentContext && currentContext.marketCompareDebugEnabled === true));
         if (!state || typeof state !== "object") {
             return null;
         }
@@ -8466,12 +10276,15 @@
             return null;
         }
         var registry = marketProviders && typeof marketProviders.createRegistry === "function"
-            ? marketProviders.createRegistry()
+            ? marketProviders.createRegistry({
+                debugLogger: debugLogger
+            })
             : null;
         var depopProvider = depopProviderFactory && typeof depopProviderFactory.createDepopProvider === "function"
             ? depopProviderFactory.createDepopProvider({
                 maxRequests: 5,
-                cooldownMs: 1200
+                cooldownMs: 1200,
+                debugLogger: debugLogger
             })
             : null;
         var mockProvider = !depopProvider &&
@@ -8489,7 +10302,8 @@
         }
         state.marketCompareController = marketCompareControllerApi.createController({
             providerRegistry: registry,
-            provider: depopProvider || mockProvider
+            provider: depopProvider || mockProvider,
+            debugLogger: debugLogger
         });
         if (state.marketCompareController &&
             typeof state.marketCompareController.subscribe === "function") {
@@ -8536,8 +10350,46 @@
             minScore: 0,
             rankingFormula: typeof context.marketCompareRankingFormula === "string"
                 ? context.marketCompareRankingFormula
-                : "balanced",
+                : "visual",
+            mlSimilarityEnabled: context.marketCompareMlSimilarityEnabled !== false,
             allowCategoryFallback: context.marketCompareStrictMode !== true
+        });
+    }
+    function queueAutoMarketCompare(state, ensureController, onMarketCompareClick) {
+        var context = state.latestPanelContext;
+        if (!context ||
+            context.marketCompareEnabled === false ||
+            context.marketCompareAutoSearchEnabled !== true) {
+            return;
+        }
+        if (state.marketCompareAutoSearchRenderToken === context.renderToken) {
+            return;
+        }
+        var renderToken = context.renderToken;
+        state.marketCompareAutoSearchRenderToken = renderToken;
+        Promise.resolve()
+            .then(function () {
+            var latestContext = state.latestPanelContext;
+            if (!latestContext ||
+                latestContext.renderToken !== renderToken ||
+                latestContext.marketCompareEnabled === false ||
+                latestContext.marketCompareAutoSearchEnabled !== true) {
+                return;
+            }
+            var controller = ensureController();
+            if (!controller || typeof controller.compare !== "function") {
+                return;
+            }
+            if (typeof controller.getState === "function") {
+                var controllerState = controller.getState();
+                if (controllerState && controllerState.status === "loading") {
+                    return;
+                }
+            }
+            onMarketCompareClick();
+        })
+            .catch(function () {
+            // Ignore scheduling failures so rendering remains unaffected.
         });
     }
     function renderPanelWithMarketCompare(options) {
@@ -8557,15 +10409,13 @@
             return null;
         }
         var marketCompareEnabled = panelOptions.marketCompareEnabled !== false;
+        var marketCompareAutoSearchEnabled = panelOptions.marketCompareAutoSearchEnabled === true;
         var marketCompareRankingFormula = typeof panelOptions.marketCompareRankingFormula === "string"
             ? panelOptions.marketCompareRankingFormula
-            : "balanced";
+            : "visual";
         var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
-        var controller = marketCompareEnabled ? ensureController() : null;
-        if (controller && typeof controller.resetForListing === "function") {
-            controller.resetForListing(panelOptions.listing || null);
-        }
-        var marketCompareState = controller && typeof controller.getState === "function" ? controller.getState() : null;
+        var marketCompareMlSimilarityEnabled = panelOptions.marketCompareMlSimilarityEnabled !== false;
+        var marketCompareDebugEnabled = panelOptions.marketCompareDebugEnabled === true;
         state.latestPanelContext = {
             listing: panelOptions.listing || null,
             metrics: panelOptions.metrics || null,
@@ -8575,15 +10425,34 @@
             statusMessage: panelOptions.statusMessage || "",
             currencyContext: panelOptions.currencyContext || null,
             marketCompareEnabled: marketCompareEnabled,
+            marketCompareAutoSearchEnabled: marketCompareAutoSearchEnabled,
             marketCompareRankingFormula: marketCompareRankingFormula,
             marketCompareStrictMode: marketCompareStrictMode,
             marketCompareResultsLimit: Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
                 Number(panelOptions.marketCompareResultsLimit) > 0
                 ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
                 : 5,
+            marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+            marketCompareDebugEnabled: marketCompareDebugEnabled,
             showMetadataButton: panelOptions.showMetadataButton !== false,
             renderToken: state.renderToken
         };
+        var controller = marketCompareEnabled ? ensureController() : null;
+        if (controller && typeof controller.resetForListing === "function") {
+            controller.resetForListing(panelOptions.listing || null);
+        }
+        var marketCompareState = controller && typeof controller.getState === "function" ? controller.getState() : null;
+        if (state.latestPanelContext.marketCompareEnabled &&
+            state.latestPanelContext.marketCompareMlSimilarityEnabled &&
+            ImageSimilarity &&
+            typeof ImageSimilarity.preloadModel === "function") {
+            Promise.resolve(ImageSimilarity.preloadModel()).catch(function () {
+                // Keep warmup failures silent so panel rendering is unaffected.
+            });
+        }
+        if (marketCompareEnabled && marketCompareAutoSearchEnabled) {
+            queueAutoMarketCompare(state, ensureController, onMarketCompareClick);
+        }
         return renderListingInsightsPanel({
             listing: state.latestPanelContext.listing,
             metrics: state.latestPanelContext.metrics,
@@ -8596,6 +10465,8 @@
             marketCompareRankingFormula: state.latestPanelContext.marketCompareRankingFormula,
             marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
             marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
+            marketCompareMlSimilarityEnabled: state.latestPanelContext.marketCompareMlSimilarityEnabled,
+            marketCompareDebugEnabled: state.latestPanelContext.marketCompareDebugEnabled,
             showMetadataButton: state.latestPanelContext.showMetadataButton,
             marketCompare: marketCompareEnabled ? marketCompareState : null,
             onMarketCompareClick: onMarketCompareClick
@@ -8889,7 +10760,7 @@
                 marketCompareEnabled: panelOptions.marketCompareEnabled !== false,
                 marketCompareRankingFormula: typeof panelOptions.marketCompareRankingFormula === "string"
                     ? panelOptions.marketCompareRankingFormula
-                    : "balanced",
+                    : "visual",
                 marketCompareStrictMode: panelOptions.marketCompareStrictMode === true,
                 marketCompareResultsLimit: Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&
                     Number(panelOptions.marketCompareResultsLimit) > 0
@@ -8990,9 +10861,12 @@
             : function () {
                 return Promise.resolve({
                     enabled: true,
-                    rankingFormula: "balanced",
+                    autoSearchEnabled: false,
+                    rankingFormula: "visual",
                     strictMode: false,
-                    expandedAmountEnabled: false
+                    expandedAmountEnabled: false,
+                    mlSimilarityEnabled: true,
+                    debugEnabled: false
                 });
             };
         var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
@@ -9033,9 +10907,11 @@
             var marketCompareEnabled = marketCompareSettings.enabled !== false;
             var marketCompareRankingFormula = typeof marketCompareSettings.rankingFormula === "string"
                 ? marketCompareSettings.rankingFormula
-                : "balanced";
+                : "visual";
             var marketCompareStrictMode = marketCompareSettings.strictMode === true;
             var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
+            var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
+            var marketCompareDebugEnabled = marketCompareSettings.debugEnabled === true;
             var showMetadataButton = values[2] !== false;
             var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
             if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
@@ -9050,9 +10926,12 @@
                 statusMessage: statusMessage,
                 currencyContext: currencyContext,
                 marketCompareEnabled: marketCompareEnabled,
+                marketCompareAutoSearchEnabled: false,
                 marketCompareRankingFormula: marketCompareRankingFormula,
                 marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
+                marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+                marketCompareDebugEnabled: marketCompareDebugEnabled,
                 showMetadataButton: showMetadataButton
             });
             applySidebarCurrency(currencyContext);
@@ -9332,14 +11211,17 @@
                 rawListing: listing && listing.rawListing ? listing.rawListing : null,
                 currencyContext: currencyContext,
                 marketCompareEnabled: config.marketCompareEnabled !== false,
+                marketCompareAutoSearchEnabled: config.marketCompareAutoSearchEnabled === true,
                 marketCompareRankingFormula: typeof config.marketCompareRankingFormula === "string"
                     ? config.marketCompareRankingFormula
-                    : "balanced",
+                    : "visual",
                 marketCompareStrictMode: config.marketCompareStrictMode === true,
                 marketCompareResultsLimit: Number.isFinite(Number(config.marketCompareResultsLimit)) &&
                     Number(config.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(config.marketCompareResultsLimit))
                     : 5,
+                marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
+                marketCompareDebugEnabled: config.marketCompareDebugEnabled === true,
                 showMetadataButton: config.showMetadataButton !== false
             });
             applySidebarCurrency(currencyContext);
@@ -9368,14 +11250,17 @@
                 rawListing: listing && listing.rawListing ? listing.rawListing : null,
                 currencyContext: fallbackCurrency,
                 marketCompareEnabled: config.marketCompareEnabled !== false,
+                marketCompareAutoSearchEnabled: config.marketCompareAutoSearchEnabled === true,
                 marketCompareRankingFormula: typeof config.marketCompareRankingFormula === "string"
                     ? config.marketCompareRankingFormula
-                    : "balanced",
+                    : "visual",
                 marketCompareStrictMode: config.marketCompareStrictMode === true,
                 marketCompareResultsLimit: Number.isFinite(Number(config.marketCompareResultsLimit)) &&
                     Number(config.marketCompareResultsLimit) > 0
                     ? Math.floor(Number(config.marketCompareResultsLimit))
                     : 5,
+                marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
+                marketCompareDebugEnabled: config.marketCompareDebugEnabled === true,
                 showMetadataButton: config.showMetadataButton !== false
             });
             applySidebarCurrency(fallbackCurrency);
@@ -9758,14 +11643,23 @@
             enabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ENABLED === "boolean"
                 ? Settings.DEFAULT_MARKET_COMPARE_ENABLED
                 : false,
+            autoSearchEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED
+                : false,
             rankingFormula: typeof (Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA) === "string"
                 ? String(Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA)
-                : "balanced",
+                : "visual",
             strictMode: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE === "boolean"
                 ? Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE
                 : false,
             expandedAmountEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED === "boolean"
                 ? Settings.DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED
+                : false,
+            mlSimilarityEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
+                : true,
+            debugEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED
                 : false
         };
     }
@@ -9778,13 +11672,22 @@
             .then(function (value) {
             return {
                 enabled: value && typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
+                autoSearchEnabled: value && typeof value.autoSearchEnabled === "boolean"
+                    ? value.autoSearchEnabled
+                    : fallback.autoSearchEnabled,
                 rankingFormula: value && typeof value.rankingFormula === "string"
                     ? value.rankingFormula
                     : fallback.rankingFormula,
                 strictMode: value && typeof value.strictMode === "boolean" ? value.strictMode : fallback.strictMode,
                 expandedAmountEnabled: value && typeof value.expandedAmountEnabled === "boolean"
                     ? value.expandedAmountEnabled
-                    : fallback.expandedAmountEnabled
+                    : fallback.expandedAmountEnabled,
+                mlSimilarityEnabled: value && typeof value.mlSimilarityEnabled === "boolean"
+                    ? value.mlSimilarityEnabled
+                    : fallback.mlSimilarityEnabled,
+                debugEnabled: value && typeof value.debugEnabled === "boolean"
+                    ? value.debugEnabled
+                    : fallback.debugEnabled
             };
         })
             .catch(function () {
@@ -10056,11 +11959,14 @@
             var listingInsightsEnabled = Boolean(values[0]);
             var marketCompareSettings = values[1] && typeof values[1] === "object" ? values[1] : {};
             var marketCompareEnabled = marketCompareSettings.enabled !== false;
+            var marketCompareAutoSearchEnabled = marketCompareSettings.autoSearchEnabled === true;
             var marketCompareRankingFormula = typeof marketCompareSettings.rankingFormula === "string"
                 ? marketCompareSettings.rankingFormula
-                : "balanced";
+                : "visual";
             var marketCompareStrictMode = marketCompareSettings.strictMode === true;
             var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
+            var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
+            var marketCompareDebugEnabled = marketCompareSettings.debugEnabled === true;
             var showMetadataButton = Boolean(values[2]);
             if (!Url.isListingPath(location.pathname)) {
                 return;
@@ -10120,9 +12026,12 @@
                 metrics: preparedContext.metrics,
                 mountTarget: preparedContext.mountTarget,
                 marketCompareEnabled: marketCompareEnabled,
+                marketCompareAutoSearchEnabled: marketCompareAutoSearchEnabled,
                 marketCompareRankingFormula: marketCompareRankingFormula,
                 marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
+                marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+                marketCompareDebugEnabled: marketCompareDebugEnabled,
                 showMetadataButton: showMetadataButton,
                 resolveCurrencyContext: resolveCurrencyContext,
                 createUsdCurrencyContext: createUsdCurrencyContext,

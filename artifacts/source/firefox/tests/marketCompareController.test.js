@@ -79,6 +79,77 @@ test("market compare controller forwards result limit to provider search", async
   assert.equal(observedPayloads[0].limit, 10);
 });
 
+test("market compare controller forwards strict mode to provider search", async () => {
+  const observedPayloads = [];
+  const registry = createRegistry();
+  registry.register({
+    market: "depop",
+    search: async function (payload) {
+      observedPayloads.push(payload);
+      return {
+        ok: true,
+        candidates: [],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock"
+      };
+    }
+  });
+
+  const controller = createController({ providerRegistry: registry });
+  await controller.compare({
+    listing: sampleListing(),
+    currency: "USD",
+    minScore: 0,
+    allowCategoryFallback: false
+  });
+
+  assert.equal(observedPayloads.length, 1);
+  assert.equal(observedPayloads[0].strictMode, true);
+});
+
+test("market compare controller sends the most specific query first even outside strict mode", async () => {
+  const observedPayloads = [];
+  const registry = createRegistry();
+  registry.register({
+    market: "depop",
+    search: async function (payload) {
+      observedPayloads.push(payload);
+      return {
+        ok: true,
+        candidates: [],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock"
+      };
+    }
+  });
+
+  const controller = createController({ providerRegistry: registry });
+  await controller.compare({
+    listing: {
+      id: 87051333,
+      title: "Drain Gang Bladee Razorwire tee white L",
+      brand: "Drain Gang",
+      size: "L",
+      category: "T-Shirts",
+      pricing: {
+        history: [70]
+      }
+    },
+    currency: "CAD",
+    minScore: 0
+  });
+
+  assert.equal(observedPayloads.length, 1);
+  assert.deepEqual(observedPayloads[0].queries, [
+    "drain gang bladee razorwire tee",
+    "drain gang bladee razorwire tee l",
+    "drain gang bladee",
+    "drain gang l t-shirts"
+  ]);
+});
+
 test("market compare controller transitions loading -> results", async () => {
   const registry = createRegistry();
   registry.register({

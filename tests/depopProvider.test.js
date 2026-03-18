@@ -477,11 +477,11 @@ test("depop provider returns parsed candidates for successful fetch", async () =
   assert.equal(result.ok, true);
   assert.equal(result.candidates.length, 1);
   assert.equal(result.requestCount, 1);
-  assert.equal(result.sourceType, "html");
+  assert.equal(result.sourceType, "hybrid");
   assert.equal(result.parserVersion, "depop-hybrid-v2");
 });
 
-test("depop provider falls back to api v3 search when html has no candidates", async () => {
+test("depop provider parses standard api v3 search responses", async () => {
   let calls = [];
   const provider = createDepopProvider({
     fetchImpl: async function (url) {
@@ -536,9 +536,62 @@ test("depop provider falls back to api v3 search when html has no candidates", a
   assert.ok(result.candidates.length >= 1);
   assert.ok(result.candidates.some((candidate) => candidate.id === "api-1"));
   assert.ok(calls.some((url) => url.indexOf("/api/v3/search/products/") !== -1));
+  assert.ok(calls.every((url) => url.indexOf("/search/?q=") === -1));
 });
 
-test("depop provider emits debug logs for html and api fallback flow", async () => {
+test("depop provider bypasses html search requests and uses api search only", async () => {
+  const calls = [];
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 5,
+    fetchImpl: async function (url) {
+      const textUrl = String(url || "");
+      if (textUrl.indexOf("/search/?q=") !== -1) {
+        calls.push("html");
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return "<html><body>unexpected html path</body></html>";
+          }
+        };
+      }
+
+      calls.push(textUrl);
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return JSON.stringify({
+            products: [
+              {
+                id: "api-only-1",
+                slug: "api-only-1",
+                description: "API Only Test Tee",
+                price: { amount: 72, currency: "USD" },
+                pictures: [{ url: "https://images.depop.test/api-only-1.jpg" }]
+              }
+            ]
+          });
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["drain gang razorwire tee"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.requestCount, 1);
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.candidates[0].id, "api-only-1");
+  assert.ok(calls.every((entry) => String(entry).indexOf("/search/?q=") === -1));
+});
+
+test("depop provider emits debug logs for api-only search flow", async () => {
   const logs = [];
   const provider = createDepopProvider({
     debugLogger: function (stage, payload) {
@@ -598,7 +651,7 @@ test("depop provider emits debug logs for html and api fallback flow", async () 
   );
   assert.ok(
     logs.some(function (entry) {
-      return entry[0] === "provider.html_fetch_result";
+      return entry[0] === "provider.api_only_query_plan";
     })
   );
   assert.ok(
@@ -614,6 +667,11 @@ test("depop provider emits debug logs for html and api fallback flow", async () 
   assert.ok(
     logs.some(function (entry) {
       return entry[0] === "provider.search_success";
+    })
+  );
+  assert.ok(
+    !logs.some(function (entry) {
+      return entry[0] === "provider.html_fetch_result";
     })
   );
 });
@@ -776,6 +834,288 @@ test("depop provider preserves richer duplicate candidates with image URLs acros
   assert.equal(result.candidates[0].imageUrl, "https://images.depop.test/dupe-1.jpg");
 });
 
+test("depop provider merges URL-matched duplicates across api queries", async () => {
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 2,
+    fetchImpl: async function (url) {
+      const textUrl = String(url || "");
+
+      if (textUrl.indexOf("what=drain+gang+razorwire+tee") !== -1) {
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              data: {
+                products: [
+                  {
+                    title: "Drain Gang Razorwire Tee",
+                    url: "https://www.depop.com/products/user-duplicate-candidate/",
+                    price: {
+                      amount: 88,
+                      currency: "USD"
+                    }
+                  }
+                ]
+              }
+            });
+          }
+        };
+      }
+
+      if (textUrl.indexOf("what=drain+gang+bladee+razorwire") !== -1) {
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              data: {
+                products: [
+                  {
+                    id: "987654321",
+                    title: "Drain Gang Razorwire Tee",
+                    url: "https://www.depop.com/products/user-duplicate-candidate/",
+                    price: {
+                      amount: 88,
+                      currency: "USD"
+                    },
+                    pictures: [
+                      {
+                        url: "https://images.depop.test/dupe-url-merge.jpg"
+                      }
+                    ]
+                  }
+                ]
+              }
+            });
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return JSON.stringify({ products: [] });
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["drain gang razorwire tee", "drain gang bladee razorwire"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.requestCount, 2);
+  assert.equal(result.candidates.length, 1);
+  assert.match(String(result.candidates[0].url || ""), /user-duplicate-candidate/);
+  assert.equal(result.candidates[0].imageUrl, "https://images.depop.test/dupe-url-merge.jpg");
+});
+
+test("depop provider keeps later exact-query candidates after merging the canonical pool", async () => {
+  const provider = createDepopProvider({
+    maxRequests: 6,
+    fetchImpl: async function (url) {
+      const textUrl = String(url || "");
+
+      if (textUrl.indexOf("/search/?q=") !== -1) {
+        return {
+          ok: false,
+          status: 500,
+          text: async function () {
+            return "";
+          }
+        };
+      }
+
+      if (textUrl.indexOf("/api/v3/search/products/") !== -1) {
+        const isBroadQuery = textUrl.indexOf("what=drain+gang+bladee&") !== -1;
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              data: {
+                products: isBroadQuery
+                  ? [
+                      {
+                        id: "broad-1",
+                        title: "Drain Gang Tour Tee",
+                        url: "https://www.depop.com/products/user-broad-1/",
+                        price: { amount: 70, currency: "USD" }
+                      },
+                      {
+                        id: "broad-2",
+                        title: "Bladee Pop Up Tee",
+                        url: "https://www.depop.com/products/user-broad-2/",
+                        price: { amount: 75, currency: "USD" }
+                      }
+                    ]
+                  : [
+                      {
+                        id: "exact-1",
+                        title: "Drain Gang Bladee Razorwire Tee",
+                        url: "https://www.depop.com/products/user-exact-1/",
+                        price: { amount: 68, currency: "USD" },
+                        pictures: [{ url: "https://images.depop.test/exact-1.jpg" }]
+                      }
+                    ]
+              }
+            });
+          }
+        };
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        text: async function () {
+          return "";
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["drain gang bladee", "drain gang bladee razorwire tee"],
+    limit: 2,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.candidates.length, 3);
+  assert.ok(result.candidates.some((candidate) => candidate.id === "exact-1"));
+});
+
+test("depop provider queries the api-only plan in exact-first order", async () => {
+  const calls = [];
+
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 3,
+    fetchImpl: async function (url) {
+      const textUrl = String(url || "");
+
+      if (textUrl.indexOf("/api/v3/search/products/?what=specific+one") !== -1) {
+        calls.push("specific_api");
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              products: [
+                {
+                  id: "specific-strict-1",
+                  slug: "specific-strict-1",
+                  description: "Specific strict-mode candidate",
+                  price: { amount: 80, currency: "USD" },
+                  pictures: [{ url: "https://images.depop.test/specific-strict-1.jpg" }]
+                }
+              ]
+            });
+          }
+        };
+      }
+
+      if (textUrl.indexOf("/api/v3/search/products/?what=middle+one") !== -1) {
+        calls.push("middle_api");
+      }
+
+      if (textUrl.indexOf("/api/v3/search/products/?what=broad+one") !== -1) {
+        calls.push("broad_api");
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return JSON.stringify({
+            products: []
+          });
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["specific one", "middle one", "broad one"],
+    strictMode: true,
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.candidates.some((candidate) => candidate.id === "specific-strict-1"));
+  assert.deepEqual(calls, ["specific_api", "middle_api", "broad_api"]);
+  assert.equal(result.requestCount, 3);
+});
+
+test("depop provider respects the passed query order under api-only budget limits", async () => {
+  const calls = [];
+
+  const provider = createDepopProvider({
+    cooldownMs: 0,
+    maxRequests: 2,
+    fetchImpl: async function (url) {
+      const textUrl = String(url || "");
+
+      if (textUrl.indexOf("/api/v3/search/products/?what=specific+one") !== -1) {
+        calls.push("specific_api");
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              products: [
+                {
+                  id: "specific-nonstrict-1",
+                  slug: "specific-nonstrict-1",
+                  description: "Specific non-strict candidate",
+                  price: { amount: 80, currency: "USD" },
+                  pictures: [{ url: "https://images.depop.test/specific-nonstrict-1.jpg" }]
+                }
+              ]
+            });
+          }
+        };
+      }
+
+      if (textUrl.indexOf("/api/v3/search/products/?what=middle+one") !== -1) {
+        calls.push("middle_api");
+      }
+
+      if (textUrl.indexOf("/api/v3/search/products/?what=broad+one") !== -1) {
+        calls.push("broad_api");
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return JSON.stringify({
+            products: []
+          });
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["specific one", "broad one", "middle one"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.candidates.some((candidate) => candidate.id === "specific-nonstrict-1"));
+  assert.deepEqual(calls, ["specific_api", "broad_api"]);
+  assert.equal(result.requestCount, 2);
+});
+
 test("depop provider returns MISSING_LISTING_DATA when queries missing", async () => {
   const provider = createDepopProvider({
     fetchImpl: async function () {
@@ -925,7 +1265,7 @@ test("depop provider uses cookie-aware fetch options", async () => {
 
   assert.ok(captured);
   assert.equal(captured.credentials, "include");
-  assert.match(String(captured.headers && captured.headers.Accept), /text\/html/i);
+  assert.match(String(captured.headers && captured.headers.Accept), /application\/json/i);
 });
 
 test("depop provider classifies Cloudflare block pages as FORBIDDEN_OR_BLOCKED", async () => {
@@ -955,334 +1295,6 @@ test("depop provider classifies Cloudflare block pages as FORBIDDEN_OR_BLOCKED",
   assert.equal(result.ok, false);
   assert.equal(result.errorCode, "FORBIDDEN_OR_BLOCKED");
   assert.equal(result.retryAfterMs, 120000);
-});
-
-test("depop provider retries once when response is loading shell", async () => {
-  const loadingShellHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    "<body><span>loading results</span><script>self.__next_f.push([1,\"stub\"])</script></body></html>"
-  ].join("");
-
-  const successHtml = [
-    "<html><head>",
-    '<script type="application/ld+json">',
-    JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Product",
-      sku: "retry-1",
-      name: "Retry Tee",
-      url: "https://www.depop.com/products/user-retry-tee/",
-      image: "https://images.depop.test/retry.jpg",
-      offers: {
-        price: "55",
-        priceCurrency: "USD"
-      }
-    }),
-    "</script>",
-    "</head></html>"
-  ].join("");
-
-  let calls = 0;
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 3,
-    fetchImpl: async function () {
-      calls += 1;
-      const text = calls === 1 ? loadingShellHtml : successHtml;
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return text;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["retry tee"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.candidates.length, 1);
-  assert.equal(result.candidates[0].id, "retry-1");
-  assert.equal(calls, 2);
-});
-
-test("depop provider maps explicit zero-result markers to NO_RESULTS", async () => {
-  const noResultsHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    '<body><script>self.__next_f.push([1, "{\\\"total_count\\\":0,\\\"result_count\\\":0}"])</script></body></html>'
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 2,
-    fetchImpl: async function () {
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return noResultsHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["nonexistent piece"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, false);
-  assert.equal(result.errorCode, "NO_RESULTS");
-});
-
-test("depop provider does not emit NO_RESULTS while page is still loading shell", async () => {
-  const loadingWithZeroHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    '<body><span>loading results</span><script>self.__next_f.push([1, "{\\\"total_count\\\":0,\\\"result_count\\\":0}"])</script></body></html>'
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 3,
-    fetchImpl: async function () {
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return loadingWithZeroHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["still loading"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, false);
-  assert.notEqual(result.errorCode, "NO_RESULTS");
-});
-
-test("depop provider emits NO_RESULTS when loading shell includes embedded empty product_search state", async () => {
-  const loadingWithEmbeddedEmptySearchHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    "<body>",
-    "<span>loading results</span>",
-    '<script>self.__next_f.push([1, "{\\\"queryHash\\\":\\\"[\\\\\\\"product_search\\\\\\\"]\\\",\\\"products\\\":[],\\\"total_count\\\":0,\\\"result_count\\\":0}"])</script>',
-    "</body></html>"
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 2,
-    fetchImpl: async function () {
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return loadingWithEmbeddedEmptySearchHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["drain gang chaos"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, false);
-  assert.equal(result.errorCode, "NO_RESULTS");
-});
-
-test("depop provider treats local no-results banner as valid when API provides priced products", async () => {
-  const noLocalButCrossBorderHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    "<body>",
-    '<div class="styles_noResultsFallbackContainer__amKC_">No items available in your location. Check out other matching items from US sellers.</div>',
-    '<ol class="styles_productGrid__Cpzyf">',
-    '<li><a href="/products/lain_xox-drain-gang-2022-world-tour/">item</a></li>',
-    '<li><a href="/products/jetaz-drain-gang-world-tour-chaos/">item</a></li>',
-    "</ol>",
-    "</body></html>"
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 2,
-    fetchImpl: async function (url) {
-      if (String(url).indexOf("/api/v3/search/products") !== -1) {
-        return {
-          ok: true,
-          status: 200,
-          text: async function () {
-            return JSON.stringify({
-              products: [
-                {
-                  id: "priced-local-1",
-                  slug: "priced-local-1",
-                  description: "Drain Gang 2022 World Tour Tee",
-                  price: { amount: 91, currency: "USD" }
-                },
-                {
-                  id: "priced-local-2",
-                  slug: "priced-local-2",
-                  description: "Drain Gang World Tour Chaos",
-                  price: { amount: 77, currency: "USD" }
-                }
-              ]
-            });
-          }
-        };
-      }
-
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return noLocalButCrossBorderHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["drain gang chaos"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, true);
-  assert.ok(Array.isArray(result.candidates));
-  assert.equal(result.candidates.length, 2);
-  assert.ok(result.candidates.every((candidate) => Number(candidate.price) > 0));
-});
-
-test("depop provider preserves API fallback budget after loading-shell retry", async () => {
-  const loadingWithZeroHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    '<body><span>loading results</span><script>self.__next_f.push([1, "{\\\"total_count\\\":0,\\\"result_count\\\":0}"])</script></body></html>'
-  ].join("");
-
-  const apiPayload = {
-    products: [
-      {
-        id: "api-fallback-1",
-        slug: "api-fallback-1",
-        description: "API Fallback Tee",
-        price: { amount: 88, currency: "USD" },
-        pictures: [
-          {
-            url: "https://images.depop.test/api-fallback.jpg"
-          }
-        ]
-      }
-    ]
-  };
-
-  var calls = 0;
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 3,
-    fetchImpl: async function (url) {
-      calls += 1;
-
-      if (String(url).indexOf("/api/v3/search/products") !== -1) {
-        return {
-          ok: true,
-          status: 200,
-          text: async function () {
-            return JSON.stringify(apiPayload);
-          }
-        };
-      }
-
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return loadingWithZeroHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["drain gang chaos"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, true);
-  assert.ok(result.candidates.length >= 1);
-  assert.equal(calls, 3);
-});
-
-test("depop provider keeps href-only fallback candidates when priced data is unavailable", async () => {
-  const loadingShellHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    "<body><span>loading results</span></body></html>"
-  ].join("");
-
-  const apiHtml = [
-    "<!DOCTYPE html>",
-    "<html><body>",
-    '<ol class="styles_productGrid__Cpzyf">',
-    '<li><a href="/products/fallback-html-1/">item</a></li>',
-    '<li><a href="/products/fallback-html-2/">item</a></li>',
-    "</ol>",
-    "</body></html>"
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 3,
-    fetchImpl: async function (url) {
-      if (String(url).indexOf("/api/v3/search/products") !== -1) {
-        return {
-          ok: true,
-          status: 200,
-          text: async function () {
-            return apiHtml;
-          }
-        };
-      }
-
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return loadingShellHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["drain gang chaos"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, true);
-  assert.ok(result.candidates.length >= 1);
-  assert.ok(result.candidates.every((candidate) => candidate.price == null));
 });
 
 test("depop provider maps API slug-only entries to product URLs", async () => {
@@ -1331,63 +1343,6 @@ test("depop provider maps API slug-only entries to product URLs", async () => {
     return /\/products\/slug-only-item-1\/?$/.test(String(candidate && candidate.url || ""));
   });
   assert.equal(hasSlugCandidate, true);
-});
-
-test("depop provider prefers API priced results over html href-only fallback", async () => {
-  const htmlHrefOnly = [
-    "<!DOCTYPE html>",
-    "<html><body>",
-    '<ol class="styles_productGrid__Cpzyf">',
-    '<li><a href="/products/href-only-1/">item</a></li>',
-    '<li><a href="/products/href-only-2/">item</a></li>',
-    "</ol>",
-    "</body></html>"
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 3,
-    fetchImpl: async function (url) {
-      if (String(url).indexOf("/api/v3/search/products") !== -1) {
-        return {
-          ok: true,
-          status: 200,
-          text: async function () {
-            return JSON.stringify({
-              products: [
-                {
-                  id: "api-priced-1",
-                  slug: "api-priced-1",
-                  description: "API priced item",
-                  price: { amount: 99, currency: "USD" },
-                  pictures: [{ url: "https://images.depop.test/api-priced-1.jpg" }]
-                }
-              ]
-            });
-          }
-        };
-      }
-
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return htmlHrefOnly;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["drain gang chaos"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, true);
-  assert.ok(result.candidates.length >= 1);
-  assert.ok(result.candidates.some((candidate) => candidate.id === "api-priced-1"));
-  assert.ok(result.candidates.every((candidate) => Number(candidate.price) > 0));
 });
 
 test("depop provider extracts amount from pricing-shaped API payload", async () => {
@@ -1514,81 +1469,6 @@ test("depop provider extracts amount from pricing final_price_key total_price pa
   );
 });
 
-test("depop provider enriches href fallback candidates from product pages", async () => {
-  const searchHtml = [
-    "<!DOCTYPE html>",
-    "<html><body>",
-    '<ol class="styles_productGrid__Cpzyf">',
-    '<li><a href="/products/enriched-item-1/">item</a></li>',
-    "</ol>",
-    "</body></html>"
-  ].join("");
-
-  const productHtml = [
-    "<html><head>",
-    '<script type="application/ld+json">',
-    JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Product",
-      sku: "enriched-item-1",
-      name: "Drain Gang Chaos Tee",
-      url: "https://www.depop.com/products/enriched-item-1/",
-      offers: {
-        price: "65",
-        priceCurrency: "USD"
-      }
-    }),
-    "</script>",
-    "</head><body></body></html>"
-  ].join("");
-
-  const provider = createDepopProvider({
-    cooldownMs: 0,
-    maxRequests: 3,
-    fetchImpl: async function (url) {
-      var value = String(url);
-      if (value.indexOf("/api/v3/search/products") !== -1) {
-        return {
-          ok: false,
-          status: 500,
-          text: async function () {
-            return "";
-          }
-        };
-      }
-
-      if (value.indexOf("/products/enriched-item-1/") !== -1) {
-        return {
-          ok: true,
-          status: 200,
-          text: async function () {
-            return productHtml;
-          }
-        };
-      }
-
-      return {
-        ok: true,
-        status: 200,
-        text: async function () {
-          return searchHtml;
-        }
-      };
-    }
-  });
-
-  const result = await provider.search({
-    queries: ["drain gang chaos"],
-    limit: 5,
-    currency: "USD"
-  });
-
-  assert.equal(result.ok, true);
-  assert.ok(result.candidates.length >= 1);
-  assert.ok(result.candidates.some((candidate) => candidate.id === "enriched-item-1"));
-  assert.ok(result.candidates.every((candidate) => Number(candidate.price) > 0));
-});
-
 test("depop provider returns NETWORK_ERROR when all attempts fail with status 0", async () => {
   const provider = createDepopProvider({
     cooldownMs: 0,
@@ -1615,13 +1495,7 @@ test("depop provider returns NETWORK_ERROR when all attempts fail with status 0"
   assert.equal(result.retryAfterMs, 1500);
 });
 
-test("depop provider does not exceed maxRequests during broad fallback", async () => {
-  const noResultsHtml = [
-    "<!DOCTYPE html>",
-    "<html><head><title>Search | Depop</title></head>",
-    '<body><script>self.__next_f.push([1, "{\\\"total_count\\\":0,\\\"result_count\\\":0}"])</script></body></html>'
-  ].join("");
-
+test("depop provider does not exceed maxRequests during api-only no-results flow", async () => {
   let calls = 0;
   const provider = createDepopProvider({
     cooldownMs: 0,
@@ -1632,7 +1506,10 @@ test("depop provider does not exceed maxRequests during broad fallback", async (
         ok: true,
         status: 200,
         text: async function () {
-          return noResultsHtml;
+          return JSON.stringify({
+            products: [],
+            count: 0
+          });
         }
       };
     }

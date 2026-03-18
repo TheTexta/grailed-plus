@@ -408,6 +408,118 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"
   fill: currentColor !important;
 }
 
+/* Hardening: keep DM filter drawers readable when Grailed serves the newer filter class set. */
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="CollapsibleFilterWrapper_collapsible__"],
+  [class*="CollapsibleFilterWrapper_header__"],
+  [class*="CollapsibleFilterWrapper_contentContainer__"],
+  [class*="CollapsibleFilterWrapper_content__"],
+  [class*="Collapsible_collapsibleContent__"],
+  [class*="GroupHeader_header__"],
+  [class*="RefinementList_container__"],
+  [class*="RefinementList_customRefinements__"],
+  [class*="RefinementItem_refinementItem__"],
+  [class*="ColorRefinementList_container__"],
+  [class*="ColorRefinementList_customRefinements__"],
+  [class*="PriceFilter_container__"]
+) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  background-image: none !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="RefinementList_searchContainer__"],
+  [class*="PriceInput_priceInputWrapper__"]
+) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  background-image: none !important;
+  border: 1px solid var(--gp-dm-border-soft, rgba(255, 255, 255, 0.68)) !important;
+  box-shadow: none !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="CollapsibleFilterWrapper_header__"],
+  [class*="GroupHeader_header__"],
+  [class*="CollapsibleFilterWrapper_label__"],
+  [class*="CategoryGroup_department__"],
+  [class*="GroupHeader_title__"],
+  [class*="RefinementItem_refinementItem__"],
+  [class*="RefinementItem_count__"],
+  [class*="PriceInput_dollarSign__"],
+  [class*="RefinementList_search__"]
+):not(svg *) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="RefinementList_search__"],
+  [class*="PriceInput_priceInputWrapper__"] input
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="RefinementList_search__"],
+  [class*="PriceInput_priceInputWrapper__"] input
+)::placeholder {
+  color: var(--gp-dm-text-placeholder, rgba(255, 255, 255, 0.75)) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) [class*="RefinementItem_refinementItem__"] input[type="checkbox"] {
+  accent-color: var(--gp-dm-text-strong, #fff) !important;
+  color-scheme: dark !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="CollapsibleFilterWrapper_caret__"],
+  [class*="RefinementList_searchIcon__"],
+  [class*="Caret__"]
+) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="CollapsibleFilterWrapper_caret__"],
+  [class*="RefinementList_searchIcon__"],
+  [class*="Caret__"]
+) path {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
 :root {
   --gp-ui-surface: #ffffff;
   --gp-ui-surface-soft: #fcfcfc;
@@ -1238,6 +1350,14 @@ html[data-grailed-plus-dark-mode="1"] .grailed-plus__trend-empty {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.grailed-plus__market-chip-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .grailed-plus__market-chip {

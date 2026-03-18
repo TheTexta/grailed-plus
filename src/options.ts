@@ -6,7 +6,8 @@
   var DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
   var DEFAULT_DARK_MODE_BEHAVIOR = "system";
   var DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
-  var DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+  var DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED = false;
+  var DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "visual";
   var DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
   var DEFAULT_MARKET_COMPARE_DEBUG_ENABLED = false;
 
@@ -234,6 +235,7 @@
 
   function loadMarketCompareSettings(): Promise<{
     enabled: boolean;
+    autoSearchEnabled: boolean;
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
@@ -245,6 +247,10 @@
         Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ENABLED === "boolean"
           ? Settings.DEFAULT_MARKET_COMPARE_ENABLED
           : false,
+      autoSearchEnabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED
+          : DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED,
       rankingFormula:
         normalizeMarketCompareRankingFormula(
           Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA
@@ -275,6 +281,10 @@
       var rankingFormula = normalizeMarketCompareRankingFormula(value && value.rankingFormula);
       return {
         enabled: value && typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
+        autoSearchEnabled:
+          value && typeof value.autoSearchEnabled === "boolean"
+            ? value.autoSearchEnabled
+            : fallback.autoSearchEnabled,
         rankingFormula: rankingFormula || fallback.rankingFormula,
         strictMode:
           value && typeof value.strictMode === "boolean" ? value.strictMode : fallback.strictMode,
@@ -314,6 +324,17 @@
     }
 
     return Settings.setMarketCompareRankingFormula(formula);
+  }
+
+  function saveMarketCompareAutoSearchEnabled(enabled: boolean) {
+    if (!Settings || typeof Settings.setMarketCompareAutoSearchEnabled !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setMarketCompareAutoSearchEnabled(Boolean(enabled));
   }
 
   function saveMarketCompareStrictMode(enabled: boolean) {
@@ -595,6 +616,7 @@
 
   function syncMarketCompareInputs(
     enabledNode: any,
+    autoSearchEnabledNode: any,
     rankingFormulaNode: any,
     strictModeNode: any,
     expandedAmountNode: any,
@@ -603,6 +625,7 @@
   ): void {
     if (
       !enabledNode ||
+      !autoSearchEnabledNode ||
       !rankingFormulaNode ||
       !strictModeNode ||
       !expandedAmountNode ||
@@ -613,6 +636,7 @@
     }
 
     var marketCompareEnabled = Boolean(enabledNode.checked);
+    autoSearchEnabledNode.disabled = !marketCompareEnabled;
     rankingFormulaNode.disabled = !marketCompareEnabled;
     strictModeNode.disabled = !marketCompareEnabled;
     expandedAmountNode.disabled = !marketCompareEnabled;
@@ -666,6 +690,9 @@
       "listing-metadata-button-enabled"
     ) as any;
     var marketCompareEnabledNode = document.getElementById("market-compare-enabled") as any;
+    var marketCompareAutoSearchEnabledNode = document.getElementById(
+      "market-compare-auto-search-enabled"
+    ) as any;
     var marketCompareRankingFormulaNode = document.getElementById(
       "market-compare-ranking-formula"
     ) as any;
@@ -705,6 +732,7 @@
       !listingInsightsEnabledNode ||
       !listingMetadataButtonEnabledNode ||
       !marketCompareEnabledNode ||
+      !marketCompareAutoSearchEnabledNode ||
       !marketCompareRankingFormulaNode ||
       !marketCompareRankingFormulaDescriptionNode ||
       !marketCompareStrictModeNode ||
@@ -762,6 +790,10 @@
       var listingMetadataButtonEnabled = values[3];
       var marketCompareSettings = values[4] && typeof values[4] === "object" ? values[4] : {};
       var marketCompareEnabled = Boolean(marketCompareSettings.enabled);
+      var marketCompareAutoSearchEnabled =
+        typeof marketCompareSettings.autoSearchEnabled === "boolean"
+          ? marketCompareSettings.autoSearchEnabled
+          : DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED;
       var marketCompareRankingFormula =
         normalizeMarketCompareRankingFormula(marketCompareSettings.rankingFormula) ||
         DEFAULT_MARKET_COMPARE_RANKING_FORMULA;
@@ -786,6 +818,7 @@
       listingInsightsEnabledNode.checked = listingInsightsEnabled;
       listingMetadataButtonEnabledNode.checked = listingMetadataButtonEnabled;
       marketCompareEnabledNode.checked = marketCompareEnabled;
+      marketCompareAutoSearchEnabledNode.checked = marketCompareAutoSearchEnabled;
       marketCompareRankingFormulaNode.value = marketCompareRankingFormula;
       updateMarketCompareRankingFormulaDescription(
         marketCompareRankingFormulaDescriptionNode,
@@ -797,6 +830,7 @@
       marketCompareDebugEnabledNode.checked = marketCompareDebugEnabled;
       syncMarketCompareInputs(
         marketCompareEnabledNode,
+        marketCompareAutoSearchEnabledNode,
         marketCompareRankingFormulaNode,
         marketCompareStrictModeNode,
         marketCompareExpandedAmountEnabledNode,
@@ -847,12 +881,19 @@
       marketCompareEnabledNode.addEventListener("change", function () {
         syncMarketCompareInputs(
           marketCompareEnabledNode,
+          marketCompareAutoSearchEnabledNode,
           marketCompareRankingFormulaNode,
           marketCompareStrictModeNode,
           marketCompareExpandedAmountEnabledNode,
           marketCompareMlSimilarityEnabledNode,
           marketCompareDebugEnabledNode
         );
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof marketCompareAutoSearchEnabledNode.addEventListener === "function") {
+      marketCompareAutoSearchEnabledNode.addEventListener("change", function () {
         setStatus(statusNode, null, "");
       });
     }
@@ -959,6 +1000,9 @@
         var listingInsightsEnabled = Boolean(listingInsightsEnabledNode.checked);
         var listingMetadataButtonEnabled = Boolean(listingMetadataButtonEnabledNode.checked);
         var marketCompareEnabled = Boolean(marketCompareEnabledNode.checked);
+        var marketCompareAutoSearchEnabled = Boolean(
+          marketCompareAutoSearchEnabledNode.checked
+        );
         var marketCompareRankingFormula = normalizeMarketCompareRankingFormula(
           marketCompareRankingFormulaNode.value
         );
@@ -1039,6 +1083,7 @@
               saveListingInsightsEnabled(listingInsightsEnabled),
               saveListingMetadataButtonEnabled(listingMetadataButtonEnabled),
               saveMarketCompareEnabled(marketCompareEnabled),
+              saveMarketCompareAutoSearchEnabled(marketCompareAutoSearchEnabled),
               saveMarketCompareRankingFormula(safeMarketCompareRankingFormula),
               saveMarketCompareStrictMode(marketCompareStrictMode),
               saveMarketCompareExpandedAmountEnabled(marketCompareExpandedAmountEnabled),
@@ -1086,6 +1131,10 @@
           Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ENABLED === "boolean"
             ? Settings.DEFAULT_MARKET_COMPARE_ENABLED
             : false;
+        var defaultMarketCompareAutoSearchEnabled =
+          Settings && typeof Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED === "boolean"
+            ? Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED
+            : DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED;
         var defaultMarketCompareRankingFormula =
           normalizeMarketCompareRankingFormula(Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA) ||
           DEFAULT_MARKET_COMPARE_RANKING_FORMULA;
@@ -1126,6 +1175,7 @@
           saveListingInsightsEnabled(defaultListingInsightsEnabled),
           saveListingMetadataButtonEnabled(defaultListingMetadataButtonEnabled),
           saveMarketCompareEnabled(defaultMarketCompareEnabled),
+          saveMarketCompareAutoSearchEnabled(defaultMarketCompareAutoSearchEnabled),
           saveMarketCompareRankingFormula(defaultMarketCompareRankingFormula),
           saveMarketCompareStrictMode(defaultMarketCompareStrictMode),
           saveMarketCompareExpandedAmountEnabled(defaultMarketCompareExpandedAmountEnabled),
@@ -1152,6 +1202,7 @@
           listingInsightsEnabledNode.checked = defaultListingInsightsEnabled;
           listingMetadataButtonEnabledNode.checked = defaultListingMetadataButtonEnabled;
           marketCompareEnabledNode.checked = defaultMarketCompareEnabled;
+          marketCompareAutoSearchEnabledNode.checked = defaultMarketCompareAutoSearchEnabled;
           marketCompareRankingFormulaNode.value = defaultMarketCompareRankingFormula;
           updateMarketCompareRankingFormulaDescription(
             marketCompareRankingFormulaDescriptionNode,
@@ -1163,6 +1214,7 @@
           marketCompareDebugEnabledNode.checked = defaultMarketCompareDebugEnabled;
           syncMarketCompareInputs(
             marketCompareEnabledNode,
+            marketCompareAutoSearchEnabledNode,
             marketCompareRankingFormulaNode,
             marketCompareStrictModeNode,
             marketCompareExpandedAmountEnabledNode,

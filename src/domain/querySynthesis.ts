@@ -380,9 +380,9 @@ interface QSGlobalRoot {
       const coreTitle = titleTokens.slice(0, Math.min(titleTokens.length, 5)).join(" ");
 
       let candidates = [
-        [brand, descriptor].filter(Boolean).join(" "),
         [brand, coreTitle].filter(Boolean).join(" "),
         [coreTitle, size].filter(Boolean).join(" "),
+        [brand, descriptor].filter(Boolean).join(" "),
         [brand, size, category].filter(Boolean).join(" ")
       ];
 

@@ -40,6 +40,7 @@ interface URenderUnavailableOptions {
   resolveMarketCompareSettings?:
     | (() => Promise<{
         enabled: boolean;
+        autoSearchEnabled: boolean;
         rankingFormula: string;
         strictMode: boolean;
         expandedAmountEnabled: boolean;
@@ -58,6 +59,7 @@ interface URenderUnavailableOptions {
         statusMessage: string;
         currencyContext: any;
         marketCompareEnabled: boolean;
+        marketCompareAutoSearchEnabled: boolean;
         marketCompareRankingFormula: string;
         marketCompareStrictMode: boolean;
         marketCompareResultsLimit: number;
@@ -146,7 +148,8 @@ interface UUnavailableGlobal {
         : function () {
             return Promise.resolve({
               enabled: true,
-              rankingFormula: "balanced",
+              autoSearchEnabled: false,
+              rankingFormula: "visual",
               strictMode: false,
               expandedAmountEnabled: false,
               mlSimilarityEnabled: true,
@@ -198,6 +201,7 @@ interface UUnavailableGlobal {
         values[1] && typeof values[1] === "object"
             ? (values[1] as {
               enabled?: boolean;
+              autoSearchEnabled?: boolean;
               rankingFormula?: string;
               strictMode?: boolean;
               expandedAmountEnabled?: boolean;
@@ -209,7 +213,7 @@ interface UUnavailableGlobal {
       var marketCompareRankingFormula =
         typeof marketCompareSettings.rankingFormula === "string"
           ? marketCompareSettings.rankingFormula
-          : "balanced";
+          : "visual";
       var marketCompareStrictMode = marketCompareSettings.strictMode === true;
       var marketCompareResultsLimit =
         marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
@@ -230,6 +234,7 @@ interface UUnavailableGlobal {
         statusMessage: statusMessage,
         currencyContext: currencyContext,
         marketCompareEnabled: marketCompareEnabled,
+        marketCompareAutoSearchEnabled: false,
         marketCompareRankingFormula: marketCompareRankingFormula,
         marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,

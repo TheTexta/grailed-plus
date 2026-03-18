@@ -27,6 +27,7 @@ interface CListingRenderOptions {
   metrics: any;
   mountTarget?: CListingRenderMountTarget | null;
   marketCompareEnabled?: boolean;
+  marketCompareAutoSearchEnabled?: boolean;
   marketCompareRankingFormula?: string;
   marketCompareStrictMode?: boolean;
   marketCompareResultsLimit?: number;
@@ -43,6 +44,7 @@ interface CListingRenderOptions {
     rawListing: any;
     currencyContext: CListingRenderCurrencyContext | null;
     marketCompareEnabled: boolean;
+    marketCompareAutoSearchEnabled: boolean;
     marketCompareRankingFormula: string;
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
@@ -137,10 +139,11 @@ interface CListingRenderGlobal {
           rawListing: listing && listing.rawListing ? listing.rawListing : null,
           currencyContext: currencyContext,
           marketCompareEnabled: config.marketCompareEnabled !== false,
+          marketCompareAutoSearchEnabled: config.marketCompareAutoSearchEnabled === true,
           marketCompareRankingFormula:
             typeof config.marketCompareRankingFormula === "string"
               ? config.marketCompareRankingFormula
-              : "balanced",
+              : "visual",
           marketCompareStrictMode: config.marketCompareStrictMode === true,
           marketCompareResultsLimit:
             Number.isFinite(Number(config.marketCompareResultsLimit)) &&
@@ -180,10 +183,11 @@ interface CListingRenderGlobal {
           rawListing: listing && listing.rawListing ? listing.rawListing : null,
           currencyContext: fallbackCurrency,
           marketCompareEnabled: config.marketCompareEnabled !== false,
+          marketCompareAutoSearchEnabled: config.marketCompareAutoSearchEnabled === true,
           marketCompareRankingFormula:
             typeof config.marketCompareRankingFormula === "string"
               ? config.marketCompareRankingFormula
-              : "balanced",
+              : "visual",
           marketCompareStrictMode: config.marketCompareStrictMode === true,
           marketCompareResultsLimit:
             Number.isFinite(Number(config.marketCompareResultsLimit)) &&

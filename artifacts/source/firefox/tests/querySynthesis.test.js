@@ -39,7 +39,7 @@ test("buildQueries returns deterministic query list for supported listing", () =
   assert.equal(result.ok, true);
   assert.ok(Array.isArray(result.queries));
   assert.ok(result.queries.length > 0);
-  assert.equal(result.queries[0], "stone island bomber");
+  assert.equal(result.queries[0], "stone island bomber jacket black");
 });
 
 test("buildQueries collapses repeated adjacent phrases in generated queries", () => {
@@ -55,7 +55,42 @@ test("buildQueries collapses repeated adjacent phrases in generated queries", ()
 
   assert.equal(result.ok, true);
   assert.ok(result.queries.length > 0);
-  assert.equal(result.queries[0], "drain gang chaos");
+  assert.equal(result.queries[0], "drain gang chaos tee");
+});
+
+test("buildQueries keeps the most specific title-like query first across modes", () => {
+  const listing = {
+    title: "Drain Gang Bladee Razorwire tee white L",
+    brand: "Drain Gang",
+    size: "L",
+    category: "T-Shirts"
+  };
+
+  const defaultResult = buildQueries(listing, {
+    maxQueries: 4,
+    maxTokens: 6
+  });
+
+  const strictResult = buildQueries(listing, {
+    maxQueries: 4,
+    maxTokens: 6,
+    allowCategoryFallback: false
+  });
+
+  assert.equal(defaultResult.ok, true);
+  assert.equal(strictResult.ok, true);
+  assert.deepEqual(defaultResult.queries, [
+    "drain gang bladee razorwire tee",
+    "drain gang bladee razorwire tee l",
+    "drain gang bladee",
+    "drain gang l t-shirts"
+  ]);
+  assert.deepEqual(strictResult.queries, [
+    "drain gang bladee razorwire tee",
+    "drain gang bladee razorwire tee l",
+    "drain gang bladee",
+    "drain gang l t-shirts"
+  ]);
 });
 
 test("buildQueries falls back to unconstrained search when category is unsupported", () => {

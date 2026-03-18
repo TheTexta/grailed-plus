@@ -17,6 +17,7 @@ interface CRuntimeState {
   cardCurrencyContext: unknown;
   marketCompareController: unknown;
   marketCompareUnsubscribe: (() => void) | null;
+  marketCompareAutoSearchRenderToken: number | null;
   latestPanelContext: unknown;
 }
 
@@ -74,6 +75,7 @@ interface CContentRuntimeGlobal {
       cardCurrencyContext: null,
       marketCompareController: null,
       marketCompareUnsubscribe: null,
+      marketCompareAutoSearchRenderToken: null,
       latestPanelContext: null
     };
   }

@@ -254,7 +254,7 @@ interface CListingInsightsGlobal {
         marketCompareRankingFormula:
           typeof panelOptions.marketCompareRankingFormula === "string"
             ? panelOptions.marketCompareRankingFormula
-            : "balanced",
+            : "visual",
         marketCompareStrictMode: panelOptions.marketCompareStrictMode === true,
         marketCompareResultsLimit:
           Number.isFinite(Number(panelOptions.marketCompareResultsLimit)) &&

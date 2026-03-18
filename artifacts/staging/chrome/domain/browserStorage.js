@@ -83,9 +83,40 @@
             }
         });
     }
+    function storageRemove(storage, key) {
+        if (!storage || typeof storage.remove !== "function") {
+            return Promise.resolve(false);
+        }
+        try {
+            const result = storage.remove(key);
+            if (result && typeof result.then === "function") {
+                return result.then(function () {
+                    return true;
+                });
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.remove(key, function () {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve(false);
+                        return;
+                    }
+                    resolve(true);
+                });
+            }
+            catch (_) {
+                resolve(false);
+            }
+        });
+    }
     return {
         getStorageLocal,
         storageGet,
-        storageSet
+        storageSet,
+        storageRemove
     };
 });

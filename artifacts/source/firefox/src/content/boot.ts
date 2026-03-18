@@ -328,6 +328,7 @@
 
   function createDefaultMarketCompareSettings(): {
     enabled: boolean;
+    autoSearchEnabled: boolean;
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
@@ -339,10 +340,14 @@
         Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ENABLED === "boolean"
           ? Settings.DEFAULT_MARKET_COMPARE_ENABLED
           : false,
+      autoSearchEnabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED
+          : false,
       rankingFormula:
         typeof (Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA) === "string"
           ? String(Settings && Settings.DEFAULT_MARKET_COMPARE_RANKING_FORMULA)
-          : "balanced",
+          : "visual",
       strictMode:
         Settings && typeof Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE === "boolean"
           ? Settings.DEFAULT_MARKET_COMPARE_STRICT_MODE
@@ -364,6 +369,7 @@
 
   function resolveMarketCompareSettings(): Promise<{
     enabled: boolean;
+    autoSearchEnabled: boolean;
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
@@ -380,6 +386,10 @@
       .then(function (value: any) {
         return {
           enabled: value && typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
+          autoSearchEnabled:
+            value && typeof value.autoSearchEnabled === "boolean"
+              ? value.autoSearchEnabled
+              : fallback.autoSearchEnabled,
           rankingFormula:
             value && typeof value.rankingFormula === "string"
               ? value.rankingFormula
@@ -723,10 +733,11 @@
       var listingInsightsEnabled = Boolean(values[0]);
       var marketCompareSettings = values[1] && typeof values[1] === "object" ? values[1] : {};
       var marketCompareEnabled = marketCompareSettings.enabled !== false;
+      var marketCompareAutoSearchEnabled = marketCompareSettings.autoSearchEnabled === true;
       var marketCompareRankingFormula =
         typeof marketCompareSettings.rankingFormula === "string"
           ? marketCompareSettings.rankingFormula
-          : "balanced";
+          : "visual";
       var marketCompareStrictMode = marketCompareSettings.strictMode === true;
       var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
       var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
@@ -802,6 +813,7 @@
         metrics: preparedContext.metrics,
         mountTarget: preparedContext.mountTarget,
         marketCompareEnabled: marketCompareEnabled,
+        marketCompareAutoSearchEnabled: marketCompareAutoSearchEnabled,
         marketCompareRankingFormula: marketCompareRankingFormula,
         marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,

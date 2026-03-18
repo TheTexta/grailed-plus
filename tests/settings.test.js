@@ -9,6 +9,7 @@ const {
   DEFAULT_LISTING_INSIGHTS_ENABLED,
   DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
   DEFAULT_MARKET_COMPARE_ENABLED,
+  DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED,
   DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
   DEFAULT_MARKET_COMPARE_STRICT_MODE,
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
@@ -23,6 +24,7 @@ const {
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
   LISTING_METADATA_BUTTON_STORAGE_KEY,
   MARKET_COMPARE_ENABLED_STORAGE_KEY,
+  MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY,
   MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
   MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
@@ -47,6 +49,8 @@ const {
   setListingMetadataButtonEnabled,
   getMarketCompareEnabled,
   setMarketCompareEnabled,
+  getMarketCompareAutoSearchEnabled,
+  setMarketCompareAutoSearchEnabled,
   getMarketCompareRankingFormula,
   setMarketCompareRankingFormula,
   getMarketCompareStrictMode,
@@ -461,6 +465,48 @@ test("setMarketCompareEnabled persists boolean values", async () => {
   }
 });
 
+test("getMarketCompareAutoSearchEnabled defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getMarketCompareAutoSearchEnabled();
+    assert.equal(enabled, DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareAutoSearchEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setMarketCompareAutoSearchEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY], true);
+    assert.equal(await getMarketCompareAutoSearchEnabled(), true);
+
+    const offResult = await setMarketCompareAutoSearchEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY], false);
+    assert.equal(await getMarketCompareAutoSearchEnabled(), false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
 test("getMarketCompareRankingFormula defaults to configured formula and ignores invalid stored values", async () => {
   const previousChrome = global.chrome;
   const previousBrowser = global.browser;
@@ -652,6 +698,7 @@ test("getMarketCompareSettings returns the grouped market compare state", async 
 
   const chromeMock = createChromeStorage({
     [MARKET_COMPARE_ENABLED_STORAGE_KEY]: true,
+    [MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY]: true,
     [MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY]: "metadata",
     [MARKET_COMPARE_STRICT_MODE_STORAGE_KEY]: true,
     [MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY]: true,
@@ -665,6 +712,7 @@ test("getMarketCompareSettings returns the grouped market compare state", async 
     const settings = await getMarketCompareSettings();
     assert.deepEqual(settings, {
       enabled: true,
+      autoSearchEnabled: true,
       rankingFormula: "metadata",
       strictMode: true,
       expandedAmountEnabled: true,

@@ -13,7 +13,8 @@
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
     const DEFAULT_LISTING_METADATA_BUTTON_ENABLED = true;
     const DEFAULT_MARKET_COMPARE_ENABLED = true;
-    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+    const DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "visual";
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
@@ -33,7 +34,9 @@
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
     const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
-    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v2";
+    const MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY = "grailed_plus_market_compare_auto_search_enabled_v1";
     const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY = "grailed_plus_market_compare_ranking_formula_v1";
     const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
@@ -43,6 +46,8 @@
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
     const DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY = "grailed_plus_dark_mode_legacy_color_customization_enabled_v1";
+    let legacyMarketCompareEnabledCleanupPromise = null;
+    let legacyMarketCompareEnabledCleanupStorage = null;
     let BrowserStorage = null;
     if (typeof globalThis !== "undefined" && globalThis.GrailedPlusBrowserStorage) {
         BrowserStorage = globalThis.GrailedPlusBrowserStorage || null;
@@ -121,6 +126,31 @@
         return BrowserStorage && typeof BrowserStorage.storageSet === "function"
             ? BrowserStorage.storageSet(storage, payload)
             : Promise.resolve(false);
+    }
+    function storageRemove(storage, key) {
+        return BrowserStorage && typeof BrowserStorage.storageRemove === "function"
+            ? BrowserStorage.storageRemove(storage, key)
+            : Promise.resolve(false);
+    }
+    function cleanupLegacyMarketCompareEnabledSetting() {
+        const storage = getStorageLocal();
+        if (legacyMarketCompareEnabledCleanupPromise &&
+            legacyMarketCompareEnabledCleanupStorage === storage) {
+            return legacyMarketCompareEnabledCleanupPromise;
+        }
+        legacyMarketCompareEnabledCleanupStorage = storage;
+        if (!storage) {
+            legacyMarketCompareEnabledCleanupPromise = Promise.resolve();
+            return legacyMarketCompareEnabledCleanupPromise;
+        }
+        legacyMarketCompareEnabledCleanupPromise = storageRemove(storage, LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY)
+            .then(function () {
+            return;
+        })
+            .catch(function () {
+            return;
+        });
+        return legacyMarketCompareEnabledCleanupPromise;
     }
     function readSetting(storageKey, fallback, normalize) {
         const storage = getStorageLocal();
@@ -201,6 +231,7 @@
     const listingInsightsSetting = createBooleanSetting(LISTING_INSIGHTS_ENABLED_STORAGE_KEY, DEFAULT_LISTING_INSIGHTS_ENABLED, "listing insights status");
     const listingMetadataButtonSetting = createBooleanSetting(LISTING_METADATA_BUTTON_STORAGE_KEY, DEFAULT_LISTING_METADATA_BUTTON_ENABLED, "listing metadata button status");
     const marketCompareEnabledSetting = createBooleanSetting(MARKET_COMPARE_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ENABLED, "market compare status");
+    const marketCompareAutoSearchSetting = createBooleanSetting(MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY, DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED, "market compare auto search status");
     const marketCompareRankingFormulaSetting = createValidatedSetting(MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY, DEFAULT_MARKET_COMPARE_RANKING_FORMULA, normalizeMarketCompareRankingFormula, "Market compare ranking formula must match a supported option.", "Failed to persist market compare ranking formula.");
     const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
@@ -235,13 +266,23 @@
         return listingMetadataButtonSetting.set(enabled);
     }
     function getMarketCompareEnabled() {
-        return marketCompareEnabledSetting.get();
+        return cleanupLegacyMarketCompareEnabledSetting().then(function () {
+            return marketCompareEnabledSetting.get();
+        });
     }
     function setMarketCompareEnabled(enabled) {
-        return marketCompareEnabledSetting.set(enabled);
+        return cleanupLegacyMarketCompareEnabledSetting().then(function () {
+            return marketCompareEnabledSetting.set(enabled);
+        });
     }
     function getMarketCompareRankingFormula() {
         return marketCompareRankingFormulaSetting.get();
+    }
+    function getMarketCompareAutoSearchEnabled() {
+        return marketCompareAutoSearchSetting.get();
+    }
+    function setMarketCompareAutoSearchEnabled(enabled) {
+        return marketCompareAutoSearchSetting.set(enabled);
     }
     function setMarketCompareRankingFormula(formula) {
         return marketCompareRankingFormulaSetting.set(formula);
@@ -273,6 +314,7 @@
     function getMarketCompareSettings() {
         return Promise.all([
             getMarketCompareEnabled(),
+            getMarketCompareAutoSearchEnabled(),
             getMarketCompareRankingFormula(),
             getMarketCompareStrictMode(),
             getMarketCompareExpandedAmountEnabled(),
@@ -281,11 +323,12 @@
         ]).then(function (values) {
             return {
                 enabled: values[0],
-                rankingFormula: values[1],
-                strictMode: values[2],
-                expandedAmountEnabled: values[3],
-                mlSimilarityEnabled: values[4],
-                debugEnabled: values[5]
+                autoSearchEnabled: values[1],
+                rankingFormula: values[2],
+                strictMode: values[3],
+                expandedAmountEnabled: values[4],
+                mlSimilarityEnabled: values[5],
+                debugEnabled: values[6]
             };
         });
     }
@@ -319,6 +362,7 @@
         DEFAULT_LISTING_INSIGHTS_ENABLED,
         DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
         DEFAULT_MARKET_COMPARE_ENABLED,
+        DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED,
         DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
         DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
@@ -335,6 +379,7 @@
         LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
         LISTING_METADATA_BUTTON_STORAGE_KEY,
         MARKET_COMPARE_ENABLED_STORAGE_KEY,
+        MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY,
         MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
         MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
@@ -359,6 +404,8 @@
         setListingMetadataButtonEnabled,
         getMarketCompareEnabled,
         setMarketCompareEnabled,
+        getMarketCompareAutoSearchEnabled,
+        setMarketCompareAutoSearchEnabled,
         getMarketCompareRankingFormula,
         setMarketCompareRankingFormula,
         getMarketCompareStrictMode,

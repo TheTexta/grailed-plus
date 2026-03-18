@@ -21,6 +21,7 @@ interface SSettingsModule {
   DEFAULT_LISTING_INSIGHTS_ENABLED: boolean;
   DEFAULT_LISTING_METADATA_BUTTON_ENABLED: boolean;
   DEFAULT_MARKET_COMPARE_ENABLED: boolean;
+  DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED: boolean;
   DEFAULT_MARKET_COMPARE_RANKING_FORMULA: string;
   DEFAULT_MARKET_COMPARE_STRICT_MODE: boolean;
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: boolean;
@@ -37,6 +38,7 @@ interface SSettingsModule {
   LISTING_INSIGHTS_ENABLED_STORAGE_KEY: string;
   LISTING_METADATA_BUTTON_STORAGE_KEY: string;
   MARKET_COMPARE_ENABLED_STORAGE_KEY: string;
+  MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY: string;
   MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY: string;
   MARKET_COMPARE_STRICT_MODE_STORAGE_KEY: string;
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY: string;
@@ -61,6 +63,8 @@ interface SSettingsModule {
   setListingMetadataButtonEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getMarketCompareEnabled: () => Promise<boolean>;
   setMarketCompareEnabled: (enabled: unknown) => Promise<SStorageResult>;
+  getMarketCompareAutoSearchEnabled: () => Promise<boolean>;
+  setMarketCompareAutoSearchEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getMarketCompareRankingFormula: () => Promise<string>;
   setMarketCompareRankingFormula: (formula: unknown) => Promise<SStorageResult>;
   getMarketCompareStrictMode: () => Promise<boolean>;
@@ -73,6 +77,7 @@ interface SSettingsModule {
   setMarketCompareDebugEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getMarketCompareSettings: () => Promise<{
     enabled: boolean;
+    autoSearchEnabled: boolean;
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
@@ -110,7 +115,8 @@ interface SGlobalRoot {
     const DEFAULT_LISTING_INSIGHTS_ENABLED = true;
     const DEFAULT_LISTING_METADATA_BUTTON_ENABLED = true;
     const DEFAULT_MARKET_COMPARE_ENABLED = true;
-    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
+    const DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED = false;
+    const DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "visual";
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
@@ -132,6 +138,8 @@ interface SGlobalRoot {
     const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
     const LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
     const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v2";
+    const MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY =
+      "grailed_plus_market_compare_auto_search_enabled_v1";
     const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY =
       "grailed_plus_market_compare_ranking_formula_v1";
     const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
@@ -423,6 +431,11 @@ interface SGlobalRoot {
       DEFAULT_MARKET_COMPARE_ENABLED,
       "market compare status"
     );
+    const marketCompareAutoSearchSetting = createBooleanSetting(
+      MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY,
+      DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED,
+      "market compare auto search status"
+    );
     const marketCompareRankingFormulaSetting = createValidatedSetting(
       MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
       DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
@@ -523,6 +536,14 @@ interface SGlobalRoot {
       return marketCompareRankingFormulaSetting.get();
     }
 
+    function getMarketCompareAutoSearchEnabled(): Promise<boolean> {
+      return marketCompareAutoSearchSetting.get();
+    }
+
+    function setMarketCompareAutoSearchEnabled(enabled: unknown): Promise<SStorageResult> {
+      return marketCompareAutoSearchSetting.set(enabled);
+    }
+
     function setMarketCompareRankingFormula(formula: unknown): Promise<SStorageResult> {
       return marketCompareRankingFormulaSetting.set(formula);
     }
@@ -561,6 +582,7 @@ interface SGlobalRoot {
 
     function getMarketCompareSettings(): Promise<{
       enabled: boolean;
+      autoSearchEnabled: boolean;
       rankingFormula: string;
       strictMode: boolean;
       expandedAmountEnabled: boolean;
@@ -569,6 +591,7 @@ interface SGlobalRoot {
     }> {
       return Promise.all([
         getMarketCompareEnabled(),
+        getMarketCompareAutoSearchEnabled(),
         getMarketCompareRankingFormula(),
         getMarketCompareStrictMode(),
         getMarketCompareExpandedAmountEnabled(),
@@ -577,11 +600,12 @@ interface SGlobalRoot {
       ]).then(function (values) {
         return {
           enabled: values[0],
-          rankingFormula: values[1],
-          strictMode: values[2],
-          expandedAmountEnabled: values[3],
-          mlSimilarityEnabled: values[4],
-          debugEnabled: values[5]
+          autoSearchEnabled: values[1],
+          rankingFormula: values[2],
+          strictMode: values[3],
+          expandedAmountEnabled: values[4],
+          mlSimilarityEnabled: values[5],
+          debugEnabled: values[6]
         };
       });
     }
@@ -626,6 +650,7 @@ interface SGlobalRoot {
       DEFAULT_LISTING_INSIGHTS_ENABLED,
       DEFAULT_LISTING_METADATA_BUTTON_ENABLED,
       DEFAULT_MARKET_COMPARE_ENABLED,
+      DEFAULT_MARKET_COMPARE_AUTO_SEARCH_ENABLED,
       DEFAULT_MARKET_COMPARE_RANKING_FORMULA,
       DEFAULT_MARKET_COMPARE_STRICT_MODE,
       DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
@@ -642,6 +667,7 @@ interface SGlobalRoot {
       LISTING_INSIGHTS_ENABLED_STORAGE_KEY,
       LISTING_METADATA_BUTTON_STORAGE_KEY,
       MARKET_COMPARE_ENABLED_STORAGE_KEY,
+      MARKET_COMPARE_AUTO_SEARCH_STORAGE_KEY,
       MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY,
       MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
       MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
@@ -666,6 +692,8 @@ interface SGlobalRoot {
       setListingMetadataButtonEnabled,
       getMarketCompareEnabled,
       setMarketCompareEnabled,
+      getMarketCompareAutoSearchEnabled,
+      setMarketCompareAutoSearchEnabled,
       getMarketCompareRankingFormula,
       setMarketCompareRankingFormula,
       getMarketCompareStrictMode,

@@ -3,6 +3,7 @@ type CDepopDebugLogger = (stage: string, payload?: Record<string, unknown>) => v
 interface CMarketCompareState {
   marketCompareController: any;
   marketCompareUnsubscribe: (() => void) | null;
+  marketCompareAutoSearchRenderToken: number | null;
   latestPanelContext: {
     listing: any;
     metrics: any;
@@ -12,6 +13,7 @@ interface CMarketCompareState {
     statusMessage: string;
     currencyContext: any;
     marketCompareEnabled: boolean;
+    marketCompareAutoSearchEnabled: boolean;
     marketCompareRankingFormula: string;
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
@@ -91,6 +93,7 @@ interface CRenderPanelOptions {
     statusMessage?: string;
     currencyContext?: any;
     marketCompareEnabled?: boolean;
+    marketCompareAutoSearchEnabled?: boolean;
     marketCompareRankingFormula?: string;
     marketCompareStrictMode?: boolean;
     marketCompareResultsLimit?: number;
@@ -303,10 +306,62 @@ interface CMarketCompareGlobal {
       minScore: 0,
       rankingFormula: typeof context.marketCompareRankingFormula === "string"
         ? context.marketCompareRankingFormula
-        : "balanced",
+        : "visual",
       mlSimilarityEnabled: context.marketCompareMlSimilarityEnabled !== false,
       allowCategoryFallback: context.marketCompareStrictMode !== true
     });
+  }
+
+  function queueAutoMarketCompare(
+    state: CMarketCompareState,
+    ensureController: () => any,
+    onMarketCompareClick: () => void
+  ): void {
+    var context = state.latestPanelContext;
+    if (
+      !context ||
+      context.marketCompareEnabled === false ||
+      context.marketCompareAutoSearchEnabled !== true
+    ) {
+      return;
+    }
+
+    if (state.marketCompareAutoSearchRenderToken === context.renderToken) {
+      return;
+    }
+
+    var renderToken = context.renderToken;
+    state.marketCompareAutoSearchRenderToken = renderToken;
+
+    Promise.resolve()
+      .then(function () {
+        var latestContext = state.latestPanelContext;
+        if (
+          !latestContext ||
+          latestContext.renderToken !== renderToken ||
+          latestContext.marketCompareEnabled === false ||
+          latestContext.marketCompareAutoSearchEnabled !== true
+        ) {
+          return;
+        }
+
+        var controller = ensureController();
+        if (!controller || typeof controller.compare !== "function") {
+          return;
+        }
+
+        if (typeof controller.getState === "function") {
+          var controllerState = controller.getState();
+          if (controllerState && controllerState.status === "loading") {
+            return;
+          }
+        }
+
+        onMarketCompareClick();
+      })
+      .catch(function () {
+        // Ignore scheduling failures so rendering remains unaffected.
+      });
   }
 
   function renderPanelWithMarketCompare(options: CRenderPanelOptions | null | undefined): unknown {
@@ -331,10 +386,11 @@ interface CMarketCompareGlobal {
     }
 
     var marketCompareEnabled = panelOptions.marketCompareEnabled !== false;
+    var marketCompareAutoSearchEnabled = panelOptions.marketCompareAutoSearchEnabled === true;
     var marketCompareRankingFormula =
       typeof panelOptions.marketCompareRankingFormula === "string"
         ? panelOptions.marketCompareRankingFormula
-        : "balanced";
+        : "visual";
     var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
     var marketCompareMlSimilarityEnabled = panelOptions.marketCompareMlSimilarityEnabled !== false;
     var marketCompareDebugEnabled = panelOptions.marketCompareDebugEnabled === true;
@@ -348,6 +404,7 @@ interface CMarketCompareGlobal {
       statusMessage: panelOptions.statusMessage || "",
       currencyContext: panelOptions.currencyContext || null,
       marketCompareEnabled: marketCompareEnabled,
+      marketCompareAutoSearchEnabled: marketCompareAutoSearchEnabled,
       marketCompareRankingFormula: marketCompareRankingFormula,
       marketCompareStrictMode: marketCompareStrictMode,
       marketCompareResultsLimit:
@@ -378,6 +435,10 @@ interface CMarketCompareGlobal {
       Promise.resolve(ImageSimilarity.preloadModel()).catch(function () {
         // Keep warmup failures silent so panel rendering is unaffected.
       });
+    }
+
+    if (marketCompareEnabled && marketCompareAutoSearchEnabled) {
+      queueAutoMarketCompare(state, ensureController, onMarketCompareClick);
     }
 
     return renderListingInsightsPanel({

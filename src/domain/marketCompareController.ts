@@ -813,6 +813,7 @@ interface MCGlobalRoot {
         size: normalizeString(listing && listing.size, ""),
         category: normalizeString(listing && listing.category, ""),
         queries: queries,
+        strictMode: payload.allowCategoryFallback === false,
         listingPrice: listingPrice,
         currency: normalizeString(payload.currency, "USD"),
         limit: resultLimit
@@ -860,7 +861,7 @@ interface MCGlobalRoot {
         rate: normalizeNumber(payload.currencyRate),
         ratesByUsd: ratesByUsd,
         minScore: minScore,
-        rankingFormula: normalizeString(payload.rankingFormula, "balanced"),
+        rankingFormula: normalizeString(payload.rankingFormula, "visual"),
         mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
       };
     }
@@ -1068,7 +1069,7 @@ interface MCGlobalRoot {
           Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
             ? Math.floor(Number(payload.limit))
             : null,
-        rankingFormula: normalizeString(payload.rankingFormula, "balanced"),
+        rankingFormula: normalizeString(payload.rankingFormula, "visual"),
         strictMode: payload.allowCategoryFallback === false,
         mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
       });

@@ -226,6 +226,7 @@
     ok: true;
     requestCount: number;
     candidates: any;
+    sourceType: string;
   };
 
   type DepopAttemptResult = DepopAttemptFailure | DepopAttemptSuccess;
@@ -1213,9 +1214,23 @@
     return output;
   }
 
+  function isHrefFallbackCandidate(candidate: any) {
+    return Boolean(candidate && candidate.raw && candidate.raw.source === "href_fallback");
+  }
+
   function hasMeaningfulPrice(candidate: any) {
     var price = normalizeNumber(candidate && candidate.price);
-    return price != null && price > 0;
+    if (price == null || price <= 0) {
+      return false;
+    }
+
+    // Href fallback prices are inferred from nearby snippet text and are too
+    // noisy to surface directly without API or product-page hydration.
+    if (isHrefFallbackCandidate(candidate)) {
+      return false;
+    }
+
+    return true;
   }
 
   function hasAnyUsableCandidate(candidates: any) {
@@ -1473,7 +1488,7 @@
     runtimeSendMessage: any,
     timeoutMs: any,
     debugLogger?: DepopDebugLogger | null
-  ) {
+  ): Promise<DepopAttemptResult> {
     var debugLog = typeof debugLogger === "function" ? debugLogger : function () {};
     function buildAttemptFailure(errorCode: any, retryAfterMs: any): DepopAttemptFailure {
       return {
@@ -1488,7 +1503,8 @@
       return {
         ok: true,
         requestCount: 1,
-        candidates: candidates
+        candidates: candidates,
+        sourceType: "api"
       };
     }
 
@@ -1536,6 +1552,15 @@
       return buildAttemptFailure("PARSE_ERROR", 0);
     }
 
+    if (isBlockedHtml(text)) {
+      debugLog("provider.api_search_failure", {
+        query: normalizeString(query, ""),
+        errorCode: "FORBIDDEN_OR_BLOCKED",
+        retryAfterMs: 120000
+      });
+      return buildAttemptFailure("FORBIDDEN_OR_BLOCKED", 120000);
+    }
+
     var parsed = tryParseJsonLenient(text);
     if (!parsed) {
       // Some edge responses are HTML/challenge content even on API routes.
@@ -1548,7 +1573,13 @@
           candidateCount: htmlCandidates.length,
           topCandidate: summarizeDepopCandidate(htmlCandidates[0] || null)
         });
-        return buildAttemptSuccess(htmlCandidates);
+        var htmlSuccess: DepopAttemptSuccess = {
+          ok: true,
+          requestCount: 1,
+          candidates: htmlCandidates,
+          sourceType: "html"
+        };
+        return htmlSuccess;
       }
 
       debugLog("provider.api_search_failure", {
@@ -1979,8 +2010,1153 @@
     function keepUsableCandidates(candidates: any) {
       return (Array.isArray(candidates) ? candidates : []).filter(function (candidate: any) {
         var price = normalizeNumber(candidate && candidate.price);
-        return price == null || price > 0;
+        if (price == null) {
+          return true;
+        }
+
+        if (hasMeaningfulPrice(candidate)) {
+          return true;
+        }
+
+        // Keep href fallback candidates in the internal pool so pass-two
+        // enrichment can upgrade them, but never trust their inferred price
+        // enough to surface them directly.
+        return isHrefFallbackCandidate(candidate);
       });
+    }
+
+    function canonicalizeCandidateUrl(value: any) {
+      var normalizedUrl = normalizeUrlString(value);
+      if (!normalizedUrl) {
+        return "";
+      }
+
+      try {
+        var parsed = new URL(normalizedUrl);
+        parsed.hash = "";
+        parsed.search = "";
+        var pathname = parsed.pathname.replace(/\/+$/, "");
+        parsed.pathname = pathname || "/";
+        return parsed.toString();
+      } catch (_) {
+        var strippedHash = normalizedUrl.split("#")[0] || "";
+        var strippedQuery = strippedHash.split("?")[0] || "";
+        return strippedQuery.replace(/\/+$/, "") || strippedQuery;
+      }
+    }
+
+    function getCandidateSlugValue(candidate: any) {
+      var normalizedUrl = canonicalizeCandidateUrl(candidate && candidate.url);
+      if (normalizedUrl) {
+        var fromUrl = normalizeSlugToken(normalizedUrl.split("/").filter(Boolean).pop());
+        if (fromUrl) {
+          return fromUrl;
+        }
+      }
+
+      return normalizeSlugToken(candidate && candidate.id);
+    }
+
+    function buildCanonicalCandidateKey(candidate: any) {
+      var normalizedId = normalizeString(candidate && candidate.id, "");
+      if (normalizedId) {
+        return "id:" + normalizedId.toLowerCase();
+      }
+
+      var normalizedUrl = canonicalizeCandidateUrl(candidate && candidate.url);
+      if (normalizedUrl) {
+        return "url:" + normalizedUrl.toLowerCase();
+      }
+
+      var normalizedSlug = getCandidateSlugValue(candidate);
+      if (normalizedSlug) {
+        return "slug:" + normalizedSlug;
+      }
+
+      return "";
+    }
+
+    function buildCanonicalCandidateKeys(candidate: any) {
+      var keys: string[] = [];
+      var primaryKey = buildCanonicalCandidateKey(candidate);
+      var normalizedUrl = canonicalizeCandidateUrl(candidate && candidate.url);
+      var normalizedSlug = getCandidateSlugValue(candidate);
+      var normalizedId = normalizeString(candidate && candidate.id, "");
+
+      if (primaryKey) {
+        keys.push(primaryKey);
+      }
+      if (normalizedUrl) {
+        keys.push("url:" + normalizedUrl.toLowerCase());
+      }
+      if (normalizedSlug) {
+        keys.push("slug:" + normalizedSlug);
+      }
+      if (normalizedId) {
+        keys.push("id:" + normalizedId.toLowerCase());
+      }
+
+      return keys.filter(function (key: any, index: any, list: any) {
+        return key && list.indexOf(key) === index;
+      });
+    }
+
+    function getCanonicalKeyPriority(key: any) {
+      var normalizedKey = normalizeString(key, "");
+      if (!normalizedKey) {
+        return 0;
+      }
+      if (normalizedKey.indexOf("id:") === 0) {
+        return 3;
+      }
+      if (normalizedKey.indexOf("url:") === 0) {
+        return 2;
+      }
+      if (normalizedKey.indexOf("slug:") === 0) {
+        return 1;
+      }
+      return 0;
+    }
+
+    function choosePreferredCanonicalKey(existingKey: any, incomingKeys: any) {
+      var keys = Array.isArray(incomingKeys) ? incomingKeys.filter(Boolean) : [];
+      var preferredKey = normalizeString(existingKey, "");
+      var preferredPriority = getCanonicalKeyPriority(preferredKey);
+
+      keys.forEach(function (key: any) {
+        var priority = getCanonicalKeyPriority(key);
+        if (priority > preferredPriority) {
+          preferredKey = key;
+          preferredPriority = priority;
+        }
+      });
+
+      if (preferredKey) {
+        return preferredKey;
+      }
+      return keys.length ? keys[0] : "";
+    }
+
+    function buildUrlTitleHint(url: any) {
+      var normalizedUrl = canonicalizeCandidateUrl(url);
+      if (!normalizedUrl) {
+        return "";
+      }
+
+      var slug = normalizedUrl.split("/").filter(Boolean).pop() || "";
+      if (!slug) {
+        return "";
+      }
+
+      return slug.replace(/-/g, " ").trim();
+    }
+
+    function tokenizeScoreText(value: any) {
+      var normalized = normalizeString(value, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!normalized) {
+        return [];
+      }
+
+      return normalized
+        .split(" ")
+        .filter(Boolean)
+        .filter(function (token: any) {
+          return token.length > 1;
+        });
+    }
+
+    function computeTokenOverlapScore(leftValue: any, rightValue: any) {
+      var leftTokens = tokenizeScoreText(leftValue);
+      var rightTokens = tokenizeScoreText(rightValue);
+      if (!leftTokens.length || !rightTokens.length) {
+        return 0;
+      }
+
+      var rightSet = Object.create(null);
+      var overlap = 0;
+      var i;
+      for (i = 0; i < rightTokens.length; i += 1) {
+        rightSet[rightTokens[i]] = true;
+      }
+
+      for (i = 0; i < leftTokens.length; i += 1) {
+        if (rightSet[leftTokens[i]]) {
+          overlap += 1;
+        }
+      }
+
+      var denominator = Math.max(leftTokens.length, rightTokens.length);
+      if (!denominator) {
+        return 0;
+      }
+
+      return Math.max(0, Math.min(100, Math.round((overlap / denominator) * 100)));
+    }
+
+    function getQueryPriority(index: any) {
+      var normalizedIndex = Number.isFinite(Number(index)) ? Number(index) : 99;
+      if (normalizedIndex <= 0) {
+        return 4;
+      }
+      if (normalizedIndex === 1) {
+        return 3;
+      }
+      if (normalizedIndex === 2) {
+        return 2;
+      }
+      return 1;
+    }
+
+    function getSourcePriority(sourceType: any) {
+      var normalizedSourceType = normalizeString(sourceType, "");
+      if (normalizedSourceType === "api") {
+        return 4;
+      }
+      if (normalizedSourceType === "enriched") {
+        return 3;
+      }
+      if (normalizedSourceType === "html") {
+        return 2;
+      }
+      if (normalizedSourceType === "href_fallback") {
+        return 1;
+      }
+      return 0;
+    }
+
+    function getSourceBonus(sourceType: any) {
+      var normalizedSourceType = normalizeString(sourceType, "");
+      if (normalizedSourceType === "api") {
+        return 3;
+      }
+      if (normalizedSourceType === "enriched") {
+        return 2;
+      }
+      if (normalizedSourceType === "href_fallback") {
+        return -2;
+      }
+      return 0;
+    }
+
+    function getTitleQuality(candidate: any) {
+      var title = normalizeString(candidate && candidate.title, "");
+      if (!title || title.toLowerCase() === "untitled") {
+        return 0;
+      }
+
+      var normalizedTitle = title.toLowerCase();
+      if (normalizedTitle === "price") {
+        return 0;
+      }
+
+      var urlHint = buildUrlTitleHint(candidate && candidate.url).toLowerCase();
+      if (urlHint && normalizedTitle === urlHint) {
+        return 1;
+      }
+
+      return 2;
+    }
+
+    function getRawQuality(raw: any) {
+      if (!raw || typeof raw !== "object") {
+        return 0;
+      }
+
+      try {
+        return JSON.stringify(raw).length;
+      } catch (_) {
+        return 1;
+      }
+    }
+
+    function computeCompletenessScore(candidate: any, sourceType: any) {
+      var score = 0;
+      var candidatePrice = normalizeNumber(candidate && candidate.price);
+      if (normalizeString(candidate && candidate.id, "")) {
+        score += 4;
+      }
+      if (canonicalizeCandidateUrl(candidate && candidate.url)) {
+        score += 2;
+      }
+      if (candidatePrice != null && candidatePrice > 0) {
+        score += 3;
+      }
+      if (normalizeUrlString(candidate && candidate.imageUrl)) {
+        score += 3;
+      }
+      if (getTitleQuality(candidate) > 0) {
+        score += 2;
+      }
+      if (normalizeString(candidate && candidate.currency, "")) {
+        score += 2;
+      }
+      if (normalizeString(candidate && candidate.size, "")) {
+        score += 1;
+      }
+
+      return score + getSourceBonus(sourceType);
+    }
+
+    function copyArrayUnique(list: any, value: any) {
+      var output = Array.isArray(list) ? list.slice() : [];
+      if (output.indexOf(value) === -1) {
+        output.push(value);
+      }
+      return output;
+    }
+
+    function mergeRawMetadata(existingRaw: any, incomingRaw: any) {
+      if (!existingRaw) {
+        return incomingRaw || null;
+      }
+      if (!incomingRaw) {
+        return existingRaw;
+      }
+
+      if (
+        existingRaw &&
+        incomingRaw &&
+        typeof existingRaw === "object" &&
+        typeof incomingRaw === "object" &&
+        !Array.isArray(existingRaw) &&
+        !Array.isArray(incomingRaw)
+      ) {
+        return Object.assign({}, existingRaw, incomingRaw);
+      }
+
+      return getRawQuality(incomingRaw) >= getRawQuality(existingRaw) ? incomingRaw : existingRaw;
+    }
+
+    function choosePreferredTitle(existingCandidate: any, incomingCandidate: any, existingSourcePriority: any, incomingSourcePriority: any) {
+      var existingQuality = getTitleQuality(existingCandidate);
+      var incomingQuality = getTitleQuality(incomingCandidate);
+      if (incomingQuality > existingQuality) {
+        return normalizeString(incomingCandidate && incomingCandidate.title, "");
+      }
+      if (
+        incomingQuality === existingQuality &&
+        incomingQuality > 0 &&
+        incomingSourcePriority > existingSourcePriority
+      ) {
+        return normalizeString(incomingCandidate && incomingCandidate.title, "");
+      }
+      return normalizeString(existingCandidate && existingCandidate.title, "");
+    }
+
+    function createCanonicalCandidateRecord(candidate: any, metadata: any) {
+      var sourceType = normalizeString(metadata && metadata.sourceType, "") || "html";
+      var queryIndex = Number.isFinite(Number(metadata && metadata.queryIndex)) ? Number(metadata.queryIndex) : 99;
+      var aliases = buildCanonicalCandidateKeys(candidate);
+      return {
+        key: choosePreferredCanonicalKey("", aliases),
+        aliases: aliases,
+        candidate: applyImageUrlCache(Object.assign({}, candidate)),
+        queryIndices: [queryIndex],
+        sourceTypes: [sourceType],
+        sourcePriority: getSourcePriority(sourceType),
+        completenessScore: computeCompletenessScore(candidate, sourceType),
+        titleQuality: getTitleQuality(candidate),
+        rawQuality: getRawQuality(candidate && candidate.raw),
+        bestQueryIndex: queryIndex,
+        enrichmentAttempted: false
+      };
+    }
+
+    function mergeCanonicalCandidateRecord(existingRecord: any, incomingCandidate: any, metadata: any) {
+      var existing = existingRecord && typeof existingRecord === "object" ? existingRecord : null;
+      if (!existing) {
+        return createCanonicalCandidateRecord(incomingCandidate, metadata);
+      }
+
+      var sourceType = normalizeString(metadata && metadata.sourceType, "") || "html";
+      var incomingSourcePriority = getSourcePriority(sourceType);
+      var queryIndex = Number.isFinite(Number(metadata && metadata.queryIndex)) ? Number(metadata.queryIndex) : 99;
+      var mergedCandidate = Object.assign({}, existing.candidate || {});
+      var incoming = applyImageUrlCache(Object.assign({}, incomingCandidate));
+      var incomingAliases = buildCanonicalCandidateKeys(incoming);
+
+      var existingPrice = normalizeNumber(mergedCandidate.price);
+      var incomingPrice = normalizeNumber(incoming.price);
+      if (
+        incomingPrice != null &&
+        incomingPrice > 0 &&
+        (existingPrice == null || existingPrice <= 0 || incomingSourcePriority > existing.sourcePriority)
+      ) {
+        mergedCandidate.price = incomingPrice;
+        if (normalizeString(incoming.currency, "")) {
+          mergedCandidate.currency = incoming.currency;
+        }
+      } else if (!normalizeString(mergedCandidate.currency, "") && normalizeString(incoming.currency, "")) {
+        mergedCandidate.currency = incoming.currency;
+      }
+
+      var existingImageUrl = normalizeUrlString(mergedCandidate.imageUrl);
+      var incomingImageUrl = normalizeUrlString(incoming.imageUrl);
+      if (
+        incomingImageUrl &&
+        (!existingImageUrl || incomingSourcePriority > existing.sourcePriority)
+      ) {
+        mergedCandidate.imageUrl = incomingImageUrl;
+      }
+
+      var preferredTitle = choosePreferredTitle(
+        mergedCandidate,
+        incoming,
+        existing.sourcePriority,
+        incomingSourcePriority
+      );
+      if (preferredTitle) {
+        mergedCandidate.title = preferredTitle;
+      }
+
+      if (
+        normalizeString(incoming.id, "") &&
+        (!normalizeString(mergedCandidate.id, "") || incomingSourcePriority > existing.sourcePriority)
+      ) {
+        mergedCandidate.id = incoming.id;
+      }
+      if (
+        canonicalizeCandidateUrl(incoming.url) &&
+        (!canonicalizeCandidateUrl(mergedCandidate.url) || incomingSourcePriority > existing.sourcePriority)
+      ) {
+        mergedCandidate.url = incoming.url;
+      }
+      if (normalizeString(incoming.market, "")) {
+        mergedCandidate.market = incoming.market;
+      }
+
+      mergedCandidate.raw = mergeRawMetadata(mergedCandidate.raw, incoming.raw);
+
+      return {
+        key: choosePreferredCanonicalKey(existing.key, (existing.aliases || []).concat(incomingAliases)),
+        aliases: (existing.aliases || []).concat(incomingAliases).filter(function (key: any, index: any, list: any) {
+          return key && list.indexOf(key) === index;
+        }),
+        candidate: mergedCandidate,
+        queryIndices: copyArrayUnique(existing.queryIndices, queryIndex),
+        sourceTypes: copyArrayUnique(existing.sourceTypes, sourceType),
+        sourcePriority: Math.max(existing.sourcePriority || 0, incomingSourcePriority),
+        completenessScore: Math.max(
+          computeCompletenessScore(mergedCandidate, sourceType),
+          existing.completenessScore || 0
+        ),
+        titleQuality: Math.max(existing.titleQuality || 0, getTitleQuality(mergedCandidate)),
+        rawQuality: Math.max(existing.rawQuality || 0, getRawQuality(mergedCandidate.raw)),
+        bestQueryIndex: Math.min(existing.bestQueryIndex, queryIndex),
+        enrichmentAttempted: Boolean(existing.enrichmentAttempted)
+      };
+    }
+
+    function getPreferredRecordSourceType(record: any) {
+      var sourceTypes = Array.isArray(record && record.sourceTypes) ? record.sourceTypes.slice() : [];
+      sourceTypes.sort(function (left: any, right: any) {
+        return getSourcePriority(right) - getSourcePriority(left);
+      });
+      return sourceTypes.length ? sourceTypes[0] : "html";
+    }
+
+    function mergeCanonicalRecords(existingRecord: any, incomingRecord: any) {
+      if (!existingRecord) {
+        return incomingRecord;
+      }
+      if (!incomingRecord) {
+        return existingRecord;
+      }
+      if (existingRecord === incomingRecord) {
+        return existingRecord;
+      }
+
+      var merged = mergeCanonicalCandidateRecord(existingRecord, incomingRecord.candidate, {
+        queryIndex: incomingRecord.bestQueryIndex,
+        sourceType: getPreferredRecordSourceType(incomingRecord)
+      });
+
+      merged.queryIndices = (existingRecord.queryIndices || []).concat(incomingRecord.queryIndices || []).filter(function (value: any, index: any, list: any) {
+        return list.indexOf(value) === index;
+      });
+      merged.sourceTypes = (existingRecord.sourceTypes || []).concat(incomingRecord.sourceTypes || []).filter(function (value: any, index: any, list: any) {
+        return list.indexOf(value) === index;
+      });
+      merged.aliases = (existingRecord.aliases || []).concat(incomingRecord.aliases || []).filter(function (value: any, index: any, list: any) {
+        return value && list.indexOf(value) === index;
+      });
+      merged.key = choosePreferredCanonicalKey(merged.key, merged.aliases);
+      merged.sourcePriority = Math.max(existingRecord.sourcePriority || 0, incomingRecord.sourcePriority || 0);
+      merged.completenessScore = Math.max(existingRecord.completenessScore || 0, incomingRecord.completenessScore || 0, merged.completenessScore || 0);
+      merged.titleQuality = Math.max(existingRecord.titleQuality || 0, incomingRecord.titleQuality || 0, merged.titleQuality || 0);
+      merged.rawQuality = Math.max(existingRecord.rawQuality || 0, incomingRecord.rawQuality || 0, merged.rawQuality || 0);
+      merged.bestQueryIndex = Math.min(
+        Number.isFinite(Number(existingRecord.bestQueryIndex)) ? Number(existingRecord.bestQueryIndex) : 99,
+        Number.isFinite(Number(incomingRecord.bestQueryIndex)) ? Number(incomingRecord.bestQueryIndex) : 99
+      );
+      merged.enrichmentAttempted = Boolean(existingRecord.enrichmentAttempted || incomingRecord.enrichmentAttempted);
+      return merged;
+    }
+
+    function mergeCandidatesIntoCanonicalMap(canonicalByKey: any, candidates: any, metadata: any) {
+      var map = canonicalByKey instanceof Map ? canonicalByKey : new Map();
+      (Array.isArray(candidates) ? candidates : []).forEach(function (candidate: any) {
+        var normalizedCandidate = candidate && typeof candidate === "object" ? candidate : null;
+        if (!normalizedCandidate) {
+          return;
+        }
+
+        var sourceType = normalizeString(metadata && metadata.sourceType, "");
+        if (sourceType === "html" && isHrefFallbackCandidate(normalizedCandidate)) {
+          sourceType = "href_fallback";
+        }
+
+        var keys = buildCanonicalCandidateKeys(normalizedCandidate);
+        if (!keys.length) {
+          return;
+        }
+
+        var matchedRecords: any[] = [];
+        keys.forEach(function (key: any) {
+          var existingRecord = map.get(key);
+          if (existingRecord && matchedRecords.indexOf(existingRecord) === -1) {
+            matchedRecords.push(existingRecord);
+          }
+        });
+
+        var mergedRecord = matchedRecords.length ? matchedRecords[0] : null;
+        for (var i = 1; i < matchedRecords.length; i += 1) {
+          mergedRecord = mergeCanonicalRecords(mergedRecord, matchedRecords[i]);
+        }
+
+        mergedRecord = mergeCanonicalCandidateRecord(mergedRecord, normalizedCandidate, {
+          queryIndex: metadata && metadata.queryIndex,
+          sourceType: sourceType || "html"
+        });
+
+        mergedRecord.aliases = (mergedRecord.aliases || []).concat(keys).filter(function (key: any, index: any, list: any) {
+          return key && list.indexOf(key) === index;
+        });
+        mergedRecord.key = choosePreferredCanonicalKey(mergedRecord.key, mergedRecord.aliases);
+
+        mergedRecord.aliases.forEach(function (key: any) {
+          map.set(key, mergedRecord);
+        });
+      });
+      return map;
+    }
+
+    function listCanonicalRecords(canonicalByKey: any) {
+      var map = canonicalByKey instanceof Map ? canonicalByKey : new Map();
+      var seenKeys = Object.create(null);
+      return Array.from(map.values()).filter(function (record: any) {
+        var key = normalizeString(record && record.key, "");
+        if (!key) {
+          return false;
+        }
+        if (seenKeys[key]) {
+          return false;
+        }
+        seenKeys[key] = true;
+        return true;
+      });
+    }
+
+    function listCanonicalCandidates(canonicalByKey: any) {
+      return listCanonicalRecords(canonicalByKey).map(function (record: any) {
+        return record.candidate;
+      });
+    }
+
+    function summarizeCanonicalMap(canonicalByKey: any) {
+      var records = listCanonicalRecords(canonicalByKey).slice().sort(function (left: any, right: any) {
+        if ((left.bestQueryIndex || 99) !== (right.bestQueryIndex || 99)) {
+          return (left.bestQueryIndex || 99) - (right.bestQueryIndex || 99);
+        }
+        return (right.completenessScore || 0) - (left.completenessScore || 0);
+      });
+      var candidates = records.map(function (record: any) {
+        return record.candidate;
+      });
+      return Object.assign({
+        canonicalCandidateCount: records.length,
+        withImageCount: candidates.filter(function (candidate: any) {
+          return Boolean(normalizeUrlString(candidate && candidate.imageUrl));
+        }).length
+      }, summarizeCandidateList(candidates));
+    }
+
+    function isTerminalErrorCode(errorCode: any) {
+      return errorCode === "FORBIDDEN_OR_BLOCKED" || errorCode === "RATE_LIMITED";
+    }
+
+    function hasPositivePriceAndImage(candidate: any) {
+      var candidatePrice = normalizeNumber(candidate && candidate.price);
+      return Boolean(
+        candidate &&
+        candidatePrice != null &&
+        candidatePrice > 0 &&
+        normalizeUrlString(candidate.imageUrl)
+      );
+    }
+
+    function computePricePlausibility(candidate: any, listingPrice: any) {
+      var candidatePrice = normalizeNumber(candidate && candidate.price);
+      var baseline = normalizeNumber(listingPrice);
+      if (candidatePrice == null || candidatePrice <= 0 || baseline == null || baseline <= 0) {
+        return 0;
+      }
+
+      var ratio = candidatePrice / baseline;
+      if (ratio >= 0.5 && ratio <= 1.5) {
+        return 15;
+      }
+      if (ratio >= 0.25 && ratio <= 2.25) {
+        return 8;
+      }
+      return 0;
+    }
+
+    function computeRetrievalPreRank(record: any, payload: any) {
+      var candidate = record && record.candidate ? record.candidate : {};
+      var listingTitle = normalizeString(payload && payload.title, "");
+      var candidateTitle = normalizeString(candidate.title, "");
+      var titleHint = buildUrlTitleHint(candidate.url);
+      var titleScore = Math.max(
+        computeTokenOverlapScore(listingTitle, candidateTitle),
+        computeTokenOverlapScore(listingTitle, titleHint),
+        computeTokenOverlapScore(listingTitle, candidateTitle + " " + titleHint)
+      );
+      var queryPriorityScore = getQueryPriority(record && record.bestQueryIndex) * 20;
+      var completenessScore = Math.max(0, record && record.completenessScore || 0) * 2;
+      var imageBonus = normalizeUrlString(candidate.imageUrl) ? 10 : 0;
+      return queryPriorityScore + titleScore + completenessScore + imageBonus + computePricePlausibility(candidate, payload && payload.listingPrice);
+    }
+
+    function shouldCandidateBeEnriched(record: any) {
+      var candidate = record && record.candidate ? record.candidate : {};
+      var hasTitle = getTitleQuality(candidate) > 1;
+      var candidatePrice = normalizeNumber(candidate.price);
+      var hasPrice = candidatePrice != null && candidatePrice > 0;
+      var hasImage = Boolean(normalizeUrlString(candidate.imageUrl));
+      return Boolean(canonicalizeCandidateUrl(candidate.url)) && (!hasTitle || !hasPrice || !hasImage);
+    }
+
+    function selectEnrichmentTarget(canonicalByKey: any, payload: any) {
+      var records = listCanonicalRecords(canonicalByKey)
+        .filter(function (record: any) {
+          return !record.enrichmentAttempted && shouldCandidateBeEnriched(record);
+        })
+        .map(function (record: any) {
+          return {
+            record: record,
+            score: computeRetrievalPreRank(record, payload)
+          };
+        })
+        .filter(function (entry: any) {
+          return entry.score >= 70;
+        })
+        .sort(function (left: any, right: any) {
+          if (right.score !== left.score) {
+            return right.score - left.score;
+          }
+          return (left.record.bestQueryIndex || 99) - (right.record.bestQueryIndex || 99);
+        });
+
+      return records.length ? records[0].record : null;
+    }
+
+    function hasStrongCanonicalCandidateForQuery(canonicalByKey: any, queryIndex: any) {
+      return listCanonicalRecords(canonicalByKey).some(function (record: any) {
+        return (
+          Array.isArray(record && record.queryIndices) &&
+          record.queryIndices.indexOf(queryIndex) !== -1 &&
+          hasPositivePriceAndImage(record.candidate)
+        );
+      });
+    }
+
+    function filterFinalProviderCandidates(canonicalByKey: any) {
+      return listCanonicalRecords(canonicalByKey)
+        .filter(function (record: any) {
+          var candidate = record && record.candidate ? record.candidate : null;
+          var sourceTypes = Array.isArray(record && record.sourceTypes) ? record.sourceTypes : [];
+          var hasTrustedSource = sourceTypes.some(function (sourceType: any) {
+            return normalizeString(sourceType, "") !== "href_fallback";
+          });
+          var id = normalizeString(candidate && candidate.id, "");
+          var url = canonicalizeCandidateUrl(candidate && candidate.url);
+          var price = normalizeNumber(candidate && candidate.price);
+          return Boolean(hasTrustedSource && id && url && price != null && price > 0);
+        })
+        .map(function (record: any) {
+          return record.candidate;
+        });
+    }
+
+    function buildQueryExecutionPlan(queries: any) {
+      var list = Array.isArray(queries) ? queries.filter(Boolean) : [];
+      var plan: Array<{ query: string; index: number }> = [];
+      var seen = Object.create(null);
+      var i;
+
+      function appendIndex(index: any) {
+        if (!Number.isFinite(index) || index < 0 || index >= list.length || seen[index]) {
+          return;
+        }
+
+        seen[index] = true;
+        plan.push({
+          query: list[index],
+          index: index
+        });
+      }
+
+      for (i = 0; i < list.length; i += 1) {
+        appendIndex(i);
+      }
+      return plan;
+    }
+
+    function createEmptyQuerySnapshot(planEntry: any): {
+      query: string;
+      index: number;
+      url: string;
+      htmlFetched: boolean;
+      htmlOk: boolean;
+      status: number;
+      loadingShell: boolean;
+      onlyHrefFallback: boolean;
+      parserMismatchLikely: boolean;
+      sawNoResults: boolean;
+      sawNetworkError: boolean;
+      candidates: any[];
+      candidatesWithPrice: any[];
+      apiAttempted: boolean;
+      htmlAttemptedInPass2: boolean;
+    } {
+      var entry = planEntry && typeof planEntry === "object" ? planEntry : {};
+      return {
+        query: normalizeString(entry.query, ""),
+        index: Number.isFinite(Number(entry.index)) ? Number(entry.index) : 99,
+        url: "",
+        htmlFetched: false,
+        htmlOk: false,
+        status: 0,
+        loadingShell: false,
+        onlyHrefFallback: false,
+        parserMismatchLikely: false,
+        sawNoResults: false,
+        sawNetworkError: false,
+        candidates: [],
+        candidatesWithPrice: [],
+        apiAttempted: false,
+        htmlAttemptedInPass2: false
+      };
+    }
+
+    function executeHtmlOnlyQuerySearch(planEntry: any, payload: any, state: any) {
+      return (async function () {
+        var snapshot = createEmptyQuerySnapshot(planEntry);
+        var nextState = {
+          requestTotal: normalizeNumber(state && state.requestTotal) || 0,
+          partial: Boolean(state && state.partial),
+          blockedFallbackAttempted: Boolean(state && state.blockedFallbackAttempted),
+          sawNoResults: false,
+          sawNetworkError: false,
+          response: null as ReturnType<typeof buildSearchFailure> | null,
+          snapshot: snapshot
+        };
+        var fallbackQuery = normalizeString(state && state.fallbackQuery, "");
+        var url = "https://www.depop.com/search/?q=" + encodeURIComponent(snapshot.query);
+        snapshot.url = url;
+        debugLog("provider.query_start", {
+          query: snapshot.query,
+          url: url,
+          requestTotal: nextState.requestTotal,
+          maxRequests: maxRequests
+        });
+
+        var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
+        snapshot.htmlFetched = true;
+        snapshot.htmlOk = Boolean(fetched && fetched.ok);
+        snapshot.status = Number(fetched && fetched.status) || 0;
+        debugLog("provider.html_fetch_result", {
+          query: snapshot.query,
+          url: url,
+          ok: snapshot.htmlOk,
+          status: snapshot.status,
+          transport: normalizeString(fetched && fetched.source, ""),
+          textLength: normalizeString(fetched && fetched.text, "").length
+        });
+
+        nextState.requestTotal += 1;
+
+        if (!snapshot.htmlOk && snapshot.status === 0) {
+          snapshot.sawNetworkError = true;
+          nextState.sawNetworkError = true;
+          nextState.partial = true;
+          debugLog("provider.query_network_error", {
+            query: snapshot.query
+          });
+          debugLog("provider.pass1_html_snapshot", {
+            query: snapshot.query,
+            index: snapshot.index,
+            htmlOk: snapshot.htmlOk,
+            status: snapshot.status,
+            loadingShell: snapshot.loadingShell,
+            onlyHrefFallback: snapshot.onlyHrefFallback
+          });
+          return nextState;
+        }
+
+        if (!snapshot.htmlOk) {
+          var mapped = mapHttpError(snapshot.status);
+          if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+            if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !nextState.blockedFallbackAttempted) {
+              nextState.blockedFallbackAttempted = true;
+              var fallbackAttempt = await trySingleQueryFallback(
+                fetchImpl,
+                runtimeSendMessage,
+                fallbackQuery,
+                cooldownMs,
+                fetchTimeoutMs,
+                debugLog
+              );
+              nextState.requestTotal += fallbackAttempt.requestCount || 0;
+
+	              if (fallbackAttempt.ok) {
+	                snapshot.candidates = keepUsableCandidates(fallbackAttempt.candidates || []);
+	                snapshot.candidatesWithPrice = snapshot.candidates.filter(function (candidate: any) {
+	                  var candidatePrice = normalizeNumber(candidate && candidate.price);
+	                  return candidatePrice != null && candidatePrice > 0;
+	                });
+                debugLog("provider.pass1_html_snapshot", Object.assign({
+                  query: snapshot.query,
+                  index: snapshot.index,
+                  via: "single_query_fallback"
+                }, summarizeCandidateList(snapshot.candidates)));
+                return nextState;
+              }
+
+              nextState.response = buildSearchFailure(
+                fallbackAttempt.errorCode || mapped.errorCode,
+                normalizeNumber(fallbackAttempt.retryAfterMs) || mapped.retryAfterMs,
+                true,
+                "html"
+              );
+              return nextState;
+            }
+
+            debugLog("provider.query_terminal_http_error", {
+              query: snapshot.query,
+              errorCode: mapped.errorCode,
+              retryAfterMs: mapped.retryAfterMs
+            });
+            nextState.response = buildSearchFailure(mapped.errorCode, mapped.retryAfterMs, nextState.partial, "html");
+            return nextState;
+          }
+
+          nextState.partial = true;
+          debugLog("provider.query_http_error_partial", {
+            query: snapshot.query,
+            status: snapshot.status
+          });
+          debugLog("provider.pass1_html_snapshot", {
+            query: snapshot.query,
+            index: snapshot.index,
+            htmlOk: snapshot.htmlOk,
+            status: snapshot.status,
+            loadingShell: snapshot.loadingShell,
+            onlyHrefFallback: snapshot.onlyHrefFallback
+          });
+          return nextState;
+        }
+
+        var html = normalizeString(fetched && fetched.text, "");
+        if (!html) {
+          nextState.partial = true;
+          debugLog("provider.pass1_html_snapshot", {
+            query: snapshot.query,
+            index: snapshot.index,
+            htmlOk: snapshot.htmlOk,
+            status: snapshot.status,
+            loadingShell: snapshot.loadingShell,
+            onlyHrefFallback: snapshot.onlyHrefFallback
+          });
+          return nextState;
+        }
+
+        if (isBlockedHtml(html)) {
+          debugLog("provider.blocked_html_detected", {
+            query: snapshot.query
+          });
+          nextState.response = buildSearchFailure("FORBIDDEN_OR_BLOCKED", 120000, nextState.partial, "html");
+          return nextState;
+        }
+
+        var candidateState = parseHtmlCandidateState(html, normalizeAndHydrateCandidates);
+        snapshot.loadingShell = isLikelyLoadingShellHtml(html);
+        snapshot.parserMismatchLikely = Boolean(candidateState && candidateState.parsed && candidateState.parsed.parserMismatchLikely);
+        snapshot.onlyHrefFallback =
+          Array.isArray(candidateState.candidates) &&
+          candidateState.candidates.length > 0 &&
+          candidateState.candidates.every(isHrefFallbackCandidate);
+	        snapshot.candidates = keepUsableCandidates(candidateState.candidates || []);
+	        snapshot.candidatesWithPrice = (candidateState.candidatesWithPrice || []).filter(function (candidate: any) {
+	          var candidatePrice = normalizeNumber(candidate && candidate.price);
+	          return candidatePrice != null && candidatePrice > 0;
+	        });
+        snapshot.sawNoResults =
+          !snapshot.candidates.length &&
+          !hasAnyUsableCandidate(candidateState.candidates || []) &&
+          shouldReturnNoResults(html);
+        nextState.sawNoResults = snapshot.sawNoResults;
+        nextState.partial = nextState.partial || snapshot.loadingShell;
+
+        debugLog("provider.pass1_html_snapshot", Object.assign({
+          query: snapshot.query,
+          index: snapshot.index,
+          loadingShell: snapshot.loadingShell,
+          onlyHrefFallback: snapshot.onlyHrefFallback,
+          sawNoResults: snapshot.sawNoResults
+        }, summarizeCandidateList(snapshot.candidates)));
+        return nextState;
+      })();
+    }
+
+    function shouldAttemptExactQueryApi(snapshot: any, canonicalByKey: any) {
+      if (!snapshot || snapshot.apiAttempted) {
+        return false;
+      }
+
+      if (!snapshot.htmlFetched || !snapshot.htmlOk) {
+        return true;
+      }
+
+      if (snapshot.loadingShell || snapshot.onlyHrefFallback) {
+        return true;
+      }
+
+      if (!Array.isArray(snapshot.candidates) || !snapshot.candidates.length) {
+        return true;
+      }
+
+      return !hasStrongCanonicalCandidateForQuery(canonicalByKey, snapshot.index);
+    }
+
+    function selectNextUnfetchedQuery(queryPlan: any, snapshotsByIndex: any) {
+      var list = Array.isArray(queryPlan) ? queryPlan : [];
+      for (var i = 0; i < list.length; i += 1) {
+        var snapshot = snapshotsByIndex[list[i].index];
+        if (!snapshot || !snapshot.htmlFetched) {
+          return list[i];
+        }
+      }
+      return null;
+    }
+
+    function selectNextApiFallbackQuery(queryPlan: any, snapshotsByIndex: any, canonicalByKey: any) {
+      var list = Array.isArray(queryPlan) ? queryPlan : [];
+      for (var i = 0; i < list.length; i += 1) {
+        var planEntry = list[i];
+        var snapshot = snapshotsByIndex[planEntry.index];
+        if (!snapshot || !snapshot.htmlFetched || snapshot.apiAttempted) {
+          continue;
+        }
+
+        if (
+          snapshot.loadingShell ||
+          !snapshot.htmlOk ||
+          snapshot.onlyHrefFallback ||
+          !Array.isArray(snapshot.candidates) ||
+          !snapshot.candidates.length ||
+          !hasStrongCanonicalCandidateForQuery(canonicalByKey, snapshot.index)
+        ) {
+          return planEntry;
+        }
+      }
+      return null;
+    }
+
+    function selectNextFollowupAction(options: any) {
+      var config = options && typeof options === "object" ? options : {};
+      var exactSnapshot = config.exactSnapshot || null;
+      var canonicalByKey = config.canonicalByKey;
+      var payload = config.payload;
+      var queryPlan = config.queryPlan;
+      var snapshotsByIndex = config.snapshotsByIndex || {};
+
+      if (shouldAttemptExactQueryApi(exactSnapshot, canonicalByKey)) {
+        return {
+          type: "query_api",
+          planEntry: exactSnapshot
+        };
+      }
+
+      var enrichmentTarget = selectEnrichmentTarget(canonicalByKey, payload);
+      if (enrichmentTarget) {
+        return {
+          type: "candidate_enrich",
+          record: enrichmentTarget
+        };
+      }
+
+      var nextUnfetchedQuery = selectNextUnfetchedQuery(queryPlan, snapshotsByIndex);
+      if (nextUnfetchedQuery) {
+        return {
+          type: "query_html",
+          planEntry: nextUnfetchedQuery
+        };
+      }
+
+      var nextApiQuery = selectNextApiFallbackQuery(queryPlan, snapshotsByIndex, canonicalByKey);
+      if (nextApiQuery) {
+        return {
+          type: "query_api",
+          planEntry: nextApiQuery
+        };
+      }
+
+      return null;
+    }
+
+    async function executeApiOnlySearch(payload: any, queries: any) {
+      var queryPlan = buildQueryExecutionPlan(queries);
+      var canonicalByKey = new Map();
+      var requestTotal = 0;
+      var partial = false;
+      var queriesTried = 0;
+      var sawNoResults = false;
+      var sawNetworkError = false;
+      var sourceType = "api";
+
+      debugLog("provider.api_only_query_plan", {
+        queries: queryPlan.map(function (entry: any) {
+          return {
+            query: entry.query,
+            index: entry.index,
+            priority: getQueryPriority(entry.index)
+          };
+        }),
+        totalQueries: queryPlan.length
+      });
+
+      for (var i = 0; i < queryPlan.length && requestTotal < maxRequests; i += 1) {
+        var planEntry = queryPlan[i];
+        queriesTried += 1;
+
+        debugLog("provider.pass2_action_selected", {
+          action: "query_api",
+          query: planEntry.query,
+          index: planEntry.index,
+          reason: i === 0 ? "api_only_exact_query" : "api_only_query"
+        });
+
+        var apiResult = await tryApiSearch(
+          planEntry.query,
+          payload,
+          fetchImpl,
+          runtimeSendMessage,
+          fetchTimeoutMs,
+          debugLog
+        );
+        requestTotal += apiResult.requestCount || 0;
+
+        if (!apiResult.ok) {
+          if (apiResult.errorCode === "NO_RESULTS") {
+            sawNoResults = true;
+            partial = true;
+          } else if (apiResult.errorCode === "NETWORK_ERROR") {
+            sawNetworkError = true;
+            partial = true;
+          } else if (isTerminalErrorCode(apiResult.errorCode)) {
+            debugLog("provider.search_failure", {
+              errorCode: apiResult.errorCode,
+              requestTotal: requestTotal
+            });
+            return buildSearchFailure(apiResult.errorCode, apiResult.retryAfterMs, partial, sourceType);
+          } else {
+            partial = true;
+          }
+
+          debugLog("provider.pass2_action_result", {
+            action: "query_api",
+            query: planEntry.query,
+            index: planEntry.index,
+            ok: false,
+            errorCode: apiResult.errorCode,
+            requestTotal: requestTotal
+          });
+
+          if (requestTotal < maxRequests && i < queryPlan.length - 1) {
+            await sleep(withJitter(cooldownMs));
+          }
+          continue;
+        }
+
+        var apiCandidates = (Array.isArray(apiResult.candidates) ? apiResult.candidates : []).map(applyImageUrlCache);
+        mergeCandidatesIntoCanonicalMap(canonicalByKey, keepUsableCandidates(apiCandidates), {
+          queryIndex: planEntry.index,
+          sourceType: apiResult.sourceType === "html" ? "html" : "api"
+        });
+
+        if (apiResult.sourceType === "html") {
+          partial = true;
+          sourceType = "hybrid";
+        }
+
+        debugLog("provider.pass2_action_result", Object.assign({
+          action: "query_api",
+          query: planEntry.query,
+          index: planEntry.index,
+          ok: true,
+          requestTotal: requestTotal
+        }, summarizeCanonicalMap(canonicalByKey)));
+
+        if (requestTotal < maxRequests && i < queryPlan.length - 1) {
+          await sleep(withJitter(cooldownMs));
+        }
+      }
+
+      if (queriesTried < queryPlan.length) {
+        partial = true;
+      }
+
+      var normalized = filterFinalProviderCandidates(canonicalByKey);
+      if (normalized.length) {
+        debugLog("provider.search_success", Object.assign({
+          sourceType: sourceType,
+          partial: partial,
+          requestTotal: requestTotal,
+          via: "api_only"
+        }, summarizeCandidateList(normalized)));
+        return buildSearchSuccess(normalized, partial, sourceType, requestTotal);
+      }
+
+      if (sawNoResults) {
+        debugLog("provider.search_failure", {
+          errorCode: "NO_RESULTS",
+          partial: partial,
+          requestTotal: requestTotal
+        });
+        return buildSearchFailure("NO_RESULTS", 0, partial, sourceType);
+      }
+
+      if (sawNetworkError) {
+        debugLog("provider.search_failure", {
+          errorCode: "NETWORK_ERROR",
+          partial: true,
+          requestTotal: requestTotal
+        });
+        return buildSearchFailure("NETWORK_ERROR", 1500, true, sourceType);
+      }
+
+      debugLog("provider.search_failure", {
+        errorCode: "PARSE_ERROR",
+        partial: partial,
+        requestTotal: requestTotal
+      });
+      return buildSearchFailure("PARSE_ERROR", 0, partial, sourceType);
     }
 
     async function tryBroadFallbackSearch(query: any, requestTotal: any, limit: any, sourceType: any) {
@@ -2058,13 +3234,16 @@
         stopProcessing: false,
         response: null
       };
+      var queryMaxRequests = Number.isFinite(Number(state && state.queryMaxRequests))
+        ? Math.max(1, Number(state.queryMaxRequests))
+        : maxRequests;
       var fallbackQuery = normalizeString(state && state.fallbackQuery, "");
       var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
       debugLog("provider.query_start", {
         query: normalizeString(query, ""),
         url: url,
         requestTotal: nextState.requestTotal,
-        maxRequests: maxRequests
+        maxRequests: queryMaxRequests
       });
 
       var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
@@ -2088,7 +3267,7 @@
       nextState.requestTotal += 1;
 
       if (!fetched.ok) {
-        if (nextState.requestTotal < maxRequests) {
+        if (nextState.requestTotal < queryMaxRequests) {
           var apiOnHttpError: DepopAttemptResult = await tryApiSearch(
             query,
             payload,
@@ -2181,7 +3360,7 @@
       if (
         !pricedParsedCandidates.length &&
         isLikelyLoadingShellHtml(latestHtml) &&
-        nextState.requestTotal + 1 < maxRequests
+        nextState.requestTotal + 1 < queryMaxRequests
       ) {
         var retriedState = await retryLoadingShellCandidates({
           url: url,
@@ -2192,7 +3371,7 @@
           cooldownMs: cooldownMs,
           timeoutMs: fetchTimeoutMs,
           maxRetries: 2,
-          maxAdditionalRequests: Math.max(0, maxRequests - nextState.requestTotal - 1),
+          maxAdditionalRequests: Math.max(0, queryMaxRequests - nextState.requestTotal - 1),
           debugLogger: debugLog
         });
         nextState.requestTotal += retriedState.requestCount;
@@ -2215,7 +3394,7 @@
         pricedParsedCandidates = retriedState.candidateState.candidatesWithPrice;
       }
 
-      if (!pricedParsedCandidates.length && nextState.requestTotal < maxRequests) {
+      if (!pricedParsedCandidates.length && nextState.requestTotal < queryMaxRequests) {
         var apiFallback: DepopAttemptResult = await tryApiSearch(
           query,
           payload,
@@ -2236,8 +3415,8 @@
         }
       }
 
-      if (!pricedParsedCandidates.length && parsedCandidates.length && nextState.requestTotal < maxRequests) {
-        var remainingBudget = Math.max(0, maxRequests - nextState.requestTotal);
+      if (!pricedParsedCandidates.length && parsedCandidates.length && nextState.requestTotal < queryMaxRequests) {
+        var remainingBudget = Math.max(0, queryMaxRequests - nextState.requestTotal);
         debugLog("provider.href_enrichment_start", {
           query: normalizeString(query, ""),
           candidateCount: parsedCandidates.length,
@@ -2281,23 +3460,18 @@
       market: "depop",
       search: async function (input: any) {
         if (!fetchImpl && !runtimeSendMessage) {
-          return buildSearchFailure("NETWORK_ERROR", 1500, false, "html");
+          return buildSearchFailure("NETWORK_ERROR", 1500, false, "api");
         }
 
         var payload = input && typeof input === "object" ? input : {};
         var queries = Array.isArray(payload.queries) ? payload.queries.filter(Boolean) : [];
+        var strictMode = payload.strictMode === true;
         var limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Number(payload.limit)) : null;
-        var requestTotal = 0;
-        var partial = false;
-        var merged: any[] = [];
-        var blockedFallbackAttempted = false;
-        var sourceType = "html";
-        var sawNoResults = false;
-        var sawNetworkError = false;
 
         debugLog("provider.search_start", {
           listingId: normalizeString(payload.listingId, ""),
           queries: queries.slice(),
+          strictMode: strictMode,
           limit: limit,
           currency: normalizeCurrencyCode(payload.currency) || "USD",
           title: normalizeString(payload.title, ""),
@@ -2310,104 +3484,10 @@
           debugLog("provider.search_failure", {
             errorCode: "MISSING_LISTING_DATA"
           });
-          return buildSearchFailure("MISSING_LISTING_DATA", 0, false, "html");
+          return buildSearchFailure("MISSING_LISTING_DATA", 0, false, "api");
         }
 
-        for (var i = 0; i < queries.length && requestTotal < maxRequests; i += 1) {
-          var queryResult = await executeQuerySearch(queries[i], payload, {
-            requestTotal: requestTotal,
-            partial: partial,
-            sourceType: sourceType,
-            blockedFallbackAttempted: blockedFallbackAttempted,
-            fallbackQuery: queries[0]
-          });
-
-          if (queryResult.response) {
-            debugLog("provider.search_failure", {
-              errorCode: normalizeString(queryResult.response.errorCode, "NETWORK_ERROR"),
-              requestTotal: queryResult.requestTotal
-            });
-            return queryResult.response;
-          }
-
-          requestTotal = queryResult.requestTotal;
-          partial = queryResult.partial;
-          sourceType = queryResult.sourceType;
-          blockedFallbackAttempted = queryResult.blockedFallbackAttempted;
-          if (queryResult.sawNoResults) {
-            sawNoResults = true;
-          }
-          if (queryResult.sawNetworkError) {
-            sawNetworkError = true;
-          }
-          merged = merged.concat(queryResult.candidates || []);
-
-          if (queryResult.stopProcessing) {
-            break;
-          }
-
-          if (requestTotal < maxRequests && i < queries.length - 1) {
-            await sleep(withJitter(cooldownMs));
-          }
-        }
-
-        var normalized = dedupeById(merged);
-        if (limit != null) {
-          normalized = normalized.slice(0, limit);
-        }
-
-        if (!normalized.length) {
-          if (sawNoResults && queries.length && requestTotal < maxRequests) {
-            var broadFallback = await tryBroadFallbackSearch(queries[0], requestTotal, limit, sourceType);
-            requestTotal = broadFallback.requestTotal;
-            if (broadFallback.sawNetworkError) {
-              sawNetworkError = true;
-            }
-
-            if (broadFallback.candidates.length) {
-              debugLog("provider.search_success", Object.assign({
-                sourceType: sourceType,
-                partial: true,
-                requestTotal: requestTotal,
-                via: "broad_fallback"
-              }, summarizeCandidateList(broadFallback.candidates)));
-              return buildSearchSuccess(broadFallback.candidates, true, sourceType, requestTotal);
-            }
-          }
-
-          if (sawNoResults) {
-            debugLog("provider.search_failure", {
-              errorCode: "NO_RESULTS",
-              partial: partial,
-              requestTotal: requestTotal
-            });
-            return buildSearchFailure("NO_RESULTS", 0, partial, "html");
-          }
-
-          if (sawNetworkError) {
-            debugLog("provider.search_failure", {
-              errorCode: "NETWORK_ERROR",
-              partial: partial,
-              requestTotal: requestTotal
-            });
-            return buildSearchFailure("NETWORK_ERROR", 1500, partial, "html");
-          }
-
-          debugLog("provider.search_failure", {
-            errorCode: "PARSE_ERROR",
-            partial: partial,
-            requestTotal: requestTotal
-          });
-          return buildSearchFailure("PARSE_ERROR", 0, partial, "html");
-        }
-
-        debugLog("provider.search_success", Object.assign({
-          sourceType: sourceType,
-          partial: partial,
-          requestTotal: requestTotal,
-          via: "primary"
-        }, summarizeCandidateList(normalized)));
-        return buildSearchSuccess(normalized, partial, sourceType, requestTotal);
+        return executeApiOnlySearch(payload, queries);
       }
     };
   }

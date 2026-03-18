@@ -279,6 +279,7 @@ test("listing render lifecycle renders with resolved currency", async () => {
       mountPosition: "afterend"
     },
     marketCompareEnabled: true,
+    marketCompareAutoSearchEnabled: true,
     marketCompareRankingFormula: "visual",
     marketCompareStrictMode: true,
     marketCompareResultsLimit: 10,
@@ -310,6 +311,7 @@ test("listing render lifecycle renders with resolved currency", async () => {
   assert.equal(calls.renderedOptions.listing.id, 3);
   assert.equal(calls.renderedOptions.mountPosition, "afterend");
   assert.equal(calls.renderedOptions.marketCompareEnabled, true);
+  assert.equal(calls.renderedOptions.marketCompareAutoSearchEnabled, true);
   assert.equal(calls.renderedOptions.marketCompareRankingFormula, "visual");
   assert.equal(calls.renderedOptions.marketCompareStrictMode, true);
   assert.equal(calls.renderedOptions.marketCompareResultsLimit, 10);
@@ -400,6 +402,7 @@ test("market compare lifecycle does not create controller or render market state
     panelOptions: {
       listing: { id: 12 },
       marketCompareEnabled: false,
+      marketCompareAutoSearchEnabled: true,
       marketCompareRankingFormula: "metadata",
       marketCompareStrictMode: true,
       marketCompareResultsLimit: 10
@@ -410,8 +413,88 @@ test("market compare lifecycle does not create controller or render market state
   assert.equal(calls.renderedOptions.marketCompareEnabled, false);
   assert.equal(calls.renderedOptions.marketCompare, null);
   assert.equal(state.latestPanelContext.marketCompareEnabled, false);
+  assert.equal(state.latestPanelContext.marketCompareAutoSearchEnabled, true);
   assert.equal(state.latestPanelContext.marketCompareRankingFormula, "metadata");
   assert.equal(state.latestPanelContext.marketCompareStrictMode, true);
+});
+
+test("market compare lifecycle auto-searches once per render token when enabled", async () => {
+  const state = {
+    marketCompareController: null,
+    marketCompareUnsubscribe: null,
+    marketCompareAutoSearchRenderToken: null,
+    latestPanelContext: null,
+    renderToken: 11
+  };
+  const calls = {
+    clicked: 0,
+    resetForListing: 0,
+    renderedOptions: null
+  };
+  const controller = {
+    resetForListing() {
+      calls.resetForListing += 1;
+    },
+    getState() {
+      return {
+        status: "idle"
+      };
+    },
+    compare() {}
+  };
+
+  renderPanelWithMarketCompare({
+    state,
+    ensureController: function () {
+      return controller;
+    },
+    renderListingInsightsPanel: function (options) {
+      calls.renderedOptions = options;
+      return options;
+    },
+    onMarketCompareClick: function () {
+      calls.clicked += 1;
+    },
+    panelOptions: {
+      listing: { id: 77 },
+      marketCompareEnabled: true,
+      marketCompareAutoSearchEnabled: true,
+      marketCompareRankingFormula: "visual",
+      marketCompareStrictMode: false,
+      marketCompareResultsLimit: 5
+    }
+  });
+
+  await waitForAsyncTick();
+
+  renderPanelWithMarketCompare({
+    state,
+    ensureController: function () {
+      return controller;
+    },
+    renderListingInsightsPanel: function (options) {
+      calls.renderedOptions = options;
+      return options;
+    },
+    onMarketCompareClick: function () {
+      calls.clicked += 1;
+    },
+    panelOptions: {
+      listing: { id: 77 },
+      marketCompareEnabled: true,
+      marketCompareAutoSearchEnabled: true,
+      marketCompareRankingFormula: "visual",
+      marketCompareStrictMode: false,
+      marketCompareResultsLimit: 5
+    }
+  });
+
+  await waitForAsyncTick();
+
+  assert.equal(calls.resetForListing, 2);
+  assert.equal(calls.clicked, 1);
+  assert.equal(state.marketCompareAutoSearchRenderToken, 11);
+  assert.equal(calls.renderedOptions.marketCompareEnabled, true);
 });
 
 test("market compare lifecycle forwards ranking formula and hardcoded show-all threshold to compare flow", () => {
@@ -427,6 +510,7 @@ test("market compare lifecycle forwards ranking formula and hardcoded show-all t
           usdRates: { CAD: 1.35 }
         },
         marketCompareEnabled: true,
+        marketCompareAutoSearchEnabled: false,
         marketCompareRankingFormula: "metadata",
         marketCompareStrictMode: true,
         marketCompareResultsLimit: 10
@@ -479,6 +563,7 @@ test("unavailable lifecycle renders unavailable panel on listing routes", async 
     resolveMarketCompareSettings: () =>
       Promise.resolve({
         enabled: false,
+        autoSearchEnabled: true,
         rankingFormula: "visual",
         strictMode: true,
         expandedAmountEnabled: true
@@ -504,6 +589,7 @@ test("unavailable lifecycle renders unavailable panel on listing routes", async 
   assert.equal(calls.renderedOptions.listing.id, "unknown");
   assert.equal(calls.renderedOptions.statusMessage, "Feature unavailable");
   assert.equal(calls.renderedOptions.marketCompareEnabled, false);
+  assert.equal(calls.renderedOptions.marketCompareAutoSearchEnabled, false);
   assert.equal(calls.renderedOptions.marketCompareRankingFormula, "visual");
   assert.equal(calls.renderedOptions.marketCompareStrictMode, true);
   assert.equal(calls.renderedOptions.marketCompareResultsLimit, 10);

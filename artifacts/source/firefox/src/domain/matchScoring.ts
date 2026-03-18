@@ -279,7 +279,7 @@ interface MSGlobalRoot {
       ) {
         return normalized;
       }
-      return "balanced";
+      return "visual";
     }
 
     function tokenize(value: unknown): string[] {
