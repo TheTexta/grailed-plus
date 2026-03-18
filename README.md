@@ -18,7 +18,7 @@
 | Browser Storage Abstraction    | Unified storage for settings and state                           |
 
 
-Credit: Forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
+Credit: Price history project forked from [RVRX/grailed-plus](https://github.com/RVRX/grailed-plus).
 
 Grailed Plus enhances Grailed listing pages with fast, decision-ready marketplace context: pricing intelligence, seller metadata, listing JSON access, optional currency conversion, site-wide dark mode controls, and local ML reranking for Depop market compare.
 
@@ -56,12 +56,6 @@ A browser extension that enhances your Grailed experience with powerful pricing 
 
 ## 🌟 Features (Detailed)
 
-- **Depop Price Comparison (NEW)**
-  - Instantly compare Grailed listings with similar items on Depop.
-  - Local MobileCLIP-S1 image embeddings rerank Depop search-result thumbnails inside the browser.
-  - Falls back to local thumbnail fingerprints and then a URL heuristic if ML inference is cold or unavailable.
-  - Make smarter buying and selling decisions with cross-market context.
-
 ## Recent Changes
 
 This session shipped the first real ML image-matching upgrade for Market Compare:
@@ -77,23 +71,21 @@ Supporting documentation:
 - [docs/market-compare-image-similarity.md](/Users/dexteryoung/Git%20Repos/grailed-plus/docs/market-compare-image-similarity.md)
 - [src/vendor/THIRD_PARTY_NOTICES.md](/Users/dexteryoung/Git%20Repos/grailed-plus/src/vendor/THIRD_PARTY_NOTICES.md)
 
-- **Refreshed Injected UI (NEW)**
-  - All extension UI components now feature a minimalist, data-dense design.
-  - Improved clarity, hierarchy, and consistency with Grailed’s native look.
-  - Full support for both light and dark modes.
-
-- **Grailed Market Insights**
-  - View historical price trends for any listing.
-  - See recent sales, price drops, and seller context at a glance.
+- **Depop Price Comparison (NEW)**
+  - Instantly compare Grailed listings with similar items on Depop.
+  - Local MobileCLIP-S1 image embeddings rerank Depop search-result thumbnails inside the browser.
+  - Falls back to local thumbnail fingerprints and then a URL heuristic if ML inference is cold or unavailable.
+  - Make smarter buying and selling decisions with cross-market context.
 
 - **Seller and Metadata Context**
   - Seller account creation date for trust context.
-  - One-click listing metadata inspection (view listing JSON).
+  - View historical price trends for any listing.
+  - Listing metadata inspection.
 
 - **Currency Conversion**
-  - Automatic conversion from USD to your selected currency.
+  - Conversion from USD to selected currency.
   - Original USD value preserved in hover tooltip.
-  - Configurable and can be toggled on/off in settings.
+  - Configurable in settings.
 
 - **Site-wide Dark Mode**
   - Applies across Grailed pages.
@@ -288,12 +280,4 @@ AMO source-upload package:
 ## 📝 Roadmap & Known Limitations
 
 - [ ] Capture fresh Firefox AMO screenshots before store submission
-- [ ] More granular price trend analytics
 - [ ] Additional cross-market integrations (e.g., eBay)
-- [ ] Improved mobile/responsive UI
-- [ ] User feedback-driven feature requests
-
----
-
-MIT
-*Default custom color #000000 keeps extra tint disabled.*
