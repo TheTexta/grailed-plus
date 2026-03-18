@@ -356,7 +356,9 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"
 ) :is(
   .Text,
   [class*="SortBy-module__prefix__"],
+  [class*="SortBy_prefix__"],
   [class*="SortBy-module__select__"],
+  [class*="SortBy_select__"],
   [class*="index-module__stats__"],
   [class*="index-module__label__"],
   [class*="index-module__search__"],
@@ -373,6 +375,7 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"
 
 html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
   [class*="SortBy-module__select__"],
+  [class*="SortBy_select__"],
   [class*="index-module__search__"],
   .ais-SearchBox-input[class*="index-module__input__"],
   [class*="index-module__priceInputWrapper__"],
@@ -389,11 +392,38 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"
 
 html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
   [class*="SortBy-module__select__"],
+  [class*="SortBy_select__"],
   [class*="index-module__search__"],
   .ais-SearchBox-input[class*="index-module__input__"],
   [class*="index-module__priceInputWrapper__"] input
 )::placeholder {
   color: var(--gp-dm-text-placeholder, rgba(255, 255, 255, 0.75)) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="SortBy-module__select__"],
+  [class*="SortBy_select__"]
+) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  background-image: none !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="SortBy-module__select__"],
+  [class*="SortBy_select__"]
+) option {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  color: var(--gp-dm-text-strong, #fff) !important;
 }
 
 html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"]) :is(
@@ -459,12 +489,19 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"
   [class*="CategoryGroup_department__"],
   [class*="GroupHeader_title__"],
   [class*="RefinementItem_refinementItem__"],
-  [class*="RefinementItem_count__"],
   [class*="PriceInput_dollarSign__"],
   [class*="RefinementList_search__"]
 ):not(svg *) {
   color: var(--gp-dm-text-strong, #fff) !important;
   -webkit-text-fill-color: var(--gp-dm-text-strong, #fff) !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) [class*="RefinementItem_count__"]:not(svg *) {
+  color: var(--gp-dm-text-strong-invert, #000) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong-invert, #000) !important;
 }
 
 :is(
@@ -522,6 +559,59 @@ html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"
 ) path {
   fill: currentColor !important;
   stroke: currentColor !important;
+}
+
+/* Grailed's newer feed filter drawer uses non-module class names; keep the whole surface readable in dark mode. */
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="FeedAndFilters_filtersContainer__"],
+  [class*="Filters_filters__"],
+  [class*="MySizesControls_mySizesControls__"],
+  [class*="CollapsibleDepartmentCategoryFilter_"]
+) {
+  background: var(--gp-dm-bg-base, #000) !important;
+  background-color: var(--gp-dm-bg-base, #000) !important;
+  background-image: none !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="FeedAndFilters_filtersContainer__"],
+  [class*="Filters_filters__"]
+) :is(
+  [class*="MySizesToggle_toggle__"],
+  [class*="MySizesToggle_slider__"],
+  [class*="LinkButton_linkButton__"],
+  [class*="EditAddButton_edit__"],
+  button[class*="Button_button__"]
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:is(
+  [data-theme="dark"],
+  html[data-grailed-plus-dark-mode="1"]:not([data-grailed-plus-invert-fallback="1"])
+) :is(
+  [class*="FeedAndFilters_filtersContainer__"],
+  [class*="Filters_filters__"]
+) :is(
+  .Text,
+  [class*="MySizesToggle_caption__"],
+  [class*="MySizesToggle_toggle__"] div,
+  [class*="MySizesToggle_toggle__"] span,
+  [class*="Link_link__"],
+  [class*="LinkButton_linkButton__"],
+  [class*="EditAddButton_edit__"]
+):not(svg *) {
+  color: var(--gp-dm-text-strong, #fff) !important;
+  -webkit-text-fill-color: var(--gp-dm-text-strong, #fff) !important;
 }
 
 :root {
