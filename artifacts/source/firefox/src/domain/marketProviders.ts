@@ -30,6 +30,8 @@ interface MPProvider {
   search: (input: unknown) => unknown | Promise<unknown>;
 }
 
+type MPDebugLogger = (stage: string, payload?: Record<string, unknown>) => void;
+
 interface MPProviderRegistry {
   register: (provider: MPProvider) => MPProvider;
   get: (market: unknown) => MPProvider | null;
@@ -43,6 +45,7 @@ interface MPRegistryOptions {
   cacheTtlMs?: unknown;
   cacheMaxEntries?: unknown;
   enableDiagnostics?: unknown;
+  debugLogger?: MPDebugLogger | null;
 }
 
 interface MPRegistryDiagnostics {
@@ -200,6 +203,22 @@ interface MPGlobalRoot {
       }
     }
 
+    function summarizeSearchInput(input: unknown): Record<string, unknown> {
+      const payload = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+      return {
+        queries:
+          Array.isArray(payload.queries)
+            ? payload.queries.filter(function (query) {
+                return typeof query === "string" && query.trim();
+              })
+            : [],
+        currency: normalizeString(payload.currency, "USD"),
+        limit: normalizeNumber(payload.limit),
+        listingId: normalizeString(payload.listingId, ""),
+        title: normalizeString(payload.title, "")
+      };
+    }
+
     function createRegistry(options?: MPRegistryOptions | null): MPProviderRegistry {
       const providersByMarket = new Map<string, MPProvider>();
       const inFlightByKey = new Map<string, Promise<MPProviderResult>>();
@@ -213,6 +232,9 @@ interface MPGlobalRoot {
           ? Math.max(1, Math.floor(Number(options.cacheMaxEntries)))
           : 100;
       const diagnosticsEnabled = Boolean(options && options.enableDiagnostics);
+      const debugLog = options && typeof options.debugLogger === "function"
+        ? options.debugLogger
+        : function () {};
       const diagnostics: MPRegistryDiagnostics = {
         searchCalls: 0,
         cacheHits: 0,
@@ -270,7 +292,7 @@ interface MPGlobalRoot {
         cacheByKey.delete(cacheKey);
       }
 
-      function upsertCacheEntry(cacheKey: string, value: MPProviderResult): void {
+      function upsertCacheEntry(cacheKey: string, value: MPProviderResult, market: string): void {
         if (!cacheKey) {
           return;
         }
@@ -289,6 +311,10 @@ interface MPGlobalRoot {
 
           cacheByKey.delete(oldestKey);
           incrementDiagnostic("evictions");
+          debugLog("registry.cache_evict", {
+            market: market,
+            cacheSize: cacheByKey.size
+          });
         }
       }
 
@@ -322,9 +348,13 @@ interface MPGlobalRoot {
 
       function search(market: unknown, input: unknown): Promise<MPProviderResult> {
         incrementDiagnostic("searchCalls");
+        const searchSummary = summarizeSearchInput(input);
 
         const provider = get(market);
         if (!provider) {
+          debugLog("registry.provider_missing", {
+            market: normalizeString(market, "")
+          });
           return Promise.resolve({
             ok: false,
             candidates: [],
@@ -344,27 +374,53 @@ interface MPGlobalRoot {
           const cached = cacheByKey.get(cacheKey);
           if (cached && cached.expiresAt > Date.now()) {
             incrementDiagnostic("cacheHits");
+            debugLog("registry.cache_hit", Object.assign({
+              market: provider.market
+            }, searchSummary));
             return Promise.resolve(normalizeProviderResult(cached.value, provider.market));
           }
 
           incrementDiagnostic("cacheMisses");
+          debugLog("registry.cache_miss", Object.assign({
+            market: provider.market
+          }, searchSummary));
 
           if (cached && cached.expiresAt <= Date.now()) {
             removeCacheEntry(cacheKey);
             incrementDiagnostic("expiredRemovals");
+            debugLog("registry.cache_expired", {
+              market: provider.market
+            });
           }
 
           if (inFlightByKey.has(cacheKey)) {
             incrementDiagnostic("inFlightHits");
+            debugLog("registry.in_flight_hit", Object.assign({
+              market: provider.market
+            }, searchSummary));
             return inFlightByKey.get(cacheKey) as Promise<MPProviderResult>;
           }
         }
 
         const executeSearchPromise = Promise.resolve(provider.search(input)).then(function (result) {
           const normalized = normalizeProviderResult(result, provider.market);
+          debugLog("registry.search_result", {
+            market: provider.market,
+            ok: normalized.ok,
+            sourceType: normalized.sourceType,
+            partial: normalized.partial,
+            requestCount: normalized.requestCount,
+            candidateCount: normalized.candidates.length,
+            errorCode: normalized.errorCode
+          });
           if (cacheKey && cacheTtlMs > 0 && normalized.ok) {
-            upsertCacheEntry(cacheKey, normalized);
+            upsertCacheEntry(cacheKey, normalized, provider.market);
             incrementDiagnostic("cacheStores");
+            debugLog("registry.cache_store", {
+              market: provider.market,
+              candidateCount: normalized.candidates.length,
+              sourceType: normalized.sourceType
+            });
           }
           return normalized;
         });

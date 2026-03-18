@@ -332,6 +332,7 @@
     strictMode: boolean;
     expandedAmountEnabled: boolean;
     mlSimilarityEnabled: boolean;
+    debugEnabled: boolean;
   } {
     return {
       enabled:
@@ -353,7 +354,11 @@
       mlSimilarityEnabled:
         Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
           ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
-          : true
+          : true,
+      debugEnabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED
+          : false
     };
   }
 
@@ -363,6 +368,7 @@
     strictMode: boolean;
     expandedAmountEnabled: boolean;
     mlSimilarityEnabled: boolean;
+    debugEnabled: boolean;
   }> {
     var fallback = createDefaultMarketCompareSettings();
 
@@ -387,7 +393,11 @@
           mlSimilarityEnabled:
             value && typeof value.mlSimilarityEnabled === "boolean"
               ? value.mlSimilarityEnabled
-              : fallback.mlSimilarityEnabled
+              : fallback.mlSimilarityEnabled,
+          debugEnabled:
+            value && typeof value.debugEnabled === "boolean"
+              ? value.debugEnabled
+              : fallback.debugEnabled
         };
       })
       .catch(function () {
@@ -720,6 +730,7 @@
       var marketCompareStrictMode = marketCompareSettings.strictMode === true;
       var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
       var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
+      var marketCompareDebugEnabled = marketCompareSettings.debugEnabled === true;
       var showMetadataButton = Boolean(values[2]);
 
       if (!Url.isListingPath(location.pathname)) {
@@ -795,6 +806,7 @@
         marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,
         marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+        marketCompareDebugEnabled: marketCompareDebugEnabled,
         showMetadataButton: showMetadataButton,
         resolveCurrencyContext: resolveCurrencyContext,
         createUsdCurrencyContext: createUsdCurrencyContext,

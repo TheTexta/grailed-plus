@@ -1,3 +1,5 @@
+type CDepopDebugLogger = (stage: string, payload?: Record<string, unknown>) => void;
+
 interface CMarketCompareState {
   marketCompareController: any;
   marketCompareUnsubscribe: (() => void) | null;
@@ -14,6 +16,7 @@ interface CMarketCompareState {
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
     marketCompareMlSimilarityEnabled: boolean;
+    marketCompareDebugEnabled: boolean;
     showMetadataButton: boolean;
     renderToken: number;
   } | null;
@@ -24,11 +27,14 @@ interface CMarketCompareControllerApi {
   createController?: (options: {
     providerRegistry: any;
     provider: any;
+    debugLogger?: CDepopDebugLogger | null;
   }) => any;
 }
 
 interface CMarketProvidersApi {
-  createRegistry?: () => any;
+  createRegistry?: (options?: {
+    debugLogger?: CDepopDebugLogger | null;
+  }) => any;
   createMockDepopProvider?: () => any;
 }
 
@@ -36,6 +42,7 @@ interface CDepopProviderFactory {
   createDepopProvider?: (options: {
     maxRequests: number;
     cooldownMs: number;
+    debugLogger?: CDepopDebugLogger | null;
   }) => any;
 }
 
@@ -69,6 +76,7 @@ interface CRenderPanelOptions {
     marketCompareStrictMode: boolean;
     marketCompareResultsLimit: number;
     marketCompareMlSimilarityEnabled: boolean;
+    marketCompareDebugEnabled: boolean;
     showMetadataButton: boolean;
     marketCompare: any;
     onMarketCompareClick: () => void;
@@ -87,6 +95,7 @@ interface CRenderPanelOptions {
     marketCompareStrictMode?: boolean;
     marketCompareResultsLimit?: number;
     marketCompareMlSimilarityEnabled?: boolean;
+    marketCompareDebugEnabled?: boolean;
     showMetadataButton?: boolean;
   };
 }
@@ -125,6 +134,49 @@ interface CMarketCompareGlobal {
     }
   }
 
+  function isGlobalDepopDebugEnabled(): boolean {
+    var globalScope = typeof globalThis !== "undefined" ? (globalThis as any) : null;
+    if (globalScope && globalScope.GRAILED_PLUS_DEBUG === true) {
+      return true;
+    }
+
+    try {
+      if (typeof localStorage !== "undefined" && localStorage.getItem("grailed-plus:debug") === "1") {
+        return true;
+      }
+    } catch (_) {
+      // Ignore localStorage access failures.
+    }
+
+    try {
+      var search =
+        globalScope &&
+        globalScope.location &&
+        typeof globalScope.location.search === "string"
+          ? globalScope.location.search
+          : "";
+      var params = new URLSearchParams(search);
+      return params.get("gp_debug") === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function createDepopDebugLogger(enabled: boolean): CDepopDebugLogger | null {
+    if (!enabled && !isGlobalDepopDebugEnabled()) {
+      return null;
+    }
+
+    return function (stage: string, payload?: Record<string, unknown>): void {
+      if (payload && typeof payload === "object") {
+        console.debug("[Grailed+][Depop Debug]", stage, payload);
+        return;
+      }
+
+      console.debug("[Grailed+][Depop Debug]", stage);
+    };
+  }
+
   function ensureMarketCompareController(options: CEnsureControllerOptions | null | undefined): any {
     var config = options && typeof options === "object" ? options : ({} as CEnsureControllerOptions);
     var state = config.state;
@@ -134,6 +186,10 @@ interface CMarketCompareGlobal {
     var depopProviderFactory = config.depopProviderFactory;
     var onStateUpdate =
       typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () {};
+    var currentContext = state && state.latestPanelContext ? state.latestPanelContext : null;
+    var debugLogger = createDepopDebugLogger(
+      Boolean(currentContext && currentContext.marketCompareDebugEnabled === true)
+    );
 
     if (!state || typeof state !== "object") {
       return null;
@@ -156,13 +212,16 @@ interface CMarketCompareGlobal {
 
     var registry =
       marketProviders && typeof marketProviders.createRegistry === "function"
-        ? marketProviders.createRegistry()
+        ? marketProviders.createRegistry({
+            debugLogger: debugLogger
+          })
         : null;
     var depopProvider =
       depopProviderFactory && typeof depopProviderFactory.createDepopProvider === "function"
         ? depopProviderFactory.createDepopProvider({
             maxRequests: 5,
-            cooldownMs: 1200
+            cooldownMs: 1200,
+            debugLogger: debugLogger
           })
         : null;
     var mockProvider =
@@ -182,7 +241,8 @@ interface CMarketCompareGlobal {
 
     state.marketCompareController = marketCompareControllerApi.createController({
       providerRegistry: registry,
-      provider: depopProvider || mockProvider
+      provider: depopProvider || mockProvider,
+      debugLogger: debugLogger
     });
 
     if (
@@ -277,13 +337,7 @@ interface CMarketCompareGlobal {
         : "balanced";
     var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
     var marketCompareMlSimilarityEnabled = panelOptions.marketCompareMlSimilarityEnabled !== false;
-    var controller = marketCompareEnabled ? ensureController() : null;
-    if (controller && typeof controller.resetForListing === "function") {
-      controller.resetForListing(panelOptions.listing || null);
-    }
-
-    var marketCompareState =
-      controller && typeof controller.getState === "function" ? controller.getState() : null;
+    var marketCompareDebugEnabled = panelOptions.marketCompareDebugEnabled === true;
 
     state.latestPanelContext = {
       listing: panelOptions.listing || null,
@@ -302,9 +356,18 @@ interface CMarketCompareGlobal {
           ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
           : 5,
       marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+      marketCompareDebugEnabled: marketCompareDebugEnabled,
       showMetadataButton: panelOptions.showMetadataButton !== false,
       renderToken: state.renderToken
     };
+
+    var controller = marketCompareEnabled ? ensureController() : null;
+    if (controller && typeof controller.resetForListing === "function") {
+      controller.resetForListing(panelOptions.listing || null);
+    }
+
+    var marketCompareState =
+      controller && typeof controller.getState === "function" ? controller.getState() : null;
 
     if (
       state.latestPanelContext.marketCompareEnabled &&
@@ -330,6 +393,7 @@ interface CMarketCompareGlobal {
       marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
       marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
       marketCompareMlSimilarityEnabled: state.latestPanelContext.marketCompareMlSimilarityEnabled,
+      marketCompareDebugEnabled: state.latestPanelContext.marketCompareDebugEnabled,
       showMetadataButton: state.latestPanelContext.showMetadataButton,
       marketCompare: marketCompareEnabled ? marketCompareState : null,
       onMarketCompareClick: onMarketCompareClick

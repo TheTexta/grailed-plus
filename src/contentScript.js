@@ -239,10 +239,41 @@
             }
         });
     }
+    function storageRemove(storage, key) {
+        if (!storage || typeof storage.remove !== "function") {
+            return Promise.resolve(false);
+        }
+        try {
+            const result = storage.remove(key);
+            if (result && typeof result.then === "function") {
+                return result.then(function () {
+                    return true;
+                });
+            }
+        }
+        catch (_) {
+            // Try callback style below.
+        }
+        return new Promise(function (resolve) {
+            try {
+                storage.remove(key, function () {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+                        resolve(false);
+                        return;
+                    }
+                    resolve(true);
+                });
+            }
+            catch (_) {
+                resolve(false);
+            }
+        });
+    }
     return {
         getStorageLocal,
         storageGet,
-        storageSet
+        storageSet,
+        storageRemove
     };
 });
 
@@ -657,6 +688,7 @@
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_DEBUG_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
@@ -672,15 +704,19 @@
     const CONVERSION_ENABLED_STORAGE_KEY = "grailed_plus_currency_enabled_v1";
     const LISTING_INSIGHTS_ENABLED_STORAGE_KEY = "grailed_plus_listing_insights_enabled_v1";
     const LISTING_METADATA_BUTTON_STORAGE_KEY = "grailed_plus_listing_metadata_button_enabled_v1";
-    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v1";
+    const MARKET_COMPARE_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_enabled_v2";
     const MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY = "grailed_plus_market_compare_ranking_formula_v1";
     const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY = "grailed_plus_market_compare_ml_similarity_enabled_v1";
+    const MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_debug_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
     const DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_STORAGE_KEY = "grailed_plus_dark_mode_legacy_color_customization_enabled_v1";
+    let legacyMarketCompareEnabledCleanupPromise = null;
+    let legacyMarketCompareEnabledCleanupStorage = null;
     let BrowserStorage = null;
     if (typeof globalThis !== "undefined" && globalThis.GrailedPlusBrowserStorage) {
         BrowserStorage = globalThis.GrailedPlusBrowserStorage || null;
@@ -759,6 +795,31 @@
         return BrowserStorage && typeof BrowserStorage.storageSet === "function"
             ? BrowserStorage.storageSet(storage, payload)
             : Promise.resolve(false);
+    }
+    function storageRemove(storage, key) {
+        return BrowserStorage && typeof BrowserStorage.storageRemove === "function"
+            ? BrowserStorage.storageRemove(storage, key)
+            : Promise.resolve(false);
+    }
+    function cleanupLegacyMarketCompareEnabledSetting() {
+        const storage = getStorageLocal();
+        if (legacyMarketCompareEnabledCleanupPromise &&
+            legacyMarketCompareEnabledCleanupStorage === storage) {
+            return legacyMarketCompareEnabledCleanupPromise;
+        }
+        legacyMarketCompareEnabledCleanupStorage = storage;
+        if (!storage) {
+            legacyMarketCompareEnabledCleanupPromise = Promise.resolve();
+            return legacyMarketCompareEnabledCleanupPromise;
+        }
+        legacyMarketCompareEnabledCleanupPromise = storageRemove(storage, LEGACY_MARKET_COMPARE_ENABLED_STORAGE_KEY)
+            .then(function () {
+            return;
+        })
+            .catch(function () {
+            return;
+        });
+        return legacyMarketCompareEnabledCleanupPromise;
     }
     function readSetting(storageKey, fallback, normalize) {
         const storage = getStorageLocal();
@@ -843,6 +904,7 @@
     const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
     const marketCompareMlSimilaritySetting = createBooleanSetting(MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED, "market compare ml similarity status");
+    const marketCompareDebugSetting = createBooleanSetting(MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_DEBUG_ENABLED, "market compare debug status");
     const darkModeEnabledSetting = createBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, DEFAULT_DARK_MODE_ENABLED, "dark mode status");
     const darkModeBehaviorSetting = createValidatedSetting(DARK_MODE_BEHAVIOR_STORAGE_KEY, DEFAULT_DARK_MODE_BEHAVIOR, normalizeDarkModeBehavior, "Dark mode behavior must be either 'system' or 'permanent'.", "Failed to persist dark mode behavior.");
     const darkModePrimaryColorSetting = createValidatedSetting(DARK_MODE_PRIMARY_COLOR_STORAGE_KEY, DEFAULT_DARK_MODE_PRIMARY_COLOR, normalizeHexColor, "Primary color must be a valid hex value.", "Failed to persist dark mode primary color.");
@@ -872,10 +934,14 @@
         return listingMetadataButtonSetting.set(enabled);
     }
     function getMarketCompareEnabled() {
-        return marketCompareEnabledSetting.get();
+        return cleanupLegacyMarketCompareEnabledSetting().then(function () {
+            return marketCompareEnabledSetting.get();
+        });
     }
     function setMarketCompareEnabled(enabled) {
-        return marketCompareEnabledSetting.set(enabled);
+        return cleanupLegacyMarketCompareEnabledSetting().then(function () {
+            return marketCompareEnabledSetting.set(enabled);
+        });
     }
     function getMarketCompareRankingFormula() {
         return marketCompareRankingFormulaSetting.get();
@@ -901,20 +967,28 @@
     function setMarketCompareMlSimilarityEnabled(enabled) {
         return marketCompareMlSimilaritySetting.set(enabled);
     }
+    function getMarketCompareDebugEnabled() {
+        return marketCompareDebugSetting.get();
+    }
+    function setMarketCompareDebugEnabled(enabled) {
+        return marketCompareDebugSetting.set(enabled);
+    }
     function getMarketCompareSettings() {
         return Promise.all([
             getMarketCompareEnabled(),
             getMarketCompareRankingFormula(),
             getMarketCompareStrictMode(),
             getMarketCompareExpandedAmountEnabled(),
-            getMarketCompareMlSimilarityEnabled()
+            getMarketCompareMlSimilarityEnabled(),
+            getMarketCompareDebugEnabled()
         ]).then(function (values) {
             return {
                 enabled: values[0],
                 rankingFormula: values[1],
                 strictMode: values[2],
                 expandedAmountEnabled: values[3],
-                mlSimilarityEnabled: values[4]
+                mlSimilarityEnabled: values[4],
+                debugEnabled: values[5]
             };
         });
     }
@@ -952,6 +1026,7 @@
         DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
         DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
+        DEFAULT_MARKET_COMPARE_DEBUG_ENABLED,
         DEFAULT_DARK_MODE_ENABLED,
         DEFAULT_DARK_MODE_BEHAVIOR,
         DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -967,6 +1042,7 @@
         MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
         MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
+        MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY,
         DARK_MODE_ENABLED_STORAGE_KEY,
         DARK_MODE_BEHAVIOR_STORAGE_KEY,
         DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -994,6 +1070,8 @@
         setMarketCompareExpandedAmountEnabled,
         getMarketCompareMlSimilarityEnabled,
         setMarketCompareMlSimilarityEnabled,
+        getMarketCompareDebugEnabled,
+        setMarketCompareDebugEnabled,
         getMarketCompareSettings,
         getDarkModeEnabled,
         setDarkModeEnabled,
@@ -1761,6 +1839,18 @@
             return { errorCode: "NETWORK_ERROR", retryAfterMs: 1500 };
         }
         return { errorCode: "PARSE_ERROR", retryAfterMs: 0 };
+    }
+    function summarizeDepopCandidate(candidate) {
+        if (!candidate || typeof candidate !== "object") {
+            return null;
+        }
+        return {
+            id: normalizeString(candidate.id, ""),
+            title: normalizeString(candidate.title, ""),
+            price: normalizeNumber(candidate.price),
+            currency: normalizeCurrencyCode(candidate.currency) || "USD",
+            imageUrl: normalizeUrlString(candidate.imageUrl || candidate.image)
+        };
     }
     function normalizeTitleCandidate(value) {
         var title = normalizeString(value, "");
@@ -2801,7 +2891,8 @@
             };
         }
     }
-    async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, timeoutMs) {
+    async function tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, timeoutMs, debugLogger) {
+        var debugLog = typeof debugLogger === "function" ? debugLogger : function () { };
         function buildAttemptFailure(errorCode, retryAfterMs) {
             return {
                 ok: false,
@@ -2818,12 +2909,33 @@
             };
         }
         var apiUrl = buildApiSearchUrl(query, payload);
+        debugLog("provider.api_search_start", {
+            query: normalizeString(query, ""),
+            url: apiUrl
+        });
         var fetched = await fetchSearchPage(apiUrl, fetchImpl, runtimeSendMessage, "application/json,text/plain,*/*", timeoutMs);
+        debugLog("provider.api_search_result", {
+            query: normalizeString(query, ""),
+            url: apiUrl,
+            ok: Boolean(fetched && fetched.ok),
+            status: Number(fetched && fetched.status) || 0,
+            transport: normalizeString(fetched && fetched.source, ""),
+            textLength: normalizeString(fetched && fetched.text, "").length
+        });
         if (!fetched.ok) {
             if (fetched.status === 0) {
+                debugLog("provider.api_search_failure", {
+                    query: normalizeString(query, ""),
+                    errorCode: "NETWORK_ERROR"
+                });
                 return buildAttemptFailure("NETWORK_ERROR", 1500);
             }
             var mappedError = mapHttpError(fetched.status);
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: mappedError.errorCode,
+                retryAfterMs: mappedError.retryAfterMs
+            });
             return buildAttemptFailure(mappedError.errorCode, mappedError.retryAfterMs);
         }
         var text = normalizeString(fetched.text, "");
@@ -2836,17 +2948,39 @@
             // Reuse HTML parser before treating it as a hard parse failure.
             var htmlCandidates = parseHtmlCandidateState(text, null).candidates;
             if (htmlCandidates.length) {
+                debugLog("provider.api_search_html_fallback", {
+                    query: normalizeString(query, ""),
+                    candidateCount: htmlCandidates.length,
+                    topCandidate: summarizeDepopCandidate(htmlCandidates[0] || null)
+                });
                 return buildAttemptSuccess(htmlCandidates);
             }
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: "PARSE_ERROR"
+            });
             return buildAttemptFailure("PARSE_ERROR", 0);
         }
         var candidates = normalizeParsedCandidates(parseCandidatesFromApiPayload(parsed) || []);
         if (candidates.length) {
+            debugLog("provider.api_search_success", {
+                query: normalizeString(query, ""),
+                candidateCount: candidates.length,
+                topCandidate: summarizeDepopCandidate(candidates[0] || null)
+            });
             return buildAttemptSuccess(candidates);
         }
         if (hasNoResultsInApiPayload(parsed)) {
+            debugLog("provider.api_search_failure", {
+                query: normalizeString(query, ""),
+                errorCode: "NO_RESULTS"
+            });
             return buildAttemptFailure("NO_RESULTS", 0);
         }
+        debugLog("provider.api_search_failure", {
+            query: normalizeString(query, ""),
+            errorCode: "PARSE_ERROR"
+        });
         return buildAttemptFailure("PARSE_ERROR", 0);
     }
     function normalizeParsedCandidates(candidates) {
@@ -2876,6 +3010,7 @@
         var maxRetries = Math.max(0, Number(input.maxRetries) || 0);
         var maxAdditionalRequests = Math.max(0, Number(input.maxAdditionalRequests) || 0);
         var cooldownBaseMs = Math.max(Number(input.cooldownMs) || 0, 1200);
+        var debugLog = typeof input.debugLogger === "function" ? input.debugLogger : function () { };
         var requestCount = 0;
         var loadingAttempts = 0;
         var sawNetworkError = false;
@@ -2886,9 +3021,21 @@
             isLikelyLoadingShellHtml(latestHtml) &&
             loadingAttempts < maxRetries &&
             requestCount < maxAdditionalRequests) {
+            debugLog("provider.loading_shell_retry_wait", {
+                url: url,
+                attempt: loadingAttempts + 1
+            });
             await sleep(withJitter(cooldownBaseMs * (loadingAttempts + 1)));
             var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
             requestCount += 1;
+            debugLog("provider.loading_shell_retry_result", {
+                url: url,
+                attempt: loadingAttempts + 1,
+                ok: Boolean(retryFetched && retryFetched.ok),
+                status: Number(retryFetched && retryFetched.status) || 0,
+                transport: normalizeString(retryFetched && retryFetched.source, ""),
+                textLength: normalizeString(retryFetched && retryFetched.text, "").length
+            });
             if (!retryFetched.ok || !retryFetched.text) {
                 if (!retryFetched.ok && retryFetched.status === 0) {
                     sawNetworkError = true;
@@ -2911,9 +3058,10 @@
             blocked: blocked
         };
     }
-    async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches, timeoutMs, normalizeCandidates) {
+    async function enrichHrefFallbackCandidates(candidates, fetchImpl, runtimeSendMessage, maxFetches, timeoutMs, normalizeCandidates, debugLogger) {
         var list = Array.isArray(candidates) ? candidates : [];
         var fetchBudget = Math.max(0, Number(maxFetches) || 0);
+        var debugLog = typeof debugLogger === "function" ? debugLogger : function () { };
         if (!list.length || fetchBudget < 1) {
             return {
                 candidates: [],
@@ -2929,8 +3077,19 @@
             if (!url) {
                 continue;
             }
+            debugLog("provider.href_enrichment_fetch_start", {
+                url: url,
+                attempt: requestCount + 1
+            });
             var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
             requestCount += 1;
+            debugLog("provider.href_enrichment_fetch_result", {
+                url: url,
+                ok: Boolean(fetched && fetched.ok),
+                status: Number(fetched && fetched.status) || 0,
+                transport: normalizeString(fetched && fetched.source, ""),
+                textLength: normalizeString(fetched && fetched.text, "").length
+            });
             if (!fetched.ok || !fetched.text) {
                 continue;
             }
@@ -2946,13 +3105,18 @@
             }
             seenIds[id] = true;
             output.push(best);
+            debugLog("provider.href_enrichment_candidate_added", {
+                url: url,
+                candidate: summarizeDepopCandidate(best)
+            });
         }
         return {
             candidates: output,
             requestCount: requestCount
         };
     }
-    async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs, timeoutMs) {
+    async function trySingleQueryFallback(fetchImpl, runtimeSendMessage, query, cooldownMs, timeoutMs, debugLogger) {
+        var debugLog = typeof debugLogger === "function" ? debugLogger : function () { };
         var fallbackQuery = normalizeString(query, "");
         if (!fallbackQuery) {
             return {
@@ -2966,7 +3130,19 @@
         }
         await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
         var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
+        debugLog("provider.single_query_fallback_start", {
+            query: fallbackQuery,
+            url: fallbackUrl
+        });
         var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
+        debugLog("provider.single_query_fallback_result", {
+            query: fallbackQuery,
+            url: fallbackUrl,
+            ok: Boolean(fetched && fetched.ok),
+            status: Number(fetched && fetched.status) || 0,
+            transport: normalizeString(fetched && fetched.source, ""),
+            textLength: normalizeString(fetched && fetched.text, "").length
+        });
         if (!fetched.ok && fetched.status === 0) {
             return {
                 ok: false,
@@ -3011,7 +3187,8 @@
                 cooldownMs: cooldownMs,
                 timeoutMs: timeoutMs,
                 maxRetries: 2,
-                maxAdditionalRequests: 2
+                maxAdditionalRequests: 2,
+                debugLogger: debugLog
             });
             latestHtml = retried.latestHtml;
             candidateState = retried.candidateState;
@@ -3054,6 +3231,7 @@
         var fetchTimeoutMs = Number.isFinite(Number(config.fetchTimeoutMs)) && Number(config.fetchTimeoutMs) > 0
             ? Math.max(100, Number(config.fetchTimeoutMs))
             : DEFAULT_FETCH_TIMEOUT_MS;
+        var debugLog = typeof config.debugLogger === "function" ? config.debugLogger : function () { };
         var imageUrlCache = Object.create(null);
         function getCandidateCacheKeys(candidate) {
             var keys = [];
@@ -3105,6 +3283,14 @@
                 .filter(Boolean)
                 .map(applyImageUrlCache);
         }
+        function summarizeCandidateList(candidates) {
+            var list = Array.isArray(candidates) ? candidates : [];
+            return {
+                candidateCount: list.length,
+                pricedCandidateCount: list.filter(hasMeaningfulPrice).length,
+                topCandidate: summarizeDepopCandidate(list[0] || null)
+            };
+        }
         function buildSearchFailure(errorCode, retryAfterMs, partial, sourceType) {
             return {
                 ok: false,
@@ -3144,9 +3330,22 @@
                 };
             }
             var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
+            debugLog("provider.broad_fallback_start", {
+                originalQuery: normalizeString(query, ""),
+                broadQuery: broadQuery,
+                url: broadUrl,
+                sourceType: normalizeString(sourceType, "html")
+            });
             var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
             var nextRequestTotal = requestTotal + 1;
             var sawNetworkError = !broadFetched.ok && broadFetched.status === 0;
+            debugLog("provider.broad_fallback_result", {
+                broadQuery: broadQuery,
+                ok: Boolean(broadFetched && broadFetched.ok),
+                status: Number(broadFetched && broadFetched.status) || 0,
+                transport: normalizeString(broadFetched && broadFetched.source, ""),
+                textLength: normalizeString(broadFetched && broadFetched.text, "").length
+            });
             if (!broadFetched.ok || !broadFetched.text) {
                 return {
                     requestTotal: nextRequestTotal,
@@ -3159,6 +3358,9 @@
             if (limit != null) {
                 broadCandidates = broadCandidates.slice(0, limit);
             }
+            debugLog("provider.broad_fallback_candidates", Object.assign({
+                broadQuery: broadQuery
+            }, summarizeCandidateList(broadCandidates)));
             return {
                 requestTotal: nextRequestTotal,
                 candidates: broadCandidates,
@@ -3179,16 +3381,33 @@
             };
             var fallbackQuery = normalizeString(state && state.fallbackQuery, "");
             var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
+            debugLog("provider.query_start", {
+                query: normalizeString(query, ""),
+                url: url,
+                requestTotal: nextState.requestTotal,
+                maxRequests: maxRequests
+            });
             var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
+            debugLog("provider.html_fetch_result", {
+                query: normalizeString(query, ""),
+                url: url,
+                ok: Boolean(fetched && fetched.ok),
+                status: Number(fetched && fetched.status) || 0,
+                transport: normalizeString(fetched && fetched.source, ""),
+                textLength: normalizeString(fetched && fetched.text, "").length
+            });
             if (!fetched.ok && fetched.status === 0) {
                 nextState.sawNetworkError = true;
                 nextState.partial = true;
+                debugLog("provider.query_network_error", {
+                    query: normalizeString(query, "")
+                });
                 return nextState;
             }
             nextState.requestTotal += 1;
             if (!fetched.ok) {
                 if (nextState.requestTotal < maxRequests) {
-                    var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
+                    var apiOnHttpError = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs, debugLog);
                     nextState.requestTotal += apiOnHttpError.requestCount || 0;
                     if (apiOnHttpError.ok) {
                         nextState.candidates = apiOnHttpError.candidates || [];
@@ -3204,7 +3423,7 @@
                 var mapped = mapHttpError(fetched.status);
                 if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" && !nextState.blockedFallbackAttempted) {
                     nextState.blockedFallbackAttempted = true;
-                    var fallbackAttempt = await trySingleQueryFallback(fetchImpl, runtimeSendMessage, fallbackQuery, cooldownMs, fetchTimeoutMs);
+                    var fallbackAttempt = await trySingleQueryFallback(fetchImpl, runtimeSendMessage, fallbackQuery, cooldownMs, fetchTimeoutMs, debugLog);
                     nextState.requestTotal += fallbackAttempt.requestCount || 0;
                     if (fallbackAttempt.ok) {
                         nextState.candidates = fallbackAttempt.candidates || [];
@@ -3216,10 +3435,19 @@
                     return nextState;
                 }
                 if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+                    debugLog("provider.query_terminal_http_error", {
+                        query: normalizeString(query, ""),
+                        errorCode: mapped.errorCode,
+                        retryAfterMs: mapped.retryAfterMs
+                    });
                     nextState.response = buildSearchFailure(mapped.errorCode, mapped.retryAfterMs, nextState.partial, "html");
                     return nextState;
                 }
                 nextState.partial = true;
+                debugLog("provider.query_http_error_partial", {
+                    query: normalizeString(query, ""),
+                    status: Number(fetched && fetched.status) || 0
+                });
                 return nextState;
             }
             var html = fetched.text;
@@ -3229,6 +3457,9 @@
             }
             var latestHtml = html;
             if (isBlockedHtml(html)) {
+                debugLog("provider.blocked_html_detected", {
+                    query: normalizeString(query, "")
+                });
                 nextState.response = buildSearchFailure("FORBIDDEN_OR_BLOCKED", 120000, nextState.partial, "html");
                 return nextState;
             }
@@ -3247,7 +3478,8 @@
                     cooldownMs: cooldownMs,
                     timeoutMs: fetchTimeoutMs,
                     maxRetries: 2,
-                    maxAdditionalRequests: Math.max(0, maxRequests - nextState.requestTotal - 1)
+                    maxAdditionalRequests: Math.max(0, maxRequests - nextState.requestTotal - 1),
+                    debugLogger: debugLog
                 });
                 nextState.requestTotal += retriedState.requestCount;
                 if (retriedState.sawNetworkError) {
@@ -3265,7 +3497,7 @@
                 pricedParsedCandidates = retriedState.candidateState.candidatesWithPrice;
             }
             if (!pricedParsedCandidates.length && nextState.requestTotal < maxRequests) {
-                var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs);
+                var apiFallback = await tryApiSearch(query, payload, fetchImpl, runtimeSendMessage, fetchTimeoutMs, debugLog);
                 nextState.requestTotal += apiFallback.requestCount || 0;
                 if (apiFallback.ok) {
                     parsedCandidates = normalizeAndHydrateCandidates(apiFallback.candidates || []);
@@ -3279,7 +3511,12 @@
             }
             if (!pricedParsedCandidates.length && parsedCandidates.length && nextState.requestTotal < maxRequests) {
                 var remainingBudget = Math.max(0, maxRequests - nextState.requestTotal);
-                var enriched = await enrichHrefFallbackCandidates(parsedCandidates, fetchImpl, runtimeSendMessage, remainingBudget, fetchTimeoutMs, normalizeAndHydrateCandidates);
+                debugLog("provider.href_enrichment_start", {
+                    query: normalizeString(query, ""),
+                    candidateCount: parsedCandidates.length,
+                    remainingBudget: remainingBudget
+                });
+                var enriched = await enrichHrefFallbackCandidates(parsedCandidates, fetchImpl, runtimeSendMessage, remainingBudget, fetchTimeoutMs, normalizeAndHydrateCandidates, debugLog);
                 nextState.requestTotal += enriched.requestCount || 0;
                 pricedParsedCandidates = normalizeAndHydrateCandidates(enriched.candidates || [])
                     .filter(hasMeaningfulPrice);
@@ -3294,6 +3531,10 @@
                 pricedParsedCandidates = keepUsableCandidates(parsedCandidates);
             }
             nextState.candidates = pricedParsedCandidates;
+            debugLog("provider.query_candidates_ready", Object.assign({
+                query: normalizeString(query, ""),
+                sourceType: nextState.sourceType
+            }, summarizeCandidateList(pricedParsedCandidates)));
             return nextState;
         }
         return {
@@ -3312,7 +3553,20 @@
                 var sourceType = "html";
                 var sawNoResults = false;
                 var sawNetworkError = false;
+                debugLog("provider.search_start", {
+                    listingId: normalizeString(payload.listingId, ""),
+                    queries: queries.slice(),
+                    limit: limit,
+                    currency: normalizeCurrencyCode(payload.currency) || "USD",
+                    title: normalizeString(payload.title, ""),
+                    brand: normalizeString(payload.brand, ""),
+                    size: normalizeString(payload.size, ""),
+                    category: normalizeString(payload.category, "")
+                });
                 if (!queries.length) {
+                    debugLog("provider.search_failure", {
+                        errorCode: "MISSING_LISTING_DATA"
+                    });
                     return buildSearchFailure("MISSING_LISTING_DATA", 0, false, "html");
                 }
                 for (var i = 0; i < queries.length && requestTotal < maxRequests; i += 1) {
@@ -3324,6 +3578,10 @@
                         fallbackQuery: queries[0]
                     });
                     if (queryResult.response) {
+                        debugLog("provider.search_failure", {
+                            errorCode: normalizeString(queryResult.response.errorCode, "NETWORK_ERROR"),
+                            requestTotal: queryResult.requestTotal
+                        });
                         return queryResult.response;
                     }
                     requestTotal = queryResult.requestTotal;
@@ -3356,17 +3614,44 @@
                             sawNetworkError = true;
                         }
                         if (broadFallback.candidates.length) {
+                            debugLog("provider.search_success", Object.assign({
+                                sourceType: sourceType,
+                                partial: true,
+                                requestTotal: requestTotal,
+                                via: "broad_fallback"
+                            }, summarizeCandidateList(broadFallback.candidates)));
                             return buildSearchSuccess(broadFallback.candidates, true, sourceType, requestTotal);
                         }
                     }
                     if (sawNoResults) {
+                        debugLog("provider.search_failure", {
+                            errorCode: "NO_RESULTS",
+                            partial: partial,
+                            requestTotal: requestTotal
+                        });
                         return buildSearchFailure("NO_RESULTS", 0, partial, "html");
                     }
                     if (sawNetworkError) {
+                        debugLog("provider.search_failure", {
+                            errorCode: "NETWORK_ERROR",
+                            partial: partial,
+                            requestTotal: requestTotal
+                        });
                         return buildSearchFailure("NETWORK_ERROR", 1500, partial, "html");
                     }
+                    debugLog("provider.search_failure", {
+                        errorCode: "PARSE_ERROR",
+                        partial: partial,
+                        requestTotal: requestTotal
+                    });
                     return buildSearchFailure("PARSE_ERROR", 0, partial, "html");
                 }
+                debugLog("provider.search_success", Object.assign({
+                    sourceType: sourceType,
+                    partial: partial,
+                    requestTotal: requestTotal,
+                    via: "primary"
+                }, summarizeCandidateList(normalized)));
                 return buildSearchSuccess(normalized, partial, sourceType, requestTotal);
             }
         };
@@ -3494,6 +3779,20 @@
             return "";
         }
     }
+    function summarizeSearchInput(input) {
+        const payload = input && typeof input === "object" ? input : {};
+        return {
+            queries: Array.isArray(payload.queries)
+                ? payload.queries.filter(function (query) {
+                    return typeof query === "string" && query.trim();
+                })
+                : [],
+            currency: normalizeString(payload.currency, "USD"),
+            limit: normalizeNumber(payload.limit),
+            listingId: normalizeString(payload.listingId, ""),
+            title: normalizeString(payload.title, "")
+        };
+    }
     function createRegistry(options) {
         const providersByMarket = new Map();
         const inFlightByKey = new Map();
@@ -3505,6 +3804,9 @@
             ? Math.max(1, Math.floor(Number(options.cacheMaxEntries)))
             : 100;
         const diagnosticsEnabled = Boolean(options && options.enableDiagnostics);
+        const debugLog = options && typeof options.debugLogger === "function"
+            ? options.debugLogger
+            : function () { };
         const diagnostics = {
             searchCalls: 0,
             cacheHits: 0,
@@ -3553,7 +3855,7 @@
             }
             cacheByKey.delete(cacheKey);
         }
-        function upsertCacheEntry(cacheKey, value) {
+        function upsertCacheEntry(cacheKey, value, market) {
             if (!cacheKey) {
                 return;
             }
@@ -3569,6 +3871,10 @@
                 }
                 cacheByKey.delete(oldestKey);
                 incrementDiagnostic("evictions");
+                debugLog("registry.cache_evict", {
+                    market: market,
+                    cacheSize: cacheByKey.size
+                });
             }
         }
         function register(provider) {
@@ -3595,8 +3901,12 @@
         }
         function search(market, input) {
             incrementDiagnostic("searchCalls");
+            const searchSummary = summarizeSearchInput(input);
             const provider = get(market);
             if (!provider) {
+                debugLog("registry.provider_missing", {
+                    market: normalizeString(market, "")
+                });
                 return Promise.resolve({
                     ok: false,
                     candidates: [],
@@ -3615,23 +3925,49 @@
                 const cached = cacheByKey.get(cacheKey);
                 if (cached && cached.expiresAt > Date.now()) {
                     incrementDiagnostic("cacheHits");
+                    debugLog("registry.cache_hit", Object.assign({
+                        market: provider.market
+                    }, searchSummary));
                     return Promise.resolve(normalizeProviderResult(cached.value, provider.market));
                 }
                 incrementDiagnostic("cacheMisses");
+                debugLog("registry.cache_miss", Object.assign({
+                    market: provider.market
+                }, searchSummary));
                 if (cached && cached.expiresAt <= Date.now()) {
                     removeCacheEntry(cacheKey);
                     incrementDiagnostic("expiredRemovals");
+                    debugLog("registry.cache_expired", {
+                        market: provider.market
+                    });
                 }
                 if (inFlightByKey.has(cacheKey)) {
                     incrementDiagnostic("inFlightHits");
+                    debugLog("registry.in_flight_hit", Object.assign({
+                        market: provider.market
+                    }, searchSummary));
                     return inFlightByKey.get(cacheKey);
                 }
             }
             const executeSearchPromise = Promise.resolve(provider.search(input)).then(function (result) {
                 const normalized = normalizeProviderResult(result, provider.market);
+                debugLog("registry.search_result", {
+                    market: provider.market,
+                    ok: normalized.ok,
+                    sourceType: normalized.sourceType,
+                    partial: normalized.partial,
+                    requestCount: normalized.requestCount,
+                    candidateCount: normalized.candidates.length,
+                    errorCode: normalized.errorCode
+                });
                 if (cacheKey && cacheTtlMs > 0 && normalized.ok) {
-                    upsertCacheEntry(cacheKey, normalized);
+                    upsertCacheEntry(cacheKey, normalized, provider.market);
                     incrementDiagnostic("cacheStores");
+                    debugLog("registry.cache_store", {
+                        market: provider.market,
+                        candidateCount: normalized.candidates.length,
+                        sourceType: normalized.sourceType
+                    });
                 }
                 return normalized;
             });
@@ -5410,13 +5746,59 @@
         }
         return pickRawListingPrice(listing && typeof listing === "object" ? listing.rawListing : null);
     }
+    function summarizeListing(listing) {
+        return {
+            listingId: listing && listing.id != null ? String(listing.id) : "",
+            title: normalizeString(listing && listing.title, ""),
+            brand: normalizeString(listing && listing.brand, ""),
+            size: normalizeString(listing && listing.size, ""),
+            category: normalizeString(listing && listing.category, ""),
+            priceHistoryCount: listing && listing.pricing && Array.isArray(listing.pricing.history)
+                ? listing.pricing.history.length
+                : 0,
+            hasRawListing: Boolean(listing && listing.rawListing)
+        };
+    }
+    function summarizeTopResult(candidate) {
+        if (!candidate || typeof candidate !== "object") {
+            return null;
+        }
+        return {
+            id: candidate.id != null ? String(candidate.id) : "",
+            title: normalizeString(candidate.title, ""),
+            score: normalizeNumber(candidate.score),
+            price: normalizeNumber(candidate.price),
+            currency: normalizeCurrencyCode(candidate.currency || candidate.originalCurrency, "USD"),
+            usedImage: Boolean(candidate.usedImage),
+            imageSignalType: normalizeString(candidate.imageSignalType, "")
+        };
+    }
+    function summarizeImageSignals(candidates) {
+        const summary = Object.create(null);
+        let usedImageCount = 0;
+        (Array.isArray(candidates) ? candidates : []).forEach(function (candidate) {
+            const signalType = normalizeString(candidate && candidate.imageSignalType, "none");
+            summary[signalType] = (summary[signalType] || 0) + 1;
+            if (candidate && candidate.usedImage) {
+                usedImageCount += 1;
+            }
+        });
+        return {
+            total: Array.isArray(candidates) ? candidates.length : 0,
+            usedImageCount: usedImageCount,
+            signalCounts: summary
+        };
+    }
     function createController(options) {
         const config = options && typeof options === "object" ? options : {};
         const hasExternalRegistry = Boolean(config.providerRegistry && typeof config.providerRegistry.search === "function");
+        const debugLog = typeof config.debugLogger === "function" ? config.debugLogger : function () { };
         const providerRegistry = hasExternalRegistry
             ? config.providerRegistry
             : MarketProviders && typeof MarketProviders.createRegistry === "function"
-                ? MarketProviders.createRegistry()
+                ? MarketProviders.createRegistry({
+                    debugLogger: debugLog
+                })
                 : null;
         const listeners = [];
         let state = createInitialState();
@@ -5524,15 +5906,24 @@
         function finishWithError(errorCode, options) {
             const mappedError = toErrorModel(errorCode, options && options.retryAfterMs, options && options.parserMismatchLikely);
             const messageSuffix = normalizeString(options && options.messageSuffix, "");
+            const normalizedSourceType = normalizeString(options && options.sourceType, "");
             updateState({
                 status: mappedError.status,
                 errorCode: mappedError.errorCode,
                 retryable: mappedError.retryable,
                 cooldownMs: mappedError.cooldownMs,
                 message: messageSuffix ? mappedError.message + " " + messageSuffix : mappedError.message,
-                sourceType: normalizeString(options && options.sourceType, ""),
+                sourceType: normalizedSourceType,
                 results: [],
                 lastCheckedAt: Date.now()
+            });
+            debugLog("compare.finish_error", {
+                errorCode: mappedError.errorCode,
+                status: mappedError.status,
+                retryable: mappedError.retryable,
+                cooldownMs: mappedError.cooldownMs,
+                sourceType: normalizedSourceType,
+                messageSuffix: messageSuffix
             });
             return getState();
         }
@@ -5618,6 +6009,10 @@
                 }
                 // Depop can return valid cross-border fallback listings that score
                 // below strict similarity thresholds.
+                debugLog("compare.ranking_relaxed_threshold", {
+                    filteredCandidateCount: filteredCandidates.length,
+                    strictMinScore: strictMinScore
+                });
                 return runRankCandidates(listing, filteredCandidates, buildRankingOptions(payload, listingPrice, 0));
             });
         }
@@ -5673,6 +6068,15 @@
         function handleProviderSuccess(result, payload, listing, listingPrice, searchModeHint) {
             const sourceType = normalizeString(result && result.sourceType, "html");
             const filteredCandidates = filterCandidates(result, payload);
+            debugLog("compare.provider_success", {
+                sourceType: sourceType,
+                partial: Boolean(result && result.partial),
+                requestCount: normalizeNumber(result && result.requestCount),
+                candidateCount: Array.isArray(result && result.candidates) ? result.candidates.length : 0,
+                filteredCandidateCount: filteredCandidates.length,
+                parserMismatchLikely: Boolean(result && result.parserMismatchLikely),
+                searchModeHint: searchModeHint || ""
+            });
             if (!filteredCandidates.length) {
                 return Promise.resolve(finishWithError("NO_RESULTS", {
                     sourceType: sourceType,
@@ -5680,6 +6084,11 @@
                 }));
             }
             return rankFilteredCandidates(listing, payload, filteredCandidates, listingPrice).then(function (rankedCandidates) {
+                debugLog("compare.ranking_complete", {
+                    rankedCandidateCount: rankedCandidates.length,
+                    imageSignals: summarizeImageSignals(rankedCandidates),
+                    topCandidate: summarizeTopResult(rankedCandidates[0] || null)
+                });
                 if (!rankedCandidates.length) {
                     return finishWithError("NO_RESULTS", {
                         sourceType: sourceType,
@@ -5703,6 +6112,13 @@
                     results: normalizedResults,
                     lastCheckedAt: Date.now()
                 });
+                debugLog("compare.finish_success", {
+                    sourceType: sourceType,
+                    resultCount: normalizedResults.length,
+                    imageSignals: summarizeImageSignals(normalizedResults),
+                    topResult: summarizeTopResult(normalizedResults[0] || null),
+                    searchModeHint: searchModeHint || ""
+                });
                 return getState();
             });
         }
@@ -5710,6 +6126,16 @@
             const payload = input && typeof input === "object" ? input : {};
             const listing = payload.listing && typeof payload.listing === "object" ? payload.listing : null;
             resetForListing(listing);
+            debugLog("compare.start", {
+                listing: summarizeListing(listing),
+                currency: normalizeString(payload.currency, "USD"),
+                limit: Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
+                    ? Math.floor(Number(payload.limit))
+                    : null,
+                rankingFormula: normalizeString(payload.rankingFormula, "balanced"),
+                strictMode: payload.allowCategoryFallback === false,
+                mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
+            });
             if (!currentListingKey) {
                 return Promise.resolve(finishWithError("MISSING_LISTING_DATA"));
             }
@@ -5717,6 +6143,9 @@
                 return Promise.resolve(finishWithError("NETWORK_ERROR"));
             }
             if (state.status === "loading" && inFlightPromise) {
+                debugLog("compare.in_flight_reused", {
+                    listingId: currentListingKey
+                });
                 return inFlightPromise;
             }
             const requestToken = activeRequestToken + 1;
@@ -5724,9 +6153,19 @@
             const listingPrice = pickListingPrice(listing);
             const queryResult = buildQueryResult(listing, payload);
             const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
+            debugLog("compare.queries_built", {
+                ok: Boolean(queryResult && queryResult.ok),
+                reason: normalizeString(queryResult && queryResult.reason, ""),
+                errorCode: normalizeString(queryResult && queryResult.errorCode, ""),
+                queries: queryResult && Array.isArray(queryResult.queries)
+                    ? queryResult.queries.slice()
+                    : [],
+                listingPrice: listingPrice
+            });
             if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
                 return Promise.resolve(finishWithError(queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA"));
             }
+            const searchPayload = buildSearchPayload(payload, listing, listingPrice, queryResult.queries);
             updateState({
                 status: "loading",
                 errorCode: "",
@@ -5736,13 +6175,33 @@
                 sourceType: "",
                 results: []
             });
+            debugLog("compare.search_dispatch", {
+                listingId: normalizeString(searchPayload.listingId, ""),
+                queries: Array.isArray(searchPayload.queries) ? searchPayload.queries.slice() : [],
+                currency: normalizeString(searchPayload.currency, "USD"),
+                limit: normalizeNumber(searchPayload.limit),
+                title: normalizeString(searchPayload.title, ""),
+                brand: normalizeString(searchPayload.brand, ""),
+                size: normalizeString(searchPayload.size, ""),
+                category: normalizeString(searchPayload.category, ""),
+                listingPrice: normalizeNumber(searchPayload.listingPrice)
+            });
             inFlightPromise = providerRegistry
-                .search("depop", buildSearchPayload(payload, listing, listingPrice, queryResult.queries))
+                .search("depop", searchPayload)
                 .then(function (result) {
                 if (requestToken !== activeRequestToken) {
+                    debugLog("compare.stale_response_ignored", {
+                        listingId: currentListingKey
+                    });
                     return getState();
                 }
                 if (!result.ok) {
+                    debugLog("compare.provider_error", {
+                        errorCode: normalizeString(result && result.errorCode, "NETWORK_ERROR"),
+                        sourceType: normalizeString(result && result.sourceType, "html"),
+                        retryAfterMs: normalizeNumber(result && result.retryAfterMs),
+                        parserMismatchLikely: Boolean(result && result.parserMismatchLikely)
+                    });
                     return finishWithError(result.errorCode || "NETWORK_ERROR", {
                         retryAfterMs: result.retryAfterMs,
                         parserMismatchLikely: Boolean(result.parserMismatchLikely),
@@ -5751,10 +6210,16 @@
                 }
                 return handleProviderSuccess(result, payload, listing, listingPrice, searchModeHint);
             })
-                .catch(function () {
+                .catch(function (error) {
                 if (requestToken !== activeRequestToken) {
+                    debugLog("compare.stale_error_ignored", {
+                        listingId: currentListingKey
+                    });
                     return getState();
                 }
+                debugLog("compare.exception", {
+                    message: error && error.message ? String(error.message) : "unknown_error"
+                });
                 return finishWithError("NETWORK_ERROR");
             })
                 .finally(function () {
@@ -7183,22 +7648,6 @@
         }
         return "Not enough data to estimate";
     }
-    function buildAvgDropSignal(metrics) {
-        var avgDrop = Number(metrics && metrics.averageDropPercent);
-        if (!Number.isFinite(avgDrop)) {
-            return "Trend signal is limited. Compare against external listings before buying.";
-        }
-        if (avgDrop >= 14) {
-            return "Strong markdown trend. Waiting may unlock a better price.";
-        }
-        if (avgDrop >= 8) {
-            return "Moderate markdown trend. There is room for additional price movement.";
-        }
-        if (avgDrop > 0) {
-            return "Light markdown trend. Price changes are gradual so timing matters less.";
-        }
-        return "No markdown trend detected. Compare with other markets before committing.";
-    }
     function formatRelativeTimestamp(timestampMs) {
         if (!Number.isFinite(Number(timestampMs))) {
             return "";
@@ -7522,10 +7971,6 @@
             avgValueNode.className += " " + avgToneClass;
         }
         panel.appendChild(avgRow);
-        var avgSignal = doc.createElement("p");
-        avgSignal.className = "grailed-plus__history-signal";
-        avgSignal.textContent = buildAvgDropSignal(metrics);
-        panel.appendChild(avgSignal);
         panel.appendChild(createRow(doc, "Next Expected Drop", buildExpectedDropText(listing, metrics), "grailed-plus__row--support"));
         panel.appendChild(createRow(doc, "Seller Account Created", formatDate(listing.seller && listing.seller.createdAt), "grailed-plus__row--support"));
         if (marketCompareEnabled) {
@@ -8854,6 +9299,44 @@
             ImageSimilarity = null;
         }
     }
+    function isGlobalDepopDebugEnabled() {
+        var globalScope = typeof globalThis !== "undefined" ? globalThis : null;
+        if (globalScope && globalScope.GRAILED_PLUS_DEBUG === true) {
+            return true;
+        }
+        try {
+            if (typeof localStorage !== "undefined" && localStorage.getItem("grailed-plus:debug") === "1") {
+                return true;
+            }
+        }
+        catch (_) {
+            // Ignore localStorage access failures.
+        }
+        try {
+            var search = globalScope &&
+                globalScope.location &&
+                typeof globalScope.location.search === "string"
+                ? globalScope.location.search
+                : "";
+            var params = new URLSearchParams(search);
+            return params.get("gp_debug") === "1";
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    function createDepopDebugLogger(enabled) {
+        if (!enabled && !isGlobalDepopDebugEnabled()) {
+            return null;
+        }
+        return function (stage, payload) {
+            if (payload && typeof payload === "object") {
+                console.debug("[Grailed+][Depop Debug]", stage, payload);
+                return;
+            }
+            console.debug("[Grailed+][Depop Debug]", stage);
+        };
+    }
     function ensureMarketCompareController(options) {
         var config = options && typeof options === "object" ? options : {};
         var state = config.state;
@@ -8862,6 +9345,8 @@
         var marketProviders = config.marketProviders;
         var depopProviderFactory = config.depopProviderFactory;
         var onStateUpdate = typeof config.onStateUpdate === "function" ? config.onStateUpdate : function () { };
+        var currentContext = state && state.latestPanelContext ? state.latestPanelContext : null;
+        var debugLogger = createDepopDebugLogger(Boolean(currentContext && currentContext.marketCompareDebugEnabled === true));
         if (!state || typeof state !== "object") {
             return null;
         }
@@ -8876,12 +9361,15 @@
             return null;
         }
         var registry = marketProviders && typeof marketProviders.createRegistry === "function"
-            ? marketProviders.createRegistry()
+            ? marketProviders.createRegistry({
+                debugLogger: debugLogger
+            })
             : null;
         var depopProvider = depopProviderFactory && typeof depopProviderFactory.createDepopProvider === "function"
             ? depopProviderFactory.createDepopProvider({
                 maxRequests: 5,
-                cooldownMs: 1200
+                cooldownMs: 1200,
+                debugLogger: debugLogger
             })
             : null;
         var mockProvider = !depopProvider &&
@@ -8899,7 +9387,8 @@
         }
         state.marketCompareController = marketCompareControllerApi.createController({
             providerRegistry: registry,
-            provider: depopProvider || mockProvider
+            provider: depopProvider || mockProvider,
+            debugLogger: debugLogger
         });
         if (state.marketCompareController &&
             typeof state.marketCompareController.subscribe === "function") {
@@ -8973,11 +9462,7 @@
             : "balanced";
         var marketCompareStrictMode = panelOptions.marketCompareStrictMode === true;
         var marketCompareMlSimilarityEnabled = panelOptions.marketCompareMlSimilarityEnabled !== false;
-        var controller = marketCompareEnabled ? ensureController() : null;
-        if (controller && typeof controller.resetForListing === "function") {
-            controller.resetForListing(panelOptions.listing || null);
-        }
-        var marketCompareState = controller && typeof controller.getState === "function" ? controller.getState() : null;
+        var marketCompareDebugEnabled = panelOptions.marketCompareDebugEnabled === true;
         state.latestPanelContext = {
             listing: panelOptions.listing || null,
             metrics: panelOptions.metrics || null,
@@ -8994,9 +9479,15 @@
                 ? Math.floor(Number(panelOptions.marketCompareResultsLimit))
                 : 5,
             marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+            marketCompareDebugEnabled: marketCompareDebugEnabled,
             showMetadataButton: panelOptions.showMetadataButton !== false,
             renderToken: state.renderToken
         };
+        var controller = marketCompareEnabled ? ensureController() : null;
+        if (controller && typeof controller.resetForListing === "function") {
+            controller.resetForListing(panelOptions.listing || null);
+        }
+        var marketCompareState = controller && typeof controller.getState === "function" ? controller.getState() : null;
         if (state.latestPanelContext.marketCompareEnabled &&
             state.latestPanelContext.marketCompareMlSimilarityEnabled &&
             ImageSimilarity &&
@@ -9018,6 +9509,7 @@
             marketCompareStrictMode: state.latestPanelContext.marketCompareStrictMode,
             marketCompareResultsLimit: state.latestPanelContext.marketCompareResultsLimit,
             marketCompareMlSimilarityEnabled: state.latestPanelContext.marketCompareMlSimilarityEnabled,
+            marketCompareDebugEnabled: state.latestPanelContext.marketCompareDebugEnabled,
             showMetadataButton: state.latestPanelContext.showMetadataButton,
             marketCompare: marketCompareEnabled ? marketCompareState : null,
             onMarketCompareClick: onMarketCompareClick
@@ -9415,7 +9907,8 @@
                     rankingFormula: "balanced",
                     strictMode: false,
                     expandedAmountEnabled: false,
-                    mlSimilarityEnabled: true
+                    mlSimilarityEnabled: true,
+                    debugEnabled: false
                 });
             };
         var applySidebarCurrency = typeof config.applySidebarCurrency === "function" ? config.applySidebarCurrency : function () { };
@@ -9460,6 +9953,7 @@
             var marketCompareStrictMode = marketCompareSettings.strictMode === true;
             var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
             var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
+            var marketCompareDebugEnabled = marketCompareSettings.debugEnabled === true;
             var showMetadataButton = values[2] !== false;
             var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
             if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
@@ -9478,6 +9972,7 @@
                 marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
                 marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+                marketCompareDebugEnabled: marketCompareDebugEnabled,
                 showMetadataButton: showMetadataButton
             });
             applySidebarCurrency(currencyContext);
@@ -9766,6 +10261,7 @@
                     ? Math.floor(Number(config.marketCompareResultsLimit))
                     : 5,
                 marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
+                marketCompareDebugEnabled: config.marketCompareDebugEnabled === true,
                 showMetadataButton: config.showMetadataButton !== false
             });
             applySidebarCurrency(currencyContext);
@@ -9803,6 +10299,7 @@
                     ? Math.floor(Number(config.marketCompareResultsLimit))
                     : 5,
                 marketCompareMlSimilarityEnabled: config.marketCompareMlSimilarityEnabled !== false,
+                marketCompareDebugEnabled: config.marketCompareDebugEnabled === true,
                 showMetadataButton: config.showMetadataButton !== false
             });
             applySidebarCurrency(fallbackCurrency);
@@ -10196,7 +10693,10 @@
                 : false,
             mlSimilarityEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
                 ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
-                : true
+                : true,
+            debugEnabled: Settings && typeof Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED === "boolean"
+                ? Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED
+                : false
         };
     }
     function resolveMarketCompareSettings() {
@@ -10217,7 +10717,10 @@
                     : fallback.expandedAmountEnabled,
                 mlSimilarityEnabled: value && typeof value.mlSimilarityEnabled === "boolean"
                     ? value.mlSimilarityEnabled
-                    : fallback.mlSimilarityEnabled
+                    : fallback.mlSimilarityEnabled,
+                debugEnabled: value && typeof value.debugEnabled === "boolean"
+                    ? value.debugEnabled
+                    : fallback.debugEnabled
             };
         })
             .catch(function () {
@@ -10495,6 +10998,7 @@
             var marketCompareStrictMode = marketCompareSettings.strictMode === true;
             var marketCompareResultsLimit = marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
             var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
+            var marketCompareDebugEnabled = marketCompareSettings.debugEnabled === true;
             var showMetadataButton = Boolean(values[2]);
             if (!Url.isListingPath(location.pathname)) {
                 return;
@@ -10558,6 +11062,7 @@
                 marketCompareStrictMode: marketCompareStrictMode,
                 marketCompareResultsLimit: marketCompareResultsLimit,
                 marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+                marketCompareDebugEnabled: marketCompareDebugEnabled,
                 showMetadataButton: showMetadataButton,
                 resolveCurrencyContext: resolveCurrencyContext,
                 createUsdCurrencyContext: createUsdCurrencyContext,

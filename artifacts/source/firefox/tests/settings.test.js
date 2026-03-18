@@ -13,6 +13,7 @@ const {
   DEFAULT_MARKET_COMPARE_STRICT_MODE,
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
   DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
+  DEFAULT_MARKET_COMPARE_DEBUG_ENABLED,
   DEFAULT_DARK_MODE_ENABLED,
   DEFAULT_DARK_MODE_BEHAVIOR,
   DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -26,6 +27,7 @@ const {
   MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
   MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
+  MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY,
   DARK_MODE_ENABLED_STORAGE_KEY,
   DARK_MODE_BEHAVIOR_STORAGE_KEY,
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -53,6 +55,8 @@ const {
   setMarketCompareExpandedAmountEnabled,
   getMarketCompareMlSimilarityEnabled,
   setMarketCompareMlSimilarityEnabled,
+  getMarketCompareDebugEnabled,
+  setMarketCompareDebugEnabled,
   getMarketCompareSettings,
   getDarkModeEnabled,
   setDarkModeEnabled,
@@ -615,7 +619,8 @@ test("getMarketCompareSettings returns the grouped market compare state", async 
     [MARKET_COMPARE_RANKING_FORMULA_STORAGE_KEY]: "metadata",
     [MARKET_COMPARE_STRICT_MODE_STORAGE_KEY]: true,
     [MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY]: true,
-    [MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY]: true
+    [MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY]: true,
+    [MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY]: true
   });
   global.chrome = chromeMock;
   global.browser = undefined;
@@ -627,8 +632,51 @@ test("getMarketCompareSettings returns the grouped market compare state", async 
       rankingFormula: "metadata",
       strictMode: true,
       expandedAmountEnabled: true,
-      mlSimilarityEnabled: true
+      mlSimilarityEnabled: true,
+      debugEnabled: true
     });
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("getMarketCompareDebugEnabled defaults to disabled", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const enabled = await getMarketCompareDebugEnabled();
+    assert.equal(enabled, DEFAULT_MARKET_COMPARE_DEBUG_ENABLED);
+    assert.equal(enabled, false);
+  } finally {
+    global.chrome = previousChrome;
+    global.browser = previousBrowser;
+  }
+});
+
+test("setMarketCompareDebugEnabled persists boolean values", async () => {
+  const previousChrome = global.chrome;
+  const previousBrowser = global.browser;
+
+  const chromeMock = createChromeStorage({});
+  global.chrome = chromeMock;
+  global.browser = undefined;
+
+  try {
+    const onResult = await setMarketCompareDebugEnabled(true);
+    assert.deepEqual(onResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY], true);
+    assert.equal(await getMarketCompareDebugEnabled(), true);
+
+    const offResult = await setMarketCompareDebugEnabled(false);
+    assert.deepEqual(offResult, { ok: true });
+    assert.equal(chromeMock.__state[MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY], false);
+    assert.equal(await getMarketCompareDebugEnabled(), false);
   } finally {
     global.chrome = previousChrome;
     global.browser = previousBrowser;

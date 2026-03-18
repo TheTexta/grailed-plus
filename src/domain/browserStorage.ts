@@ -1,12 +1,14 @@
 interface BSStorageLike {
   get: (...args: unknown[]) => unknown;
   set: (...args: unknown[]) => unknown;
+  remove?: (...args: unknown[]) => unknown;
 }
 
 interface BSModule {
   getStorageLocal: () => BSStorageLike | null;
   storageGet: (storage: BSStorageLike | null, key: string) => Promise<Record<string, unknown>>;
   storageSet: (storage: BSStorageLike | null, payload: Record<string, unknown>) => Promise<boolean>;
+  storageRemove: (storage: BSStorageLike | null, key: string | string[]) => Promise<boolean>;
 }
 
 interface BSGlobalRoot {
@@ -108,10 +110,42 @@ interface BSGlobalRoot {
       });
     }
 
+    function storageRemove(storage: BSStorageLike | null, key: string | string[]): Promise<boolean> {
+      if (!storage || typeof storage.remove !== "function") {
+        return Promise.resolve(false);
+      }
+
+      try {
+        const result = storage.remove(key);
+        if (result && typeof (result as Promise<unknown>).then === "function") {
+          return (result as Promise<unknown>).then(function () {
+            return true;
+          });
+        }
+      } catch (_) {
+        // Try callback style below.
+      }
+
+      return new Promise(function (resolve) {
+        try {
+          storage.remove!(key, function () {
+            if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+              resolve(false);
+              return;
+            }
+            resolve(true);
+          });
+        } catch (_) {
+          resolve(false);
+        }
+      });
+    }
+
     return {
       getStorageLocal,
       storageGet,
-      storageSet
+      storageSet,
+      storageRemove
     };
   }
 );

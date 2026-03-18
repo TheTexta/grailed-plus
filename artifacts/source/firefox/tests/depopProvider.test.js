@@ -538,6 +538,86 @@ test("depop provider falls back to api v3 search when html has no candidates", a
   assert.ok(calls.some((url) => url.indexOf("/api/v3/search/products/") !== -1));
 });
 
+test("depop provider emits debug logs for html and api fallback flow", async () => {
+  const logs = [];
+  const provider = createDepopProvider({
+    debugLogger: function (stage, payload) {
+      logs.push([stage, payload]);
+    },
+    fetchImpl: async function (url) {
+      if (String(url).indexOf("/api/v3/search/products/") !== -1) {
+        return {
+          ok: true,
+          status: 200,
+          text: async function () {
+            return JSON.stringify({
+              data: {
+                products: [
+                  {
+                    id: "debug-api-1",
+                    title: "Debug API Jacket",
+                    url: "https://www.depop.com/products/user-debug-api-jacket/",
+                    price: {
+                      amount: 111,
+                      currency: "USD"
+                    },
+                    pictures: [
+                      {
+                        url: "https://images.depop.test/debug-api-jacket.jpg"
+                      }
+                    ]
+                  }
+                ]
+              }
+            });
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        text: async function () {
+          return "<html><head><title>Search | Depop</title></head><body></body></html>";
+        }
+      };
+    }
+  });
+
+  const result = await provider.search({
+    queries: ["debug api jacket"],
+    limit: 5,
+    currency: "USD"
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "provider.search_start";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "provider.html_fetch_result";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "provider.api_search_start";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "provider.api_search_success";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "provider.search_success";
+    })
+  );
+});
+
 test("depop provider reuses cached image URLs across repeated searches", async () => {
   let apiCalls = 0;
 

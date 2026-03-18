@@ -1711,27 +1711,6 @@
     return "Not enough data to estimate";
   }
 
-  function buildAvgDropSignal(metrics: any) {
-    var avgDrop = Number(metrics && metrics.averageDropPercent);
-    if (!Number.isFinite(avgDrop)) {
-      return "Trend signal is limited. Compare against external listings before buying.";
-    }
-
-    if (avgDrop >= 14) {
-      return "Strong markdown trend. Waiting may unlock a better price.";
-    }
-
-    if (avgDrop >= 8) {
-      return "Moderate markdown trend. There is room for additional price movement.";
-    }
-
-    if (avgDrop > 0) {
-      return "Light markdown trend. Price changes are gradual so timing matters less.";
-    }
-
-    return "No markdown trend detected. Compare with other markets before committing.";
-  }
-
   function formatRelativeTimestamp(timestampMs: any) {
     if (!Number.isFinite(Number(timestampMs))) {
       return "";
@@ -2130,11 +2109,6 @@
       avgValueNode.className += " " + avgToneClass;
     }
     panel.appendChild(avgRow);
-
-    var avgSignal = doc.createElement("p");
-    avgSignal.className = "grailed-plus__history-signal";
-    avgSignal.textContent = buildAvgDropSignal(metrics);
-    panel.appendChild(avgSignal);
 
     panel.appendChild(
       createRow(

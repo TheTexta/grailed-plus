@@ -125,6 +125,122 @@ test("market compare controller transitions loading -> results", async () => {
   assert.match(finalState.results[0].deltaLabel, /cheaper/);
 });
 
+test("market compare controller emits debug lifecycle logs when debug logger is enabled", async () => {
+  const registry = createRegistry({ cacheTtlMs: 0 });
+  const logs = [];
+  registry.register({
+    market: "depop",
+    search: async function () {
+      return {
+        ok: true,
+        candidates: [
+          {
+            id: "debug-1",
+            market: "depop",
+            title: "Vintage Jacket Similar",
+            url: "https://depop.test/item/debug-1",
+            price: 120,
+            currency: "USD",
+            score: 72,
+            usedImage: true,
+            imageSignalType: "ml_embedding",
+            deltaPercent: -14.3
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock",
+        requestCount: 1
+      };
+    }
+  });
+
+  const controller = createController({
+    providerRegistry: registry,
+    debugLogger: function (stage, payload) {
+      logs.push([stage, payload]);
+    }
+  });
+
+  await controller.compare({
+    listing: sampleListing(),
+    currency: "USD",
+    minScore: 0
+  });
+
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "compare.start";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "compare.queries_built";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "compare.search_dispatch";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "compare.provider_success";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "compare.finish_success";
+    })
+  );
+});
+
+test("market compare controller does not emit console logs without a debug logger", async () => {
+  const registry = createRegistry({ cacheTtlMs: 0 });
+  registry.register({
+    market: "depop",
+    search: async function () {
+      return {
+        ok: true,
+        candidates: [
+          {
+            id: "quiet-1",
+            market: "depop",
+            title: "Vintage Jacket Similar",
+            url: "https://depop.test/item/quiet-1",
+            price: 120,
+            currency: "USD",
+            score: 72,
+            deltaPercent: -14.3
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock"
+      };
+    }
+  });
+
+  const previousConsoleDebug = console.debug;
+  let consoleCalls = 0;
+  console.debug = function () {
+    consoleCalls += 1;
+  };
+
+  try {
+    const controller = createController({ providerRegistry: registry });
+    await controller.compare({
+      listing: sampleListing(),
+      currency: "USD",
+      minScore: 0
+    });
+  } finally {
+    console.debug = previousConsoleDebug;
+  }
+
+  assert.equal(consoleCalls, 0);
+});
+
 test("market compare controller waits for async rankCandidatesAsync results", async () => {
   const registry = createRegistry();
   registry.register({

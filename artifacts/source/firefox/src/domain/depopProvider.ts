@@ -229,6 +229,21 @@
   };
 
   type DepopAttemptResult = DepopAttemptFailure | DepopAttemptSuccess;
+  type DepopDebugLogger = (stage: string, payload?: Record<string, unknown>) => void;
+
+  function summarizeDepopCandidate(candidate: any) {
+    if (!candidate || typeof candidate !== "object") {
+      return null;
+    }
+
+    return {
+      id: normalizeString(candidate.id, ""),
+      title: normalizeString(candidate.title, ""),
+      price: normalizeNumber(candidate.price),
+      currency: normalizeCurrencyCode(candidate.currency) || "USD",
+      imageUrl: normalizeUrlString(candidate.imageUrl || candidate.image)
+    };
+  }
 
   function normalizeTitleCandidate(value: any) {
     var title = normalizeString(value, "");
@@ -1451,7 +1466,15 @@
     }
   }
 
-  async function tryApiSearch(query: any, payload: any, fetchImpl: any, runtimeSendMessage: any, timeoutMs: any) {
+  async function tryApiSearch(
+    query: any,
+    payload: any,
+    fetchImpl: any,
+    runtimeSendMessage: any,
+    timeoutMs: any,
+    debugLogger?: DepopDebugLogger | null
+  ) {
+    var debugLog = typeof debugLogger === "function" ? debugLogger : function () {};
     function buildAttemptFailure(errorCode: any, retryAfterMs: any): DepopAttemptFailure {
       return {
         ok: false,
@@ -1470,6 +1493,10 @@
     }
 
     var apiUrl = buildApiSearchUrl(query, payload);
+    debugLog("provider.api_search_start", {
+      query: normalizeString(query, ""),
+      url: apiUrl
+    });
     var fetched = await fetchSearchPage(
       apiUrl,
       fetchImpl,
@@ -1477,13 +1504,30 @@
       "application/json,text/plain,*/*",
       timeoutMs
     );
+    debugLog("provider.api_search_result", {
+      query: normalizeString(query, ""),
+      url: apiUrl,
+      ok: Boolean(fetched && fetched.ok),
+      status: Number(fetched && fetched.status) || 0,
+      transport: normalizeString(fetched && fetched.source, ""),
+      textLength: normalizeString(fetched && fetched.text, "").length
+    });
 
     if (!fetched.ok) {
       if (fetched.status === 0) {
+        debugLog("provider.api_search_failure", {
+          query: normalizeString(query, ""),
+          errorCode: "NETWORK_ERROR"
+        });
         return buildAttemptFailure("NETWORK_ERROR", 1500);
       }
 
       var mappedError = mapHttpError(fetched.status);
+      debugLog("provider.api_search_failure", {
+        query: normalizeString(query, ""),
+        errorCode: mappedError.errorCode,
+        retryAfterMs: mappedError.retryAfterMs
+      });
       return buildAttemptFailure(mappedError.errorCode, mappedError.retryAfterMs);
     }
 
@@ -1499,22 +1543,44 @@
       var htmlCandidates = parseHtmlCandidateState(text, null).candidates;
 
       if (htmlCandidates.length) {
+        debugLog("provider.api_search_html_fallback", {
+          query: normalizeString(query, ""),
+          candidateCount: htmlCandidates.length,
+          topCandidate: summarizeDepopCandidate(htmlCandidates[0] || null)
+        });
         return buildAttemptSuccess(htmlCandidates);
       }
 
+      debugLog("provider.api_search_failure", {
+        query: normalizeString(query, ""),
+        errorCode: "PARSE_ERROR"
+      });
       return buildAttemptFailure("PARSE_ERROR", 0);
     }
 
     var candidates = normalizeParsedCandidates(parseCandidatesFromApiPayload(parsed) || []);
 
     if (candidates.length) {
+      debugLog("provider.api_search_success", {
+        query: normalizeString(query, ""),
+        candidateCount: candidates.length,
+        topCandidate: summarizeDepopCandidate(candidates[0] || null)
+      });
       return buildAttemptSuccess(candidates);
     }
 
     if (hasNoResultsInApiPayload(parsed)) {
+      debugLog("provider.api_search_failure", {
+        query: normalizeString(query, ""),
+        errorCode: "NO_RESULTS"
+      });
       return buildAttemptFailure("NO_RESULTS", 0);
     }
 
+    debugLog("provider.api_search_failure", {
+      query: normalizeString(query, ""),
+      errorCode: "PARSE_ERROR"
+    });
     return buildAttemptFailure("PARSE_ERROR", 0);
   }
 
@@ -1548,6 +1614,7 @@
     var maxRetries = Math.max(0, Number(input.maxRetries) || 0);
     var maxAdditionalRequests = Math.max(0, Number(input.maxAdditionalRequests) || 0);
     var cooldownBaseMs = Math.max(Number(input.cooldownMs) || 0, 1200);
+    var debugLog = typeof input.debugLogger === "function" ? input.debugLogger : function () {};
     var requestCount = 0;
     var loadingAttempts = 0;
     var sawNetworkError = false;
@@ -1561,9 +1628,21 @@
       loadingAttempts < maxRetries &&
       requestCount < maxAdditionalRequests
     ) {
+      debugLog("provider.loading_shell_retry_wait", {
+        url: url,
+        attempt: loadingAttempts + 1
+      });
       await sleep(withJitter(cooldownBaseMs * (loadingAttempts + 1)));
       var retryFetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
       requestCount += 1;
+      debugLog("provider.loading_shell_retry_result", {
+        url: url,
+        attempt: loadingAttempts + 1,
+        ok: Boolean(retryFetched && retryFetched.ok),
+        status: Number(retryFetched && retryFetched.status) || 0,
+        transport: normalizeString(retryFetched && retryFetched.source, ""),
+        textLength: normalizeString(retryFetched && retryFetched.text, "").length
+      });
 
       if (!retryFetched.ok || !retryFetched.text) {
         if (!retryFetched.ok && retryFetched.status === 0) {
@@ -1591,9 +1670,18 @@
     };
   }
 
-  async function enrichHrefFallbackCandidates(candidates: any, fetchImpl: any, runtimeSendMessage: any, maxFetches: any, timeoutMs: any, normalizeCandidates: any) {
+  async function enrichHrefFallbackCandidates(
+    candidates: any,
+    fetchImpl: any,
+    runtimeSendMessage: any,
+    maxFetches: any,
+    timeoutMs: any,
+    normalizeCandidates: any,
+    debugLogger?: DepopDebugLogger | null
+  ) {
     var list = Array.isArray(candidates) ? candidates : [];
     var fetchBudget = Math.max(0, Number(maxFetches) || 0);
+    var debugLog = typeof debugLogger === "function" ? debugLogger : function () {};
     if (!list.length || fetchBudget < 1) {
       return {
         candidates: [],
@@ -1612,8 +1700,19 @@
         continue;
       }
 
+      debugLog("provider.href_enrichment_fetch_start", {
+        url: url,
+        attempt: requestCount + 1
+      });
       var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
       requestCount += 1;
+      debugLog("provider.href_enrichment_fetch_result", {
+        url: url,
+        ok: Boolean(fetched && fetched.ok),
+        status: Number(fetched && fetched.status) || 0,
+        transport: normalizeString(fetched && fetched.source, ""),
+        textLength: normalizeString(fetched && fetched.text, "").length
+      });
       if (!fetched.ok || !fetched.text) {
         continue;
       }
@@ -1633,6 +1732,10 @@
 
       seenIds[id] = true;
       output.push(best);
+      debugLog("provider.href_enrichment_candidate_added", {
+        url: url,
+        candidate: summarizeDepopCandidate(best)
+      });
     }
 
     return {
@@ -1641,7 +1744,15 @@
     };
   }
 
-  async function trySingleQueryFallback(fetchImpl: any, runtimeSendMessage: any, query: any, cooldownMs: any, timeoutMs: any) {
+  async function trySingleQueryFallback(
+    fetchImpl: any,
+    runtimeSendMessage: any,
+    query: any,
+    cooldownMs: any,
+    timeoutMs: any,
+    debugLogger?: DepopDebugLogger | null
+  ) {
+    var debugLog = typeof debugLogger === "function" ? debugLogger : function () {};
     var fallbackQuery = normalizeString(query, "");
     if (!fallbackQuery) {
       return {
@@ -1657,7 +1768,19 @@
     await sleep(withJitter(Math.max(cooldownMs, 1200) * 1.5));
 
     var fallbackUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(fallbackQuery);
+    debugLog("provider.single_query_fallback_start", {
+      query: fallbackQuery,
+      url: fallbackUrl
+    });
     var fetched = await fetchSearchPage(fallbackUrl, fetchImpl, runtimeSendMessage, undefined, timeoutMs);
+    debugLog("provider.single_query_fallback_result", {
+      query: fallbackQuery,
+      url: fallbackUrl,
+      ok: Boolean(fetched && fetched.ok),
+      status: Number(fetched && fetched.status) || 0,
+      transport: normalizeString(fetched && fetched.source, ""),
+      textLength: normalizeString(fetched && fetched.text, "").length
+    });
 
     if (!fetched.ok && fetched.status === 0) {
       return {
@@ -1706,7 +1829,8 @@
         cooldownMs: cooldownMs,
         timeoutMs: timeoutMs,
         maxRetries: 2,
-        maxAdditionalRequests: 2
+        maxAdditionalRequests: 2,
+        debugLogger: debugLog
       });
 
       latestHtml = retried.latestHtml;
@@ -1756,6 +1880,7 @@
       Number.isFinite(Number(config.fetchTimeoutMs)) && Number(config.fetchTimeoutMs) > 0
         ? Math.max(100, Number(config.fetchTimeoutMs))
         : DEFAULT_FETCH_TIMEOUT_MS;
+    var debugLog = typeof config.debugLogger === "function" ? config.debugLogger : function () {};
     var imageUrlCache: Record<string, string> = Object.create(null);
 
     function getCandidateCacheKeys(candidate: any) {
@@ -1817,6 +1942,15 @@
         .map(applyImageUrlCache);
     }
 
+    function summarizeCandidateList(candidates: any) {
+      var list = Array.isArray(candidates) ? candidates : [];
+      return {
+        candidateCount: list.length,
+        pricedCandidateCount: list.filter(hasMeaningfulPrice).length,
+        topCandidate: summarizeDepopCandidate(list[0] || null)
+      };
+    }
+
     function buildSearchFailure(errorCode: any, retryAfterMs: any, partial: any, sourceType: any) {
       return {
         ok: false,
@@ -1860,9 +1994,22 @@
       }
 
       var broadUrl = "https://www.depop.com/search/?q=" + encodeURIComponent(broadQuery);
+      debugLog("provider.broad_fallback_start", {
+        originalQuery: normalizeString(query, ""),
+        broadQuery: broadQuery,
+        url: broadUrl,
+        sourceType: normalizeString(sourceType, "html")
+      });
       var broadFetched = await fetchSearchPage(broadUrl, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
       var nextRequestTotal = requestTotal + 1;
       var sawNetworkError = !broadFetched.ok && broadFetched.status === 0;
+      debugLog("provider.broad_fallback_result", {
+        broadQuery: broadQuery,
+        ok: Boolean(broadFetched && broadFetched.ok),
+        status: Number(broadFetched && broadFetched.status) || 0,
+        transport: normalizeString(broadFetched && broadFetched.source, ""),
+        textLength: normalizeString(broadFetched && broadFetched.text, "").length
+      });
 
       if (!broadFetched.ok || !broadFetched.text) {
         return {
@@ -1877,6 +2024,10 @@
       if (limit != null) {
         broadCandidates = broadCandidates.slice(0, limit);
       }
+
+      debugLog("provider.broad_fallback_candidates", Object.assign({
+        broadQuery: broadQuery
+      }, summarizeCandidateList(broadCandidates)));
 
       return {
         requestTotal: nextRequestTotal,
@@ -1909,11 +2060,28 @@
       };
       var fallbackQuery = normalizeString(state && state.fallbackQuery, "");
       var url = "https://www.depop.com/search/?q=" + encodeURIComponent(query);
+      debugLog("provider.query_start", {
+        query: normalizeString(query, ""),
+        url: url,
+        requestTotal: nextState.requestTotal,
+        maxRequests: maxRequests
+      });
 
       var fetched = await fetchSearchPage(url, fetchImpl, runtimeSendMessage, undefined, fetchTimeoutMs);
+      debugLog("provider.html_fetch_result", {
+        query: normalizeString(query, ""),
+        url: url,
+        ok: Boolean(fetched && fetched.ok),
+        status: Number(fetched && fetched.status) || 0,
+        transport: normalizeString(fetched && fetched.source, ""),
+        textLength: normalizeString(fetched && fetched.text, "").length
+      });
       if (!fetched.ok && fetched.status === 0) {
         nextState.sawNetworkError = true;
         nextState.partial = true;
+        debugLog("provider.query_network_error", {
+          query: normalizeString(query, "")
+        });
         return nextState;
       }
 
@@ -1926,7 +2094,8 @@
             payload,
             fetchImpl,
             runtimeSendMessage,
-            fetchTimeoutMs
+            fetchTimeoutMs,
+            debugLog
           );
           nextState.requestTotal += apiOnHttpError.requestCount || 0;
 
@@ -1951,7 +2120,8 @@
             runtimeSendMessage,
             fallbackQuery,
             cooldownMs,
-            fetchTimeoutMs
+            fetchTimeoutMs,
+            debugLog
           );
           nextState.requestTotal += fallbackAttempt.requestCount || 0;
 
@@ -1972,11 +2142,20 @@
         }
 
         if (mapped.errorCode === "FORBIDDEN_OR_BLOCKED" || mapped.errorCode === "RATE_LIMITED") {
+          debugLog("provider.query_terminal_http_error", {
+            query: normalizeString(query, ""),
+            errorCode: mapped.errorCode,
+            retryAfterMs: mapped.retryAfterMs
+          });
           nextState.response = buildSearchFailure(mapped.errorCode, mapped.retryAfterMs, nextState.partial, "html");
           return nextState;
         }
 
         nextState.partial = true;
+        debugLog("provider.query_http_error_partial", {
+          query: normalizeString(query, ""),
+          status: Number(fetched && fetched.status) || 0
+        });
         return nextState;
       }
 
@@ -1988,6 +2167,9 @@
 
       var latestHtml = html;
       if (isBlockedHtml(html)) {
+        debugLog("provider.blocked_html_detected", {
+          query: normalizeString(query, "")
+        });
         nextState.response = buildSearchFailure("FORBIDDEN_OR_BLOCKED", 120000, nextState.partial, "html");
         return nextState;
       }
@@ -2010,7 +2192,8 @@
           cooldownMs: cooldownMs,
           timeoutMs: fetchTimeoutMs,
           maxRetries: 2,
-          maxAdditionalRequests: Math.max(0, maxRequests - nextState.requestTotal - 1)
+          maxAdditionalRequests: Math.max(0, maxRequests - nextState.requestTotal - 1),
+          debugLogger: debugLog
         });
         nextState.requestTotal += retriedState.requestCount;
 
@@ -2038,7 +2221,8 @@
           payload,
           fetchImpl,
           runtimeSendMessage,
-          fetchTimeoutMs
+          fetchTimeoutMs,
+          debugLog
         );
         nextState.requestTotal += apiFallback.requestCount || 0;
 
@@ -2054,13 +2238,19 @@
 
       if (!pricedParsedCandidates.length && parsedCandidates.length && nextState.requestTotal < maxRequests) {
         var remainingBudget = Math.max(0, maxRequests - nextState.requestTotal);
+        debugLog("provider.href_enrichment_start", {
+          query: normalizeString(query, ""),
+          candidateCount: parsedCandidates.length,
+          remainingBudget: remainingBudget
+        });
         var enriched = await enrichHrefFallbackCandidates(
           parsedCandidates,
           fetchImpl,
           runtimeSendMessage,
           remainingBudget,
           fetchTimeoutMs,
-          normalizeAndHydrateCandidates
+          normalizeAndHydrateCandidates,
+          debugLog
         );
 
         nextState.requestTotal += enriched.requestCount || 0;
@@ -2080,6 +2270,10 @@
       }
 
       nextState.candidates = pricedParsedCandidates;
+      debugLog("provider.query_candidates_ready", Object.assign({
+        query: normalizeString(query, ""),
+        sourceType: nextState.sourceType
+      }, summarizeCandidateList(pricedParsedCandidates)));
       return nextState;
     }
 
@@ -2101,7 +2295,21 @@
         var sawNoResults = false;
         var sawNetworkError = false;
 
+        debugLog("provider.search_start", {
+          listingId: normalizeString(payload.listingId, ""),
+          queries: queries.slice(),
+          limit: limit,
+          currency: normalizeCurrencyCode(payload.currency) || "USD",
+          title: normalizeString(payload.title, ""),
+          brand: normalizeString(payload.brand, ""),
+          size: normalizeString(payload.size, ""),
+          category: normalizeString(payload.category, "")
+        });
+
         if (!queries.length) {
+          debugLog("provider.search_failure", {
+            errorCode: "MISSING_LISTING_DATA"
+          });
           return buildSearchFailure("MISSING_LISTING_DATA", 0, false, "html");
         }
 
@@ -2115,6 +2323,10 @@
           });
 
           if (queryResult.response) {
+            debugLog("provider.search_failure", {
+              errorCode: normalizeString(queryResult.response.errorCode, "NETWORK_ERROR"),
+              requestTotal: queryResult.requestTotal
+            });
             return queryResult.response;
           }
 
@@ -2153,21 +2365,48 @@
             }
 
             if (broadFallback.candidates.length) {
+              debugLog("provider.search_success", Object.assign({
+                sourceType: sourceType,
+                partial: true,
+                requestTotal: requestTotal,
+                via: "broad_fallback"
+              }, summarizeCandidateList(broadFallback.candidates)));
               return buildSearchSuccess(broadFallback.candidates, true, sourceType, requestTotal);
             }
           }
 
           if (sawNoResults) {
+            debugLog("provider.search_failure", {
+              errorCode: "NO_RESULTS",
+              partial: partial,
+              requestTotal: requestTotal
+            });
             return buildSearchFailure("NO_RESULTS", 0, partial, "html");
           }
 
           if (sawNetworkError) {
+            debugLog("provider.search_failure", {
+              errorCode: "NETWORK_ERROR",
+              partial: partial,
+              requestTotal: requestTotal
+            });
             return buildSearchFailure("NETWORK_ERROR", 1500, partial, "html");
           }
 
+          debugLog("provider.search_failure", {
+            errorCode: "PARSE_ERROR",
+            partial: partial,
+            requestTotal: requestTotal
+          });
           return buildSearchFailure("PARSE_ERROR", 0, partial, "html");
         }
 
+        debugLog("provider.search_success", Object.assign({
+          sourceType: sourceType,
+          partial: partial,
+          requestTotal: requestTotal,
+          via: "primary"
+        }, summarizeCandidateList(normalized)));
         return buildSearchSuccess(normalized, partial, sourceType, requestTotal);
       }
     };

@@ -44,6 +44,7 @@ interface URenderUnavailableOptions {
         strictMode: boolean;
         expandedAmountEnabled: boolean;
         mlSimilarityEnabled: boolean;
+        debugEnabled: boolean;
       }>)
     | null;
   resolveListingMetadataButtonEnabled?: (() => Promise<boolean>) | null;
@@ -61,6 +62,7 @@ interface URenderUnavailableOptions {
         marketCompareStrictMode: boolean;
         marketCompareResultsLimit: number;
         marketCompareMlSimilarityEnabled: boolean;
+        marketCompareDebugEnabled: boolean;
         showMetadataButton: boolean;
       }) => void)
     | null;
@@ -147,7 +149,8 @@ interface UUnavailableGlobal {
               rankingFormula: "balanced",
               strictMode: false,
               expandedAmountEnabled: false,
-              mlSimilarityEnabled: true
+              mlSimilarityEnabled: true,
+              debugEnabled: false
             });
           };
     var applySidebarCurrency =
@@ -193,12 +196,13 @@ interface UUnavailableGlobal {
       var currencyContext = values[0];
       var marketCompareSettings =
         values[1] && typeof values[1] === "object"
-          ? (values[1] as {
+            ? (values[1] as {
               enabled?: boolean;
               rankingFormula?: string;
               strictMode?: boolean;
               expandedAmountEnabled?: boolean;
               mlSimilarityEnabled?: boolean;
+              debugEnabled?: boolean;
             })
           : {};
       var marketCompareEnabled = marketCompareSettings.enabled !== false;
@@ -210,6 +214,7 @@ interface UUnavailableGlobal {
       var marketCompareResultsLimit =
         marketCompareSettings.expandedAmountEnabled === true ? 10 : 5;
       var marketCompareMlSimilarityEnabled = marketCompareSettings.mlSimilarityEnabled !== false;
+      var marketCompareDebugEnabled = marketCompareSettings.debugEnabled === true;
       var showMetadataButton = values[2] !== false;
       var latestPathname = locationObj && typeof locationObj.pathname === "string" ? locationObj.pathname : "";
       if (renderToken !== safeState.renderToken || !isListingPath(latestPathname)) {
@@ -229,6 +234,7 @@ interface UUnavailableGlobal {
         marketCompareStrictMode: marketCompareStrictMode,
         marketCompareResultsLimit: marketCompareResultsLimit,
         marketCompareMlSimilarityEnabled: marketCompareMlSimilarityEnabled,
+        marketCompareDebugEnabled: marketCompareDebugEnabled,
         showMetadataButton: showMetadataButton
       });
       applySidebarCurrency(currencyContext);

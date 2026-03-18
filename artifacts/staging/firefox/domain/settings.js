@@ -17,6 +17,7 @@
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_DEBUG_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
@@ -37,6 +38,7 @@
     const MARKET_COMPARE_STRICT_MODE_STORAGE_KEY = "grailed_plus_market_compare_strict_mode_v1";
     const MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY = "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY = "grailed_plus_market_compare_ml_similarity_enabled_v1";
+    const MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY = "grailed_plus_market_compare_debug_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
@@ -203,6 +205,7 @@
     const marketCompareStrictModeSetting = createBooleanSetting(MARKET_COMPARE_STRICT_MODE_STORAGE_KEY, DEFAULT_MARKET_COMPARE_STRICT_MODE, "market compare strict mode status");
     const marketCompareExpandedAmountSetting = createBooleanSetting(MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY, DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED, "market compare expanded amount status");
     const marketCompareMlSimilaritySetting = createBooleanSetting(MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY, DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED, "market compare ml similarity status");
+    const marketCompareDebugSetting = createBooleanSetting(MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY, DEFAULT_MARKET_COMPARE_DEBUG_ENABLED, "market compare debug status");
     const darkModeEnabledSetting = createBooleanSetting(DARK_MODE_ENABLED_STORAGE_KEY, DEFAULT_DARK_MODE_ENABLED, "dark mode status");
     const darkModeBehaviorSetting = createValidatedSetting(DARK_MODE_BEHAVIOR_STORAGE_KEY, DEFAULT_DARK_MODE_BEHAVIOR, normalizeDarkModeBehavior, "Dark mode behavior must be either 'system' or 'permanent'.", "Failed to persist dark mode behavior.");
     const darkModePrimaryColorSetting = createValidatedSetting(DARK_MODE_PRIMARY_COLOR_STORAGE_KEY, DEFAULT_DARK_MODE_PRIMARY_COLOR, normalizeHexColor, "Primary color must be a valid hex value.", "Failed to persist dark mode primary color.");
@@ -261,20 +264,28 @@
     function setMarketCompareMlSimilarityEnabled(enabled) {
         return marketCompareMlSimilaritySetting.set(enabled);
     }
+    function getMarketCompareDebugEnabled() {
+        return marketCompareDebugSetting.get();
+    }
+    function setMarketCompareDebugEnabled(enabled) {
+        return marketCompareDebugSetting.set(enabled);
+    }
     function getMarketCompareSettings() {
         return Promise.all([
             getMarketCompareEnabled(),
             getMarketCompareRankingFormula(),
             getMarketCompareStrictMode(),
             getMarketCompareExpandedAmountEnabled(),
-            getMarketCompareMlSimilarityEnabled()
+            getMarketCompareMlSimilarityEnabled(),
+            getMarketCompareDebugEnabled()
         ]).then(function (values) {
             return {
                 enabled: values[0],
                 rankingFormula: values[1],
                 strictMode: values[2],
                 expandedAmountEnabled: values[3],
-                mlSimilarityEnabled: values[4]
+                mlSimilarityEnabled: values[4],
+                debugEnabled: values[5]
             };
         });
     }
@@ -312,6 +323,7 @@
         DEFAULT_MARKET_COMPARE_STRICT_MODE,
         DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
         DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
+        DEFAULT_MARKET_COMPARE_DEBUG_ENABLED,
         DEFAULT_DARK_MODE_ENABLED,
         DEFAULT_DARK_MODE_BEHAVIOR,
         DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -327,6 +339,7 @@
         MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
         MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
         MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
+        MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY,
         DARK_MODE_ENABLED_STORAGE_KEY,
         DARK_MODE_BEHAVIOR_STORAGE_KEY,
         DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -354,6 +367,8 @@
         setMarketCompareExpandedAmountEnabled,
         getMarketCompareMlSimilarityEnabled,
         setMarketCompareMlSimilarityEnabled,
+        getMarketCompareDebugEnabled,
+        setMarketCompareDebugEnabled,
         getMarketCompareSettings,
         getDarkModeEnabled,
         setDarkModeEnabled,

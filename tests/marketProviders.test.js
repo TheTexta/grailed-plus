@@ -109,6 +109,75 @@ test("market providers registry uses TTL cache for successful identical searches
   assert.equal(callCount, 2);
 });
 
+test("market providers registry emits debug cache logs when debug logger is enabled", async () => {
+  const logs = [];
+  let callCount = 0;
+  const registry = createRegistry({
+    cacheTtlMs: 5000,
+    debugLogger: function (stage, payload) {
+      logs.push([stage, payload]);
+    }
+  });
+
+  registry.register({
+    market: "depop",
+    search: async function () {
+      callCount += 1;
+      return {
+        ok: true,
+        candidates: [
+          {
+            market: "depop",
+            id: "debug-cache-1",
+            title: "Debug Cache Jacket",
+            url: "https://depop.test/item/debug-cache-1",
+            imageUrl: "",
+            price: 101,
+            currency: "USD",
+            score: 40,
+            deltaAbsolute: 0,
+            deltaPercent: 0,
+            raw: null
+          }
+        ],
+        fetchedAt: Date.now(),
+        partial: false,
+        sourceType: "mock",
+        parserVersion: "",
+        parserMismatchLikely: false,
+        requestCount: 1,
+        errorCode: "",
+        retryAfterMs: null
+      };
+    }
+  });
+
+  const input = {
+    queries: ["debug cache jacket"],
+    currency: "USD"
+  };
+
+  await registry.search("depop", input);
+  await registry.search("depop", input);
+
+  assert.equal(callCount, 1);
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "registry.cache_miss";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "registry.cache_store";
+    })
+  );
+  assert.ok(
+    logs.some(function (entry) {
+      return entry[0] === "registry.cache_hit";
+    })
+  );
+});
+
 test("market providers registry does not cache failed responses", async () => {
   let callCount = 0;
   const registry = createRegistry({ cacheTtlMs: 1000 });

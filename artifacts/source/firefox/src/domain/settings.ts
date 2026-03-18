@@ -24,6 +24,7 @@ interface SSettingsModule {
   DEFAULT_MARKET_COMPARE_STRICT_MODE: boolean;
   DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED: boolean;
   DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED: boolean;
+  DEFAULT_MARKET_COMPARE_DEBUG_ENABLED: boolean;
   DEFAULT_DARK_MODE_ENABLED: boolean;
   DEFAULT_DARK_MODE_BEHAVIOR: "system" | "permanent";
   DEFAULT_DARK_MODE_PRIMARY_COLOR: string;
@@ -39,6 +40,7 @@ interface SSettingsModule {
   MARKET_COMPARE_STRICT_MODE_STORAGE_KEY: string;
   MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY: string;
   MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY: string;
+  MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY: string;
   DARK_MODE_ENABLED_STORAGE_KEY: string;
   DARK_MODE_BEHAVIOR_STORAGE_KEY: string;
   DARK_MODE_PRIMARY_COLOR_STORAGE_KEY: string;
@@ -66,12 +68,15 @@ interface SSettingsModule {
   setMarketCompareExpandedAmountEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getMarketCompareMlSimilarityEnabled: () => Promise<boolean>;
   setMarketCompareMlSimilarityEnabled: (enabled: unknown) => Promise<SStorageResult>;
+  getMarketCompareDebugEnabled: () => Promise<boolean>;
+  setMarketCompareDebugEnabled: (enabled: unknown) => Promise<SStorageResult>;
   getMarketCompareSettings: () => Promise<{
     enabled: boolean;
     rankingFormula: string;
     strictMode: boolean;
     expandedAmountEnabled: boolean;
     mlSimilarityEnabled: boolean;
+    debugEnabled: boolean;
   }>;
   getDarkModeEnabled: () => Promise<boolean>;
   setDarkModeEnabled: (enabled: unknown) => Promise<SStorageResult>;
@@ -108,6 +113,7 @@ interface SGlobalRoot {
     const DEFAULT_MARKET_COMPARE_STRICT_MODE = false;
     const DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED = false;
     const DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
+    const DEFAULT_MARKET_COMPARE_DEBUG_ENABLED = false;
     const DEFAULT_DARK_MODE_ENABLED = true;
     const DEFAULT_DARK_MODE_BEHAVIOR: "system" | "permanent" = "system";
     const DEFAULT_DARK_MODE_PRIMARY_COLOR = "#000000";
@@ -131,6 +137,8 @@ interface SGlobalRoot {
       "grailed_plus_market_compare_expanded_amount_enabled_v1";
     const MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY =
       "grailed_plus_market_compare_ml_similarity_enabled_v1";
+    const MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY =
+      "grailed_plus_market_compare_debug_enabled_v1";
     const DARK_MODE_ENABLED_STORAGE_KEY = "grailed_plus_dark_mode_enabled_v1";
     const DARK_MODE_BEHAVIOR_STORAGE_KEY = "grailed_plus_dark_mode_behavior_v1";
     const DARK_MODE_PRIMARY_COLOR_STORAGE_KEY = "grailed_plus_dark_mode_primary_color_v1";
@@ -395,6 +403,11 @@ interface SGlobalRoot {
       DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
       "market compare ml similarity status"
     );
+    const marketCompareDebugSetting = createBooleanSetting(
+      MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY,
+      DEFAULT_MARKET_COMPARE_DEBUG_ENABLED,
+      "market compare debug status"
+    );
     const darkModeEnabledSetting = createBooleanSetting(
       DARK_MODE_ENABLED_STORAGE_KEY,
       DEFAULT_DARK_MODE_ENABLED,
@@ -492,26 +505,37 @@ interface SGlobalRoot {
       return marketCompareMlSimilaritySetting.set(enabled);
     }
 
+    function getMarketCompareDebugEnabled(): Promise<boolean> {
+      return marketCompareDebugSetting.get();
+    }
+
+    function setMarketCompareDebugEnabled(enabled: unknown): Promise<SStorageResult> {
+      return marketCompareDebugSetting.set(enabled);
+    }
+
     function getMarketCompareSettings(): Promise<{
       enabled: boolean;
       rankingFormula: string;
       strictMode: boolean;
       expandedAmountEnabled: boolean;
       mlSimilarityEnabled: boolean;
+      debugEnabled: boolean;
     }> {
       return Promise.all([
         getMarketCompareEnabled(),
         getMarketCompareRankingFormula(),
         getMarketCompareStrictMode(),
         getMarketCompareExpandedAmountEnabled(),
-        getMarketCompareMlSimilarityEnabled()
+        getMarketCompareMlSimilarityEnabled(),
+        getMarketCompareDebugEnabled()
       ]).then(function (values) {
         return {
           enabled: values[0],
           rankingFormula: values[1],
           strictMode: values[2],
           expandedAmountEnabled: values[3],
-          mlSimilarityEnabled: values[4]
+          mlSimilarityEnabled: values[4],
+          debugEnabled: values[5]
         };
       });
     }
@@ -560,6 +584,7 @@ interface SGlobalRoot {
       DEFAULT_MARKET_COMPARE_STRICT_MODE,
       DEFAULT_MARKET_COMPARE_EXPANDED_AMOUNT_ENABLED,
       DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
+      DEFAULT_MARKET_COMPARE_DEBUG_ENABLED,
       DEFAULT_DARK_MODE_ENABLED,
       DEFAULT_DARK_MODE_BEHAVIOR,
       DEFAULT_DARK_MODE_PRIMARY_COLOR,
@@ -575,6 +600,7 @@ interface SGlobalRoot {
       MARKET_COMPARE_STRICT_MODE_STORAGE_KEY,
       MARKET_COMPARE_EXPANDED_AMOUNT_STORAGE_KEY,
       MARKET_COMPARE_ML_SIMILARITY_STORAGE_KEY,
+      MARKET_COMPARE_DEBUG_ENABLED_STORAGE_KEY,
       DARK_MODE_ENABLED_STORAGE_KEY,
       DARK_MODE_BEHAVIOR_STORAGE_KEY,
       DARK_MODE_PRIMARY_COLOR_STORAGE_KEY,
@@ -602,6 +628,8 @@ interface SGlobalRoot {
       setMarketCompareExpandedAmountEnabled,
       getMarketCompareMlSimilarityEnabled,
       setMarketCompareMlSimilarityEnabled,
+      getMarketCompareDebugEnabled,
+      setMarketCompareDebugEnabled,
       getMarketCompareSettings,
       getDarkModeEnabled,
       setDarkModeEnabled,

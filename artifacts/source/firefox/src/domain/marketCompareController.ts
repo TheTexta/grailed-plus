@@ -19,7 +19,9 @@ interface MCCandidate {
 interface MCProviderResult {
   ok: boolean;
   candidates: MCCandidate[];
+  partial?: unknown;
   sourceType?: unknown;
+  requestCount?: unknown;
   errorCode?: unknown;
   retryAfterMs?: unknown;
   parserMismatchLikely?: unknown;
@@ -87,6 +89,8 @@ interface MCController {
   compare: (input: unknown) => Promise<MCControllerState>;
 }
 
+type MCDebugLogger = (stage: string, payload?: Record<string, unknown>) => void;
+
 interface MCModule {
   createController: (options?: unknown) => MCController;
   createInitialState: () => MCControllerState;
@@ -105,6 +109,7 @@ interface MCDeps {
     candidates: MCCandidate[],
     options: unknown
   ) => Promise<MCCandidate[]> | MCCandidate[];
+  debugLogger?: MCDebugLogger | null;
 }
 
 interface MCGlobalRoot {
@@ -113,7 +118,7 @@ interface MCGlobalRoot {
     normalizeTrimmedString?: (value: unknown, fallback: string) => string;
   };
   GrailedPlusMarketProviders?: {
-    createRegistry?: () => MCProviderRegistry;
+    createRegistry?: (options?: { debugLogger?: MCDebugLogger | null }) => MCProviderRegistry;
     createMockDepopProvider?: () => unknown;
   };
   GrailedPlusQuerySynthesis?: {
@@ -537,16 +542,76 @@ interface MCGlobalRoot {
     return pickRawListingPrice(listing && typeof listing === "object" ? (listing as MCListing).rawListing : null);
   }
 
+  function summarizeListing(listing: MCListing | null): Record<string, unknown> {
+    return {
+      listingId: listing && listing.id != null ? String(listing.id) : "",
+      title: normalizeString(listing && listing.title, ""),
+      brand: normalizeString(listing && listing.brand, ""),
+      size: normalizeString(listing && listing.size, ""),
+      category: normalizeString(listing && listing.category, ""),
+      priceHistoryCount:
+        listing && listing.pricing && Array.isArray(listing.pricing.history)
+          ? listing.pricing.history.length
+          : 0,
+      hasRawListing: Boolean(listing && listing.rawListing)
+    };
+  }
+
+  function summarizeTopResult(
+    candidate: MCCandidate | MCControllerStateResult | null | undefined
+  ): Record<string, unknown> | null {
+    if (!candidate || typeof candidate !== "object") {
+      return null;
+    }
+
+    return {
+      id: candidate.id != null ? String(candidate.id) : "",
+      title: normalizeString(candidate.title, ""),
+      score: normalizeNumber(candidate.score),
+      price: normalizeNumber(candidate.price),
+      currency: normalizeCurrencyCode(
+        (candidate as MCCandidate).currency || (candidate as MCCandidate).originalCurrency,
+        "USD"
+      ),
+      usedImage: Boolean(candidate.usedImage),
+      imageSignalType: normalizeString(candidate.imageSignalType, "")
+    };
+  }
+
+  function summarizeImageSignals(
+    candidates: Array<MCCandidate | MCControllerStateResult>
+  ): Record<string, unknown> {
+    const summary: Record<string, number> = Object.create(null);
+    let usedImageCount = 0;
+
+    (Array.isArray(candidates) ? candidates : []).forEach(function (candidate) {
+      const signalType = normalizeString(candidate && candidate.imageSignalType, "none");
+      summary[signalType] = (summary[signalType] || 0) + 1;
+      if (candidate && candidate.usedImage) {
+        usedImageCount += 1;
+      }
+    });
+
+    return {
+      total: Array.isArray(candidates) ? candidates.length : 0,
+      usedImageCount: usedImageCount,
+      signalCounts: summary
+    };
+  }
+
   function createController(options?: unknown): MCController {
     const config = options && typeof options === "object" ? (options as MCDeps) : {};
     const hasExternalRegistry = Boolean(
       config.providerRegistry && typeof config.providerRegistry.search === "function"
     );
+    const debugLog = typeof config.debugLogger === "function" ? config.debugLogger : function () {};
     const providerRegistry =
       hasExternalRegistry
         ? (config.providerRegistry as MCProviderRegistry)
         : MarketProviders && typeof MarketProviders.createRegistry === "function"
-          ? (MarketProviders.createRegistry() as MCProviderRegistry)
+          ? (MarketProviders.createRegistry({
+              debugLogger: debugLog
+            }) as MCProviderRegistry)
           : null;
 
     const listeners: Array<(state: MCControllerState) => void> = [];
@@ -687,6 +752,7 @@ interface MCGlobalRoot {
         options && options.parserMismatchLikely
       );
       const messageSuffix = normalizeString(options && options.messageSuffix, "");
+      const normalizedSourceType = normalizeString(options && options.sourceType, "");
 
       updateState({
         status: mappedError.status,
@@ -694,9 +760,18 @@ interface MCGlobalRoot {
         retryable: mappedError.retryable,
         cooldownMs: mappedError.cooldownMs,
         message: messageSuffix ? mappedError.message + " " + messageSuffix : mappedError.message,
-        sourceType: normalizeString(options && options.sourceType, ""),
+        sourceType: normalizedSourceType,
         results: [],
         lastCheckedAt: Date.now()
+      });
+
+      debugLog("compare.finish_error", {
+        errorCode: mappedError.errorCode,
+        status: mappedError.status,
+        retryable: mappedError.retryable,
+        cooldownMs: mappedError.cooldownMs,
+        sourceType: normalizedSourceType,
+        messageSuffix: messageSuffix
       });
 
       return getState();
@@ -835,6 +910,10 @@ interface MCGlobalRoot {
 
         // Depop can return valid cross-border fallback listings that score
         // below strict similarity thresholds.
+        debugLog("compare.ranking_relaxed_threshold", {
+          filteredCandidateCount: filteredCandidates.length,
+          strictMinScore: strictMinScore
+        });
         return runRankCandidates(
           listing,
           filteredCandidates,
@@ -913,6 +992,16 @@ interface MCGlobalRoot {
       const sourceType = normalizeString(result && result.sourceType, "html");
       const filteredCandidates = filterCandidates(result, payload);
 
+      debugLog("compare.provider_success", {
+        sourceType: sourceType,
+        partial: Boolean(result && result.partial),
+        requestCount: normalizeNumber(result && result.requestCount),
+        candidateCount: Array.isArray(result && result.candidates) ? result.candidates.length : 0,
+        filteredCandidateCount: filteredCandidates.length,
+        parserMismatchLikely: Boolean(result && result.parserMismatchLikely),
+        searchModeHint: searchModeHint || ""
+      });
+
       if (!filteredCandidates.length) {
         return Promise.resolve(finishWithError("NO_RESULTS", {
           sourceType: sourceType,
@@ -923,6 +1012,12 @@ interface MCGlobalRoot {
       return rankFilteredCandidates(listing, payload, filteredCandidates, listingPrice).then(function (
         rankedCandidates
       ) {
+        debugLog("compare.ranking_complete", {
+          rankedCandidateCount: rankedCandidates.length,
+          imageSignals: summarizeImageSignals(rankedCandidates),
+          topCandidate: summarizeTopResult(rankedCandidates[0] || null)
+        });
+
         if (!rankedCandidates.length) {
           return finishWithError("NO_RESULTS", {
             sourceType: sourceType,
@@ -949,6 +1044,14 @@ interface MCGlobalRoot {
           lastCheckedAt: Date.now()
         });
 
+        debugLog("compare.finish_success", {
+          sourceType: sourceType,
+          resultCount: normalizedResults.length,
+          imageSignals: summarizeImageSignals(normalizedResults),
+          topResult: summarizeTopResult(normalizedResults[0] || null),
+          searchModeHint: searchModeHint || ""
+        });
+
         return getState();
       });
     }
@@ -957,6 +1060,18 @@ interface MCGlobalRoot {
       const payload = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
       const listing = payload.listing && typeof payload.listing === "object" ? (payload.listing as MCListing) : null;
       resetForListing(listing);
+
+      debugLog("compare.start", {
+        listing: summarizeListing(listing),
+        currency: normalizeString(payload.currency, "USD"),
+        limit:
+          Number.isFinite(Number(payload.limit)) && Number(payload.limit) > 0
+            ? Math.floor(Number(payload.limit))
+            : null,
+        rankingFormula: normalizeString(payload.rankingFormula, "balanced"),
+        strictMode: payload.allowCategoryFallback === false,
+        mlSimilarityEnabled: payload.mlSimilarityEnabled !== false
+      });
 
       if (!currentListingKey) {
         return Promise.resolve(finishWithError("MISSING_LISTING_DATA"));
@@ -967,6 +1082,9 @@ interface MCGlobalRoot {
       }
 
       if (state.status === "loading" && inFlightPromise) {
+        debugLog("compare.in_flight_reused", {
+          listingId: currentListingKey
+        });
         return inFlightPromise;
       }
 
@@ -976,11 +1094,24 @@ interface MCGlobalRoot {
       const queryResult = buildQueryResult(listing, payload);
       const searchModeHint = getSearchModeHint(queryResult && queryResult.reason);
 
+      debugLog("compare.queries_built", {
+        ok: Boolean(queryResult && queryResult.ok),
+        reason: normalizeString(queryResult && queryResult.reason, ""),
+        errorCode: normalizeString(queryResult && queryResult.errorCode, ""),
+        queries:
+          queryResult && Array.isArray(queryResult.queries)
+            ? queryResult.queries.slice()
+            : [],
+        listingPrice: listingPrice
+      });
+
       if (!queryResult || !queryResult.ok || !Array.isArray(queryResult.queries) || !queryResult.queries.length) {
         return Promise.resolve(
           finishWithError(queryResult && queryResult.errorCode ? queryResult.errorCode : "MISSING_LISTING_DATA")
         );
       }
+
+      const searchPayload = buildSearchPayload(payload, listing, listingPrice, queryResult.queries);
 
       updateState({
         status: "loading",
@@ -992,14 +1123,35 @@ interface MCGlobalRoot {
         results: []
       });
 
+      debugLog("compare.search_dispatch", {
+        listingId: normalizeString(searchPayload.listingId, ""),
+        queries: Array.isArray(searchPayload.queries) ? searchPayload.queries.slice() : [],
+        currency: normalizeString(searchPayload.currency, "USD"),
+        limit: normalizeNumber(searchPayload.limit),
+        title: normalizeString(searchPayload.title, ""),
+        brand: normalizeString(searchPayload.brand, ""),
+        size: normalizeString(searchPayload.size, ""),
+        category: normalizeString(searchPayload.category, ""),
+        listingPrice: normalizeNumber(searchPayload.listingPrice)
+      });
+
       inFlightPromise = providerRegistry
-        .search("depop", buildSearchPayload(payload, listing, listingPrice, queryResult.queries))
+        .search("depop", searchPayload)
         .then(function (result) {
           if (requestToken !== activeRequestToken) {
+            debugLog("compare.stale_response_ignored", {
+              listingId: currentListingKey
+            });
             return getState();
           }
 
           if (!result.ok) {
+            debugLog("compare.provider_error", {
+              errorCode: normalizeString(result && result.errorCode, "NETWORK_ERROR"),
+              sourceType: normalizeString(result && result.sourceType, "html"),
+              retryAfterMs: normalizeNumber(result && result.retryAfterMs),
+              parserMismatchLikely: Boolean(result && result.parserMismatchLikely)
+            });
             return finishWithError(result.errorCode || "NETWORK_ERROR", {
               retryAfterMs: result.retryAfterMs,
               parserMismatchLikely: Boolean(result.parserMismatchLikely),
@@ -1009,11 +1161,17 @@ interface MCGlobalRoot {
 
           return handleProviderSuccess(result, payload, listing, listingPrice, searchModeHint);
         })
-        .catch(function () {
+        .catch(function (error) {
           if (requestToken !== activeRequestToken) {
+            debugLog("compare.stale_error_ignored", {
+              listingId: currentListingKey
+            });
             return getState();
           }
 
+          debugLog("compare.exception", {
+            message: error && error.message ? String(error.message) : "unknown_error"
+          });
           return finishWithError("NETWORK_ERROR");
         })
         .finally(function () {

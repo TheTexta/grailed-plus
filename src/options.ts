@@ -8,6 +8,7 @@
   var DEFAULT_DARK_MODE_LEGACY_COLOR_CUSTOMIZATION_ENABLED = false;
   var DEFAULT_MARKET_COMPARE_RANKING_FORMULA = "balanced";
   var DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED = true;
+  var DEFAULT_MARKET_COMPARE_DEBUG_ENABLED = false;
 
   var CURRENCY_LABELS: Record<string, string> = {
     USD: "USD - US Dollar",
@@ -237,6 +238,7 @@
     strictMode: boolean;
     expandedAmountEnabled: boolean;
     mlSimilarityEnabled: boolean;
+    debugEnabled: boolean;
   }> {
     var fallback = {
       enabled:
@@ -258,7 +260,11 @@
       mlSimilarityEnabled:
         Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
           ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
-          : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
+          : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED,
+      debugEnabled:
+        Settings && typeof Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED === "boolean"
+          ? Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED
+          : DEFAULT_MARKET_COMPARE_DEBUG_ENABLED
     };
 
     if (!Settings || typeof Settings.getMarketCompareSettings !== "function") {
@@ -279,7 +285,11 @@
         mlSimilarityEnabled:
           value && typeof value.mlSimilarityEnabled === "boolean"
             ? value.mlSimilarityEnabled
-            : fallback.mlSimilarityEnabled
+            : fallback.mlSimilarityEnabled,
+        debugEnabled:
+          value && typeof value.debugEnabled === "boolean"
+            ? value.debugEnabled
+            : fallback.debugEnabled
       };
     });
   }
@@ -352,6 +362,17 @@
     }
 
     return Settings.setMarketCompareMlSimilarityEnabled(Boolean(enabled));
+  }
+
+  function saveMarketCompareDebugEnabled(enabled: boolean) {
+    if (!Settings || typeof Settings.setMarketCompareDebugEnabled !== "function") {
+      return Promise.resolve({
+        ok: false,
+        error: "Settings module unavailable."
+      });
+    }
+
+    return Settings.setMarketCompareDebugEnabled(Boolean(enabled));
   }
 
   function loadDarkModeEnabled(): Promise<boolean> {
@@ -577,14 +598,16 @@
     rankingFormulaNode: any,
     strictModeNode: any,
     expandedAmountNode: any,
-    mlSimilarityEnabledNode: any
+    mlSimilarityEnabledNode: any,
+    debugEnabledNode: any
   ): void {
     if (
       !enabledNode ||
       !rankingFormulaNode ||
       !strictModeNode ||
       !expandedAmountNode ||
-      !mlSimilarityEnabledNode
+      !mlSimilarityEnabledNode ||
+      !debugEnabledNode
     ) {
       return;
     }
@@ -594,6 +617,7 @@
     strictModeNode.disabled = !marketCompareEnabled;
     expandedAmountNode.disabled = !marketCompareEnabled;
     mlSimilarityEnabledNode.disabled = !marketCompareEnabled;
+    debugEnabledNode.disabled = !marketCompareEnabled;
   }
 
   function syncDarkModeInputs(
@@ -657,6 +681,9 @@
     var marketCompareMlSimilarityEnabledNode = document.getElementById(
       "market-compare-ml-similarity-enabled"
     ) as any;
+    var marketCompareDebugEnabledNode = document.getElementById(
+      "market-compare-debug-enabled"
+    ) as any;
     var selectNode = document.getElementById("currency-select") as any;
     var customInputNode = document.getElementById("currency-custom") as any;
     var darkModeEnabledNode = document.getElementById("dark-mode-enabled") as any;
@@ -683,6 +710,7 @@
       !marketCompareStrictModeNode ||
       !marketCompareExpandedAmountEnabledNode ||
       !marketCompareMlSimilarityEnabledNode ||
+      !marketCompareDebugEnabledNode ||
       !selectNode ||
       !customInputNode ||
       !darkModeEnabledNode ||
@@ -743,6 +771,10 @@
         typeof marketCompareSettings.mlSimilarityEnabled === "boolean"
           ? marketCompareSettings.mlSimilarityEnabled
           : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED;
+      var marketCompareDebugEnabled =
+        typeof marketCompareSettings.debugEnabled === "boolean"
+          ? marketCompareSettings.debugEnabled
+          : DEFAULT_MARKET_COMPARE_DEBUG_ENABLED;
       var darkModeEnabled = values[5];
       var darkModeBehavior = values[6];
       var darkModePrimaryColor = values[7];
@@ -762,12 +794,14 @@
       marketCompareStrictModeNode.checked = marketCompareStrictMode;
       marketCompareExpandedAmountEnabledNode.checked = marketCompareExpandedAmountEnabled;
       marketCompareMlSimilarityEnabledNode.checked = marketCompareMlSimilarityEnabled;
+      marketCompareDebugEnabledNode.checked = marketCompareDebugEnabled;
       syncMarketCompareInputs(
         marketCompareEnabledNode,
         marketCompareRankingFormulaNode,
         marketCompareStrictModeNode,
         marketCompareExpandedAmountEnabledNode,
-        marketCompareMlSimilarityEnabledNode
+        marketCompareMlSimilarityEnabledNode,
+        marketCompareDebugEnabledNode
       );
       darkModeEnabledNode.checked = darkModeEnabled;
       darkModeBehaviorNode.value = darkModeBehavior;
@@ -816,7 +850,8 @@
           marketCompareRankingFormulaNode,
           marketCompareStrictModeNode,
           marketCompareExpandedAmountEnabledNode,
-          marketCompareMlSimilarityEnabledNode
+          marketCompareMlSimilarityEnabledNode,
+          marketCompareDebugEnabledNode
         );
         setStatus(statusNode, null, "");
       });
@@ -846,6 +881,12 @@
 
     if (typeof marketCompareMlSimilarityEnabledNode.addEventListener === "function") {
       marketCompareMlSimilarityEnabledNode.addEventListener("change", function () {
+        setStatus(statusNode, null, "");
+      });
+    }
+
+    if (typeof marketCompareDebugEnabledNode.addEventListener === "function") {
+      marketCompareDebugEnabledNode.addEventListener("change", function () {
         setStatus(statusNode, null, "");
       });
     }
@@ -928,6 +969,9 @@
         var marketCompareMlSimilarityEnabled = Boolean(
           marketCompareMlSimilarityEnabledNode.checked
         );
+        var marketCompareDebugEnabled = Boolean(
+          marketCompareDebugEnabledNode.checked
+        );
         var usingCustom = selectNode.value === "CUSTOM";
         var darkModeEnabled = Boolean(darkModeEnabledNode.checked);
         var darkModeLegacyColorCustomizationEnabled = Boolean(
@@ -999,6 +1043,7 @@
               saveMarketCompareStrictMode(marketCompareStrictMode),
               saveMarketCompareExpandedAmountEnabled(marketCompareExpandedAmountEnabled),
               saveMarketCompareMlSimilarityEnabled(marketCompareMlSimilarityEnabled),
+              saveMarketCompareDebugEnabled(marketCompareDebugEnabled),
               saveDarkModeEnabled(darkModeEnabled),
               saveDarkModeBehavior(safeDarkModeBehavior),
               saveDarkModePrimaryColor(safeDarkModePrimaryColor),
@@ -1056,6 +1101,10 @@
           Settings && typeof Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED === "boolean"
             ? Settings.DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED
             : DEFAULT_MARKET_COMPARE_ML_SIMILARITY_ENABLED;
+        var defaultMarketCompareDebugEnabled =
+          Settings && typeof Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED === "boolean"
+            ? Settings.DEFAULT_MARKET_COMPARE_DEBUG_ENABLED
+            : DEFAULT_MARKET_COMPARE_DEBUG_ENABLED;
         var defaultDarkModeEnabled =
           Settings && typeof Settings.DEFAULT_DARK_MODE_ENABLED === "boolean"
             ? Settings.DEFAULT_DARK_MODE_ENABLED
@@ -1081,6 +1130,7 @@
           saveMarketCompareStrictMode(defaultMarketCompareStrictMode),
           saveMarketCompareExpandedAmountEnabled(defaultMarketCompareExpandedAmountEnabled),
           saveMarketCompareMlSimilarityEnabled(defaultMarketCompareMlSimilarityEnabled),
+          saveMarketCompareDebugEnabled(defaultMarketCompareDebugEnabled),
           saveDarkModeEnabled(defaultDarkModeEnabled),
           saveDarkModeBehavior(defaultDarkModeBehavior),
           saveDarkModePrimaryColor(defaultDarkModePrimaryColor),
@@ -1110,12 +1160,14 @@
           marketCompareStrictModeNode.checked = defaultMarketCompareStrictMode;
           marketCompareExpandedAmountEnabledNode.checked = defaultMarketCompareExpandedAmountEnabled;
           marketCompareMlSimilarityEnabledNode.checked = defaultMarketCompareMlSimilarityEnabled;
+          marketCompareDebugEnabledNode.checked = defaultMarketCompareDebugEnabled;
           syncMarketCompareInputs(
             marketCompareEnabledNode,
             marketCompareRankingFormulaNode,
             marketCompareStrictModeNode,
             marketCompareExpandedAmountEnabledNode,
-            marketCompareMlSimilarityEnabledNode
+            marketCompareMlSimilarityEnabledNode,
+            marketCompareDebugEnabledNode
           );
 
           darkModeEnabledNode.checked = defaultDarkModeEnabled;
