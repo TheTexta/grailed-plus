@@ -705,6 +705,21 @@ body.gp-ui-body {
   transition: background-color var(--gp-ui-transition-standard), border-color var(--gp-ui-transition-standard), color var(--gp-ui-transition-standard), transform var(--gp-ui-transition-fast);
 }
 
+/* --- GRAILED+ OVERRIDES: DM BUTTON & MODAL --- */
+/* SIGN UP button: force black text in dark mode if bg is white */
+html[data-grailed-plus-dark-mode="1"] #global-header-signup-btn.bg-white.text-primary,
+html[data-grailed-plus-dark-mode="1"] #global-header-signup-btn.bg-white.text-primary:is(:hover, :focus-visible, :active) {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+}
+
+/* Modal: force black background in dark mode */
+html[data-grailed-plus-dark-mode="1"] .Modal-Content {
+  background: #000 !important;
+  background-color: #000 !important;
+  color: #fff;
+}
+
 .grailed-plus-panel[data-grailed-plus-panel="1"] .grailed-plus__panel-button--tertiary {
   border-width: 0 !important;
   border-color: transparent !important;
