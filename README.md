@@ -281,3 +281,5 @@ AMO source-upload package:
 
 - [ ] Capture fresh Firefox AMO screenshots before store submission
 - [ ] Additional cross-market integrations (e.g., eBay)
+- [ ] Collapsible menus and auto collapse price history when no data available.
+- [ ] auto prefetch depop comparisons toggle
